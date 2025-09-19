@@ -5,27 +5,39 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var isTesting = false
     @State private var showingResetAlert = false
+    @State private var showingLanguageAlert = false
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
     @AppStorage("autoStartBackup") private var autoStartBackup = true
     @AppStorage("keepHistoryDays") private var keepHistoryDays = 30
+    @StateObject private var languageManager = LanguageManager.shared
     
     var body: some View {
         Form {
-            Section(header: Text("Genel")) {
-                Toggle("Bildirimleri Etkinleştir", isOn: $notificationsEnabled)
-                Toggle("Başlangıçta Otomatik Başlat", isOn: $autoStartBackup)
+            Section(header: Text("settings.general".localized)) {
+                Toggle("settings.notifications_enabled".localized, isOn: $notificationsEnabled)
+                Toggle("settings.auto_start".localized, isOn: $autoStartBackup)
                 
-                Picker("Geçmişi Saklama Süresi (Gün)", selection: $keepHistoryDays) {
-                    Text("7 Gün").tag(7)
-                    Text("30 Gün").tag(30)
-                    Text("90 Gün").tag(90)
-                    Text("Süresiz").tag(0)
+                Picker("settings.history_retention".localized, selection: $keepHistoryDays) {
+                    Text("settings.7_days".localized).tag(7)
+                    Text("settings.30_days".localized).tag(30)
+                    Text("settings.90_days".localized).tag(90)
+                    Text("settings.unlimited".localized).tag(0)
+                }
+                
+                // Language Selection
+                Picker("language.selection".localized, selection: $languageManager.currentLanguage) {
+                    ForEach(LanguageManager.SupportedLanguage.allCases) { language in
+                        Text(language.displayName).tag(language)
+                    }
+                }
+                .onChange(of: languageManager.currentLanguage) { _, _ in
+                    showingLanguageAlert = true
                 }
             }
             
-            Section(header: Text("Hakkında")) {
+            Section(header: Text("settings.about_section".localized)) {
                 HStack {
-                    Text("Sürüm")
+                    Text("settings.version".localized)
                     Spacer()
                     Text("1.0.0")
                         .foregroundColor(.secondary)
@@ -34,19 +46,27 @@ struct SettingsView: View {
                 Button(action: {
                     // TODO: Open app review page
                 }) {
-                    Text("Uygulamayı Değerlendir")
+                    Text("settings.rate_app".localized)
                 }
                 
                 Button(action: {
                     // TODO: Open support email
                 }) {
-                    Text("Destekle İletişime Geç")
+                    Text("settings.contact_support".localized)
                 }
             }
             
-            Section(header: Text("Geliştirici Ayarları")) {
+            Section(header: Text("settings.developer_settings".localized)) {
+                NavigationLink(destination: WiFiSettingsView()) {
+                    Label("wifi.settings".localized, systemImage: "wifi")
+                }
+                
+                NavigationLink(destination: BatterySettingsView()) {
+                    Label("battery.settings".localized, systemImage: "battery.75")
+                }
+                
                 NavigationLink(destination: TestFTPView()) {
-                    Label("FTP Bağlantı Testi", systemImage: "network")
+                    Label("settings.ftp_connection_test".localized, systemImage: "network")
                 }
             }
             
@@ -56,20 +76,25 @@ struct SettingsView: View {
                 } label: {
                     HStack {
                         Spacer()
-                        Text("Tüm Verileri Sıfırla")
+                        Text("settings.reset_all_data".localized)
                         Spacer()
                     }
                 }
             }
         }
-        .navigationTitle("Ayarlar")
-        .alert("Tüm Verileri Sıfırla", isPresented: $showingResetAlert) {
-            Button("İptal", role: .cancel) { }
-            Button("Sıfırla", role: .destructive) {
+        .navigationTitle("settings.title".localized)
+        .alert("settings.reset_confirm_title".localized, isPresented: $showingResetAlert) {
+            Button("alert.cancel".localized, role: .cancel) { }
+            Button("settings.reset".localized, role: .destructive) {
                 resetAllData()
             }
         } message: {
-            Text("Bu işlem tüm yedekleme görevlerini, geçmişi ve ayarları siler. Bu işlem geri alınamaz.")
+            Text("settings.reset_confirm_message".localized)
+        }
+        .alert("language.restart_required".localized, isPresented: $showingLanguageAlert) {
+            Button("alert.ok".localized) { }
+        } message: {
+            Text("language.restart_message".localized)
         }
     }
     
@@ -100,6 +125,9 @@ struct SettingsView: View {
                 notificationsEnabled = true
                 autoStartBackup = true
                 keepHistoryDays = 30
+                
+                // Reset language to system default
+                languageManager.setLanguage(.system)
                 
             } catch {
                 print("❌ BackupFlow: Veri silme hatası: \(error)")

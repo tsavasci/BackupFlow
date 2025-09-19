@@ -101,6 +101,12 @@ struct BackupFlowApp: App {
     }
 
     init() {
+        // Initialize LanguageManager early
+        _ = LanguageManager.shared
+        
+        // Test localization
+        print("🌍 Test localization: \("settings.title".localized)")
+        
         // BackupScheduler'a shared container'ı inject et
         BackupScheduler.sharedModelContainer = sharedModelContainer
         

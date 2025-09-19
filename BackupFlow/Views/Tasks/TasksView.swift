@@ -10,7 +10,7 @@ struct TasksView: View {
     // MARK: - Main View
     var body: some View {
         contentView
-            .navigationTitle("Görevler")
+            .navigationTitle("nav.tasks".localized)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     NavigationLink(destination: BackupView()) {
@@ -51,9 +51,17 @@ struct TasksView: View {
     
     private var taskListView: some View {
         List {
-            ForEach(tasks) { task in
-                TaskRow(task: task, onDelete: { self.taskToDelete = $0 })
-                    .swipeActions(edge: .trailing) { deleteButton(for: task) }
+            Section {
+                DashboardWidget()
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+            }
+            
+            Section("tasks.your_tasks".localized) {
+                ForEach(tasks) { task in
+                    TaskRow(task: task, onDelete: { self.taskToDelete = $0 })
+                        .swipeActions(edge: .trailing) { deleteButton(for: task) }
+                }
             }
         }
         .listStyle(.insetGrouped)

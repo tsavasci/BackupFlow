@@ -8,35 +8,35 @@ struct MainTabView: View {
                 BackupView()
             }
             .tabItem {
-                Label("Yedekle", systemImage: "externaldrive.fill")
+                Label("nav.backup".localized, systemImage: "externaldrive.fill")
             }
             
             NavigationStack {
                 TasksView()
             }
             .tabItem {
-                Label("Görevler", systemImage: "checklist")
+                Label("nav.tasks".localized, systemImage: "checklist")
             }
             
             NavigationStack {
                 HistoryView()
             }
             .tabItem {
-                Label("Geçmiş", systemImage: "clock.fill")
+                Label("nav.history".localized, systemImage: "clock.fill")
             }
             
             NavigationStack {
                 SettingsView()
             }
             .tabItem {
-                Label("Ayarlar", systemImage: "gearshape.fill")
+                Label("nav.settings".localized, systemImage: "gearshape.fill")
             }
             
             NavigationStack {
                 AboutView()
             }
             .tabItem {
-                Label("Hakkında", systemImage: "info.circle.fill")
+                Label("nav.about".localized, systemImage: "info.circle.fill")
             }
         }
         .accentColor(.blue)

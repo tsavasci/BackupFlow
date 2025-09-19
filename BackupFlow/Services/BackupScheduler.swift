@@ -361,6 +361,25 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     
     func performBackup(task: BackupTask) async throws {
         print("🚀 BackupFlow: performBackup başlatıldı - Görev: \(task.displayName)")
+        
+        // WiFi kontrolü
+        let wifiManager = WiFiManager.shared
+        guard wifiManager.shouldAllowBackup() else {
+            let reason = wifiManager.getReasonForBlockedBackup() ?? "WiFi bağlantısı gerekli"
+            print("❌ BackupFlow: WiFi kontrolü başarısız: \(reason)")
+            await createSkippedHistory(taskId: task.id, reason: reason)
+            throw BackupError.wifiNotAvailable
+        }
+        
+        // Battery kontrolü
+        let batteryManager = BatteryManager.shared
+        guard batteryManager.shouldAllowBackup() else {
+            let reason = batteryManager.getReasonForBlockedBackup() ?? "Pil seviyesi yetersiz"
+            print("❌ BackupFlow: Battery kontrolü başarısız: \(reason)")
+            await createSkippedHistory(taskId: task.id, reason: reason)
+            throw BackupError.batteryTooLow
+        }
+        
         let container = try getModelContainer()
         let context = ModelContext(container)
         let startTime = Date()
@@ -956,6 +975,43 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         logger.info("Bildirim gönderildi: \(title)")
     }
     
+    private func sendSkippedNotification(taskName: String, reason: String) async {
+        await sendNotification(
+            title: "backup.skipped.title".localized,
+            body: String(format: "backup.skipped.message".localized, taskName, reason)
+        )
+    }
+    
+    private func createSkippedHistory(taskId: UUID, reason: String) async {
+        do {
+            let container = try getModelContainer()
+            let context = ModelContext(container)
+            
+            let taskDescriptor = FetchDescriptor<BackupTask>(predicate: #Predicate<BackupTask> { t in
+                t.id == taskId
+            })
+            let tasks = try context.fetch(taskDescriptor)
+            if let contextTask = tasks.first {
+                let history = BackupHistory(
+                    timestamp: Date(),
+                    status: "skipped",
+                    filesProcessed: 0,
+                    totalFiles: 0,
+                    errorMessage: reason,
+                    duration: 0,
+                    task: contextTask
+                )
+                context.insert(history)
+                try context.save()
+                
+                // Bildirim gönder
+                await sendSkippedNotification(taskName: contextTask.displayName, reason: reason)
+            }
+        } catch {
+            print("❌ BackupFlow: Skipped history oluşturulamadı: \(error)")
+        }
+    }
+    
     nonisolated public func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         Task { @MainActor in completionHandler([.banner, .sound]) }
     }
@@ -1164,6 +1220,9 @@ enum BackupError: LocalizedError {
     case appGroupNotFound
     case ftpError(String)
     case permissionDenied
+    case wifiNotAvailable
+    case batteryTooLow
+    
     var errorDescription: String? {
         switch self {
         case .alreadyInProgress: return "Başka bir yedekleme işlemi devam ediyor"
@@ -1171,6 +1230,8 @@ enum BackupError: LocalizedError {
         case .appGroupNotFound: return "App Group erişimi sağlanamadı"
         case .ftpError(let m): return "FTP hatası: \(m)"
         case .permissionDenied: return "İzin reddedildi"
+        case .wifiNotAvailable: return "WiFi bağlantısı mevcut değil veya izin verilmiyor"
+        case .batteryTooLow: return "Pil seviyesi çok düşük"
         }
     }
 }
