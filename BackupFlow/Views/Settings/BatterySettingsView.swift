@@ -111,15 +111,15 @@ struct BatterySettingsView: View {
             // Help Section
             Section("battery.help".localized) {
                 VStack(alignment: .leading, spacing: 12) {
-                    HelpRow(
+                    BatteryHelpRow(
                         icon: "battery.25",
                         text: "battery.help.1".localized
                     )
-                    HelpRow(
+                    BatteryHelpRow(
                         icon: "bolt.circle",
                         text: "battery.help.2".localized
                     )
-                    HelpRow(
+                    BatteryHelpRow(
                         icon: "bell",
                         text: "battery.help.3".localized
                     )

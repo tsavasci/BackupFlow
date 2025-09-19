@@ -35,11 +35,11 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     // Timers keyed by BackupTask.id
     @MainActor private var scheduledTimers: [UUID: Timer] = [:]
     
-    private lazy var turkeyDateFormatter: DateFormatter = {
+    private lazy var userLocalDateFormatter: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "dd.MM.yyyy HH:mm:ss"
-        f.timeZone = TimeZone(identifier: "Europe/Istanbul")
-        f.locale = Locale(identifier: "tr_TR")
+        f.timeZone = TimeZone.current  // Kullanıcının yerel saati
+        f.locale = Locale.current       // Kullanıcının yerel ayarı
         return f
     }()
     
@@ -71,8 +71,8 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         self.backgroundSessionIdentifier = b + ".background"
         super.init()
         setupNotifications()
-        // Register background tasks (it's safe to call at app launch)
-        registerBackgroundTasks()
+        // Background task registration AppDelegate'de yapılacak
+        print("🔄 BackupFlow: BackupScheduler init tamamlandı")
     }
     
     deinit {
@@ -82,29 +82,79 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     // MARK: - Background Task Registration
     public func registerBackgroundTasks() {
         guard !hasRegisteredBackgroundTasks else {
+            print("⚠️ BackupFlow: Görevler zaten kayıtlı, tekrar kayıt yapmayacak")
             logger.info("Görevler zaten kayıtlı")
             return
         }
         
+        // Bundle identifier kontrol
+        let bundleID = Bundle.main.bundleIdentifier ?? "unknown"
+        print("📦 BackupFlow: Bundle ID: \(bundleID)")
+        
+        // iOS version check
+        if #available(iOS 13.0, *) {
+            print("✅ BackupFlow: iOS 13+ - Background tasks destekleniyor")
+        } else {
+            print("❌ BackupFlow: iOS 13+ gerekli - Background tasks desteklenmiyor")
+            return
+        }
+        
+        // Cancel previous requests
+        print("🔄 BackupFlow: Önceki background task request'ler iptal ediliyor...")
         BGTaskScheduler.shared.cancelAllTaskRequests()
         
         print("🔄 BackupFlow: Background görevler kaydediliyor...")
         print("📋 Refresh ID: \(taskIdentifierRefresh)")
         print("📋 Processing ID: \(taskIdentifierProcessing)")
         
+        // Check if identifiers are valid
+        if taskIdentifierRefresh.isEmpty || taskIdentifierProcessing.isEmpty {
+            print("❌ BackupFlow: Task identifier'lar boş!")
+            return
+        }
+        
         let refreshID = taskIdentifierRefresh
         let processingID = taskIdentifierProcessing
         
+        // Detailed error handling for refresh task
+        print("🔄 BackupFlow: Refresh task kaydediliyor...")
         let refreshSuccess = BGTaskScheduler.shared.register(forTaskWithIdentifier: refreshID, using: nil) { [weak self] task in
+            print("🚨 BackupFlow: Refresh task tetiklendi!")
             guard let self = self else { task.setTaskCompleted(success: false); return }
-            guard let appRefreshTask = task as? BGAppRefreshTask else { task.setTaskCompleted(success: false); return }
+            guard let appRefreshTask = task as? BGAppRefreshTask else { 
+                print("❌ BackupFlow: Refresh task cast hatası!")
+                task.setTaskCompleted(success: false)
+                return 
+            }
             self.handleAppRefresh(appRefreshTask)
         }
+        print("📊 BackupFlow: Refresh registration result: \(refreshSuccess)")
         
+        if !refreshSuccess {
+            print("❌ BackupFlow: Refresh task registration başarısız!")
+            print("   - Bundle ID: \(bundleID)")
+            print("   - Task ID: \(refreshID)")
+            print("   - Entitlements kontrolü yapın!")
+        }
+        
+        print("🔄 BackupFlow: Processing task kaydediliyor...")
         let processingSuccess = BGTaskScheduler.shared.register(forTaskWithIdentifier: processingID, using: nil) { [weak self] task in
+            print("🚨 BackupFlow: Processing task tetiklendi!")
             guard let self = self else { task.setTaskCompleted(success: false); return }
-            guard let processingTask = task as? BGProcessingTask else { task.setTaskCompleted(success: false); return }
+            guard let processingTask = task as? BGProcessingTask else { 
+                print("❌ BackupFlow: Processing task cast hatası!")
+                task.setTaskCompleted(success: false)
+                return 
+            }
             self.handleBackgroundProcessing(processingTask)
+        }
+        print("📊 BackupFlow: Processing registration result: \(processingSuccess)")
+        
+        if !processingSuccess {
+            print("❌ BackupFlow: Processing task registration başarısız!")
+            print("   - Bundle ID: \(bundleID)")
+            print("   - Task ID: \(processingID)")
+            print("   - Entitlements kontrolü yapın!")
         }
         
         if refreshSuccess && processingSuccess {
@@ -113,6 +163,11 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             logger.info("Görevler başarıyla kaydedildi")
         } else {
             print("❌ BackupFlow: Background görev kayıtları başarısız - refresh: \(refreshSuccess), processing: \(processingSuccess)")
+            print("⚠️ BackupFlow: Fallback - Foreground timer sistemi kullanılacak")
+            print("💡 BackupFlow: Background tasks için:")
+            print("   1. Paid Apple Developer Account gerekli")
+            print("   2. iOS Settings > Background App Refresh açık olmalı")
+            print("   3. Developer Mode aktif olmalı")
             logger.error("Görev kayıtları başarısız")
         }
     }
@@ -124,7 +179,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         request.earliestBeginDate = target
         do {
             try BGTaskScheduler.shared.submit(request)
-            logger.info("Yenileme görevi planlandı (Türkiye): \(self.turkeyDateFormatter.string(from: target))")
+            logger.info("Yenileme görevi planlandı (Local): \(self.userLocalDateFormatter.string(from: target))")
         } catch {
             logger.error("Yenileme görevi planlanamadı: \(error.localizedDescription)")
         }
@@ -137,7 +192,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         request.requiresNetworkConnectivity = true
         do {
             try BGTaskScheduler.shared.submit(request)
-            logger.info("İşleme görevi planlandı (Türkiye): \(self.turkeyDateFormatter.string(from: target))")
+            logger.info("İşleme görevi planlandı (Local): \(self.userLocalDateFormatter.string(from: target))")
         } catch {
             logger.error("İşleme görevi planlanamadı: \(error.localizedDescription)")
         }
@@ -155,6 +210,14 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         
         print("✅ BackupFlow: Tüm background görevler ve timer'lar iptal edildi")
         logger.info("Tüm background görevler iptal edildi")
+    }
+    
+    // Debug: Active timer'ları listele
+    public func debugActiveTimers() {
+        print("🔍 BackupFlow: Active timer sayısı: \(scheduledTimers.count)")
+        for (taskId, timer) in scheduledTimers {
+            print("   Timer ID: \(taskId), Valid: \(timer.isValid), Fire Date: \(timer.fireDate)")
+        }
     }
     
     // Schedule a specific BackupTask using a Timer (for in-app scheduling)
@@ -176,6 +239,8 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         let taskId = task.id
         let displayName = task.displayName
         print("⏰ BackupFlow: Zamanlayıcı kurulacak - Görev: \(displayName), Sonraki çalışma: \(nextRun)")
+        let nextRunFormatted = userLocalDateFormatter.string(from: nextRun)
+        print("Sonraki çalışma zamanı (Local): \(nextRunFormatted)")
         
         let timer = Timer(fire: nextRun, interval: 0, repeats: false) { [weak self] _ in
             guard let self = self else { return }
@@ -242,8 +307,12 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         
         scheduledTimers[task.id] = timer
         RunLoop.main.add(timer, forMode: .common)
-        print("✅ BackupFlow: Görev planlandı - \(displayName), Sonraki çalışma (Türkiye): \(self.turkeyDateFormatter.string(from: nextRun))")
-        logger.info("Yedekleme görevi planlandı: \(displayName) - Sonraki çalışma (Türkiye): \(self.turkeyDateFormatter.string(from: nextRun))")
+        
+        // Background task'ları da planla
+        try await scheduleNextTasks(for: task)
+        
+        print("✅ BackupFlow: Görev planlandı - \(displayName), Sonraki çalışma (Local): \(self.userLocalDateFormatter.string(from: nextRun))")
+        logger.info("Yedekleme görevi planlandı: \(displayName) - Sonraki çalışma (Local): \(self.userLocalDateFormatter.string(from: nextRun))")
     }
     
     private func scheduleNextTasks(for task: BackupTask) async throws {
@@ -254,7 +323,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         scheduleAppRefresh(for: nextRun)
         scheduleBackgroundProcessing(for: nextRun)
         lastScheduledTime = Date()
-        logger.info("Görevler planlandı (Türkiye): \(self.turkeyDateFormatter.string(from: nextRun))")
+        logger.info("Görevler planlandı (Local): \(self.userLocalDateFormatter.string(from: nextRun))")
     }
     
     // MARK: - Next run calculation
@@ -270,7 +339,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             if var nextDate = calendar.date(from: components) {
                 if nextDate <= now { nextDate = calendar.date(byAdding: .day, value: 1, to: nextDate) ?? nextDate }
                 task.nextRunTime = nextDate
-                logger.info("Sonraki çalışma zamanı (Türkiye): \(self.turkeyDateFormatter.string(from: nextDate))")
+                logger.info("Sonraki çalışma zamanı (Local): \(self.userLocalDateFormatter.string(from: nextDate))")
             }
         case .weekly(let day, let time):
             var components = DateComponents()
@@ -279,7 +348,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             components.minute = time.minute
             if let nextDate = calendar.nextDate(after: now, matching: components, matchingPolicy: .nextTime) {
                 task.nextRunTime = nextDate
-                logger.info("Sonraki çalışma zamanı (Türkiye): \(self.turkeyDateFormatter.string(from: nextDate))")
+                logger.info("Sonraki çalışma zamanı (Local): \(self.userLocalDateFormatter.string(from: nextDate))")
             }
         case .manual:
             break
@@ -361,15 +430,6 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     
     func performBackup(task: BackupTask) async throws {
         print("🚀 BackupFlow: performBackup başlatıldı - Görev: \(task.displayName)")
-        
-        // WiFi kontrolü
-        let wifiManager = WiFiManager.shared
-        guard wifiManager.shouldAllowBackup() else {
-            let reason = wifiManager.getReasonForBlockedBackup() ?? "WiFi bağlantısı gerekli"
-            print("❌ BackupFlow: WiFi kontrolü başarısız: \(reason)")
-            await createSkippedHistory(taskId: task.id, reason: reason)
-            throw BackupError.wifiNotAvailable
-        }
         
         // Battery kontrolü
         let batteryManager = BatteryManager.shared
@@ -1220,7 +1280,6 @@ enum BackupError: LocalizedError {
     case appGroupNotFound
     case ftpError(String)
     case permissionDenied
-    case wifiNotAvailable
     case batteryTooLow
     
     var errorDescription: String? {
@@ -1230,7 +1289,6 @@ enum BackupError: LocalizedError {
         case .appGroupNotFound: return "App Group erişimi sağlanamadı"
         case .ftpError(let m): return "FTP hatası: \(m)"
         case .permissionDenied: return "İzin reddedildi"
-        case .wifiNotAvailable: return "WiFi bağlantısı mevcut değil veya izin verilmiyor"
         case .batteryTooLow: return "Pil seviyesi çok düşük"
         }
     }

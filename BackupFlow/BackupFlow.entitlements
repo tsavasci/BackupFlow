@@ -12,5 +12,10 @@
 	<true/>
 	<key>com.apple.security.files.bookmarks.document-scope</key>
 	<true/>
+	<key>com.apple.developer.background-tasks</key>
+	<array>
+		<string>tsavasci.BackupFlow.refresh</string>
+		<string>tsavasci.BackupFlow.processing</string>
+	</array>
 </dict>
 </plist>

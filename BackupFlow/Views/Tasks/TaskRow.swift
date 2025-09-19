@@ -11,8 +11,8 @@ struct TaskRow: View {
     private var taskDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "dd.MM.yyyy HH:mm"
-        formatter.locale = Locale(identifier: "tr_TR")
-        formatter.timeZone = TimeZone(identifier: "Europe/Istanbul")
+        formatter.locale = Locale.current  // Kullanıcının locale'i
+        formatter.timeZone = TimeZone.current  // Kullanıcının timezone'u
         return formatter
     }()
     

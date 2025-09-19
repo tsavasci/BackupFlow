@@ -57,10 +57,6 @@ struct SettingsView: View {
             }
             
             Section(header: Text("settings.developer_settings".localized)) {
-                NavigationLink(destination: WiFiSettingsView()) {
-                    Label("wifi.settings".localized, systemImage: "wifi")
-                }
-                
                 NavigationLink(destination: BatterySettingsView()) {
                     Label("battery.settings".localized, systemImage: "battery.75")
                 }

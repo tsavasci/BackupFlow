@@ -33,9 +33,22 @@
 		F2DA23622E7D5FDA00B2727D /* BackupFlowUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BackupFlowUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		F2AA60C82E7DA0CD00CE7F40 /* Exceptions for "BackupFlow" folder in "BackupFlow" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = F2DA23492E7D5FD900B2727D /* BackupFlow */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		F2DA234B2E7D5FD900B2727D /* BackupFlow */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				F2AA60C82E7DA0CD00CE7F40 /* Exceptions for "BackupFlow" folder in "BackupFlow" target */,
+			);
 			path = BackupFlow;
 			sourceTree = "<group>";
 		};
@@ -343,7 +356,7 @@
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				UIBackgroundModes = "fetch processing";
+				UIBackgroundModes = "background-task fetch processing";
 			};
 			name = Debug;
 		};
@@ -402,7 +415,7 @@
 				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
-				UIBackgroundModes = "fetch processing";
+				UIBackgroundModes = "background-task fetch processing";
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
@@ -419,7 +432,9 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BackupFlow/Info.plist;
 				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = "tsavasci.BackupFlow.refresh tsavasci.BackupFlow.processing";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSAppTransportSecurity = "<dict><key>NSAllowsArbitraryLoads</key><true/></dict>";
 				INFOPLIST_KEY_NSDesktopFolderUsageDescription = "Yedekleme işlemleri için masaüstü klasörüne erişim gereklidir.";
@@ -433,7 +448,7 @@
 				INFOPLIST_KEY_NSSystemAdministrationUsageDescription = "Yedekleme işlemi için sistem dosyalarına erişim gereklidir.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UIBackgroundModes = "fetch processing remote-notification";
+				INFOPLIST_KEY_UIBackgroundModes = "background-task fetch processing remote-notification";
 				INFOPLIST_KEY_UIFileSharingEnabled = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -448,6 +463,10 @@
 				PRODUCT_BUNDLE_IDENTIFIER = tsavasci.BackupFlow;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
@@ -468,7 +487,9 @@
 				DEVELOPMENT_TEAM = T54PTGTNBU;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BackupFlow/Info.plist;
 				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = "tsavasci.BackupFlow.refresh tsavasci.BackupFlow.processing";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSAppTransportSecurity = "<dict><key>NSAllowsArbitraryLoads</key><true/></dict>";
 				INFOPLIST_KEY_NSDesktopFolderUsageDescription = "Yedekleme işlemleri için masaüstü klasörüne erişim gereklidir.";
@@ -482,7 +503,7 @@
 				INFOPLIST_KEY_NSSystemAdministrationUsageDescription = "Yedekleme işlemi için sistem dosyalarına erişim gereklidir.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UIBackgroundModes = "fetch processing remote-notification";
+				INFOPLIST_KEY_UIBackgroundModes = "background-task fetch processing remote-notification";
 				INFOPLIST_KEY_UIFileSharingEnabled = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -496,6 +517,10 @@
 				PRODUCT_BUNDLE_IDENTIFIER = tsavasci.BackupFlow;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;

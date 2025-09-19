@@ -13,6 +13,10 @@ import UserNotifications
 // MARK: - AppDelegate for handling app lifecycle
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        // Background task registration - AppDelegate'de güvenli
+        print("🔄 BackupFlow: AppDelegate'de background task registration başlatılıyor...")
+        BackupScheduler.shared.registerBackgroundTasks()
+        
         // Request notification permissions on app launch
         Task {
             let center = UNUserNotificationCenter.current()
