@@ -64,6 +64,14 @@ class PhotoLibraryManager: NSObject, ObservableObject {
     }
     
     func fetchAllPhotos(completion: @escaping ([PHAsset]) -> Void) {
+        fetchAllMedia(includePhotos: true, includeVideos: false, completion: completion)
+    }
+    
+    func fetchAllVideos(completion: @escaping ([PHAsset]) -> Void) {
+        fetchAllMedia(includePhotos: false, includeVideos: true, completion: completion)
+    }
+    
+    func fetchAllMedia(includePhotos: Bool = true, includeVideos: Bool = true, completion: @escaping ([PHAsset]) -> Void) {
         guard hasAccess else {
             logger.warning("Fotoğraf kütüphanesine erişim yok")
             completion([])
@@ -73,15 +81,34 @@ class PhotoLibraryManager: NSObject, ObservableObject {
         let fetchOptions = PHFetchOptions()
         fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
         
-        let fetchResult = PHAsset.fetchAssets(with: .image, options: fetchOptions)
-        var assets: [PHAsset] = []
+        var allAssets: [PHAsset] = []
         
-        fetchResult.enumerateObjects { (asset, _, _) in
-            assets.append(asset)
+        // Fetch photos if requested
+        if includePhotos {
+            let photoFetchResult = PHAsset.fetchAssets(with: .image, options: fetchOptions)
+            photoFetchResult.enumerateObjects { (asset, _, _) in
+                allAssets.append(asset)
+            }
         }
         
-        logger.info("\(assets.count) adet fotoğraf bulundu")
-        completion(assets)
+        // Fetch videos if requested  
+        if includeVideos {
+            let videoFetchResult = PHAsset.fetchAssets(with: .video, options: fetchOptions)
+            videoFetchResult.enumerateObjects { (asset, _, _) in
+                allAssets.append(asset)
+            }
+        }
+        
+        // Sort by creation date (newest first)
+        allAssets.sort { (asset1, asset2) in
+            guard let date1 = asset1.creationDate, let date2 = asset2.creationDate else {
+                return false
+            }
+            return date1 > date2
+        }
+        
+        logger.info("\(allAssets.count) adet medya dosyası bulundu (fotoğraf: \(includePhotos), video: \(includeVideos))")
+        completion(allAssets)
     }
     
     func saveImageToLibrary(_ image: UIImage, completion: @escaping (Bool, Error?) -> Void) {
@@ -105,10 +132,29 @@ class PhotoLibraryManager: NSObject, ObservableObject {
 struct PhotoPicker: UIViewControllerRepresentable {
     @Environment(\.presentationMode) private var presentationMode
     let onSelect: ([PHAsset]) -> Void
+    let includePhotos: Bool
+    let includeVideos: Bool
+    
+    init(onSelect: @escaping ([PHAsset]) -> Void, includePhotos: Bool = true, includeVideos: Bool = false) {
+        self.onSelect = onSelect
+        self.includePhotos = includePhotos
+        self.includeVideos = includeVideos
+    }
     
     func makeUIViewController(context: Context) -> PHPickerViewController {
         var configuration = PHPickerConfiguration()
-        configuration.filter = .images
+        
+        // Set filter based on what media types to include
+        if includePhotos && includeVideos {
+            configuration.filter = PHPickerFilter.any(of: [.images, .videos])
+        } else if includePhotos {
+            configuration.filter = .images
+        } else if includeVideos {
+            configuration.filter = .videos
+        } else {
+            configuration.filter = .images // Default fallback
+        }
+        
         configuration.selectionLimit = 0 // 0 means unlimited
         configuration.preferredAssetRepresentationMode = .current
         

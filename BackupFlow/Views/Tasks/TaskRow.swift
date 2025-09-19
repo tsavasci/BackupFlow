@@ -34,6 +34,13 @@ struct TaskRow: View {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(alignment: .center, spacing: 8) {
+                        // Medya türü ikonu (sadece foto galerisi yedeklemeleri için)
+                        if task.sourcePath == "PHOTOS_LIBRARY" {
+                            Image(systemName: task.safeMediaType.systemImageName)
+                                .foregroundColor(.blue)
+                                .font(.caption)
+                        }
+                        
                         Text(task.displayName)
                             .font(.headline)
                             .lineLimit(1)

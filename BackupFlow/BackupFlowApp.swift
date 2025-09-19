@@ -62,11 +62,43 @@ struct BackupFlowApp: App {
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            let container = try ModelContainer(for: schema, configurations: [modelConfiguration])
+            
+            // Migration: Mevcut BackupTask'lara default mediaType değeri ata
+            Task {
+                await performMediaTypeMigration(container: container)
+            }
+            
+            return container
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
     }()
+    
+    @MainActor
+    private static func performMediaTypeMigration(container: ModelContainer) async {
+        let context = ModelContext(container)
+        
+        do {
+            let descriptor = FetchDescriptor<BackupTask>()
+            let tasks = try context.fetch(descriptor)
+            
+            var migrationNeeded = false
+            for task in tasks {
+                if task.mediaType == nil {
+                    task.mediaType = .photosOnly // Default değer ata
+                    migrationNeeded = true
+                }
+            }
+            
+            if migrationNeeded {
+                try context.save()
+                print("✅ BackupFlow: MediaType migration tamamlandı")
+            }
+        } catch {
+            print("❌ BackupFlow: MediaType migration hatası: \(error)")
+        }
+    }
 
     init() {
         // BackupScheduler'a shared container'ı inject et

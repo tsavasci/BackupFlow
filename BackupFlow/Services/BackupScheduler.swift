@@ -7,6 +7,7 @@ import Combine
 import UserNotifications
 import UniformTypeIdentifiers
 import Photos
+import AVFoundation
 
 @MainActor
 final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCenterDelegate {
@@ -42,11 +43,6 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         return f
     }()
     
-    private struct TaskIdentifiers {
-        static func refresh(_ bundle: String) -> String { bundle + ".refresh" }
-        static func processing(_ bundle: String) -> String { bundle + ".processing" }
-    }
-    
     private let maxRetryAttempts = 3
     private var retryCount: [UUID: Int] = [:]
     private var lastScheduledTime: Date?
@@ -59,10 +55,9 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     private let defaultFTPHost = "192.168.1.1"
     private let fileManager = FileManager.default
     
-    // Computed identifiers (fallbacks if bundle id missing)
-    private var bundleID: String { Bundle.main.bundleIdentifier ?? "com.backupflow.app" }
-    private var taskIdentifierRefresh: String { TaskIdentifiers.refresh(bundleID) }
-    private var taskIdentifierProcessing: String { TaskIdentifiers.processing(bundleID) }
+    // Computed identifiers - Fixed identifiers matching Info.plist
+    private let taskIdentifierRefresh = "tsavasci.BackupFlow.refresh"
+    private let taskIdentifierProcessing = "tsavasci.BackupFlow.processing"
     
     // Background completion handler for URLSession
     public var backgroundCompletionHandler: (() -> Void)? = nil
@@ -92,6 +87,10 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         }
         
         BGTaskScheduler.shared.cancelAllTaskRequests()
+        
+        print("🔄 BackupFlow: Background görevler kaydediliyor...")
+        print("📋 Refresh ID: \(taskIdentifierRefresh)")
+        print("📋 Processing ID: \(taskIdentifierProcessing)")
         
         let refreshID = taskIdentifierRefresh
         let processingID = taskIdentifierProcessing
@@ -142,6 +141,20 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         } catch {
             logger.error("İşleme görevi planlanamadı: \(error.localizedDescription)")
         }
+    }
+    
+    // MARK: - Cancel Methods
+    public func cancelAllBackgroundTasks() {
+        BGTaskScheduler.shared.cancelAllTaskRequests()
+        
+        // Cancel all timers
+        for (_, timer) in scheduledTimers {
+            timer.invalidate()
+        }
+        scheduledTimers.removeAll()
+        
+        print("✅ BackupFlow: Tüm background görevler ve timer'lar iptal edildi")
+        logger.info("Tüm background görevler iptal edildi")
     }
     
     // Schedule a specific BackupTask using a Timer (for in-app scheduling)
@@ -446,14 +459,19 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         task.backupStatus = .scanning
         try context.save()
         
-        // Fetch all photos
+        // Fetch media based on mediaType
         let assets: [PHAsset] = await withCheckedContinuation { continuation in
-            photoLibraryManager.fetchAllPhotos { assets in
+            photoLibraryManager.fetchAllMedia(
+                includePhotos: task.safeMediaType.includesPhotos,
+                includeVideos: task.safeMediaType.includesVideos
+            ) { assets in
                 continuation.resume(returning: assets)
             }
         }
         
-        logger.info("\(assets.count) adet fotoğraf bulundu")
+        let mediaTypeText = task.safeMediaType.displayName.lowercased()
+        logger.info("\(assets.count) adet \(mediaTypeText) bulundu")
+        print("📷 BackupFlow: \(assets.count) adet \(mediaTypeText) bulundu")
         
         guard !assets.isEmpty else {
             task.backupStatus = .completed
@@ -470,18 +488,17 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         let existingFiles = try await ftpService.listFiles(in: remoteDirectory)
         logger.info("FTP'de \(existingFiles.count) mevcut dosya bulundu")
         
-        // Yerel fotoğraflardan dosya bilgilerini topla
-        var localPhotos: [(asset: PHAsset, fileName: String, estimatedSize: Int64)] = []
+        // Yerel medya dosyalarından bilgileri topla
+        var localMedia: [(asset: PHAsset, fileName: String, estimatedSize: Int64)] = []
         
         for asset in assets {
-            let fileName = "\(asset.localIdentifier.replacingOccurrences(of: "/", with: "_")).jpg"
-            // Tahmini dosya boyutu (gerçek boyut upload sırasında hesaplanacak)
-            let estimatedSize = Int64(asset.pixelWidth * asset.pixelHeight * 3 / 2) // Ortalama JPEG sıkıştırma oranı
-            localPhotos.append((asset: asset, fileName: fileName, estimatedSize: estimatedSize))
+            let fileName = getFileName(for: asset)
+            let estimatedSize = getEstimatedFileSize(for: asset)
+            localMedia.append((asset: asset, fileName: fileName, estimatedSize: estimatedSize))
         }
         
         // Senkronizasyon: FTP'de olup yerel galeriden silinen dosyaları bul ve sil
-        let localFileNames = Set(localPhotos.map { $0.fileName })
+        let localFileNames = Set(localMedia.map { $0.fileName })
         let filesToDelete = existingFiles.filter { !localFileNames.contains($0.name) }
         
         logger.info("\(filesToDelete.count) dosya FTP'den silinecek")
@@ -492,25 +509,26 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         }
         
         // Upload edilecek dosyaları belirle (yeni veya değişmiş olanlar)
-        var photosToUpload: [(asset: PHAsset, fileName: String)] = []
+        var mediaToUpload: [(asset: PHAsset, fileName: String)] = []
         
-        for localPhoto in localPhotos {
+        for localMediaItem in localMedia {
             // Aynı isim ve boyutta dosya var mı kontrol et
-            let existingFile = existingFiles.first { $0.name == localPhoto.fileName }
+            let existingFile = existingFiles.first { $0.name == localMediaItem.fileName }
             
             if existingFile != nil {
                 // Boyut kontrolü (tam boyut upload sırasında kontrol edilecek)
-                logger.info("Dosya zaten var, boyut kontrolü yapılacak: \(localPhoto.fileName)")
+                logger.info("Dosya zaten var, boyut kontrolü yapılacak: \(localMediaItem.fileName)")
                 // Şu an için tüm dosyaları yükle listesine ekle, boyut kontrolü upload sırasında yapılacak
-                photosToUpload.append((asset: localPhoto.asset, fileName: localPhoto.fileName))
+                mediaToUpload.append((asset: localMediaItem.asset, fileName: localMediaItem.fileName))
             } else {
                 // Yeni dosya
-                logger.info("Yeni dosya: \(localPhoto.fileName)")
-                photosToUpload.append((asset: localPhoto.asset, fileName: localPhoto.fileName))
+                logger.info("Yeni dosya: \(localMediaItem.fileName)")
+                mediaToUpload.append((asset: localMediaItem.asset, fileName: localMediaItem.fileName))
             }
         }
         
-        logger.info("\(photosToUpload.count) fotoğraf işlenecek")
+        logger.info("\(mediaToUpload.count) medya dosyası işlenecek")
+        print("📷 BackupFlow: \(mediaToUpload.count) medya dosyası işlenecek")
         
         task.backupStatus = .uploading
         try context.save()
@@ -529,47 +547,94 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         var totalBytes: Int64 = 0
         
         // Upload each photo
-        for (index, photoInfo) in photosToUpload.enumerated() {
+        for (index, mediaInfo) in mediaToUpload.enumerated() {
             guard task.backupStatus != .cancelled else { break }
             
-            let asset = photoInfo.asset
-            let fileName = photoInfo.fileName
+            let asset = mediaInfo.asset
+            let fileName = mediaInfo.fileName
             let localURL = tempDir.appendingPathComponent(fileName)
             let remotePath = "\(remoteDirectory)/\(fileName)"
             
             // Update progress
-            let progress = Double(index) / Double(photosToUpload.count)
+            let progress = Double(index) / Double(mediaToUpload.count)
             await MainActor.run {
                 task.progress = progress
                 task.currentFile = fileName
                 try? context.save()
             }
             
-            // Request image data
-            let imageData = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Data, Error>) in
-                let options = PHImageRequestOptions()
-                options.isSynchronous = false
-                options.isNetworkAccessAllowed = true
-                options.deliveryMode = .highQualityFormat
-                
-                PHImageManager.default().requestImageDataAndOrientation(for: asset, options: options) { data, _, _, _ in
-                    guard let imageData = data else {
-                        continuation.resume(throwing: NSError(domain: "PhotoLibraryError", code: -1, 
-                                          userInfo: [NSLocalizedDescriptionKey: "Fotoğraf verisi alınamadı: \(fileName)"]))
-                        return
+            // Request media data based on asset type
+            let mediaData: Data
+            
+            if asset.mediaType == .image {
+                mediaData = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Data, Error>) in
+                    let options = PHImageRequestOptions()
+                    options.isSynchronous = false
+                    options.isNetworkAccessAllowed = true
+                    options.deliveryMode = .highQualityFormat
+                    
+                    PHImageManager.default().requestImageDataAndOrientation(for: asset, options: options) { data, _, _, _ in
+                        guard let imageData = data else {
+                            continuation.resume(throwing: NSError(domain: "PhotoLibraryError", code: -1, 
+                                              userInfo: [NSLocalizedDescriptionKey: "Fotoğraf verisi alınamadı: \(fileName)"]))
+                            return
+                        }
+                        continuation.resume(returning: imageData)
                     }
-                    continuation.resume(returning: imageData)
                 }
+            } else if asset.mediaType == .video {
+                mediaData = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Data, Error>) in
+                    let options = PHVideoRequestOptions()
+                    options.isNetworkAccessAllowed = true
+                    options.deliveryMode = .highQualityFormat
+                    
+                    PHImageManager.default().requestExportSession(forVideo: asset, options: options, exportPreset: AVAssetExportPreset1280x720) { exportSession, _ in
+                        guard let session = exportSession else {
+                            continuation.resume(throwing: NSError(domain: "VideoExportError", code: -1,
+                                              userInfo: [NSLocalizedDescriptionKey: "Video export session oluşturulamadı: \(fileName)"]))
+                            return
+                        }
+                        
+                        let tempVideoURL = tempDir.appendingPathComponent("temp_video_\(UUID().uuidString).mp4")
+                        session.outputURL = tempVideoURL
+                        session.outputFileType = .mp4
+                        
+                        session.exportAsynchronously {
+                            switch session.status {
+                            case .completed:
+                                do {
+                                    let videoData = try Data(contentsOf: tempVideoURL)
+                                    try? FileManager.default.removeItem(at: tempVideoURL)
+                                    continuation.resume(returning: videoData)
+                                } catch {
+                                    continuation.resume(throwing: error)
+                                }
+                            case .failed:
+                                let error = session.error ?? NSError(domain: "VideoExportError", code: -2,
+                                                    userInfo: [NSLocalizedDescriptionKey: "Video export başarısız: \(fileName)"])
+                                continuation.resume(throwing: error)
+                            default:
+                                continuation.resume(throwing: NSError(domain: "VideoExportError", code: -3,
+                                                  userInfo: [NSLocalizedDescriptionKey: "Video export tamamlanamadı: \(fileName)"]))
+                            }
+                        }
+                    }
+                }
+            } else {
+                throw NSError(domain: "MediaTypeError", code: -1,
+                            userInfo: [NSLocalizedDescriptionKey: "Desteklenmeyen medya türü: \(fileName)"])
             }
             
             // Save to temp file
-            try imageData.write(to: localURL)
-            let actualSize = Int64(imageData.count)
+            try mediaData.write(to: localURL)
+            let actualSize = Int64(mediaData.count)
             
             // Boyut kontrolü yap - aynı boyutta dosya var mı?
             if let existingFile = existingFiles.first(where: { $0.name == fileName }) {
                 if existingFile.size == actualSize {
+                    let mediaType = asset.mediaType == .image ? "fotoğraf" : "video"
                     logger.info("Dosya atlanıyor (aynı boyut): \(fileName) (\(actualSize) bytes)")
+                    print("📷 BackupFlow: \(mediaType.capitalized) atlanıyor: \(fileName)")
                     try? fileManager.removeItem(at: localURL)
                     skippedCount += 1
                     continue
@@ -579,11 +644,15 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             // Upload to FTP
             do {
                 try await ftpService.uploadFile(localURL: localURL, remotePath: remotePath)
-                logger.info("Fotoğraf yüklendi: \(fileName) (\(actualSize) bytes)")
+                let mediaType = asset.mediaType == .image ? "fotoğraf" : "video"
+                logger.info("\(mediaType.capitalized) yüklendi: \(fileName) (\(actualSize) bytes)")
+                print("📷 BackupFlow: \(mediaType.capitalized) yüklendi: \(fileName)")
                 uploadedCount += 1
                 totalBytes += actualSize
             } catch {
-                logger.error("Fotoğraf yüklenemedi: \(fileName) - \(error.localizedDescription)")
+                let mediaType = asset.mediaType == .image ? "fotoğraf" : "video"
+                logger.error("\(mediaType.capitalized) yüklenemedi: \(fileName) - \(error.localizedDescription)")
+                print("❌ BackupFlow: \(mediaType.capitalized) yüklenemedi: \(fileName)")
                 throw error
             }
             
@@ -603,7 +672,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             timestamp: Date(),
             status: "completed", 
             filesProcessed: uploadedCount,
-            totalFiles: localPhotos.count,
+            totalFiles: localMedia.count,
             bytesTransferred: totalBytes,
             totalBytes: totalBytes,
             duration: duration,
@@ -612,9 +681,11 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         context.insert(history)
         try context.save()
         
-        logger.info("Fotoğraf yedekleme tamamlandı: \(uploadedCount) yüklendi, \(skippedCount) atlandı, \(filesToDelete.count) silindi")
-        await sendNotification(title: "Fotoğraf Yedekleme Tamamlandı", 
-                             body: "\(uploadedCount) fotoğraf yüklendi, \(skippedCount) atlandı")
+        logger.info("Medya yedekleme tamamlandı: \(uploadedCount) yüklendi, \(skippedCount) atlandı, \(filesToDelete.count) silindi")
+        let mediaDisplayName = task.safeMediaType.displayName
+        await sendNotification(title: "\(mediaDisplayName) Yedekleme Tamamlandı", 
+                             body: "\(uploadedCount) dosya yüklendi, \(skippedCount) atlandı")
+        print("✅ BackupFlow: Medya yedekleme tamamlandı: \(uploadedCount) yüklendi, \(skippedCount) atlandı")
     }
     
     // MARK: - Synchronized Directory Backup
@@ -966,30 +1037,100 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         try context.save()
     }
     
-    func testFTPUpload() async throws {
+    func testFTPUpload(host: String = "192.168.1.1", port: Int = 21, username: String = "anonymous", password: String = "") async throws {
         guard !isProcessing else { throw BackupError.alreadyInProgress }
         isProcessing = true
         defer { isProcessing = false }
-        logger.info("FTP test yüklemesi başlatılıyor...")
+        
+        logger.info("FTP test yüklemesi başlatılıyor... Host: \(host), Port: \(port)")
+        print("FTP test yüklemesi başlatılıyor... Host: \(host), Port: \(port)")
+        
         let tempDir = FileManager.default.temporaryDirectory
         let testFileName = "test_backup_\(UUID().uuidString.prefix(8)).txt"
         let testFileURL = tempDir.appendingPathComponent(testFileName)
+        
         do {
             let dummyData = Data(repeating: 0x41, count: 200 * 1024)
             try dummyData.write(to: testFileURL)
-            try await ftpService.connect(host: defaultFTPHost, port: 21, username: "anonymous", password: "")
+            
+            try await ftpService.connect(host: host, port: port, username: username, password: password)
             try? await ftpService.createDirectory(at: "test_uploads")
+            
             let remotePath = "test_uploads/\(testFileName)"
             try await ftpService.uploadFile(localURL: testFileURL, remotePath: remotePath) { progress in
                 self.logger.info("Test yükleme ilerlemesi: \(Int(progress * 100))%")
+                print("Test yükleme ilerlemesi: \(Int(progress * 100))%")
             }
+            
             try FileManager.default.removeItem(at: testFileURL)
             logger.info("FTP test yüklemesi başarılı")
+            print("FTP test yüklemesi başarılı")
             await sendNotification(title: "FTP Testi Başarılı", body: "Test dosyası başarıyla yüklendi!")
         } catch {
             logger.error("FTP test hatası: \(error.localizedDescription)")
+            print("FTP test hatası: \(error.localizedDescription)")
             await sendNotification(title: "FTP Testi Başarısız", body: "Hata: \(error.localizedDescription)")
             throw error
+        }
+    }
+    
+    // MARK: - Helper Methods for Media Processing
+    
+    private func getFileName(for asset: PHAsset) -> String {
+        let baseFileName = asset.localIdentifier.replacingOccurrences(of: "/", with: "_")
+        
+        switch asset.mediaType {
+        case .image:
+            // Detect image format
+            if let resources = PHAssetResource.assetResources(for: asset).first {
+                let originalFilename = resources.originalFilename
+                let fileExtension = (originalFilename as NSString).pathExtension.lowercased()
+                
+                // Common image formats
+                if ["heic", "heif", "jpg", "jpeg", "png", "gif", "tiff", "bmp"].contains(fileExtension) {
+                    return "\(baseFileName).\(fileExtension)"
+                }
+            }
+            return "\(baseFileName).jpg" // Default fallback
+            
+        case .video:
+            // Detect video format
+            if let resources = PHAssetResource.assetResources(for: asset).first {
+                let originalFilename = resources.originalFilename
+                let fileExtension = (originalFilename as NSString).pathExtension.lowercased()
+                
+                // Common video formats
+                if ["mov", "mp4", "m4v", "avi", "mkv", "hevc"].contains(fileExtension) {
+                    return "\(baseFileName).\(fileExtension)"
+                }
+            }
+            return "\(baseFileName).mov" // Default fallback
+            
+        default:
+            return "\(baseFileName).unknown"
+        }
+    }
+    
+    private func getEstimatedFileSize(for asset: PHAsset) -> Int64 {
+        switch asset.mediaType {
+        case .image:
+            // Estimate image file size based on dimensions and compression
+            let pixelCount = Int64(asset.pixelWidth * asset.pixelHeight)
+            return pixelCount * 3 / 2 // Average JPEG compression ratio
+            
+        case .video:
+            // Estimate video file size (this is much more complex)
+            // Using duration and estimated bitrate
+            let duration = asset.duration
+            let estimatedBitrate: Int64 = 5_000_000 // 5 Mbps average for mobile videos
+            let estimatedSize = Int64(duration * Double(estimatedBitrate) / 8) // Convert bits to bytes
+            
+            // Apply some reasonable limits for video files
+            let maxVideoSize: Int64 = 500_000_000 // 500 MB max per video
+            return min(estimatedSize, maxVideoSize)
+            
+        default:
+            return 1_000_000 // 1MB fallback
         }
     }
 }

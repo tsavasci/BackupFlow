@@ -5,45 +5,47 @@ struct AboutView: View {
     let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
     
     var body: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "externaldrive.fill")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 100, height: 100)
-                .foregroundColor(.blue)
-                .padding(.top, 40)
-            
-            Text("BackupFlow")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-            
-            Text("Sürüm \(appVersion) (Yapı \(buildNumber))")
-                .foregroundColor(.secondary)
-                .font(.subheadline)
-            
-            VStack(alignment: .leading, spacing: 16) {
-                InfoRow(icon: "info.circle", title: "Hakkında", description: "BackupFlow, önemli dosyalarınızı esnek zamanlama seçenekleriyle FTP sunucularına kolayca yedeklemenize yardımcı olur.")
+        ScrollView {
+            VStack(spacing: 20) {
+                Image(systemName: "externaldrive.fill")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 100, height: 100)
+                    .foregroundColor(.blue)
+                    .padding(.top, 40)
                 
-                InfoRow(icon: "doc.text", title: "Lisans", description: "Bu uygulama MIT Lisansı altında sağlanmaktadır.")
+                Text("BackupFlow")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
                 
-                InfoRow(icon: "envelope", title: "İletişim", description: "destek@example.com")
+                Text("Sürüm \(appVersion) (Yapı \(buildNumber))")
+                    .foregroundColor(.secondary)
+                    .font(.subheadline)
+                
+                VStack(alignment: .leading, spacing: 16) {
+                    InfoRow(icon: "info.circle", title: "Hakkında", description: "BackupFlow, önemli dosyalarınızı esnek zamanlama seçenekleriyle FTP sunucularına kolayca yedeklemenize yardımcı olur.")
+                    
+                    InfoRow(icon: "doc.text", title: "Lisans", description: "Bu uygulama MIT Lisansı altında sağlanmaktadır.")
+                    
+                    InfoRow(icon: "envelope", title: "İletişim", description: "destek@example.com")
+                }
+                .padding()
+                
+                Spacer(minLength: 60) // Tab bar için minimum boşluk
+                
+                VStack(spacing: 8) {
+                    Text("© \(Calendar.current.component(.year, from: Date())) BackupFlow")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    Text("Tüm hakları saklıdır")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.bottom, 40) // Tab bar için extra padding
             }
             .padding()
-            
-            Spacer()
-            
-            VStack(spacing: 8) {
-                Text("© \(Calendar.current.component(.year, from: Date())) BackupFlow")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                Text("Tüm hakları saklıdır")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-            }
-            .padding(.bottom, 20)
         }
-        .padding()
         .navigationTitle("Hakkında")
     }
 }

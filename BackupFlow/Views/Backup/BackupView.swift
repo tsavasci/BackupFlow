@@ -123,6 +123,7 @@ struct BackupView: View {
     
     @State private var selectedURL: URL?
     @State private var isPhotoLibrarySelected = false
+    @State private var selectedMediaType: MediaType = .photosOnly // Yeni eklenen
     @State private var ftpHost = Self.defaultFTPHost
     @State private var ftpPort = "21"
     @State private var ftpUsername = ""
@@ -160,6 +161,34 @@ struct BackupView: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(PlainButtonStyle())
+                    
+                    // Media Type Selection (only when photo library is selected)
+                    if isPhotoLibrarySelected {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Medya Türü Seçimi")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            
+                            ForEach(MediaType.allCases) { mediaType in
+                                Button(action: {
+                                    selectedMediaType = mediaType
+                                }) {
+                                    HStack {
+                                        Image(systemName: selectedMediaType == mediaType ? "checkmark.circle.fill" : "circle")
+                                            .foregroundColor(selectedMediaType == mediaType ? .blue : .gray)
+                                        Image(systemName: mediaType.systemImageName)
+                                            .foregroundColor(.blue)
+                                        Text(mediaType.displayName)
+                                        Spacer()
+                                    }
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                        }
+                        .padding(.leading, 24)
+                        .padding(.top, 8)
+                    }
                     
                     // Or Divider
                     HStack {
@@ -419,7 +448,7 @@ struct BackupView: View {
         
         // Determine source path and display name based on selection
         let sourcePath = isPhotoLibrarySelected ? "PHOTOS_LIBRARY" : (selectedURL?.path ?? "")
-        let displayName = isPhotoLibrarySelected ? "Fotoğraf Galerisi" : (selectedURL?.lastPathComponent ?? "")
+        let displayName = isPhotoLibrarySelected ? selectedMediaType.displayName : (selectedURL?.lastPathComponent ?? "")
         
         let task = BackupTask(
             sourcePath: sourcePath,
@@ -430,7 +459,8 @@ struct BackupView: View {
             isAnonymous: isAnonymous,
             displayName: displayName,
             isEnabled: true,
-            frequency: frequency
+            frequency: frequency,
+            mediaType: isPhotoLibrarySelected ? selectedMediaType : .photosOnly // Foto kütüphanesi seçilmişse kullanıcının tercihini, değilse varsayılan değeri kullan
         )
         
         modelContext.insert(task)

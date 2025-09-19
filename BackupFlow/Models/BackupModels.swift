@@ -36,6 +36,38 @@ enum BackupStatus: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+enum MediaType: String, Codable, CaseIterable, Identifiable {
+    case photosOnly = "photos"
+    case videosOnly = "videos" 
+    case photosAndVideos = "both"
+    
+    var id: String { self.rawValue }
+    
+    var displayName: String {
+        switch self {
+        case .photosOnly: return "Sadece Fotoğraflar"
+        case .videosOnly: return "Sadece Videolar"
+        case .photosAndVideos: return "Fotoğraflar ve Videolar"
+        }
+    }
+    
+    var includesPhotos: Bool {
+        self == .photosOnly || self == .photosAndVideos
+    }
+    
+    var includesVideos: Bool {
+        self == .videosOnly || self == .photosAndVideos
+    }
+    
+    var systemImageName: String {
+        switch self {
+        case .photosOnly: return "photo"
+        case .videosOnly: return "video"
+        case .photosAndVideos: return "photo.stack"
+        }
+    }
+}
+
 nonisolated struct ScheduleTime: Codable, Equatable, Sendable {
     var hour: Int
     var minute: Int
@@ -139,6 +171,12 @@ final class BackupTask: Identifiable, Hashable {
     var frequency: BackupFrequency
     var createdAt: Date
     var lastBackupDate: Date?
+    var mediaType: MediaType? // Migration için optional yapıldı
+    
+    // Computed property for safe access with default value
+    var safeMediaType: MediaType {
+        return mediaType ?? .photosOnly
+    }
     
     // Yeni eklenen özellikler
     var backupStatus: BackupStatus
@@ -160,6 +198,7 @@ final class BackupTask: Identifiable, Hashable {
         displayName: String,
         isEnabled: Bool = true,
         frequency: BackupFrequency = .manual,
+        mediaType: MediaType = .photosOnly, // Varsayılan olarak sadece fotoğraflar
         lastBackupDate: Date? = nil,
         nextRunTime: Date? = nil,
         id: UUID = UUID()
@@ -174,6 +213,7 @@ final class BackupTask: Identifiable, Hashable {
         self.displayName = displayName
         self.isEnabled = isEnabled
         self.frequency = frequency
+        self.mediaType = mediaType
         self.createdAt = Date()
         self.lastBackupDate = lastBackupDate
         self.nextRunTime = nextRunTime
