@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+	<key>UILaunchScreen</key>
+	<dict/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Yedekleme işlemi için fotoğraflarınıza erişmek istiyoruz</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Yedekleme işlemi için fotoğraflarınızı kaydetmek istiyoruz</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>processing</string>
+		<string>remote-notification</string>
+	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>tsavasci.Yedekle2.refresh</string>
+		<string>tsavasci.Yedekle2.processing</string>
+	</array>
+	<key>NSFullDiskAccessUsageDescription</key>
+	<string>Dosyalarınıza erişebilmek ve yedekleme yapabilmek için tam disk erişimi gereklidir.</string>
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>Dosya yedekleme işlemleri için dosya erişimine ihtiyaç duyulmaktadır.</string>
+	<key>NSDownloadsFolderUsageDescription</key>
+	<string>Yedeklenmiş dosyalara erişmek için indirilenler klasörüne erişim gereklidir.</string>
+	<key>NSDesktopFolderUsageDescription</key>
+	<string>Yedekleme işlemleri için masaüstü klasörüne erişim gereklidir.</string>
+	<key>NSSystemAdministrationUsageDescription</key>
+	<string>Yedekleme işlemi için sistem dosyalarına erişim gereklidir.</string>
+	<key>NSDocumentsUsageDescription</key>
+	<string>Dosyalarınızı yedeklemek için erişim izni gerekiyor.</string>
+	<key>NSFileProviderDomainUsageDescription</key>
+	<string>Yedekleme için dosya sisteminize erişim izni gerekiyor.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Fotoğraflarınızı yedeklemek için erişim izni gerekiyor.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Yedeklenen fotoğraflarınızı geri yüklemek için erişim izni gerekiyor.</string>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>FTP sunucuya bağlanabilmek ve yedekleme işlemlerini gerçekleştirebilmek için yerel ağ erişimi gereklidir.</string>
+	<key>NSNetworkUsageDescription</key>
+	<string>Yedekleme işlemleri için ağ erişimi gereklidir.</string>
+	<key>NSFileProtectionKey</key>
+	<string>NSFileProtectionCompleteUntilFirstUserAuthentication</string>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+</dict>
+</plist>

@@ -1,0 +1,184 @@
+# Yol Haritası (Roadmap) - Android Yedekleme Uygulaması
+
+Bu doküman, Material Design uyumlu, Bottom Menü yapısına sahip ve aşağıdaki ana işlevleri barındıracak Android yedekleme uygulamasının geliştirilme sürecini özetlemektedir:
+
+- **Yedekleme Bölümü:** Seçilen yerel klasör içindeki tüm dosyaları (nested yapı desteği olmayacak, sadece seçili klasör içindeki dosyalar) belirlenen FTP hedefine, seçilen periyotlarda (manuel, saatlik veya haftalık programlama ile), alarm manager kullanarak tam saat ve dakikasında, dosya isimlerinde Türkçe karakterleri de işleyebilecek fonksiyonelitede (ve FTP hedefete klasör oluşturmadan, sadece içeriğini kopyalar),kopyalama.
+- **Görevler Bölümü:** Oluşturulan yedekleme görevlerinin kart şeklinde listelenmesi; her kartta anında tetikleme (Play ikonu) ve görev silme (çöp kutusu ikonu) seçenekleri.
+- **Geçmiş Bölümü:** Her yedekleme işlemi sonrası otomatik oluşturulan kartlarda yedeklemeye ait temel bilgilerin (Kaynak klasör, dosya sayısı, dosya boyutu, son çalışma saati, bir sonraki planlı çalışma saati) gösterilmesi. Kart üzerinde;
+  - **Geri Yükle:** Yedeklemenin tam ters işlemini başlatır (örneğin, A’dan B’ye yedekleme ise, B’den A’ya geri yükleme yapar. Klasör oluşturmaz sadece içeriğini kopyalar, kopyalama sırasında aynı ad ve boyuttaki dosyaların kontrolünü yapar, bu durumdaki dosyaları pas geçer).
+  - **Sil:** Geçmiş kartını siler.
+  - **FAB (Floating Action Button):** Geçmiş bölümünün altında, tüm geçmiş kartlarını konfirmasyon alarak toplu olarak silmeye yarayacak çöp kutusu ikonlu buton.
+- **Ayarlar & Hakkında:** Şimdilik boş fragmentler olarak eklenecek.
+
+---
+
+## 1. Proje Genel Bakış
+
+- **Amaç:** Kullanıcının belirlediği yerel klasörü, seçilen FTP hedefe ve zamanlamalara göre yedekleyebilen bir uygulama geliştirmek.
+- **Hedef Kitle:** Yedekleme işlemlerini otomatik veya elle yönetmek isteyen kullanıcılar.
+- **Ana Bileşenler:**
+  - Yedekleme oluşturma
+  - Görev yönetimi (anında tetikleme ve silme)
+  - Geçmiş kaydı (yedekleme işlemleriyle ilgili detaylar)
+  - Geri yükleme, paylaşım ve geçmiş silme fonksiyonları
+
+---
+
+## 2. Teknik Mimari ve Teknolojiler
+
+- **Dil & Platform:** Kotlin (veya Java) / Android. KAPT yerine KSP kullanılacak. 
+- **IDE:** Android Studio
+- **Tasarım Kütüphaneleri:** Material Components, bottom Navigation 
+- **Mimari Desen:** MVVM veya MVP (proje gereksinimlerine göre)
+- **Veri Saklama:** Room/SQLite (görev ve geçmiş kayıtları için)
+- **Ağ & Dosya İşlemleri:** FTP entegrasyonu için uygun kütüphaneler. Anonim bağlantı swtich i ve Bağlantı Test Fonksiyonu
+- **Diğer:** Github Copilot entegrasyonu ile kod üretimi ve öneri desteği
+
+---
+
+## 3. UI/UX Tasarım
+
+### 3.1 Genel Yapı
+
+- **Material Design:** Modern, kullanıcı dostu arayüz.
+- **Bottom Menü:** Aşağıdaki fragmentlere yönlendirecek:
+  - **Yedekleme**
+  - **Görevler**
+  - **Geçmiş**
+  - **Ayarlar** (şimdilik boş)
+  - **Hakkında** (şimdilik boş)
+
+### 3.2 Yedekleme Bölümü
+
+- **Klasör Seçimi:**
+  - Yerel dosya sisteminden klasör seçimi.
+- **Hedef Seçimi:**
+  - FTP klasör adresi (örn (192.168.2.171), port (default 21) ve Kullanıcı Adı ve Şifre alanları, Anonim switch i (Default olarak pasif, aktif olur ise Kullanıcı adı ve şifre giriş alanları gizlenecek)
+- **Zamanlama:**
+  - **Manuel:** Tek seferlik.
+  - **Saatlik:** Belirlenen saat ve dakikada otomatik. AlarmManager ile tam vaktinde başlamalı.
+  - **Haftalık:** Belirlenen gün ve saatlerde otomatik.
+- **Görev Oluşturma:**
+  - Kullanıcının yaptığı seçimlere göre yeni bir yedekleme görevi oluşturma.
+
+### 3.3 Görevler Bölümü
+
+- **Görev Kartı:**
+  - Her kartta:
+    - **Play Butonu:** Görevi anında tetikler.
+    - **Sil Butonu:** Görev kartını siler (mevcut yedek dosyalarına dokunmaz).
+
+### 3.4 Geçmiş Bölümü
+
+- **Geçmiş Kartları:**
+  - Her yedekleme işlemi sonrasında otomatik oluşturulacak.
+  - Kart üzerindeki bilgiler:
+    - Kaynak klasör
+    - Dosya sayısı
+    - Dosya boyutu
+    - Son çalışma saati
+    - Bir sonraki planlı çalışma saati
+- **Kart İkonları:**
+  - **Geri Yükle:** Ters yönde kopyalama işlemi başlatır.
+  - **Sil:** Tek bir geçmiş kaydını siler.
+- **FAB:**
+  - Ekranın alt kısmında çöp kutusu ikonlu buton.
+  - Kullanıcı onayı ile tüm geçmiş kartlarını toplu olarak siler.
+
+---
+
+## 4. Geliştirme Aşamaları ve Görevler
+
+### Aşama 1: Proje Kurulumu ve Temel Yapı
+- [ ] **Depo ve Araçlar:**
+  - Github deposunun oluşturulması.
+  - Android Studio projesinin başlatılması.
+  - Github Copilot entegrasyonunun yapılandırılması.
+- [ ] **Temel UI:**
+  - Material Design uyumlu genel tema ve stilin belirlenmesi.
+  - Bottom Menü ve temel fragmentlerin (Yedekleme, Görevler, Geçmiş, Ayarlar, Hakkında) oluşturulması.
+
+### Aşama 2: Yedekleme Bölümü Geliştirme
+- [ ] **Klasör Seçimi:**
+  - Dosya gezgini arayüzünün eklenmesi (nested yapıda klasör desteği).
+- [ ] **Hedef Seçimi:**
+  - FTP bağlantı girişleri UI’da sunulması.
+- [ ] **Zamanlama Seçenekleri:**
+  - Manuel, saatlik ve haftalık seçeneklerin eklenmesi.
+- [ ] **Görev Oluşturma:**
+  - Kullanıcı seçimlerine göre yedekleme görevinin veri modeline kaydedilmesi.
+
+### Aşama 3: Görevler Bölümü Geliştirme
+- [ ] **Görev Kartı Tasarımı:**
+  - Kart layout’larının oluşturulması.
+- [ ] **İşlevsellik:**
+  - Play butonunun, görevi anında tetiklemesi.
+  - Sil butonunun, görevi listeden kaldırması.
+- [ ] **Veri Entegrasyonu:**
+  - Oluşturulan görevlerin merkezi veri modeline bağlanması.
+
+### Aşama 4: Geçmiş Bölümü Geliştirme
+- [ ] **Geçmiş Kartları Tasarımı:**
+  - Kart layout’larının ve içerik alanlarının oluşturulması.
+- [ ] **Otomatik Kayıt:**
+  - Her yedekleme işleminden sonra geçmiş kartı oluşturma.
+- [ ] **Bilgi Güncelleme:**
+  - Kaynak klasör, dosya sayısı, dosya boyutu, son ve bir sonraki çalışma saatlerinin gösterimi.
+- [ ] **İkon İşlevleri:**
+  - **Geri Yükle:** Ters yedekleme işlemi (restore) uygulanması.
+  - **Sil:** Bireysel geçmiş kartının silinmesi.
+ - [ ] **FAB İşlevi:**
+  - Tüm geçmiş kartlarının, kullanıcı konfirmasyonu sonrası toplu olarak silinmesi.
+
+### Aşama 5: Yedekleme ve Geri Yükleme Mantığının Oluşturulması
+- [ ] **Yedekleme İşlemleri:**
+  - Seçilen FTP hedefi yedekleme fonksiyonunun uygulanması.
+  - Dosya sayımı, boyut hesaplaması ve diğer metriklerin alınması.
+- [ ] **Zamanlama Mekanizması:**
+  - Manuel, saatlik ve haftalık yedekleme işlemleri için Alarm manager planlama sistemi kurulması.
+- [ ] **Geri Yükleme (Restore):**
+  - Yedeklemenin tersine çevrilerek, yedek dosyaların geri getirilmesi.
+- [ ] **Hata Yönetimi:**
+  - Ağ, dosya erişimi ve izin sorunları için gerekli kontrollerin eklenmesi.
+
+### Aşama 6: Test, Optimizasyon ve Yayınlama
+- [ ] **Test Süreci:**
+  - Birim testleri ve entegrasyon testlerinin yazılması.
+  - UI/UX testleri ile kullanıcı akışlarının doğrulanması.
+- [ ] **Optimizasyon:**
+  - Performans iyileştirmeleri ve hata düzeltmelerinin yapılması.
+- [ ] **Dokümantasyon:**
+  - README.md, kod açıklamaları ve kullanım kılavuzlarının tamamlanması.
+- [ ] **Yayınlama:**
+  - Beta sürüm yayını ve kullanıcı geri bildirimlerinin toplanması.
+  - Nihai sürümün yayınlanması.
+
+---
+
+## 5. Ek Hususlar ve Gelecek Planları
+
+- **Güvenlik:** 
+  - Dosya ve ağ erişim izinlerinin doğru şekilde yönetilmesi.
+- **Performans:** 
+  - Büyük dosya transferlerinde performans optimizasyonlarının yapılması.
+- **Genişletilebilirlik:**
+  - Gelecekte gelişmiş zamanlama seçenekleri, ek yedekleme protokolleri veya bulut entegrasyonu gibi özelliklerin eklenmesi.
+- **Github Copilot Kullanımı:**
+  - Kod üretiminde Copilot’un önerilerinin dikkatlice incelenmesi ve proje standartlarına uygun hale getirilmesi.
+
+---
+
+## 6. Örnek Zaman Çizelgesi
+
+  - Proje kurulumu, temel UI oluşturulması, Bottom Menü entegrasyonu.
+  - Yedekleme bölümünün UI ve klasör/hedef/zamanlama seçimlerinin tamamlanması.
+  - Görevler bölümünün tasarım ve anında tetikleme (Play) işlevselliğinin eklenmesi.
+  - Geçmiş bölümünün ve ikon fonksiyonlarının (Geri Yükle, Sil, Paylaş) entegrasyonu.
+  - Yedekleme ve geri yükleme mantığının, hata yönetimi ve izin kontrollerinin uygulanması.
+  - Testler, dokümantasyonun güncellenmesi ve beta sürüm yayını.
+  - Nihai düzenlemeler, performans iyileştirmeleri ve final sürümün yayınlanması.
+
+---
+
+Bu yol haritası, projenin ana bileşenlerini ve geliştirme adımlarını sistematik olarak ele almayı amaçlamaktadır. Geliştirme süreci ilerledikçe dokümantasyonun güncellenmesi, testlerin genişletilmesi ve kullanıcı geri bildirimlerinin değerlendirilmesi önemlidir.
+
