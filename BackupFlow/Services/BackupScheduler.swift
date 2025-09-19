@@ -3,6 +3,7 @@ import BackgroundTasks
 import OSLog
 import SwiftUI
 import SwiftData
+import Combine
 import UserNotifications
 import UniformTypeIdentifiers
 import Photos
@@ -16,7 +17,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     // Shared ModelContainer - uygulamadan inject edilecek
     static var sharedModelContainer: ModelContainer?
     
-    private let logger = Logger(subsystem: "com.yedekle2.app", category: "BackupScheduler")
+    private let logger = Logger(subsystem: "com.backupflow.app", category: "BackupScheduler")
     private let appGroupID: String
     private let backgroundSessionIdentifier: String
     
@@ -25,7 +26,6 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         let config = URLSessionConfiguration.background(withIdentifier: backgroundSessionIdentifier)
         config.sessionSendsLaunchEvents = true
         config.isDiscretionary = false
-        config.shouldUseExtendedBackgroundIdleMode = true
         let queue = OperationQueue()
         queue.maxConcurrentOperationCount = 1
         return URLSession(configuration: config, delegate: self, delegateQueue: queue)
@@ -60,7 +60,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     private let fileManager = FileManager.default
     
     // Computed identifiers (fallbacks if bundle id missing)
-    private var bundleID: String { Bundle.main.bundleIdentifier ?? "com.yedekle2.app" }
+    private var bundleID: String { Bundle.main.bundleIdentifier ?? "com.backupflow.app" }
     private var taskIdentifierRefresh: String { TaskIdentifiers.refresh(bundleID) }
     private var taskIdentifierProcessing: String { TaskIdentifiers.processing(bundleID) }
     
@@ -70,9 +70,9 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     // MARK: - Init / Deinit
     private override init() {
         // safe appGroup and background identifier
-        let b = Bundle.main.bundleIdentifier ?? "com.yedekle2.app"
+        let b = Bundle.main.bundleIdentifier ?? "com.BackupFlow.app"
         // App Group ID'sini entitlements dosyasındaki ile eşleştir
-        self.appGroupID = "group.tsavasci.Yedekle2"
+        self.appGroupID = "group.tsavasci.BackupFlow"
         self.backgroundSessionIdentifier = b + ".background"
         super.init()
         setupNotifications()
@@ -110,8 +110,10 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         
         if refreshSuccess && processingSuccess {
             hasRegisteredBackgroundTasks = true
+            print("✅ BackupFlow: Background görevler başarıyla kaydedildi")
             logger.info("Görevler başarıyla kaydedildi")
         } else {
+            print("❌ BackupFlow: Background görev kayıtları başarısız - refresh: \(refreshSuccess), processing: \(processingSuccess)")
             logger.error("Görev kayıtları başarısız")
         }
     }
@@ -144,6 +146,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     
     // Schedule a specific BackupTask using a Timer (for in-app scheduling)
     func scheduleBackup(task: BackupTask) async throws {
+        print("🚀 BackupFlow: scheduleBackup başlatıldı - Görev: \(task.displayName)")
         task.isEnabled = true
         updateNextRunTime(for: task)
         
@@ -152,15 +155,18 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         scheduledTimers[task.id] = nil
         
         guard let nextRun = task.nextRunTime else {
+            print("📝 BackupFlow: Manuel görev kaydedildi - \(task.displayName)")
             logger.info("Manuel görev kaydedildi: \(task.displayName)")
             return
         }
         
         let taskId = task.id
         let displayName = task.displayName
+        print("⏰ BackupFlow: Zamanlayıcı kurulacak - Görev: \(displayName), Sonraki çalışma: \(nextRun)")
         
         let timer = Timer(fire: nextRun, interval: 0, repeats: false) { [weak self] _ in
             guard let self = self else { return }
+            print("🎬 BackupFlow: Zamanlayıcı tetiklendi - Görev: \(displayName)")
             Task { @MainActor in
                 do {
                     let container = try self.getModelContainer()
@@ -173,40 +179,49 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                         t.id == taskId
                     })
                     let results = try context.fetch(descriptor)
+                    print("🔍 BackupFlow: Görev arama sonucu - ID: \(taskId), Bulunan: \(results.count)")
                     
                     if results.isEmpty {
                         // Alternatif arama: displayName ile
+                        print("⚠️ BackupFlow: ID ile bulunamadı, displayName ile aranıyor: \(displayName)")
                         let nameDescriptor = FetchDescriptor<BackupTask>(predicate: #Predicate<BackupTask> { t in
                             t.displayName == displayName
                         })
                         let nameResults = try context.fetch(nameDescriptor)
                         
                         if let taskByName = nameResults.first {
+                            print("✅ BackupFlow: Görev displayName ile bulundu: \(taskByName.displayName)")
                             self.logger.info("Görev displayName ile bulundu: \(taskByName.displayName)")
                             try await self.performBackup(task: taskByName)
                             try await self.scheduleBackup(task: taskByName)
                             return
                         }
                         
+                        print("❌ BackupFlow: Görev bulunamadı - ID: \(taskId), Name: \(displayName)")
                         self.logger.error("Görev bulunamadı: ID=\(taskId), Name=\(displayName)")
                         
                         // Debug: Mevcut tüm görevleri listele
                         let allTasks = try context.fetch(FetchDescriptor<BackupTask>())
+                        print("📋 BackupFlow: Mevcut görevler (\(allTasks.count)):")
                         self.logger.info("Mevcut görevler (\(allTasks.count)):")
                         for task in allTasks {
+                            print("   - \(task.displayName) (ID: \(task.id))")
                             self.logger.info("  - \(task.displayName) (ID: \(task.id))")
                         }
                         return
                     }
                     
                     guard let reloaded = results.first else {
+                        print("❌ BackupFlow: Görev yüklenemedi: \(taskId)")
                         self.logger.error("Görev bulunamadı: \(taskId)")
                         return
                     }
                     
+                    print("🎯 BackupFlow: Görev bulundu, yedekleme başlatılacak: \(reloaded.displayName)")
                     try await self.performBackup(task: reloaded)
                     try await self.scheduleBackup(task: reloaded)
                 } catch {
+                    print("💥 BackupFlow: Yedekleme hatası: \(error.localizedDescription)")
                     self.logger.error("Yedekleme hatası: \(error.localizedDescription)")
                 }
             }
@@ -214,6 +229,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         
         scheduledTimers[task.id] = timer
         RunLoop.main.add(timer, forMode: .common)
+        print("✅ BackupFlow: Görev planlandı - \(displayName), Sonraki çalışma (Türkiye): \(self.turkeyDateFormatter.string(from: nextRun))")
         logger.info("Yedekleme görevi planlandı: \(displayName) - Sonraki çalışma (Türkiye): \(self.turkeyDateFormatter.string(from: nextRun))")
     }
     
@@ -258,7 +274,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     }
     
     // MARK: - Task Handlers
-    private func handleAppRefresh(_ task: BGAppRefreshTask) {
+    func handleAppRefresh(_ task: BGAppRefreshTask) {
         logger.info("Yenileme görevi başladı")
         task.expirationHandler = { [weak self] in
             self?.logger.warning("Yenileme görevi zaman aşımına uğradı")
@@ -278,7 +294,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         }
     }
     
-    private func handleBackgroundProcessing(_ task: BGProcessingTask) {
+    func handleBackgroundProcessing(_ task: BGProcessingTask) {
         logger.info("İşleme görevi başladı")
         task.expirationHandler = { [weak self] in
             self?.logger.warning("İşleme görevi zaman aşımına uğradı")
@@ -331,6 +347,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     }
     
     func performBackup(task: BackupTask) async throws {
+        print("🚀 BackupFlow: performBackup başlatıldı - Görev: \(task.displayName)")
         let container = try getModelContainer()
         let context = ModelContext(container)
         let startTime = Date()
@@ -342,10 +359,12 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         })
         let tasks = try context.fetch(taskDescriptor)
         guard let contextTask = tasks.first else {
+            print("❌ BackupFlow: Görev context'te bulunamadı: \(task.id)")
             logger.error("Perform backup: Görev context'te bulunamadı: \(task.id)")
             throw BackupError.invalidSourceURL
         }
         
+        print("🔄 BackupFlow: Backup başlatılıyor: \(contextTask.displayName)")
         logger.info("Backup başlatılıyor: \(contextTask.displayName)")
         contextTask.backupStatus = .preparing
         contextTask.progress = 0
@@ -355,6 +374,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         
         // FTP bağlantısını kur
         guard !contextTask.ftpHost.isEmpty else {
+            print("❌ BackupFlow: FTP sunucu adresi boş")
             contextTask.backupStatus = .failed
             contextTask.lastError = "FTP sunucu adresi gerekli"
             try context.save()
@@ -362,20 +382,25 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         }
         
         do {
+            print("📡 BackupFlow: FTP bağlantısı kuruluyor: \(contextTask.ftpHost):\(contextTask.ftpPort)")
             logger.info("FTP bağlantısı kuruluyor: \(contextTask.ftpHost):\(contextTask.ftpPort)")
             try await ftpService.connect(host: contextTask.ftpHost, port: contextTask.ftpPort, username: contextTask.ftpUsername, password: contextTask.ftpPassword)
+            print("✅ BackupFlow: FTP bağlantısı başarılı")
             logger.info("FTP bağlantısı başarılı")
             
             // Görev ID bazlı klasör adı
             let remoteDirectory = "backup_\(contextTask.id.uuidString)"
+            print("📁 BackupFlow: Hedef klasör: \(remoteDirectory)")
             
             // Check if we're backing up photos or a directory
             if contextTask.sourcePath == "PHOTOS_LIBRARY" {
+                print("📷 BackupFlow: Fotoğraf kütüphanesi yedeklemesi başlatılıyor")
                 try await performSynchronizedPhotoLibraryBackup(task: contextTask, context: context, remoteDirectory: remoteDirectory, startTime: startTime)
                 return
             }
             
             // Handle directory backup
+            print("📁 BackupFlow: Klasör yedeklemesi başlatılıyor: \(contextTask.sourcePath)")
             try await performSynchronizedDirectoryBackup(task: contextTask, context: context, remoteDirectory: remoteDirectory, startTime: startTime)
             
         } catch {
@@ -795,7 +820,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             logger.info("Application Support dizini hazırlandı: \(appSupportURL.path)")
             
             // 4. Set up the model configuration with explicit URL
-            let storeURL = appSupportURL.appendingPathComponent("Yedekle2.sqlite")
+            let storeURL = appSupportURL.appendingPathComponent("BackupFlow.sqlite")
             
             // 5. Create model configuration
             let configuration = ModelConfiguration(url: storeURL)

@@ -1,6 +1,53 @@
 import SwiftUI
+import SwiftData
 import UniformTypeIdentifiers
 import Photos
+
+enum PhotoLibraryPermission {
+    case notDetermined
+    case authorized
+    case denied
+    
+    var isGranted: Bool {
+        return self == .authorized
+    }
+}
+
+enum ConnectionStatus: Equatable {
+    case idle
+    case testing
+    case success(String)
+    case failure(String)
+    
+    var isSuccess: Bool {
+        if case .success = self { return true }
+        return false
+    }
+    
+    var isTesting: Bool {
+        if case .testing = self { return true }
+        return false
+    }
+    
+    var message: String? {
+        switch self {
+        case .idle, .testing:
+            return nil
+        case .success(let message):
+            return message
+        case .failure(let error):
+            return error
+        }
+    }
+}
+
+enum FrequencyType: String, CaseIterable, Identifiable {
+    case manual = "Manuel"
+    case daily = "Günlük"
+    case weekly = "Haftalık"
+    
+    var id: String { self.rawValue }
+}
 
 struct TimePicker: View {
     @Binding var time: ScheduleTime
@@ -66,42 +113,6 @@ struct DayPicker: View {
         .padding(.vertical, 8)
     }
 }
-
-enum ConnectionStatus: Equatable {
-    case idle
-    case testing
-    case success(String)
-    case failure(String)
-    
-    var isSuccess: Bool {
-        if case .success = self { return true }
-        return false
-    }
-    
-    var isTesting: Bool {
-        if case .testing = self { return true }
-        return false
-    }
-    
-    var message: String? {
-        switch self {
-        case .idle, .testing:
-            return nil
-        case .success(let message):
-            return message
-        case .failure(let error):
-            return error
-        }
-    }
-}
-
-enum FrequencyType: String, CaseIterable, Identifiable {
-    case manual = "Manuel"
-    case daily = "Günlük"
-    case weekly = "Haftalık"
-    
-    var id: String { self.rawValue }
-}
     
 struct BackupView: View {
     // Varsayılan FTP sunucu ayarları
@@ -112,7 +123,7 @@ struct BackupView: View {
     
     @State private var selectedURL: URL?
     @State private var isPhotoLibrarySelected = false
-    @State private var ftpHost = defaultFTPHost
+    @State private var ftpHost = Self.defaultFTPHost
     @State private var ftpPort = "21"
     @State private var ftpUsername = ""
     @State private var ftpPassword = ""
@@ -129,8 +140,7 @@ struct BackupView: View {
     @State private var saveAlertMessage = ""
     @State private var isTestingConnection = false
     @State private var connectionStatus: ConnectionStatus = .idle
-    @State private var bookmarkData: Data?
-    
+
     var body: some View {
         Form {
             Section(header: Text("Kaynak Seçimi")) {
@@ -427,6 +437,7 @@ struct BackupView: View {
         
         do {
             try modelContext.save()
+            print("✅ BackupFlow: Görev başarıyla kaydedildi - \(displayName)")
             saveAlertMessage = "Görev başarıyla kaydedildi"
             
             // Schedule the backup if frequency is set

@@ -13,7 +13,7 @@ struct AboutView: View {
                 .foregroundColor(.blue)
                 .padding(.top, 40)
             
-            Text("Yedekle")
+            Text("BackupFlow")
                 .font(.largeTitle)
                 .fontWeight(.bold)
             
@@ -22,7 +22,7 @@ struct AboutView: View {
                 .font(.subheadline)
             
             VStack(alignment: .leading, spacing: 16) {
-                InfoRow(icon: "info.circle", title: "Hakkında", description: "Yedekle, önemli dosyalarınızı esnek zamanlama seçenekleriyle FTP sunucularına kolayca yedeklemenize yardımcı olur.")
+                InfoRow(icon: "info.circle", title: "Hakkında", description: "BackupFlow, önemli dosyalarınızı esnek zamanlama seçenekleriyle FTP sunucularına kolayca yedeklemenize yardımcı olur.")
                 
                 InfoRow(icon: "doc.text", title: "Lisans", description: "Bu uygulama MIT Lisansı altında sağlanmaktadır.")
                 
@@ -33,7 +33,7 @@ struct AboutView: View {
             Spacer()
             
             VStack(spacing: 8) {
-                Text("© \(Calendar.current.component(.year, from: Date())) Yedekle")
+                Text("© \(Calendar.current.component(.year, from: Date())) BackupFlow")
                     .font(.caption)
                     .foregroundColor(.secondary)
                 

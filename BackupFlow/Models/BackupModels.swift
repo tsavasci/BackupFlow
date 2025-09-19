@@ -36,7 +36,7 @@ enum BackupStatus: String, Codable, CaseIterable, Identifiable {
     }
 }
 
-struct ScheduleTime: Codable, Equatable {
+nonisolated struct ScheduleTime: Codable, Equatable, Sendable {
     var hour: Int
     var minute: Int
     
@@ -50,7 +50,7 @@ struct ScheduleTime: Codable, Equatable {
     }
 }
 
-enum BackupFrequency: Codable, Equatable, Hashable, Identifiable, CaseIterable {
+nonisolated enum BackupFrequency: Codable, Equatable, Hashable, Identifiable, CaseIterable, @unchecked Sendable {
     case manual
     case daily(time: ScheduleTime)
     case weekly(day: Int, time: ScheduleTime) // 1: Sunday, 2: Monday, ..., 7: Saturday

@@ -1,12 +1,13 @@
 import Photos
 import PhotosUI
 import SwiftUI
+import Combine
 import OSLog
 import UniformTypeIdentifiers
 
 class PhotoLibraryManager: NSObject, ObservableObject {
     static let shared = PhotoLibraryManager()
-    private let logger = Logger(subsystem: "com.yedekle2.app", category: "PhotoLibrary")
+    private let logger = Logger(subsystem: "com.backupflow.app", category: "PhotoLibrary")
     
     @Published var authorizationStatus: PHAuthorizationStatus = .notDetermined
     @Published var hasAccess: Bool = false

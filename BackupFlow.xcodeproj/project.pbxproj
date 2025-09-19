@@ -6,25 +6,83 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		F2D9B6992E7D6480005A07FE /* FilesProvider in Frameworks */ = {isa = PBXBuildFile; productRef = F2DA23882E7D6B0000B2727D /* FilesProvider */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		F2DA23592E7D5FDA00B2727D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A08578512E231DAC008FF3ED /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F2DA23492E7D5FD900B2727D;
+			remoteInfo = BackupFlow;
+		};
+		F2DA23632E7D5FDA00B2727D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A08578512E231DAC008FF3ED /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F2DA23492E7D5FD900B2727D;
+			remoteInfo = BackupFlow;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		F2DA234A2E7D5FD900B2727D /* BackupFlow.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BackupFlow.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F2DA23582E7D5FDA00B2727D /* BackupFlowTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BackupFlowTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		F2DA23622E7D5FDA00B2727D /* BackupFlowUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BackupFlowUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		A085785B2E231DAC008FF3ED /* BackupFlow */ = {
+		F2DA234B2E7D5FD900B2727D /* BackupFlow */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = BackupFlow;
 			sourceTree = "<group>";
 		};
-		A085786B2E231DAD008FF3ED /* BackupFlowTests */ = {
+		F2DA235B2E7D5FDA00B2727D /* BackupFlowTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = BackupFlowTests;
 			sourceTree = "<group>";
 		};
+		F2DA23652E7D5FDA00B2727D /* BackupFlowUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = BackupFlowUITests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		F2DA23472E7D5FD900B2727D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F2D9B6992E7D6480005A07FE /* FilesProvider in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F2DA23552E7D5FDA00B2727D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F2DA235F2E7D5FDA00B2727D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		A08578502E231DAC008FF3ED = {
 			isa = PBXGroup;
 			children = (
-				A085785B2E231DAC008FF3ED /* BackupFlow */,
-				A085786B2E231DAD008FF3ED /* BackupFlowTests */,
+				F2DA234B2E7D5FD900B2727D /* BackupFlow */,
+				F2DA235B2E7D5FDA00B2727D /* BackupFlowTests */,
+				F2DA23652E7D5FDA00B2727D /* BackupFlowUITests */,
 				A085785A2E231DAC008FF3ED /* Products */,
 			);
 			sourceTree = "<group>";
@@ -32,19 +90,107 @@
 		A085785A2E231DAC008FF3ED /* Products */ = {
 			isa = PBXGroup;
 			children = (
+				F2DA234A2E7D5FD900B2727D /* BackupFlow.app */,
+				F2DA23582E7D5FDA00B2727D /* BackupFlowTests.xctest */,
+				F2DA23622E7D5FDA00B2727D /* BackupFlowUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
+/* Begin PBXNativeTarget section */
+		F2DA23492E7D5FD900B2727D /* BackupFlow */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F2DA23702E7D5FDA00B2727D /* Build configuration list for PBXNativeTarget "BackupFlow" */;
+			buildPhases = (
+				F2DA23462E7D5FD900B2727D /* Sources */,
+				F2DA23472E7D5FD900B2727D /* Frameworks */,
+				F2DA23482E7D5FD900B2727D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				F2DA234B2E7D5FD900B2727D /* BackupFlow */,
+			);
+			name = BackupFlow;
+			packageProductDependencies = (
+				F2DA23882E7D6B0000B2727D /* FilesProvider */,
+			);
+			productName = BackupFlow;
+			productReference = F2DA234A2E7D5FD900B2727D /* BackupFlow.app */;
+			productType = "com.apple.product-type.application";
+		};
+		F2DA23572E7D5FDA00B2727D /* BackupFlowTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F2DA23712E7D5FDA00B2727D /* Build configuration list for PBXNativeTarget "BackupFlowTests" */;
+			buildPhases = (
+				F2DA23542E7D5FDA00B2727D /* Sources */,
+				F2DA23552E7D5FDA00B2727D /* Frameworks */,
+				F2DA23562E7D5FDA00B2727D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				F2DA235A2E7D5FDA00B2727D /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				F2DA235B2E7D5FDA00B2727D /* BackupFlowTests */,
+			);
+			name = BackupFlowTests;
+			packageProductDependencies = (
+			);
+			productName = BackupFlowTests;
+			productReference = F2DA23582E7D5FDA00B2727D /* BackupFlowTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		F2DA23612E7D5FDA00B2727D /* BackupFlowUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F2DA23722E7D5FDA00B2727D /* Build configuration list for PBXNativeTarget "BackupFlowUITests" */;
+			buildPhases = (
+				F2DA235E2E7D5FDA00B2727D /* Sources */,
+				F2DA235F2E7D5FDA00B2727D /* Frameworks */,
+				F2DA23602E7D5FDA00B2727D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				F2DA23642E7D5FDA00B2727D /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				F2DA23652E7D5FDA00B2727D /* BackupFlowUITests */,
+			);
+			name = BackupFlowUITests;
+			packageProductDependencies = (
+			);
+			productName = BackupFlowUITests;
+			productReference = F2DA23622E7D5FDA00B2727D /* BackupFlowUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
 /* Begin PBXProject section */
 		A08578512E231DAC008FF3ED /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1640;
+				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 2600;
+				TargetAttributes = {
+					F2DA23492E7D5FD900B2727D = {
+						CreatedOnToolsVersion = 26.0;
+					};
+					F2DA23572E7D5FDA00B2727D = {
+						CreatedOnToolsVersion = 26.0;
+						TestTargetID = F2DA23492E7D5FD900B2727D;
+					};
+					F2DA23612E7D5FDA00B2727D = {
+						CreatedOnToolsVersion = 26.0;
+						TestTargetID = F2DA23492E7D5FD900B2727D;
+					};
+				};
 			};
 			buildConfigurationList = A08578542E231DAC008FF3ED /* Build configuration list for PBXProject "BackupFlow" */;
 			developmentRegion = en;
@@ -63,9 +209,73 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
+				F2DA23492E7D5FD900B2727D /* BackupFlow */,
+				F2DA23572E7D5FDA00B2727D /* BackupFlowTests */,
+				F2DA23612E7D5FDA00B2727D /* BackupFlowUITests */,
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		F2DA23482E7D5FD900B2727D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F2DA23562E7D5FDA00B2727D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F2DA23602E7D5FDA00B2727D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		F2DA23462E7D5FD900B2727D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F2DA23542E7D5FDA00B2727D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F2DA235E2E7D5FDA00B2727D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		F2DA235A2E7D5FDA00B2727D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F2DA23492E7D5FD900B2727D /* BackupFlow */;
+			targetProxy = F2DA23592E7D5FDA00B2727D /* PBXContainerItemProxy */;
+		};
+		F2DA23642E7D5FDA00B2727D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F2DA23492E7D5FD900B2727D /* BackupFlow */;
+			targetProxy = F2DA23632E7D5FDA00B2727D /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		A085787A2E231DAD008FF3ED /* Debug */ = {
@@ -120,11 +330,6 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = BackupFlow/Info.plist;
-				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = "<array><string>$(PRODUCT_BUNDLE_IDENTIFIER)</string></array>";
-				INFOPLIST_KEY_NSAppTransportSecurity = "<dict><key>NSAllowsArbitraryLoads</key><true/></dict>";
-				INFOPLIST_KEY_UIBackgroundModes = "<array><string>fetch</string><string>processing</string></array>";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -185,11 +390,6 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = BackupFlow/Info.plist;
-				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = "<array><string>$(PRODUCT_BUNDLE_IDENTIFIER)</string></array>";
-				INFOPLIST_KEY_NSAppTransportSecurity = "<dict><key>NSAllowsArbitraryLoads</key><true/></dict>";
-				INFOPLIST_KEY_UIBackgroundModes = "<array><string>fetch</string><string>processing</string></array>";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
@@ -202,6 +402,198 @@
 			};
 			name = Release;
 		};
+		F2DA236A2E7D5FDA00B2727D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = T54PTGTNBU;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = "tsavasci.BackupFlow.refresh tsavasci.BackupFlow.processing";
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
+				INFOPLIST_KEY_NSAppTransportSecurity = "<dict><key>NSAllowsArbitraryLoads</key><true/></dict>";
+				INFOPLIST_KEY_NSDesktopFolderUsageDescription = "Yedekleme işlemleri için masaüstü klasörüne erişim gereklidir.";
+				INFOPLIST_KEY_NSDocumentsFolderUsageDescription = "Dosya yedekleme işlemleri için dosya erişimine ihtiyaç duyulmaktadır.";
+				INFOPLIST_KEY_NSDownloadsFolderUsageDescription = "Yedeklenmiş dosyalara erişmek için indirilenler klasörüne erişim gereklidir.";
+				INFOPLIST_KEY_NSFileProviderDomainUsageDescription = "Yedekleme için dosya sisteminize erişim izni gerekiyor.";
+				INFOPLIST_KEY_NSFullDiskAccessUsageDescription = "Dosyalarınıza erişebilmek ve yedekleme yapabilmek için tam disk erişimi gereklidir.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "FTP sunucuya bağlanabilmek ve yedekleme işlemlerini gerçekleştirebilmek için yerel ağ erişimi gereklidir.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Yedeklenen fotoğraflarınızı geri yüklemek için erişim izni gerekiyor.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Fotoğraflarınızı yedeklemek için erişim izni gerekiyor.";
+				INFOPLIST_KEY_NSSystemAdministrationUsageDescription = "Yedekleme işlemi için sistem dosyalarına erişim gereklidir.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UIBackgroundModes = "fetch processing remote-notification";
+				INFOPLIST_KEY_UIFileSharingEnabled = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = tsavasci.BackupFlow;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		F2DA236B2E7D5FDA00B2727D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = T54PTGTNBU;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = "tsavasci.BackupFlow.refresh tsavasci.BackupFlow.processing";
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
+				INFOPLIST_KEY_NSAppTransportSecurity = "<dict><key>NSAllowsArbitraryLoads</key><true/></dict>";
+				INFOPLIST_KEY_NSDesktopFolderUsageDescription = "Yedekleme işlemleri için masaüstü klasörüne erişim gereklidir.";
+				INFOPLIST_KEY_NSDocumentsFolderUsageDescription = "Dosya yedekleme işlemleri için dosya erişimine ihtiyaç duyulmaktadır.";
+				INFOPLIST_KEY_NSDownloadsFolderUsageDescription = "Yedeklenmiş dosyalara erişmek için indirilenler klasörüne erişim gereklidir.";
+				INFOPLIST_KEY_NSFileProviderDomainUsageDescription = "Yedekleme için dosya sisteminize erişim izni gerekiyor.";
+				INFOPLIST_KEY_NSFullDiskAccessUsageDescription = "Dosyalarınıza erişebilmek ve yedekleme yapabilmek için tam disk erişimi gereklidir.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "FTP sunucuya bağlanabilmek ve yedekleme işlemlerini gerçekleştirebilmek için yerel ağ erişimi gereklidir.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Yedeklenen fotoğraflarınızı geri yüklemek için erişim izni gerekiyor.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Fotoğraflarınızı yedeklemek için erişim izni gerekiyor.";
+				INFOPLIST_KEY_NSSystemAdministrationUsageDescription = "Yedekleme işlemi için sistem dosyalarına erişim gereklidir.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UIBackgroundModes = "fetch processing remote-notification";
+				INFOPLIST_KEY_UIFileSharingEnabled = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = tsavasci.BackupFlow;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		F2DA236C2E7D5FDA00B2727D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = T54PTGTNBU;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = tsavasci.BackupFlowTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BackupFlow.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BackupFlow";
+			};
+			name = Debug;
+		};
+		F2DA236D2E7D5FDA00B2727D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = T54PTGTNBU;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = tsavasci.BackupFlowTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BackupFlow.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BackupFlow";
+			};
+			name = Release;
+		};
+		F2DA236E2E7D5FDA00B2727D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = T54PTGTNBU;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = tsavasci.BackupFlowUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = BackupFlow;
+			};
+			name = Debug;
+		};
+		F2DA236F2E7D5FDA00B2727D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = T54PTGTNBU;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = tsavasci.BackupFlowUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = BackupFlow;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -210,6 +602,33 @@
 			buildConfigurations = (
 				A085787A2E231DAD008FF3ED /* Debug */,
 				A085787B2E231DAD008FF3ED /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F2DA23702E7D5FDA00B2727D /* Build configuration list for PBXNativeTarget "BackupFlow" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F2DA236A2E7D5FDA00B2727D /* Debug */,
+				F2DA236B2E7D5FDA00B2727D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F2DA23712E7D5FDA00B2727D /* Build configuration list for PBXNativeTarget "BackupFlowTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F2DA236C2E7D5FDA00B2727D /* Debug */,
+				F2DA236D2E7D5FDA00B2727D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F2DA23722E7D5FDA00B2727D /* Build configuration list for PBXNativeTarget "BackupFlowUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F2DA236E2E7D5FDA00B2727D /* Debug */,
+				F2DA236F2E7D5FDA00B2727D /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -226,6 +645,14 @@
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		F2DA23882E7D6B0000B2727D /* FilesProvider */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F2CF30272E606B8C005EF26F /* XCRemoteSwiftPackageReference "FileProvider" */;
+			productName = FilesProvider;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A08578512E231DAC008FF3ED /* Project object */;
 }

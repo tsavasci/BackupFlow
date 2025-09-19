@@ -5,7 +5,7 @@ import os.log
 struct FolderPicker: UIViewControllerRepresentable {
     @Binding var selectedURL: URL?
     @Environment(\.presentationMode) private var presentationMode
-    private let logger = Logger(subsystem: "com.example.Yedekle2", category: "FolderPicker")
+    private let logger = Logger(subsystem: "com.example.BackupFlow", category: "FolderPicker")
     
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
         let documentPicker = UIDocumentPickerViewController(

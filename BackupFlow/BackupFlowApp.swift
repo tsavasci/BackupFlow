@@ -1,59 +1,47 @@
+//
+//  BackupFlowApp.swift
+//  BackupFlow
+//
+//  Created by Tamer Savaşcı on 19.09.2025.
+//
+
 import SwiftUI
 import SwiftData
 import BackgroundTasks
+import UserNotifications
 
+// MARK: - AppDelegate for handling app lifecycle
 class AppDelegate: NSObject, UIApplicationDelegate {
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
-        // Arka plan görevlerini kaydet
-        BackupScheduler.shared.registerBackgroundTasks()
-        
-        // Bildirim izinlerini iste
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
-            if granted {
-                print("Notification permission granted")
-                // İzinler alındıktan sonra ilk görevleri planla
-                DispatchQueue.main.async {
-                    self.scheduleInitialTasks()
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        // Request notification permissions on app launch
+        Task {
+            let center = UNUserNotificationCenter.current()
+            do {
+                let granted = try await center.requestAuthorization(options: [.alert, .sound, .badge])
+                if granted {
+                    print("✅ BackupFlow: Bildirim izni verildi")
+                } else {
+                    print("❌ BackupFlow: Bildirim izni reddedildi")
                 }
-            } else if let error = error {
-                print("Notification permission error: \(error.localizedDescription)")
+            } catch {
+                print("❌ BackupFlow: Bildirim izni hatası: \(error)")
             }
         }
         
         return true
     }
     
-    // Uygulama ilk kez başlatıldığında veya güncellendiğinde ilk yedekleme görevlerini planlar
-    private func scheduleInitialTasks() {
-        Task {
-            // Arka plan görevlerini planla
-            BackupScheduler.shared.scheduleAppRefresh()
-            BackupScheduler.shared.scheduleBackgroundProcessing()
-        }
-    }
-    
-    // Arka plan URL oturumu tamamlandığında
     func application(_ application: UIApplication, handleEventsForBackgroundURLSession identifier: String, completionHandler: @escaping () -> Void) {
         BackupScheduler.shared.backgroundCompletionHandler = completionHandler
     }
     
-    // Uygulama arka plana geçtiğinde
-    func applicationDidEnterBackground(_ application: UIApplication) {
+    func applicationDidBecomeActive(_ application: UIApplication) {
         Task {
-            // Aktif görevleri kontrol et ve gerekirse yeniden planla
+            try? await BackupScheduler.shared.refreshTaskStatuses()
             try? await BackupScheduler.shared.checkAndRescheduleTasks()
         }
     }
     
-    // Uygulama ön plana döndüğünde
-    func applicationWillEnterForeground(_ application: UIApplication) {
-        Task {
-            // Görevleri kontrol et ve güncelle
-            try? await BackupScheduler.shared.refreshTaskStatuses()
-        }
-    }
-    
-    // Uygulama sonlandırılırken
     func applicationWillTerminate(_ application: UIApplication) {
         Task {
             // Aktif görevleri kaydet
@@ -63,7 +51,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 }
 
 @main
-struct Yedekle2App: App {
+struct BackupFlowApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
@@ -79,7 +67,7 @@ struct Yedekle2App: App {
             fatalError("Could not create ModelContainer: \(error)")
         }
     }()
-    
+
     init() {
         // BackupScheduler'a shared container'ı inject et
         BackupScheduler.sharedModelContainer = sharedModelContainer
@@ -89,16 +77,8 @@ struct Yedekle2App: App {
         appearance.configureWithOpaqueBackground()
         UINavigationBar.appearance().standardAppearance = appearance
         UINavigationBar.appearance().scrollEdgeAppearance = appearance
-        
-        // Set tab bar appearance
-        let tabBarAppearance = UITabBarAppearance()
-        tabBarAppearance.configureWithOpaqueBackground()
-        UITabBar.appearance().standardAppearance = tabBarAppearance
-        if #available(iOS 15.0, *) {
-            UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
-        }
     }
-    
+
     var body: some Scene {
         WindowGroup {
             MainTabView()

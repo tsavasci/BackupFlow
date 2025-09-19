@@ -37,7 +37,7 @@ private struct AssociatedKeys {
 @MainActor
 final class FTPService: NSObject, @unchecked Sendable {
     static let shared = FTPService()
-    private let logger = Logger(subsystem: "com.example.Yedekle2", category: "FTPService")
+    private let logger = Logger(subsystem: "com.backupflow.app", category: "FTPService")
 
     private let lock = NSLock()
     private var _ftpProvider: FTPFileProvider?
@@ -128,10 +128,11 @@ final class FTPService: NSObject, @unchecked Sendable {
             return try await withThrowingTaskGroup(of: Bool.self) { group in
                 group.addTask {
                     return try await withCheckedThrowingContinuation { continuation in
-                        testProvider.contentsOfDirectory(path: "/") { [weak self] _, error in
+                        testProvider.contentsOfDirectory(path: "/") { _, error in
                             Task { @MainActor in
                                 if let error = error {
-                                    continuation.resume(throwing: self?.mapError(error) ?? FTPError.unknown(error))
+                                    let mappedError = FTPService.mapErrorStatic(error)
+                                    continuation.resume(throwing: mappedError)
                                 } else {
                                     continuation.resume(returning: true)
                                 }
@@ -175,11 +176,13 @@ final class FTPService: NSObject, @unchecked Sendable {
     }
     
     func connect(host: String, port: Int, username: String? = nil, password: String? = nil) async throws {
+        print("📡 BackupFlow: FTPService - Bağlantı başlatılıyor: \(host):\(port)")
         // Önce mevcut bağlantıyı temizle
         disconnect()
         
         // FTP parametrelerini kontrol et
         guard !host.isEmpty else {
+            print("❌ BackupFlow: FTP sunucu adresi boş")
             logger.error("FTP sunucu adresi boş olamaz")
             throw FTPError.invalidURL
         }
@@ -187,12 +190,14 @@ final class FTPService: NSObject, @unchecked Sendable {
         // IP adresi veya hostname kontrolü
         let hostParts = host.split(separator: ".")
         if hostParts.count != 4 {
+            print("❌ BackupFlow: Geçersiz IP adresi formatı: \(host)")
             logger.error("Geçersiz IP adresi formatı: \(host)")
             throw FTPError.invalidURL
         }
         
         // Port kontrolü
         guard port > 0 && port < 65536 else {
+            print("❌ BackupFlow: Geçersiz port numarası: \(port)")
             logger.error("Geçersiz port numarası: \(port)")
             throw FTPError.invalidURL
         }
@@ -202,15 +207,20 @@ final class FTPService: NSObject, @unchecked Sendable {
         let maxRetries = 3
         let retryDelay: UInt64 = 2_000_000_000 // 2 saniye
         
+        print("🔄 BackupFlow: FTP bağlantısı deneniyor (\(maxRetries) deneme hakkı)")
         for attempt in 1...maxRetries {
             do {
+                print("🔗 BackupFlow: FTP bağlantı denemesi \(attempt)/\(maxRetries)")
                 try await performConnection(host: host, port: port, username: username, password: password, attempt: attempt)
+                print("✅ BackupFlow: FTP bağlantısı başarıyla kuruldu!")
                 return // Başarılı, fonksiyondan çık
             } catch {
                 lastError = error
+                print("⚠️ BackupFlow: FTP bağlantı denemesi \(attempt)/\(maxRetries) başarısız: \(error.localizedDescription)")
                 logger.warning("FTP bağlantı denemesi \(attempt)/\(maxRetries) başarısız: \(error.localizedDescription)")
                 
                 if attempt < maxRetries {
+                    print("⏳ BackupFlow: \(retryDelay / 1_000_000_000) saniye bekleniyor...")
                     logger.info("\(retryDelay / 1_000_000_000) saniye bekleniyor...")
                     try await Task.sleep(nanoseconds: retryDelay)
                 }
@@ -326,6 +336,10 @@ final class FTPService: NSObject, @unchecked Sendable {
     }
 
     private func mapError(_ error: Error) -> FTPError {
+        return FTPService.mapErrorStatic(error)
+    }
+    
+    private static func mapErrorStatic(_ error: Error) -> FTPError {
         if let urlError = error as? URLError {
             switch urlError.code {
             case .cannotConnectToHost, .networkConnectionLost, .notConnectedToInternet:
@@ -500,12 +514,15 @@ final class FTPService: NSObject, @unchecked Sendable {
     }
 
     func uploadFile(localURL: URL, remotePath: String, progressHandler: ((Double) -> Void)? = nil) async throws {
+        print("📤 BackupFlow: Dosya yükleme başlatıldı: \(localURL.lastPathComponent) -> \(remotePath)")
         guard !isCancelled else {
+            print("🛑 BackupFlow: İşlem iptal edildiği için yükleme iptal edildi")
             logger.info("İşlem iptal edildiği için yükleme iptal edildi")
             throw FTPError.fileOperationFailed
         }
         
         guard let ftp = ftpProvider else {
+            print("❌ BackupFlow: FTP bağlantısı kurulamamış")
             logger.error("FTP bağlantısı kurulamamış")
             throw FTPError.connectionFailed
         }
@@ -554,8 +571,10 @@ final class FTPService: NSObject, @unchecked Sendable {
                 }
 
                 if let error = error {
+                    print("❌ BackupFlow: Dosya yükleme hatası: \(error.localizedDescription)")
                     continuation.resume(throwing: self.mapError(error))
                 } else {
+                    print("✅ BackupFlow: Dosya başarıyla yüklendi: \(remotePath)")
                     continuation.resume(returning: ())
                 }
             }

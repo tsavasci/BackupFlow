@@ -4,7 +4,7 @@
 <dict>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.tsavasci.Yedekle2</string>
+		<string>group.tsavasci.BackupFlow</string>
 	</array>
 	<key>com.apple.security.files.all</key>
 	<true/>
