@@ -212,14 +212,6 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         logger.info("Tüm background görevler iptal edildi")
     }
     
-    // Debug: Active timer'ları listele
-    public func debugActiveTimers() {
-        print("🔍 BackupFlow: Active timer sayısı: \(scheduledTimers.count)")
-        for (taskId, timer) in scheduledTimers {
-            print("   Timer ID: \(taskId), Valid: \(timer.isValid), Fire Date: \(timer.fireDate)")
-        }
-    }
-    
     // Schedule a specific BackupTask using a Timer (for in-app scheduling)
     func scheduleBackup(task: BackupTask) async throws {
         print("🚀 BackupFlow: scheduleBackup başlatıldı - Görev: \(task.displayName)")

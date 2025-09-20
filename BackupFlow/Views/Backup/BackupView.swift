@@ -312,8 +312,8 @@ struct BackupView: View {
         .navigationTitle("Yeni Yedekleme")
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button("İptal", role: .cancel) {
-                    dismiss()
+                Button("Temizle") {
+                    resetForm()
                 }
             }
         }
@@ -493,5 +493,22 @@ struct BackupView: View {
             saveAlertMessage = "Görev kaydedilirken hata oluştu: \(error.localizedDescription)"
             showingSaveAlert = true
         }
+    }
+    
+    private func resetForm() {
+        selectedURL = nil
+        isPhotoLibrarySelected = false
+        selectedMediaType = .photosOnly
+        ftpHost = Self.defaultFTPHost
+        ftpPort = "21"
+        ftpUsername = ""
+        ftpPassword = ""
+        isAnonymous = false
+        destinationPath = "/"
+        frequencyType = .manual
+        selectedTime = ScheduleTime(hour: 0, minute: 0)
+        selectedDay = 1
+        connectionStatus = .idle
+        saveAlertMessage = ""
     }
 }
