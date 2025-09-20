@@ -19,6 +19,15 @@
 "settings.developer_settings" = "Geliştirici Ayarları";
 "settings.ftp_connection_test" = "FTP Bağlantı Testi";
 "settings.reset_all_data" = "Tüm Verileri Sıfırla";
+
+// Task Pause/Resume System
+"task.paused.notification.title" = "🎬 BackupFlow";
+"task.paused.notification.body" = "Görev duraklatıldı: %@";
+"task.resumed.notification.title" = "🎬 BackupFlow";  
+"task.resumed.notification.body" = "Görev zamanlaması tekrar başlatıldı: %@";
+"task.pause.button" = "Zamanlamayı Duraklat";
+"task.resume.button" = "Zamanlamayı Devam Ettir";
+"task.status.paused" = "Duraklatıldı";
 "language.selection" = "Dil";
 "language.system" = "Sistem Dili";
 "language.restart_required" = "Dil Değiştirildi";

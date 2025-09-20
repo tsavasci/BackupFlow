@@ -168,6 +168,7 @@ final class BackupTask: Identifiable, Hashable {
     var isAnonymous: Bool
     var displayName: String
     var isEnabled: Bool
+    var isPaused: Bool // Pause/Resume functionality
     var frequency: BackupFrequency
     var createdAt: Date
     var lastBackupDate: Date?
@@ -197,6 +198,7 @@ final class BackupTask: Identifiable, Hashable {
         isAnonymous: Bool = false,
         displayName: String,
         isEnabled: Bool = true,
+        isPaused: Bool = false,
         frequency: BackupFrequency = .manual,
         mediaType: MediaType = .photosOnly, // Varsayılan olarak sadece fotoğraflar
         lastBackupDate: Date? = nil,
@@ -212,6 +214,7 @@ final class BackupTask: Identifiable, Hashable {
         self.isAnonymous = isAnonymous
         self.displayName = displayName
         self.isEnabled = isEnabled
+        self.isPaused = isPaused
         self.frequency = frequency
         self.mediaType = mediaType
         self.createdAt = Date()

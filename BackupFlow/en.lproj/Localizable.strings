@@ -19,6 +19,15 @@
 "settings.developer_settings" = "Developer Settings";
 "settings.ftp_connection_test" = "FTP Connection Test";
 "settings.reset_all_data" = "Reset All Data";
+
+// Task Pause/Resume System
+"task.paused.notification.title" = "🎬 BackupFlow";
+"task.paused.notification.body" = "Task paused: %@";
+"task.resumed.notification.title" = "🎬 BackupFlow";
+"task.resumed.notification.body" = "Task scheduling resumed: %@";
+"task.pause.button" = "Pause Scheduling";
+"task.resume.button" = "Resume Scheduling";
+"task.status.paused" = "Paused";
 "language.selection" = "Language";
 "language.system" = "System Language";
 "language.restart_required" = "Language Changed";

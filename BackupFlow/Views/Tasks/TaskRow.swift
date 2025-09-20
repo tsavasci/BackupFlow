@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UserNotifications
 
 struct TaskRow: View {
     @State var task: BackupTask
@@ -53,13 +54,40 @@ struct TaskRow: View {
                                 .cornerRadius(4)
                                 .foregroundColor(task.backupStatus.color)
                         }
+                        
+                        // Pause/Resume badge
+                        if task.isPaused {
+                            Text("Duraklatıldı")
+                                .font(.caption)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.orange.opacity(0.2))
+                                .cornerRadius(4)
+                                .foregroundColor(.orange)
+                        }
                     }
                 }
                 Spacer()
-                if task.backupStatus == .uploading {
-                    Text("(\(Int(task.progress * 100))%)")
-                        .font(.caption.bold())
-                        .foregroundColor(.accentColor)
+                
+                // Pause/Play Button
+                HStack {
+                    if task.backupStatus == .uploading {
+                        Text("(\(Int(task.progress * 100))%)")
+                            .font(.caption.bold())
+                            .foregroundColor(.accentColor)
+                    }
+                    
+                    // Pause/Play button - only for scheduled tasks
+                    if task.frequency != .manual {
+                        Button(action: {
+                            togglePauseResume()
+                        }) {
+                            Image(systemName: task.isPaused ? "play.circle.fill" : "pause.circle.fill")
+                                .font(.title2)
+                                .foregroundColor(task.isPaused ? .green : .orange)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
                 }
             }
             
@@ -160,6 +188,23 @@ struct TaskRow: View {
                 }
             }
             
+            // Pause/Resume options for scheduled tasks
+            if task.frequency != .manual {
+                if task.isPaused {
+                    Button(action: {
+                        resumeTask()
+                    }) {
+                        Label("Zamanlamayı Devam Ettir", systemImage: "play.circle")
+                    }
+                } else {
+                    Button(action: {
+                        pauseTask()
+                    }) {
+                        Label("Zamanlamayı Duraklat", systemImage: "pause.circle")
+                    }
+                }
+            }
+            
             if task.backupStatus == .uploading || task.backupStatus == .scanning || task.backupStatus == .preparing {
                 Button(role: .destructive, action: {
                     task.backupStatus = .cancelled
@@ -184,5 +229,52 @@ struct TaskRow: View {
                 }
             }
         }
+    }
+    
+    // MARK: - Pause/Resume Functions
+    private func togglePauseResume() {
+        if task.isPaused {
+            resumeTask()
+        } else {
+            pauseTask()
+        }
+    }
+    
+    private func pauseTask() {
+        task.isPaused = true
+        BackupScheduler.shared.pauseTask(task)
+        
+        // Send notification
+        let content = UNMutableNotificationContent()
+        content.title = "🎬 BackupFlow"
+        content.body = "Görev duraklatıldı: \(task.displayName)"
+        content.sound = .default
+        
+        let request = UNNotificationRequest(
+            identifier: "task-paused-\(task.id.uuidString)",
+            content: content,
+            trigger: UNTimeIntervalNotificationTrigger(timeInterval: 0.1, repeats: false)
+        )
+        
+        UNUserNotificationCenter.current().add(request)
+    }
+    
+    private func resumeTask() {
+        task.isPaused = false
+        BackupScheduler.shared.resumeTask(task)
+        
+        // Send notification
+        let content = UNMutableNotificationContent()
+        content.title = "🎬 BackupFlow"
+        content.body = "Görev zamanlaması tekrar başlatıldı: \(task.displayName)"
+        content.sound = .default
+        
+        let request = UNNotificationRequest(
+            identifier: "task-resumed-\(task.id.uuidString)",
+            content: content,
+            trigger: UNTimeIntervalNotificationTrigger(timeInterval: 0.1, repeats: false)
+        )
+        
+        UNUserNotificationCenter.current().add(request)
     }
 }

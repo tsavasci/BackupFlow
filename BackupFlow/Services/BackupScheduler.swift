@@ -223,6 +223,14 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     // Schedule a specific BackupTask using a Timer (for in-app scheduling)
     func scheduleBackup(task: BackupTask) async throws {
         print("🚀 BackupFlow: scheduleBackup başlatıldı - Görev: \(task.displayName)")
+        
+        // Check if task is paused
+        if task.isPaused {
+            print("⏸️ BackupFlow: Görev duraklatılmış, zamanlanmayacak - Görev: \(task.displayName)")
+            logger.info("Görev duraklatılmış, zamanlanmayacak: \(task.displayName)")
+            return
+        }
+        
         task.isEnabled = true
         updateNextRunTime(for: task)
         
@@ -269,6 +277,12 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                         
                         if let taskByName = nameResults.first {
                             print("✅ BackupFlow: Görev displayName ile bulundu: \(taskByName.displayName)")
+                            // Check if task is paused before executing
+                            if taskByName.isPaused {
+                                print("⏸️ BackupFlow: Görev duraklatılmış, yedekleme yapılmayacak: \(taskByName.displayName)")
+                                self.logger.info("Görev duraklatılmış, yedekleme yapılmayacak: \(taskByName.displayName)")
+                                return
+                            }
                             self.logger.info("Görev displayName ile bulundu: \(taskByName.displayName)")
                             try await self.performBackup(task: taskByName)
                             try await self.scheduleBackup(task: taskByName)
@@ -296,6 +310,14 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                     }
                     
                     print("🎯 BackupFlow: Görev bulundu, yedekleme başlatılacak: \(reloaded.displayName)")
+                    
+                    // Check if task is paused before executing
+                    if reloaded.isPaused {
+                        print("⏸️ BackupFlow: Görev duraklatılmış, yedekleme yapılmayacak: \(reloaded.displayName)")
+                        self.logger.info("Görev duraklatılmış, yedekleme yapılmayacak: \(reloaded.displayName)")
+                        return
+                    }
+                    
                     try await self.performBackup(task: reloaded)
                     try await self.scheduleBackup(task: reloaded)
                 } catch {
@@ -1290,6 +1312,45 @@ enum BackupError: LocalizedError {
         case .ftpError(let m): return "FTP hatası: \(m)"
         case .permissionDenied: return "İzin reddedildi"
         case .batteryTooLow: return "Pil seviyesi çok düşük"
+        }
+    }
+}
+
+// MARK: - Pause/Resume Task Management
+
+extension BackupScheduler {
+    func pauseTask(_ task: BackupTask) {
+        print("⏸️ BackupFlow: Görev duraklatılıyor: \(task.displayName)")
+        logger.info("Görev duraklatılıyor: \(task.displayName, privacy: .public)")
+        
+        // Remove active timer if exists
+        if let timer = scheduledTimers[task.id] {
+            timer.invalidate()
+            scheduledTimers.removeValue(forKey: task.id)
+            print("⏸️ BackupFlow: Timer iptal edildi: \(task.id)")
+        }
+        
+        // Cancel background tasks for this specific task
+        BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: "\(taskIdentifierRefresh)-\(task.id.uuidString)")
+        BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: "\(taskIdentifierProcessing)-\(task.id.uuidString)")
+        
+        print("⏸️ BackupFlow: Görev duraklatıldı: \(task.displayName)")
+    }
+    
+    func resumeTask(_ task: BackupTask) {
+        print("▶️ BackupFlow: Görev devam ettiriliyor: \(task.displayName)")
+        logger.info("Görev devam ettiriliyor: \(task.displayName, privacy: .public)")
+        
+        // Reschedule the task
+        scheduleBackup(for: task)
+        
+        print("▶️ BackupFlow: Görev zamanlaması tekrar başlatıldı: \(task.displayName)")
+    }
+    
+    // Wrapper function for scheduling tasks (used internally)
+    func scheduleBackup(for task: BackupTask) {
+        Task {
+            try await scheduleBackup(task: task)
         }
     }
 }

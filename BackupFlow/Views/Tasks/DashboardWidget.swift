@@ -18,7 +18,8 @@ struct DashboardWidget: View {
     
     private var nextScheduledTask: BackupTask? {
         activeTasks.compactMap { task in
-            guard task.nextRunTime != nil else { return nil }
+            // Skip paused tasks
+            guard !task.isPaused && task.nextRunTime != nil else { return nil }
             return task
         }.min { task1, task2 in
             (task1.nextRunTime ?? Date.distantFuture) < (task2.nextRunTime ?? Date.distantFuture)
