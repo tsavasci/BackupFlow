@@ -170,6 +170,8 @@ final class BackupTask: Identifiable, Hashable {
     var isEnabled: Bool
     var isPaused: Bool // Pause/Resume functionality
     var frequency: BackupFrequency
+    var scheduledTime: ScheduleTime? // For daily/weekly scheduling
+    var scheduledWeekday: Int? // 1: Sunday, 2: Monday, ..., 7: Saturday
     var createdAt: Date
     var lastBackupDate: Date?
     var mediaType: MediaType? // Migration için optional yapıldı
@@ -200,6 +202,8 @@ final class BackupTask: Identifiable, Hashable {
         isEnabled: Bool = true,
         isPaused: Bool = false,
         frequency: BackupFrequency = .manual,
+        scheduledTime: ScheduleTime? = nil,
+        scheduledWeekday: Int? = nil,
         mediaType: MediaType = .photosOnly, // Varsayılan olarak sadece fotoğraflar
         lastBackupDate: Date? = nil,
         nextRunTime: Date? = nil,
@@ -216,6 +220,8 @@ final class BackupTask: Identifiable, Hashable {
         self.isEnabled = isEnabled
         self.isPaused = isPaused
         self.frequency = frequency
+        self.scheduledTime = scheduledTime
+        self.scheduledWeekday = scheduledWeekday
         self.mediaType = mediaType
         self.createdAt = Date()
         self.lastBackupDate = lastBackupDate

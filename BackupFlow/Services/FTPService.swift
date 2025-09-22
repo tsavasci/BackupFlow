@@ -1,6 +1,7 @@
 import Foundation
 import FilesProvider
 import OSLog
+import Photos
 
 enum FTPError: Error, LocalizedError {
     case invalidURL
@@ -803,6 +804,95 @@ final class FTPService: NSObject, @unchecked Sendable {
                     continuation.resume(returning: ())
                 }
             }
+        }
+    }
+    
+    // MARK: - Backup Operations
+    func performBackup(
+        host: String, 
+        port: Int, 
+        username: String, 
+        password: String, 
+        sourcePath: String, 
+        isAnonymous: Bool,
+        mediaType: MediaType,
+        progressHandler: ((Double) -> Void)? = nil
+    ) async throws {
+        
+        print("📡 BackupFlow: FTP yedekleme başlatılıyor - \(host):\(port)")
+        
+        // Connect to FTP server
+        let actualUsername = isAnonymous ? nil : username
+        let actualPassword = isAnonymous ? nil : password
+        
+        try await connect(host: host, port: port, username: actualUsername, password: actualPassword)
+        
+        if sourcePath == "PHOTOS_LIBRARY" {
+            // Photo library backup
+            try await backupPhotoLibrary(mediaType: mediaType, progressHandler: progressHandler)
+        } else {
+            // Directory backup
+            let sourceURL = URL(fileURLWithPath: sourcePath)
+            _ = try await uploadDirectory(localURL: sourceURL, remotePath: "", skipExisting: true, progressHandler: progressHandler)
+        }
+        
+        print("✅ BackupFlow: FTP yedekleme tamamlandı")
+    }
+    
+    private func backupPhotoLibrary(mediaType: MediaType, progressHandler: ((Double) -> Void)? = nil) async throws {
+        let photoManager = PhotoLibraryManager.shared
+        
+        // Get photos based on media type
+        let assets = try await photoManager.getAllAssets(mediaType: mediaType)
+        let totalCount = assets.count
+        
+        print("📸 BackupFlow: \(totalCount) medya dosyası bulundu")
+        
+        // Create photos directory if it doesn't exist
+        let photosDir = "photos"
+        do {
+            try await createDirectory(at: photosDir)
+            print("📁 BackupFlow: Photos klasörü hazır: \(photosDir)")
+        } catch {
+            print("⚠️ BackupFlow: Photos klasörü oluşturma hatası (devam edilecek): \(error)")
+        }
+        
+        for (index, asset) in assets.enumerated() {
+            // Get photo data
+            guard let data = try await photoManager.getAssetData(asset: asset) else {
+                print("⚠️ BackupFlow: Asset verisi alınamadı: \(asset.localIdentifier)")
+                continue
+            }
+            
+            // Generate simple filename without special characters
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
+            let date = asset.creationDate ?? Date()
+            let dateString = dateFormatter.string(from: date)
+            
+            let fileExtension = asset.mediaType == .image ? "jpg" : "mp4"
+            let safeFileName = "\(dateString)_\(String(index + 1).padding(toLength: 3, withPad: "0", startingAt: 0)).\(fileExtension)"
+            let remotePath = "\(photosDir)/\(safeFileName)"
+            
+            print("📤 BackupFlow: Dosya yükleme başlatıldı: \(safeFileName)")
+            
+            // Upload to FTP
+            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(safeFileName)
+            try data.write(to: tempURL)
+            
+            try await uploadFile(localURL: tempURL, remotePath: remotePath) { fileProgress in
+                let overallProgress = (Double(index) + fileProgress) / Double(totalCount)
+                progressHandler?(overallProgress)
+            }
+            
+            // Clean up temp file
+            try? FileManager.default.removeItem(at: tempURL)
+            
+            // Update progress
+            let progress = Double(index + 1) / Double(totalCount)
+            progressHandler?(progress)
+            
+            print("✅ BackupFlow: Yüklendi: \(safeFileName) (\(index + 1)/\(totalCount))")
         }
     }
 }

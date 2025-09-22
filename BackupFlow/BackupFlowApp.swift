@@ -7,15 +7,12 @@
 
 import SwiftUI
 import SwiftData
-import BackgroundTasks
 import UserNotifications
 
 // MARK: - AppDelegate for handling app lifecycle
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Background task registration - AppDelegate'de güvenli
-        print("🔄 BackupFlow: AppDelegate'de background task registration başlatılıyor...")
-        BackupScheduler.shared.registerBackgroundTasks()
+        print("🔄 BackupFlow: AppDelegate başlatıldı (Timer-only mode)")
         
         // Request notification permissions on app launch
         Task {
@@ -35,22 +32,14 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         return true
     }
     
-    func application(_ application: UIApplication, handleEventsForBackgroundURLSession identifier: String, completionHandler: @escaping () -> Void) {
-        BackupScheduler.shared.backgroundCompletionHandler = completionHandler
-    }
-    
     func applicationDidBecomeActive(_ application: UIApplication) {
-        Task {
-            try? await BackupScheduler.shared.refreshTaskStatuses()
-            try? await BackupScheduler.shared.checkAndRescheduleTasks()
-        }
+        // Schedule all tasks when app becomes active
+        BackupScheduler.shared.scheduleAllTasks()
     }
     
     func applicationWillTerminate(_ application: UIApplication) {
-        Task {
-            // Aktif görevleri kaydet
-            try? await BackupScheduler.shared.saveActiveTaskStates()
-        }
+        // Cancel all timers when app terminates
+        BackupScheduler.shared.cancelAllBackgroundTasks()
     }
 }
 

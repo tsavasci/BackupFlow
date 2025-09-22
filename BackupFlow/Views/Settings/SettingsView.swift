@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import StoreKit
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
@@ -44,13 +45,13 @@ struct SettingsView: View {
                 }
                 
                 Button(action: {
-                    // TODO: Open app review page
+                    openAppStoreReview()
                 }) {
                     Text("settings.rate_app".localized)
                 }
                 
                 Button(action: {
-                    // TODO: Open support email
+                    openSupportEmail()
                 }) {
                     Text("settings.contact_support".localized)
                 }
@@ -91,6 +92,67 @@ struct SettingsView: View {
             Button("alert.ok".localized) { }
         } message: {
             Text("language.restart_message".localized)
+        }
+    }
+    
+    private func openAppStoreReview() {
+        // iOS 14+ için SKStoreReviewController kullan (daha iyi UX)
+        if #available(iOS 14.0, *) {
+            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+                SKStoreReviewController.requestReview(in: windowScene)
+                print("📱 BackupFlow: Native review dialog açılıyor")
+            }
+        } else {
+            // iOS 13 için fallback
+            SKStoreReviewController.requestReview()
+            print("📱 BackupFlow: Review request gönderildi")
+        }
+        
+        // Alternatif olarak direkt App Store'a yönlendirmek için:
+        // Bu kodu yayınlandıktan sonra gerçek App ID ile kullanabilirsiniz
+        /*
+        let appID = "YOUR_APP_ID_HERE" 
+        let reviewURL = "https://apps.apple.com/app/id\(appID)?action=write-review"
+        
+        if let url = URL(string: reviewURL) {
+            UIApplication.shared.open(url)
+        }
+        */
+    }
+    
+    private func openSupportEmail() {
+        let email = "tamersavasci@icloud.com"
+        let subject = "BackupFlow Support Request"
+        let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
+        let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+        let deviceModel = UIDevice.current.model
+        let iosVersion = UIDevice.current.systemVersion
+        
+        let body = """
+        
+        
+        ---
+        App Version: \(appVersion) (\(buildNumber))
+        Device: \(deviceModel)
+        iOS: \(iosVersion)
+        """
+        
+        let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        let encodedBody = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        let mailtoURL = "mailto:\(email)?subject=\(encodedSubject)&body=\(encodedBody)"
+        
+        guard let url = URL(string: mailtoURL) else {
+            print("❌ BackupFlow: Geçersiz email URL")
+            return
+        }
+        
+        if UIApplication.shared.canOpenURL(url) {
+            UIApplication.shared.open(url)
+            print("📧 BackupFlow: Destek email'i açılıyor")
+        } else {
+            // Mail app yoksa, sadece email adresini clipboard'a kopyala
+            UIPasteboard.general.string = email
+            print("📋 BackupFlow: Email adresi kopyalandı: \(email)")
         }
     }
     

@@ -460,6 +460,8 @@ struct BackupView: View {
             displayName: displayName,
             isEnabled: true,
             frequency: frequency,
+            scheduledTime: (frequencyType == .daily || frequencyType == .weekly) ? selectedTime : nil,
+            scheduledWeekday: (frequencyType == .weekly) ? selectedDay : nil,
             mediaType: isPhotoLibrarySelected ? selectedMediaType : .photosOnly // Foto kütüphanesi seçilmişse kullanıcının tercihini, değilse varsayılan değeri kullan
         )
         
@@ -495,6 +497,7 @@ struct BackupView: View {
         }
     }
     
+    // MARK: - Helper Methods
     private func resetForm() {
         selectedURL = nil
         isPhotoLibrarySelected = false

@@ -27,7 +27,12 @@ struct AboutView: View {
                     
                     InfoRow(icon: "doc.text", title: "Lisans", description: "Bu uygulama MIT Lisansı altında sağlanmaktadır.")
                     
-                    InfoRow(icon: "envelope", title: "İletişim", description: "destek@example.com")
+                    Button(action: {
+                        openSupportEmail()
+                    }) {
+                        InfoRow(icon: "envelope", title: "İletişim", description: "tamersavasci@icloud.com")
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
                 .padding()
                 
@@ -47,6 +52,42 @@ struct AboutView: View {
             .padding()
         }
         .navigationTitle("Hakkında")
+    }
+    
+    private func openSupportEmail() {
+        let email = "tamersavasci@icloud.com"
+        let subject = "BackupFlow Support Request"
+        let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
+        let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+        let deviceModel = UIDevice.current.model
+        let iosVersion = UIDevice.current.systemVersion
+        
+        let body = """
+        
+        
+        ---
+        App Version: \(appVersion) (\(buildNumber))
+        Device: \(deviceModel)
+        iOS: \(iosVersion)
+        """
+        
+        let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        let encodedBody = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        let mailtoURL = "mailto:\(email)?subject=\(encodedSubject)&body=\(encodedBody)"
+        
+        guard let url = URL(string: mailtoURL) else {
+            print("❌ BackupFlow: Geçersiz email URL")
+            return
+        }
+        
+        if UIApplication.shared.canOpenURL(url) {
+            UIApplication.shared.open(url)
+            print("📧 BackupFlow: Destek email'i açılıyor")
+        } else {
+            // Mail app yoksa, email adresini clipboard'a kopyala
+            UIPasteboard.general.string = email
+            print("📋 BackupFlow: Email adresi kopyalandı: \(email)")
+        }
     }
 }
 
