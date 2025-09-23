@@ -123,47 +123,25 @@ struct DashboardWidget: View {
         
         let timeInterval = nextRun.timeIntervalSince(now)
         
-        // Debug için (daha az sıklıkta göster)
-        if Int(now.timeIntervalSince1970) % 5 == 0 {
-            print("DashboardWidget Debug (User Local Time):")
-            let formatter = DateFormatter()
-            formatter.timeZone = userTimeZone
-            formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-            print("  Now (Local): \(formatter.string(from: now))")
-            print("  Next Run (Local): \(formatter.string(from: nextRun))")
-            print("  Time Interval: \(timeInterval) seconds")
-            print("  User TimeZone: \(userTimeZone.identifier)")
-        }
-        
-        if timeInterval < 0 {
-            if Int(Date().timeIntervalSince1970) % 5 == 0 {
-                print("  Result: Overdue")
-            }
+        // Grace period: Bildirimden gelince 30 saniye tolerans ver
+        if timeInterval < -30 { // 30 saniyeden fazla gecikme varsa "overdue"
             return "dashboard.overdue".localized
         }
         
-        let totalSeconds = Int(timeInterval)
+        // Küçük negatif değerler için 0 kabul et (notification gecikmesi)
+        let adjustedTimeInterval = max(0, timeInterval)
+        let totalSeconds = Int(adjustedTimeInterval)
         let hours = totalSeconds / 3600
         let minutes = (totalSeconds % 3600) / 60
         let seconds = totalSeconds % 60
         
-        if Int(Date().timeIntervalSince1970) % 5 == 0 {
-            print("  Hours: \(hours), Minutes: \(minutes), Seconds: \(seconds)")
-        }
-        
         if hours >= 1 {
             // 1 saat veya daha fazla: HH:MM formatı
             let result = String(format: "%02d:%02d", hours, minutes)
-            if Int(Date().timeIntervalSince1970) % 5 == 0 {
-                print("  Result (HH:MM): \(result)")
-            }
             return result
         } else {
             // 1 saatten az: MM:SS formatı
             let result = String(format: "%02d:%02d", minutes, seconds)
-            if Int(Date().timeIntervalSince1970) % 5 == 0 {
-                print("  Result (MM:SS): \(result)")
-            }
             return result
         }
     }

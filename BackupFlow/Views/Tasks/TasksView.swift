@@ -12,11 +12,6 @@ struct TasksView: View {
         contentView
             .navigationTitle("nav.tasks".localized)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Debug") {
-                        testTimer()
-                    }
-                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     NavigationLink(destination: BackupView()) {
                         Image(systemName: "plus")
@@ -70,17 +65,6 @@ struct TasksView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .onAppear {
-            // Debug: Mevcut görevleri logla
-            print("📋 TasksView: Toplam görev sayısı: \(tasks.count)")
-            for task in tasks {
-                let nextRunStr = task.nextRunTime?.formatted() ?? "nil"
-                print("  - \(task.displayName) (ID: \(task.id.uuidString.prefix(8))): enabled=\(task.isEnabled), nextRun=\(nextRunStr)")
-            }
-            
-            // Debug: Active timer'ları kontrol et
-            BackupScheduler.shared.debugActiveTimers()
-        }
     }
     
     private func deleteButton(for task: BackupTask) -> some View {
@@ -97,28 +81,6 @@ struct TasksView: View {
         withAnimation {
             modelContext.delete(task)
         }
-    }
-    
-    // Test timer function
-    private func testTimer() {
-        print("🧪 BackupFlow: Test timer başlatılıyor - 10 saniye sonra tetiklenecek")
-        
-        let fireDate = Date().addingTimeInterval(10) // 10 saniye sonra
-        let timer = Timer(fire: fireDate, interval: 0, repeats: false) { _ in
-            print("🎉 BackupFlow: TEST TIMER TETRİKLENDİ! - \(Date())")
-            
-            // Bildirim gönder
-            let content = UNMutableNotificationContent()
-            content.title = "Timer Test"
-            content.body = "10 saniyelik test timer başarıyla tetiklendi!"
-            content.sound = .default
-            
-            let request = UNNotificationRequest(identifier: "test-timer", content: content, trigger: nil)
-            UNUserNotificationCenter.current().add(request)
-        }
-        
-        RunLoop.main.add(timer, forMode: .common)
-        print("✅ BackupFlow: Test timer kuruldu - Fire date: \(fireDate)")
     }
 }
 

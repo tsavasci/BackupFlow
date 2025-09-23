@@ -95,8 +95,6 @@ struct TestFTPView: View {
             isTesting = true
             testResult = nil
             
-            let scheduler = BackupScheduler.shared
-            
             // Validate port
             guard let port = Int(ftpPort), port > 0, port <= 65535 else {
                 await MainActor.run {
@@ -119,7 +117,7 @@ struct TestFTPView: View {
             try? await Task.sleep(nanoseconds: 1_000_000_000)
             
             do {
-                try await scheduler.testFTPUpload(host: ftpHost, port: port, username: username, password: password)
+                _ = try await FTPService.shared.testConnection(host: ftpHost, port: port, username: username, password: password)
                 
                 await MainActor.run {
                     testResult = "✓ Test başarılı! FTP sunucusuna bağlanıp dosya yükleyebildiniz."

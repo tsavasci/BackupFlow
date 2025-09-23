@@ -8,11 +8,16 @@
 import SwiftUI
 import SwiftData
 import UserNotifications
+import BackgroundTasks
 
 // MARK: - AppDelegate for handling app lifecycle
 class AppDelegate: NSObject, UIApplicationDelegate {
+    let backgroundTaskIdentifier = "com.tamersavasci.BackupFlow.backupTask"
+
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        print("🔄 BackupFlow: AppDelegate başlatıldı (Timer-only mode)")
+        print("🔄 BackupFlow: AppDelegate başlatıldı (BGTaskScheduler mode)")
+
+        registerBackgroundTask()
         
         // Request notification permissions on app launch
         Task {
@@ -31,21 +36,40 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         
         return true
     }
-    
-    func applicationDidBecomeActive(_ application: UIApplication) {
-        // Schedule all tasks when app becomes active
-        BackupScheduler.shared.scheduleAllTasks()
+
+    func registerBackgroundTask() {
+        BGTaskScheduler.shared.register(forTaskWithIdentifier: backgroundTaskIdentifier, using: nil) { task in
+            // This is called by the OS when it's time to run the task
+            print("🔄 BGTaskScheduler: Görev çalıştırılıyor.")
+            self.handleAppRefresh(task: task as! BGAppRefreshTask)
+        }
+        print("✅ BGTaskScheduler: Arka plan görevi kaydedildi.")
     }
-    
-    func applicationWillTerminate(_ application: UIApplication) {
-        // Cancel all timers when app terminates
-        BackupScheduler.shared.cancelAllBackgroundTasks()
+
+    func handleAppRefresh(task: BGAppRefreshTask) {
+        // Schedule a new refresh task for the future
+        BackupScheduler.shared.scheduleAppRefresh()
+
+        task.expirationHandler = {
+            // Clean up any unfinished work
+            task.setTaskCompleted(success: false)
+            print("❌ BGTaskScheduler: Görev süresi doldu, iptal edildi.")
+        }
+
+        // Perform the backup in a background-safe way
+        Task {
+            print("⏳ BGTaskScheduler: Yedekleme işlemi başlatılıyor...")
+            let success = await BackupScheduler.shared.executeBackgroundTask()
+            print(success ? "✅ BGTaskScheduler: Görev başarıyla tamamlandı." : "⚠️ BGTaskScheduler: Görev tamamlandı ancak yedekleme yapılamadı.")
+            task.setTaskCompleted(success: success)
+        }
     }
 }
 
 @main
 struct BackupFlowApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @Environment(\.scenePhase) private var scenePhase
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             BackupTask.self,
@@ -115,5 +139,21 @@ struct BackupFlowApp: App {
             MainTabView()
         }
         .modelContainer(sharedModelContainer)
+        .onChange(of: scenePhase, { oldValue, newValue in
+            if newValue == .background {
+                print("🔄 App moved to background. Scheduling app refresh task.")
+                BackupScheduler.shared.scheduleAppRefresh()
+            } else if newValue == .active {
+                // App açıldığında badge'i temizle
+                Task {
+                    do {
+                        try await UNUserNotificationCenter.current().setBadgeCount(0)
+                        print("🔔 BackupFlow: App badge temizlendi")
+                    } catch {
+                        print("❌ BackupFlow: Badge temizleme hatası: \(error)")
+                    }
+                }
+            }
+        })
     }
 }

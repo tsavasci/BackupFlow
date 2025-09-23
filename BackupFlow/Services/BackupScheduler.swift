@@ -1,12 +1,14 @@
 import Foundation
 import OSLog
 import SwiftUI
+import UIKit
 import SwiftData
 import Combine
 import UserNotifications
 import UniformTypeIdentifiers
 import Photos
 import AVFoundation
+import BackgroundTasks
 
 @MainActor
 final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCenterDelegate {
@@ -55,7 +57,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         self.backgroundSessionIdentifier = b + ".background"
         super.init()
         setupNotifications()
-        print("🔄 BackupFlow: BackupScheduler init tamamlandı (Timer-only mode)")
+        print("🔄 BackupFlow: BackupScheduler init tamamlandı (BGTask + Timer hibrit)")
     }
     
     // MARK: - Public Interface
@@ -140,7 +142,8 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         let now = Date()
         let timeInterval = nextRunTime.timeIntervalSince(now)
         
-        if timeInterval <= 0 {
+        // Grace period: 30 saniyeye kadar gecikme kabul et (notification delay için)
+        if timeInterval <= 30 { // 30 saniye veya daha az varsa hemen çalıştır
             print("⚡ BackupFlow: Görev hemen çalışacak: \(task.displayName)")
             Task {
                 try? await performBackup(task: task)
@@ -157,12 +160,20 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             Task { @MainActor in
                 self?.scheduledTimers.removeValue(forKey: taskId)
                 
-                // Find the task by ID and perform backup
+                // Find the task by ID
                 guard let container = Self.sharedModelContainer else { return }
                 let context = ModelContext(container)
                 let descriptor = FetchDescriptor<BackupTask>(predicate: #Predicate<BackupTask> { $0.id == taskId })
                 if let foundTask = try? context.fetch(descriptor).first {
-                    try? await self?.performBackup(task: foundTask)
+                    // Uygulama ön plandaysa direkt başlat
+                    if UIApplication.shared.applicationState == .active {
+                        print("📱 BackupFlow: Uygulama aktif - Yedekleme direkt başlatılıyor")
+                        try? await self?.performBackup(task: foundTask)
+                    } else {
+                        // Arka plandaysa bildirim gönder
+                        print("🔔 BackupFlow: Uygulama arka planda - Bildirim gönderiliyor")
+                        self?.sendScheduledBackupNotification(for: foundTask)
+                    }
                 }
             }
         }
@@ -358,6 +369,49 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         UNUserNotificationCenter.current().add(request)
     }
     
+    /// Zamanı gelen görev için bildirim gönderir (action button ile)
+    public func sendScheduledBackupNotification(for task: BackupTask) {
+        let content = UNMutableNotificationContent()
+        content.title = "🕐 Yedekleme Zamanı!"
+        content.body = "'\(task.displayName)' görevi çalıştırılmaya hazır."
+        content.sound = .default
+        content.badge = 1
+        
+        // Action button ekle
+        let startAction = UNNotificationAction(
+            identifier: "START_BACKUP_\(task.id)",
+            title: "Yedeklemeyi Başlat",
+            options: [.foreground]  // Uygulamayı açar
+        )
+        
+        let cancelAction = UNNotificationAction(
+            identifier: "CANCEL_BACKUP_\(task.id)",
+            title: "İptal",
+            options: []
+        )
+        
+        let category = UNNotificationCategory(
+            identifier: "SCHEDULED_BACKUP",
+            actions: [startAction, cancelAction],
+            intentIdentifiers: [],
+            options: []
+        )
+        
+        // Category'yi register et
+        UNUserNotificationCenter.current().setNotificationCategories([category])
+        content.categoryIdentifier = "SCHEDULED_BACKUP"
+        
+        // Hemen gönder
+        let request = UNNotificationRequest(
+            identifier: "scheduled-backup-\(task.id)",
+            content: content,
+            trigger: nil
+        )
+        
+        UNUserNotificationCenter.current().add(request)
+        print("🔔 BackupFlow: Zamanlanmış yedekleme bildirimi gönderildi: \(task.displayName)")
+    }
+    
     // MARK: - Background Task Management (Compatibility)
     public func cancelAllBackgroundTasks() {
         // Cancel all active timers (replacement for background tasks)
@@ -367,33 +421,99 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         scheduledTimers.removeAll()
         print("🚫 BackupFlow: Tüm timer'lar iptal edildi")
     }
-    
-    // MARK: - Debug
-    public func debugActiveTimers() {
-        print("🔍 BackupFlow: Aktif timer sayısı: \(scheduledTimers.count)")
-        for (taskId, _) in scheduledTimers {
-            print("   📍 Timer ID: \(taskId)")
+
+    // MARK: - BGTaskScheduler Integration
+    /// iOS arka plan yenileme görevi planlar.
+    public func scheduleAppRefresh() {
+        let identifier = "com.tamersavasci.BackupFlow.backupTask"
+
+        // En erken tarih hesapla
+        let earliestDate: Date? = {
+            guard let container = Self.sharedModelContainer else { return nil }
+            let context = ModelContext(container)
+            if let tasks = try? context.fetch(FetchDescriptor<BackupTask>()) {
+                return tasks
+                    .compactMap { $0.nextRunTime }
+                    .sorted().first
+            }
+            return nil
+        }()
+
+        let request = BGAppRefreshTaskRequest(identifier: identifier)
+        if let earliestDate = earliestDate {
+            let now = Date()
+            // Eğer earliestDate geçmişse 5 dk ileri al
+            var candidate = earliestDate < now ? now.addingTimeInterval(300) : earliestDate
+            // Apple genelde çok kısa aralıkları çalıştırmıyor; en az 15 dk kuralı (debug kolaylığı için)
+            let minimumLead: TimeInterval = 15 * 60
+            if candidate.timeIntervalSince(now) < minimumLead {
+                candidate = now.addingTimeInterval(minimumLead)
+                print("ℹ️ BGTaskScheduler: Earliest çok yakın, 15 dk'ya yuvarlandı -> \(candidate)")
+            }
+            request.earliestBeginDate = candidate
+        } else {
+            // Hiç görev yoksa 1 saat sonrası
+            request.earliestBeginDate = Date().addingTimeInterval(3600)
+        }
+
+        do {
+            try BGTaskScheduler.shared.submit(request)
+            if let d = request.earliestBeginDate {
+                print("✅ BGTaskScheduler: App refresh görevi planlandı -> \(d)")
+            } else {
+                print("✅ BGTaskScheduler: App refresh görevi planlandı (tarih yok)")
+            }
+        } catch {
+            let nsError = error as NSError
+            var reason = "bilinmeyen"
+            if nsError.domain == "BGTaskSchedulerErrorDomain" {
+                switch nsError.code {
+                case 1: reason = "notPermitted (Background Modes veya identifier)"
+                case 2: reason = "tooManyPendingTaskRequests"
+                case 3: reason = "noSuchTaskRequest (identifier yanlış?)"
+                default: break
+                }
+            }
+            print("❌ BGTaskScheduler: Görev planlanamadı (code=\(nsError.code) reason=\(reason)): \(error)")
+            print("⛑ Fallback: Foreground timer'lar çalışmaya devam edecek.")
         }
     }
-    
-    // MARK: - Test Methods
-    public func testFTPUpload(host: String, port: Int, username: String, password: String) async throws {
-        print("🧪 BackupFlow: FTP test başlatılıyor - \(host):\(port)")
-        
-        // Simple FTP connection test - simulate upload
-        guard !host.isEmpty else {
-            throw NSError(domain: "FTPError", code: 1, userInfo: [NSLocalizedDescriptionKey: "FTP sunucu adresi boş"])
+
+    /// Arka plan görevi tetiklendiğinde çağrılır.
+    public func executeBackgroundTask() async -> Bool {
+        guard let container = Self.sharedModelContainer else {
+            print("❌ BGTaskScheduler: ModelContainer yok")
+            return false
         }
-        
-        guard port > 0 && port <= 65535 else {
-            throw NSError(domain: "FTPError", code: 2, userInfo: [NSLocalizedDescriptionKey: "Geçersiz port numarası"])
+        let context = ModelContext(container)
+        let now = Date()
+        let descriptor = FetchDescriptor<BackupTask>()
+        guard let tasks = try? context.fetch(descriptor), !tasks.isEmpty else {
+            print("ℹ️ BGTaskScheduler: Çalışacak görev yok")
+            return true
         }
-        
-        // Simulate connection delay
-        try await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
-        
-        // For now, just return success - real FTP implementation would go here
-        print("✅ BackupFlow: FTP test tamamlandı - \(host):\(port)")
+        let dueTasks = tasks.filter { task in
+            guard !task.isPaused, task.isEnabled, task.frequency != .manual else { return false }
+            if let next = task.nextRunTime { return next <= now }
+            return false
+        }
+        if dueTasks.isEmpty {
+            print("⏱️ BGTaskScheduler: Zamanı gelen görev yok, yeniden planlanıyor")
+            scheduleAppRefresh()
+            return true
+        }
+        print("🚀 BGTaskScheduler: \(dueTasks.count) görev arka planda yürütülecek")
+        var anySuccess = false
+        for task in dueTasks {
+            do {
+                try await performBackup(task: task)
+                anySuccess = true
+            } catch {
+                print("⚠️ BGTaskScheduler: Görev başarısız -> \(task.displayName) - \(error)")
+            }
+        }
+        scheduleAppRefresh()
+        return anySuccess
     }
 }
 
@@ -408,6 +528,7 @@ extension BackupScheduler: URLSessionDelegate, URLSessionTaskDelegate {
         
         // Use FTPService for real backup
         let ftpService = FTPService.shared
+        let startTime = Date()
         
         do {
             // Connect to FTP server
@@ -415,7 +536,7 @@ extension BackupScheduler: URLSessionDelegate, URLSessionTaskDelegate {
             print("📡 BackupFlow: FTP sunucusuna bağlanılıyor...")
             
             // Perform the actual backup using FTPService
-            try await ftpService.performBackup(
+            let syncResult = try await ftpService.performBackup(
                 host: task.ftpHost,
                 port: task.ftpPort,
                 username: task.isAnonymous ? "" : task.ftpUsername,
@@ -436,15 +557,122 @@ extension BackupScheduler: URLSessionDelegate, URLSessionTaskDelegate {
             task.lastBackupDate = Date()
             task.currentFile = nil
             
+            // Calculate next run time to prevent immediate re-execution
+            task.nextRunTime = calculateNextRunTime(for: task)
+            
             print("✅ BackupFlow: Gerçek FTP yedekleme tamamlandı: \(task.displayName)")
+            print("⏰ BackupFlow: Sonraki çalışma zamanı: \(userLocalDateFormatter.string(from: task.nextRunTime!))")
+            
+            // Create backup history record
+            let duration = Date().timeIntervalSince(startTime)
+            await createBackupHistoryRecord(
+                task: task,
+                syncResult: syncResult,
+                duration: duration,
+                status: "completed"
+            )
+            
+            // Send detailed notification with sync results
+            await sendBackupCompletionNotification(task: task, syncResult: syncResult)
+            
+            // Backup tamamlandıktan sonra badge'i temizle (başarılı backup sonrası)
+            do {
+                try await UNUserNotificationCenter.current().setBadgeCount(0)
+            } catch {
+                print("❌ BackupFlow: Badge temizleme hatası: \(error)")
+            }
             
         } catch {
             task.backupStatus = .failed
-            task.lastError = error.localizedDescription
+            task.progress = 0.0
             task.currentFile = nil
             
-            print("❌ BackupFlow: FTP yedekleme başarısız: \(task.displayName) - \(error)")
+            // Create backup history record for failure
+            let duration = Date().timeIntervalSince(startTime)
+            await createBackupHistoryRecord(
+                task: task,
+                syncResult: FTPService.SyncResult(), // Empty result for failure
+                duration: duration,
+                status: "failed",
+                errorMessage: error.localizedDescription
+            )
+            
+            print("❌ BackupFlow: FTP yedekleme hatası: \(error.localizedDescription)")
             throw error
+        }
+    }
+    
+    /// Detaylı yedekleme tamamlanma bildirimi gönder
+    private func sendBackupCompletionNotification(task: BackupTask, syncResult: FTPService.SyncResult) async {
+        guard await UNUserNotificationCenter.current().notificationSettings().authorizationStatus == .authorized else {
+            return
+        }
+        
+        let content = UNMutableNotificationContent()
+        content.title = "✅ Yedekleme Tamamlandı"
+        content.body = """
+        \(task.displayName) yedekleme işlemi tamamlandı!
+        
+        📊 Yedekleme Raporu:
+        📤 \(syncResult.newFiles) yeni dosya kopyalandı
+        🔄 \(syncResult.updatedFiles) dosya güncellendi  
+        ⏭ \(syncResult.skippedFiles) aynı dosya pas geçildi
+        🗑 \(syncResult.deletedFiles) dosya silindi
+        
+        Toplam işlenen: \(syncResult.totalProcessed) dosya
+        """
+        content.sound = .default
+        
+        let request = UNNotificationRequest(
+            identifier: "backup_completed_\(task.id.uuidString)",
+            content: content,
+            trigger: nil
+        )
+        
+        do {
+            try await UNUserNotificationCenter.current().add(request)
+            print("🔔 BackupFlow: Detaylı yedekleme bildirimi gönderildi")
+        } catch {
+            print("❌ BackupFlow: Bildirim gönderme hatası: \(error)")
+        }
+    }
+    
+    /// Backup history record oluştur
+    private func createBackupHistoryRecord(
+        task: BackupTask,
+        syncResult: FTPService.SyncResult,
+        duration: TimeInterval,
+        status: String,
+        errorMessage: String? = nil
+    ) async {
+        guard let container = Self.sharedModelContainer else { return }
+        
+        let context = ModelContext(container)
+        
+        // Create backup history record
+        let historyRecord = BackupHistory(
+            id: UUID(),
+            timestamp: Date(),
+            status: status,
+            filesProcessed: syncResult.totalProcessed,
+            totalFiles: syncResult.totalProcessed,
+            bytesTransferred: 0, // FTP service doesn't track bytes yet
+            totalBytes: 0,       // Could be enhanced in future
+            errorMessage: errorMessage,
+            duration: duration
+        )
+        
+        // Link to task
+        historyRecord.task = task
+        task.history.append(historyRecord)
+        
+        // Save to database
+        do {
+            context.insert(historyRecord)
+            try context.save()
+            print("📝 BackupFlow: Geçmiş kaydı eklendi - \(syncResult.totalProcessed) dosya, \(Int(duration))s")
+        } catch {
+            print("❌ BackupFlow: Geçmiş kaydı hatası: \(error)")
         }
     }
 }
@@ -456,7 +684,50 @@ extension BackupScheduler {
     }
     
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
-        print("🔔 BackupFlow: Bildirime tıklandı: \(response.notification.request.identifier)")
+        let identifier = response.notification.request.identifier
+        let actionIdentifier = response.actionIdentifier
+        
+        print("🔔 BackupFlow: Bildirime tıklandı - ID: \(identifier), Action: \(actionIdentifier)")
+        
+        // Bildirim okunduğunda badge'i temizle
+        Task {
+            do {
+                try await UNUserNotificationCenter.current().setBadgeCount(0)
+                print("🔔 BackupFlow: Bildirim badge temizlendi")
+            } catch {
+                print("❌ BackupFlow: Badge temizleme hatası: \(error)")
+            }
+        }
+        
+        // Action'a göre işlem yap
+        if actionIdentifier.hasPrefix("START_BACKUP_") {
+            // Task ID'yi çıkar
+            let taskIdString = String(actionIdentifier.dropFirst("START_BACKUP_".count))
+            if let taskId = UUID(uuidString: taskIdString) {
+                print("📱 BackupFlow: Yedekleme başlatma talebi - Task ID: \(taskId.uuidString)")
+                
+                // Global state'e yedekleme talebi kaydet
+                UserDefaults.standard.set(taskId.uuidString, forKey: "pendingBackupTaskId")
+                UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "pendingBackupTimestamp")
+                
+                // App açıldığında bu task otomatik başlatılacak
+            }
+        } else if actionIdentifier.hasPrefix("CANCEL_BACKUP_") {
+            print("❌ BackupFlow: Kullanıcı yedeklemeyi iptal etti")
+            // İsteğe bağlı: İptal bildirimi gönder
+        }
+        
         completionHandler()
+    }
+    
+    /// App icon badge'ini temizler
+    @MainActor
+    public func clearAppBadge() async {
+        do {
+            try await UNUserNotificationCenter.current().setBadgeCount(0)
+            print("🔔 BackupFlow: App badge manuel olarak temizlendi")
+        } catch {
+            print("❌ BackupFlow: Badge temizleme hatası: \(error)")
+        }
     }
 }
