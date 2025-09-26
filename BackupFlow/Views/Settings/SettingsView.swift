@@ -6,11 +6,9 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var isTesting = false
     @State private var showingResetAlert = false
-    @State private var showingLanguageAlert = false
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
     @AppStorage("autoStartBackup") private var autoStartBackup = true
     @AppStorage("keepHistoryDays") private var keepHistoryDays = 30
-    @StateObject private var languageManager = LanguageManager.shared
     
     var body: some View {
         Form {
@@ -25,15 +23,7 @@ struct SettingsView: View {
                     Text("settings.unlimited".localized).tag(0)
                 }
                 
-                // Language Selection
-                Picker("language.selection".localized, selection: $languageManager.currentLanguage) {
-                    ForEach(LanguageManager.SupportedLanguage.allCases) { language in
-                        Text(language.displayName).tag(language)
-                    }
-                }
-                .onChange(of: languageManager.currentLanguage) { _, _ in
-                    showingLanguageAlert = true
-                }
+                // Dil seçimi kaldırıldı - Uygulama sadece Türkçe
             }
             
             Section(header: Text("settings.about_section".localized)) {
@@ -87,11 +77,6 @@ struct SettingsView: View {
             }
         } message: {
             Text("settings.reset_confirm_message".localized)
-        }
-        .alert("language.restart_required".localized, isPresented: $showingLanguageAlert) {
-            Button("alert.ok".localized) { }
-        } message: {
-            Text("language.restart_message".localized)
         }
     }
     
@@ -184,8 +169,7 @@ struct SettingsView: View {
                 autoStartBackup = true
                 keepHistoryDays = 30
                 
-                // Reset language to system default
-                languageManager.setLanguage(.system)
+                // Dil sıfırlama kaldırıldı - Uygulama sadece Türkçe
                 
             } catch {
                 print("❌ BackupFlow: Veri silme hatası: \(error)")

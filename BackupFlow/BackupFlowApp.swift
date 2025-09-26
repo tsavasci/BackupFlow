@@ -138,13 +138,11 @@ struct BackupFlowApp: App {
             print("❌ BackupFlow: MediaType migration hatası: \(error)")
         }
     }
-
+    
     init() {
-        // Initialize LanguageManager early
-        _ = LanguageManager.shared
-        
         // Test localization
-        print("🌍 Test localization: \("settings.title".localized)")
+        let testString = "settings.title".localized
+        print("🌍 Test localization: \(testString)")
         
         // BackupScheduler'a shared container'ı inject et
         BackupScheduler.sharedModelContainer = sharedModelContainer
@@ -154,20 +152,24 @@ struct BackupFlowApp: App {
         appearance.configureWithOpaqueBackground()
         UINavigationBar.appearance().standardAppearance = appearance
         UINavigationBar.appearance().scrollEdgeAppearance = appearance
+        
+        // Force Turkish locale for the app
+        UserDefaults.standard.set(["tr"], forKey: "AppleLanguages")
+        UserDefaults.standard.synchronize()
     }
-
+    
     var body: some Scene {
         WindowGroup {
             MainTabView()
         }
         .modelContainer(sharedModelContainer)
-        .onChange(of: scenePhase, { oldValue, newValue in
-            if newValue == .background {
+        .onChange(of: scenePhase) { (oldPhase: ScenePhase, newPhase: ScenePhase) in
+            if newPhase == .background {
                 print("🔄 App moved to background. Scheduling app refresh task.")
                 BackupScheduler.shared.scheduleAppRefresh()
                 // Ayrıca processing görevi de planla (ağ gereksinimi olan daha uzun işler için)
                 BackupScheduler.shared.scheduleProcessingTask()
-            } else if newValue == .active {
+            } else if newPhase == .active {
                 // App açıldığında badge'i temizle
                 Task {
                     do {
@@ -178,6 +180,6 @@ struct BackupFlowApp: App {
                     }
                 }
             }
-        })
+        }
     }
 }

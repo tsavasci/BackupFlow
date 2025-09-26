@@ -12,5 +12,15 @@
 		<string>fetch</string>
 		<string>processing</string>
 	</array>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>tr</string>
+	</array>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>tr_TR</string>
+	<key>CFBundleLocalizedResources</key>
+	<array>
+		<string>tr</string>
+	</array>
 </dict>
 </plist>

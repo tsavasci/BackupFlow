@@ -47,6 +47,8 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     private let maxRetryAttempts = 3
     private var retryCount: [UUID: Int] = [:]
     private var lastScheduledTime: Date?
+    private var lastNotificationSentAt: [UUID: Date] = [:]
+    private var lastScheduledTargetTime: [UUID: Date] = [:]
     
     @Published private(set) var isProcessing = false
     
@@ -118,22 +120,24 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         cancelTimer(for: task.id)
         task.isPaused = true
         print("⏸️ BackupFlow: Görev duraklatıldı: \(task.displayName)")
-        
-        // Send pause notification
-        sendPauseNotification(for: task)
+        // Kullanıcı bildirimi gönderme (gürültüyü azaltmak için kaldırıldı)
+
+        // Ayrıca bekleyen zamanlanmış bildirimleri iptal et (çift bildirimi önlemek için)
+        let pendingId = "scheduled-backup-\(task.id)"
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [pendingId])
+        UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [pendingId])
+        lastNotificationSentAt[task.id] = nil
+        lastScheduledTargetTime[task.id] = nil
     }
     
     public func resumeTask(_ task: BackupTask) {
         task.isPaused = false
         print("▶️ BackupFlow: Görev devam ettirildi: \(task.displayName)")
         
-        // Reschedule the task
+        // Reschedule the task (bildirim gönderimi yok)
         Task {
             await scheduleTask(task)
         }
-        
-        // Send resume notification
-        sendResumeNotification(for: task)
     }
     
     public func scheduleBackup(task: BackupTask) async throws {
@@ -173,17 +177,28 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             return
         }
         
-        // Cancel existing timer for this task
-        cancelTimer(for: task.id)
-        
-        // Calculate next run time
+        // Calculate next run time (prospective)
         guard let nextRunTime = calculateNextRunTime(for: task) else {
             print("❌ BackupFlow: Sonraki çalışma zamanı hesaplanamadı: \(task.displayName)")
             return
         }
+        // Eğer aynı hedef zaman için zaten aktif bir timer varsa, tekrar planlama
+        if let last = lastScheduledTargetTime[task.id], abs(last.timeIntervalSince(nextRunTime)) < 1, scheduledTimers[task.id] != nil {
+            print("ℹ️ BackupFlow: Zaten aynı hedef zamana planlanmış, tekrar planlanmıyor: \(task.displayName)")
+            return
+        }
+
+        // Cancel existing timer for this task
+        cancelTimer(for: task.id)
+
+        // Var ise bekleyen/delivered zamanlanmış bildirimleri temizle (önceki planlamadan kalmış olabilir)
+        let pendingId = "scheduled-backup-\(task.id)"
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [pendingId])
+        UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [pendingId])
         
         // Update task's next run time
         task.nextRunTime = nextRunTime
+        lastScheduledTargetTime[task.id] = nextRunTime
         
         // Schedule timer
         let now = Date()
@@ -418,6 +433,12 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     
     /// Zamanı gelen görev için bildirim gönderir (action button ile)
     public func sendScheduledBackupNotification(for task: BackupTask) {
+        // Son bildirimin üzerinden yeterli süre geçmediyse tekrarlama (debounce)
+        if let last = lastNotificationSentAt[task.id], Date().timeIntervalSince(last) < 60 {
+            print("ℹ️ BackupFlow: Yakın zamanda aynı görev için bildirim gönderilmiş, tekrar edilmiyor")
+            return
+        }
+
         let content = UNMutableNotificationContent()
         content.title = "🕐 Yedekleme Zamanı!"
         content.body = "'\(task.displayName)' görevi çalıştırılmaya hazır."
@@ -448,15 +469,17 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         UNUserNotificationCenter.current().setNotificationCategories([category])
         content.categoryIdentifier = "SCHEDULED_BACKUP"
         
-        // Hemen gönder
+        // Hemen gönder: önce aynı kimlikli pending ve delivered bildirimleri temizle
         let request = UNNotificationRequest(
             identifier: "scheduled-backup-\(task.id)",
             content: content,
             trigger: nil
         )
-        
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [request.identifier])
+        UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [request.identifier])
         UNUserNotificationCenter.current().add(request)
         print("🔔 BackupFlow: Zamanlanmış yedekleme bildirimi gönderildi: \(task.displayName)")
+        lastNotificationSentAt[task.id] = Date()
     }
     
     // MARK: - Background Task Management (Compatibility)
