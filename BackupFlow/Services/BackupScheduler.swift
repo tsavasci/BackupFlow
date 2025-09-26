@@ -591,36 +591,19 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
 extension BackupScheduler: URLSessionDelegate, URLSessionTaskDelegate {
     
     private func executeBackup(task: BackupTask) async throws {
-        print("🚀 BackupFlow: Gerçek FTP yedekleme başlatılıyor: \(task.displayName)")
+        print("🚀 BackupFlow: Yedekleme başlatılıyor: \(task.displayName) - \(task.backupType.rawValue)")
         
         task.backupStatus = .preparing
         task.progress = 0.0
-        
-        // Use FTPService for real backup
-        let ftpService = FTPService.shared
         let startTime = Date()
         
         do {
-            // Connect to FTP server
-            task.backupStatus = .uploading
-            print("📡 BackupFlow: FTP sunucusuna bağlanılıyor...")
-            
-            // Perform the actual backup using FTPService
-            let syncResult = try await ftpService.performBackup(
-                host: task.ftpHost,
-                port: task.ftpPort,
-                username: task.isAnonymous ? "" : task.ftpUsername,
-                password: task.isAnonymous ? "" : task.ftpPassword,
-                sourcePath: task.sourcePath,
-                isAnonymous: task.isAnonymous,
-                mediaType: task.safeMediaType,
-                progressHandler: { progress in
-                    Task { @MainActor in
-                        task.progress = progress
-                        task.currentFile = "Uploading..." // FTPService'den file name gelecek
-                    }
-                }
-            )
+            switch task.backupType {
+            case .ftp:
+                try await executeFTPBackup(task: task, startTime: startTime)
+            case .webdav:
+                try await executeWebDAVBackup(task: task, startTime: startTime)
+            }
             
             task.backupStatus = .completed
             task.progress = 1.0
@@ -630,12 +613,138 @@ extension BackupScheduler: URLSessionDelegate, URLSessionTaskDelegate {
             // Calculate next run time to prevent immediate re-execution
             task.nextRunTime = calculateNextRunTime(for: task)
             
-            print("✅ BackupFlow: Gerçek FTP yedekleme tamamlandı: \(task.displayName)")
+            print("✅ BackupFlow: Yedekleme tamamlandı: \(task.displayName) - \(task.backupType.rawValue)")
             if let next = task.nextRunTime {
                 print("⏰ BackupFlow: Sonraki çalışma zamanı: \(userLocalDateFormatter.string(from: next))")
             } else {
                 print("⏰ BackupFlow: Sonraki çalışma zamanı: (manuel görev - zamanlanmadı)")
             }
+        } catch {
+            task.backupStatus = .failed
+            task.lastBackupDate = Date()
+            task.currentFile = nil
+            
+            // Create error history record
+            let duration = Date().timeIntervalSince(startTime)
+            await createBackupHistoryRecord(
+                task: task,
+                syncResult: FTPService.SyncResult(newFiles: 0, skippedFiles: 0, totalBytes: 0),
+                duration: duration,
+                status: "failed"
+            )
+            
+            throw error
+        }
+    }
+    
+    private func executeFTPBackup(task: BackupTask, startTime: Date) async throws {
+        print("📡 BackupFlow: FTP yedekleme başlatılıyor...")
+        task.backupStatus = .uploading
+        
+        let ftpService = FTPService.shared
+        
+        // Perform the actual backup using FTPService
+        let syncResult = try await ftpService.performBackup(
+            host: task.serverHost,
+            port: task.serverPort,
+            username: task.isAnonymous ? "" : task.serverUsername,
+            password: task.isAnonymous ? "" : task.serverPassword,
+            sourcePath: task.sourcePath,
+            isAnonymous: task.isAnonymous,
+            mediaType: task.mediaType,
+            progressHandler: { progress in
+                Task { @MainActor in
+                    task.progress = progress
+                    task.currentFile = "Uploading..."
+                }
+            }
+        )
+        
+        // Create backup history record
+        let duration = Date().timeIntervalSince(startTime)
+        await createBackupHistoryRecord(
+            task: task,
+            syncResult: syncResult,
+            duration: duration,
+            status: "completed"
+        )
+        
+        // Send detailed notification with sync results
+        await sendBackupCompletionNotification(task: task, syncResult: syncResult)
+    }
+    
+    private func executeWebDAVBackup(task: BackupTask, startTime: Date) async throws {
+        print("🌐 BackupFlow: WebDAV yedekleme başlatılıyor...")
+        task.backupStatus = .uploading
+        
+        do {
+            // Get WebDAV service instance
+            let webDAVService = WebDAVService.shared
+            
+            // Update UI with connection status
+            task.currentFile = "WebDAV sunucusuna bağlanılıyor..."
+            
+            // Configure WebDAV connection parameters
+            let username = task.serverUsername.isEmpty ? nil : task.serverUsername
+            let password = task.serverPassword.isEmpty ? nil : task.serverPassword
+            
+            // Convert host to proper format if needed
+            var host = task.serverHost
+            if !host.hasPrefix("http://") && !host.hasPrefix("https://") {
+                host = "https://" + host
+            }
+            
+            // Extract host and port from URL
+            guard let url = URL(string: host) else {
+                throw NSError(domain: "WebDAV Error", code: -1, userInfo: [NSLocalizedDescriptionKey: "Geçersiz WebDAV sunucu adresi"])
+            }
+            
+            let hostName = url.host ?? task.serverHost
+            let port = url.port ?? (url.scheme?.lowercased() == "https" ? 443 : 80)
+            
+            // Update UI with connection status
+            task.currentFile = "WebDAV sunucusuna bağlanılıyor: \(hostName)"
+            
+            // Connect to WebDAV server
+            try await webDAVService.connect(
+                host: hostName,
+                port: port,
+                username: username,
+                password: password
+            )
+            
+            // Update UI with backup status
+            task.currentFile = "Yedekleme hazırlanıyor..."
+            
+            // Determine source path
+            let sourcePath = task.sourcePath == "PHOTOS_LIBRARY" ? "PHOTOS_LIBRARY" : task.sourcePath
+            
+            // Start backup
+            let syncResult = try await webDAVService.performBackup(
+                host: hostName,
+                port: port,
+                username: username,
+                password: password,
+                sourcePath: sourcePath,
+                isAnonymous: username == nil,
+                mediaType: task.mediaType,
+                progressHandler: { progress in
+                    // Update progress on main actor
+                    Task { @MainActor in
+                        task.progress = progress
+                        task.currentFile = webDAVService.currentFile
+                    }
+                }
+            )
+            
+            // Update task status
+            task.backupStatus = .completed
+            task.lastBackupDate = Date()
+            task.progress = 1.0
+            task.currentFile = "Yedekleme tamamlandı"
+            
+            // Calculate next run time
+            task.nextRunTime = calculateNextRunTime(for: task)
             
             // Create backup history record
             let duration = Date().timeIntervalSince(startTime)
@@ -649,7 +758,7 @@ extension BackupScheduler: URLSessionDelegate, URLSessionTaskDelegate {
             // Send detailed notification with sync results
             await sendBackupCompletionNotification(task: task, syncResult: syncResult)
             
-            // Backup tamamlandıktan sonra badge'i temizle (başarılı backup sonrası)
+            // Clear badge after successful backup
             do {
                 try await UNUserNotificationCenter.current().setBadgeCount(0)
             } catch {
@@ -659,19 +768,19 @@ extension BackupScheduler: URLSessionDelegate, URLSessionTaskDelegate {
         } catch {
             task.backupStatus = .failed
             task.progress = 0.0
-            task.currentFile = nil
+            task.currentFile = "Hata: \(error.localizedDescription)"
             
             // Create backup history record for failure
             let duration = Date().timeIntervalSince(startTime)
             await createBackupHistoryRecord(
                 task: task,
-                syncResult: FTPService.SyncResult(), // Empty result for failure
+syncResult: FTPService.SyncResult(newFiles: 0, skippedFiles: 0, totalBytes: 0),
                 duration: duration,
                 status: "failed",
                 errorMessage: error.localizedDescription
             )
             
-            print("❌ BackupFlow: FTP yedekleme hatası: \(error.localizedDescription)")
+            print("❌ BackupFlow: WebDAV yedekleme hatası: \(error.localizedDescription)")
             throw error
         }
     }
@@ -736,13 +845,11 @@ extension BackupScheduler: URLSessionDelegate, URLSessionTaskDelegate {
                 totalBytes: syncResult.totalBytes,
                 errorMessage: errorMessage,
                 duration: duration,
-                skippedFiles: syncResult.skippedFiles,
-                deletedFiles: syncResult.deletedFiles
+                skippedFiles: syncResult.skippedFiles
             )
 
-            // Attach and save
+            // Attach the task to the history record
             historyRecord.task = task
-            task.history.append(historyRecord)
 
             do {
                 // In many cases, appending to a relationship is enough; insert is optional
@@ -776,7 +883,6 @@ extension BackupScheduler: URLSessionDelegate, URLSessionTaskDelegate {
             )
 
             historyRecord.task = taskInContext
-            taskInContext.history.append(historyRecord)
 
             try context.save()
             print("📝 BackupFlow: Geçmiş kaydı eklendi (refetched) - \(syncResult.totalProcessed) dosya, \(Int(duration))s")

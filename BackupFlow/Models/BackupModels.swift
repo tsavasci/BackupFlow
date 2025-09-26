@@ -2,6 +2,28 @@ import Foundation
 import SwiftData
 import SwiftUI
 
+/// Backup connection types
+enum BackupType: String, Codable, CaseIterable, Identifiable {
+    case ftp
+    case webdav
+    
+    var id: String { self.rawValue }
+    
+    var displayName: String {
+        switch self {
+        case .ftp: return "FTP"
+        case .webdav: return "WebDAV"
+        }
+    }
+    
+    var defaultPort: Int {
+        switch self {
+        case .ftp: return 21
+        case .webdav: return 443
+        }
+    }
+}
+
 enum BackupStatus: String, Codable, CaseIterable, Identifiable {
     case idle
     case preparing
@@ -156,67 +178,102 @@ nonisolated enum BackupFrequency: Codable, Equatable, Hashable, Identifiable, Ca
     }
 }
 
+/// Represents a backup task that can be scheduled and executed
 @Model
 final class BackupTask: Identifiable, Hashable {
+    // MARK: - Properties
     @Attribute(.unique) var id: UUID
     var sourcePath: String
     var nextRunTime: Date?
-    var ftpHost: String
-    var ftpPort: Int
-    var ftpUsername: String
-    var ftpPassword: String
-    var isAnonymous: Bool
-    var displayName: String
-    var isEnabled: Bool
-    var isPaused: Bool // Pause/Resume functionality
-    var frequency: BackupFrequency
-    var scheduledTime: ScheduleTime? // For daily/weekly scheduling
-    var scheduledWeekday: Int? // 1: Sunday, 2: Monday, ..., 7: Saturday
     var createdAt: Date
     var lastBackupDate: Date?
-    var mediaType: MediaType? // Migration için optional yapıldı
-    
-    // Computed property for safe access with default value
-    var safeMediaType: MediaType {
-        return mediaType ?? .photosOnly
-    }
-    
-    // Yeni eklenen özellikler
+    var displayName: String
+    var isEnabled: Bool
+    var isPaused: Bool
     var backupStatus: BackupStatus
     var progress: Double
     var currentFile: String?
     var lastError: String?
     
-    // MARK: - Relationships
-    @Relationship(deleteRule: .cascade) var history: [BackupHistory] = []
+    // Backup type (FTP or WebDAV)
+    var backupType: BackupType
+    
+    // Server configuration
+    var serverHost: String
+    var serverPort: Int
+    var serverUsername: String
+    var serverPassword: String
+    var destinationPath: String
+    
+    // Media type to backup
+    var mediaType: MediaType
+    
+    // Scheduling
+    var frequency: BackupFrequency
+    var scheduledTime: ScheduleTime?
+    var scheduledWeekday: Int? // 1: Sunday, 2: Monday, ..., 7: Saturday
+    
+    // MARK: - Computed Properties
+    
+    /// Legacy FTP host (for backward compatibility)
+    var ftpHost: String {
+        get { serverHost }
+        set { serverHost = newValue }
+    }
+    
+    /// Legacy FTP port (for backward compatibility)
+    var ftpPort: Int {
+        get { serverPort }
+        set { serverPort = newValue }
+    }
+    
+    /// Legacy FTP username (for backward compatibility)
+    var ftpUsername: String {
+        get { serverUsername }
+        set { serverUsername = newValue }
+    }
+    
+    /// Legacy FTP password (for backward compatibility)
+    var ftpPassword: String {
+        get { serverPassword }
+        set { serverPassword = newValue }
+    }
+    
+    /// Whether the connection is anonymous (no username/password)
+    var isAnonymous: Bool {
+        return serverUsername.isEmpty && serverPassword.isEmpty
+    }
     
     // MARK: - Initialization
+    
     init(
+        id: UUID = UUID(),
         sourcePath: String,
-        ftpHost: String,
-        ftpPort: Int,
-        ftpUsername: String,
-        ftpPassword: String,
-        isAnonymous: Bool = false,
-        displayName: String,
+        backupType: BackupType = .ftp,
+        serverHost: String = "",
+        serverPort: Int = 21,
+        serverUsername: String = "",
+        serverPassword: String = "",
+        destinationPath: String = "",
+        displayName: String = "",
         isEnabled: Bool = true,
         isPaused: Bool = false,
         frequency: BackupFrequency = .manual,
         scheduledTime: ScheduleTime? = nil,
         scheduledWeekday: Int? = nil,
-        mediaType: MediaType = .photosOnly, // Varsayılan olarak sadece fotoğraflar
+        mediaType: MediaType = .photosOnly,
         lastBackupDate: Date? = nil,
-        nextRunTime: Date? = nil,
-        id: UUID = UUID()
+        nextRunTime: Date? = nil
     ) {
         self.id = id
         self.sourcePath = sourcePath
-        self.ftpHost = ftpHost
-        self.ftpPort = ftpPort
-        self.ftpUsername = ftpUsername
-        self.ftpPassword = ftpPassword
-        self.isAnonymous = isAnonymous
-        self.displayName = displayName
+        self.backupType = backupType
+        self.serverHost = serverHost
+        self.serverPort = serverPort > 0 ? serverPort : backupType.defaultPort
+        self.serverUsername = serverUsername
+        self.serverPassword = serverPassword
+        self.destinationPath = destinationPath
+        self.displayName = displayName.isEmpty ? "Yeni Yedekleme" : displayName
         self.isEnabled = isEnabled
         self.isPaused = isPaused
         self.frequency = frequency
@@ -232,13 +289,14 @@ final class BackupTask: Identifiable, Hashable {
         self.lastError = nil
     }
     
-    // Hashable conformance for using in navigation link
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
-    }
+    // MARK: - Hashable Conformance
     
     static func == (lhs: BackupTask, rhs: BackupTask) -> Bool {
         lhs.id == rhs.id
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
     }
 }
 
@@ -254,39 +312,9 @@ final class BackupHistory: Identifiable {
     var errorMessage: String?
     var duration: TimeInterval
     var skippedFiles: Int = 0
-    var deletedFiles: Int = 0
     
-    // Relationship to parent task - simplified to avoid circular reference
-    var task: BackupTask?
-    
-    var formattedSize: String {
-        let formatter = ByteCountFormatter()
-        formatter.allowedUnits = [.useKB, .useMB, .useGB]
-        formatter.countStyle = .file
-        return formatter.string(fromByteCount: Int64(totalBytes))
-    }
-    
-    var formattedDuration: String {
-        let formatter = DateComponentsFormatter()
-        formatter.allowedUnits = [.hour, .minute, .second]
-        formatter.unitsStyle = .abbreviated
-        return formatter.string(from: duration) ?? "0s"
-    }
-    
-    var statusColor: Color {
-        switch status.lowercased() {
-        case "completed":
-            return .green
-        case "failed":
-            return .red
-        case "in progress", "uploading", "downloading":
-            return .blue
-        case "cancelled":
-            return .orange
-        default:
-            return .gray
-        }
-    }
+    // Relationship to the task that created this history entry
+    @Relationship var task: BackupTask?
     
     init(
         id: UUID = UUID(),
@@ -299,7 +327,6 @@ final class BackupHistory: Identifiable {
         errorMessage: String? = nil,
         duration: TimeInterval = 0,
         skippedFiles: Int = 0,
-        deletedFiles: Int = 0,
         task: BackupTask? = nil
     ) {
         self.id = id
@@ -312,7 +339,61 @@ final class BackupHistory: Identifiable {
         self.errorMessage = errorMessage
         self.duration = duration
         self.skippedFiles = skippedFiles
-        self.deletedFiles = deletedFiles
         self.task = task
+    }
+    
+    var formattedDuration: String {
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = [.hour, .minute, .second]
+        formatter.unitsStyle = .abbreviated
+        return formatter.string(from: duration) ?? "0s"
+    }
+    
+    var formattedFileSize: String {
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .file
+        return formatter.string(fromByteCount: bytesTransferred)
+    }
+    
+    var formattedTotalSize: String {
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .file
+        return formatter.string(fromByteCount: totalBytes)
+    }
+    
+    var progress: Double {
+        totalBytes > 0 ? Double(bytesTransferred) / Double(totalBytes) : 0.0
+    }
+    
+    var progressPercentage: String {
+        String(format: "%.1f%%", progress * 100)
+    }
+    
+    var filesProcessedText: String {
+        "\(filesProcessed) / \(totalFiles) dosya"
+    }
+    
+    var isSuccess: Bool {
+        errorMessage == nil && status == "completed"
+    }
+    
+    var statusIcon: String {
+        if status == "completed" {
+            return "checkmark.circle.fill"
+        } else if status == "failed" || status == "cancelled" {
+            return "xmark.circle.fill"
+        } else {
+            return "arrow.clockwise.circle.fill"
+        }
+    }
+    
+    var statusColor: Color {
+        if status == "completed" {
+            return .green
+        } else if status == "failed" || status == "cancelled" {
+            return .red
+        } else {
+            return .blue
+        }
     }
 }

@@ -2,6 +2,7 @@ import Foundation
 import FilesProvider
 import OSLog
 import Photos
+import Combine
 
 enum FTPError: Error, LocalizedError {
     case invalidURL
@@ -36,9 +37,13 @@ private struct AssociatedKeys {
 }
 
 @MainActor
-final class FTPService: NSObject, @unchecked Sendable {
+final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     static let shared = FTPService()
     private let logger = Logger(subsystem: "com.backupflow.app", category: "FTPService")
+    
+    // MARK: - BackupServiceProtocol Properties
+    @Published private(set) var isConnected = false
+    private(set) var lastError: Error?
 
     private let lock = NSLock()
     private var _ftpProvider: FTPFileProvider?
@@ -161,7 +166,7 @@ final class FTPService: NSObject, @unchecked Sendable {
         }
     }
 
-    private func disconnect() {
+    func disconnect() {
         lock.lock()
         defer { lock.unlock() }
         
@@ -176,7 +181,9 @@ final class FTPService: NSObject, @unchecked Sendable {
         isCancelled = false
     }
     
-    func connect(host: String, port: Int, username: String? = nil, password: String? = nil) async throws {
+    // MARK: - BackupServiceProtocol Methods
+    
+    func connect(host: String, port: Int, username: String?, password: String?) async throws {
         print("📡 BackupFlow: FTPService - Bağlantı başlatılıyor: \(host):\(port)")
         // Önce mevcut bağlantıyı temizle
         disconnect()
@@ -510,7 +517,7 @@ final class FTPService: NSObject, @unchecked Sendable {
         return skippedCount
     }
 
-    func uploadFile(localURL: URL, remotePath: String, progressHandler: ((Double) -> Void)? = nil) async throws {
+    func uploadFile(localURL: URL, remotePath: String, progressHandler: ((Double) -> Void)?) async throws {
         guard !isCancelled else {
             print("🛑 BackupFlow: İşlem iptal edildiği için yükleme iptal edildi")
             logger.info("İşlem iptal edildiği için yükleme iptal edildi")
@@ -630,7 +637,7 @@ final class FTPService: NSObject, @unchecked Sendable {
         }
     }
 
-    func createDirectory(at path: String) async throws {
+func createDirectory(at path: String) async throws {
         guard !isCancelled else {
             logger.info("İşlem iptal edildiği için dizin oluşturma iptal edildi")
             throw FTPError.fileOperationFailed
@@ -733,7 +740,7 @@ final class FTPService: NSObject, @unchecked Sendable {
         }
     }
 
-    func listDirectory(at path: String) async throws -> [FileObject] {
+func listDirectory(at path: String) async throws -> [FileObject] {
         guard let ftp = ftpProvider else {
             throw FTPError.connectionFailed
         }
@@ -906,10 +913,10 @@ final class FTPService: NSObject, @unchecked Sendable {
     }
     
     /// Helper function to upload photo data
-    private func uploadPhotoData(data: Data, remotePath: String, fileName: String) async throws {
+    private func uploadPhotoData(data: Data, remotePath: String, fileName: String, progressHandler: ((Double) -> Void)? = nil) async throws {
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
         try data.write(to: tempURL)
-        try await uploadFile(localURL: tempURL, remotePath: remotePath)
+        try await uploadFile(localURL: tempURL, remotePath: remotePath, progressHandler: progressHandler)
         try? FileManager.default.removeItem(at: tempURL)
     }
     
@@ -987,13 +994,13 @@ final class FTPService: NSObject, @unchecked Sendable {
                 result.totalBytes += localSize
                 
             case .new:
-                try await uploadFile(localURL: fileURL, remotePath: targetPath)
+                try await uploadFile(localURL: fileURL, remotePath: targetPath, progressHandler: progressHandler)
                 result.newFiles += 1
                 result.totalBytes += localSize
                 print("📤 BackupFlow: Yeni dosya: \(relativePath) (\(formatBytes(localSize)))")
                 
             case .updated:
-                try await uploadFile(localURL: fileURL, remotePath: targetPath)
+                try await uploadFile(localURL: fileURL, remotePath: targetPath, progressHandler: progressHandler)
                 result.updatedFiles += 1
                 result.totalBytes += localSize
                 print("🔄 BackupFlow: Güncellenen dosya: \(relativePath) (\(formatBytes(localSize)))")
@@ -1025,7 +1032,7 @@ final class FTPService: NSObject, @unchecked Sendable {
     }
     
     // FTP sunucusundan dosya sil
-    func deleteFile(at path: String) async throws {
+func deleteFile(at path: String) async throws {
         guard let ftp = ftpProvider else {
             throw FTPError.connectionFailed
         }

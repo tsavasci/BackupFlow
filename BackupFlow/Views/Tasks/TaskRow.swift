@@ -37,7 +37,7 @@ struct TaskRow: View {
                     HStack(alignment: .center, spacing: 8) {
                         // Medya türü ikonu (sadece foto galerisi yedeklemeleri için)
                         if task.sourcePath == "PHOTOS_LIBRARY" {
-                            Image(systemName: task.safeMediaType.systemImageName)
+                            Image(systemName: task.mediaType.systemImageName)
                                 .foregroundColor(.blue)
                                 .font(.caption)
                         }
@@ -45,6 +45,16 @@ struct TaskRow: View {
                         Text(task.displayName)
                             .font(.headline)
                             .lineLimit(1)
+                        
+                        // Backup type badge
+                        Text(task.backupType.rawValue.uppercased())
+                            .font(.system(size: 10, weight: .semibold))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(task.backupType == .ftp ? Color.blue.opacity(0.2) : Color.green.opacity(0.2))
+                            .foregroundColor(task.backupType == .ftp ? .blue : .green)
+                            .cornerRadius(4)
+                        
                         if task.backupStatus != .idle {
                             Text(task.backupStatus.displayName)
                                 .font(.caption)

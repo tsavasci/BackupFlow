@@ -106,30 +106,41 @@ struct DayPicker: View {
                     Text(name).tag(day)
                 }
             }
-            .pickerStyle(WheelPickerStyle())
             .frame(height: 100)
             .clipped()
         }
         .padding(.vertical, 8)
     }
 }
-    
+
 struct BackupView: View {
-    // Varsayılan FTP sunucu ayarları
+    // Varsayılan ayarlar
     private static let defaultFTPHost = "192.168.1.1"
+    private static let defaultWebDAVPath = "/remote.php/dav/files/"
     
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     
     @State private var selectedURL: URL?
     @State private var isPhotoLibrarySelected = false
-    @State private var selectedMediaType: MediaType = .photosOnly // Yeni eklenen
-    @State private var ftpHost = Self.defaultFTPHost
+    @State private var selectedMediaType: MediaType = .photosOnly
+    
+    // Hedef seçimi
+    @State private var selectedTarget: BackupTarget = .ftp
+    
+    // FTP ayarları
+    @State private var ftpHost = defaultFTPHost
     @State private var ftpPort = "21"
     @State private var ftpUsername = ""
     @State private var ftpPassword = ""
     @State private var isAnonymous = false
     @State private var destinationPath = "/"
+    
+    // WebDAV ayarları
+    @State private var webdavURL = ""
+    @State private var webdavUsername = ""
+    @State private var webdavPassword = ""
+    @State private var webdavPath = defaultWebDAVPath
     
     @State private var frequencyType: FrequencyType = .manual
     @State private var selectedTime = ScheduleTime(hour: 0, minute: 0)
@@ -141,9 +152,9 @@ struct BackupView: View {
     @State private var saveAlertMessage = ""
     @State private var isTestingConnection = false
     @State private var connectionStatus: ConnectionStatus = .idle
-
+    
     var body: some View {
-        Form {
+        return Form {
             Section(header: Text("Kaynak Seçimi")) {
                 VStack(alignment: .leading, spacing: 16) {
                     // Photo Library Option
@@ -229,35 +240,27 @@ struct BackupView: View {
                     .contentShape(Rectangle())
                 }
                 
-                Toggle("Anonim Giriş", isOn: $isAnonymous)
-                
-                if !isAnonymous {
-                    TextField("Kullanıcı Adı", text: $ftpUsername)
-                        .textContentType(.username)
-                    
-                    SecureField("Şifre", text: $ftpPassword)
-                        .textContentType(.password)
-                }
-                
-                TextField("FTP Sunucu", text: $ftpHost)
-                    .textContentType(.URL)
-                    .keyboardType(.URL)
-                    .autocapitalization(.none)
-                    .disableAutocorrection(true)
-                
-                TextField("Port", text: $ftpPort)
-                    .keyboardType(.numberPad)
-                
-                TextField("Hedef Klasör", text: $destinationPath)
-                    .autocapitalization(.none)
-                    .disableAutocorrection(true)
+                // Backup Target Selection (FTP/WebDAV)
+                BackupTargetView(
+                    selectedTarget: $selectedTarget,
+                    ftpHost: $ftpHost,
+                    ftpPort: $ftpPort,
+                    ftpUsername: $ftpUsername,
+                    ftpPassword: $ftpPassword,
+                    destinationPath: $destinationPath,
+                    isAnonymous: $isAnonymous,
+                    webdavURL: $webdavURL,
+                    webdavUsername: $webdavUsername,
+                    webdavPassword: $webdavPassword,
+                    webdavPath: $webdavPath
+                )
                 
                 Button("Bağlantıyı Test Et") {
                     Task {
                         await testConnection()
                     }
                 }
-                .disabled(isTestingConnection)
+                .disabled(isTestingConnection || !isValidConnectionSettings())
                 
                 if isTestingConnection {
                     ProgressView()
@@ -314,6 +317,7 @@ struct BackupView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("Temizle") {
                     resetForm()
+                    showingSaveAlert = false
                 }
             }
         }
@@ -327,191 +331,279 @@ struct BackupView: View {
         } message: {
             Text(saveAlertMessage)
         }
-        .alert("Fotoğraf Galerisi Erişimi", isPresented: $showingPhotoLibraryDeniedAlert) {
-            Button("Ayarlar") {
-                if let url = URL(string: UIApplication.openSettingsURLString) {
-                    UIApplication.shared.open(url)
-                }
+        
+        
+        func isValidConnectionSettings() -> Bool {
+            switch selectedTarget {
+            case .ftp:
+                return !ftpHost.isEmpty && (isAnonymous || (!ftpUsername.isEmpty && !ftpPassword.isEmpty))
+            case .webdav:
+                return !webdavURL.isEmpty && !webdavUsername.isEmpty
             }
-            Button("İptal", role: .cancel) {}
-        } message: {
-            Text("Fotoğraf galerisine erişim izni vermeniz gerekiyor. Ayarlar'a gidip izin verebilirsiniz.")
-        }
-    }
-    
-    private func testConnection() async {
-        guard !ftpHost.isEmpty else {
-            connectionStatus = .failure("Lütfen FTP sunucu adresini girin")
-            return
         }
         
-        isTestingConnection = true
-        connectionStatus = .idle
-        
-        do {
-            let ftpService = FTPService.shared
-            let port = Int(ftpPort) ?? 21
+        func testConnection() async {
+            guard isValidConnectionSettings() else {
+                let errorMessage = selectedTarget == .ftp ?
+                "Lütfen gerekli alanları doldurun (Sunucu adresi ve kullanıcı adı/şifre)" :
+                "Lütfen WebDAV sunucu URL'si ve kullanıcı bilgilerini girin"
+                connectionStatus = .failure(errorMessage)
+                return
+            }
             
-            try await ftpService.connect(
-                host: ftpHost,
-                port: port,
-                username: isAnonymous ? nil : ftpUsername,
-                password: isAnonymous ? nil : ftpPassword
-            )
+            isTestingConnection = true
+            connectionStatus = .testing
             
-            connectionStatus = .success("Bağlantı başarılı")
-        } catch let error as FTPError {
-            connectionStatus = .failure(error.localizedDescription)
-        } catch {
-            connectionStatus = .failure("Bağlantı testi başarısız")
-        }
-        
-        isTestingConnection = false
-    }
-    
-    private func requestPhotoLibraryAccess() {
-        let photoLibraryManager = PhotoLibraryManager.shared
-        if photoLibraryManager.authorizationStatus == .notDetermined {
-            photoLibraryManager.requestAuthorization { granted in
-                if !granted {
-                    DispatchQueue.main.async {
-                        self.showingPhotoLibraryDeniedAlert = true
+            do {
+                switch selectedTarget {
+                case .ftp:
+                    let ftpService = FTPService.shared
+                    let port = Int(ftpPort) ?? 21
+                    
+                    try await ftpService.connect(
+                        host: ftpHost,
+                        port: port,
+                        username: isAnonymous ? nil : ftpUsername,
+                        password: isAnonymous ? nil : ftpPassword
+                    )
+                    
+                    connectionStatus = .success("FTP bağlantısı başarılı!")
+                    
+                case .webdav:
+                    // Extract host and port from webdavURL
+                    let (host, port) = parseWebDAVURL(webdavURL)
+                    
+                    // Test WebDAV connection
+                    let webDAVService = WebDAVService.shared
+                    let isConnected = await webDAVService.testConnection(
+                        host: host,
+                        port: port,
+                        username: webdavUsername,
+                        password: webdavPassword
+                    )
+                    
+                    if isConnected {
+                        connectionStatus = .success("✅ WebDAV bağlantısı başarılı!")
+                    } else {
+                        throw NSError(domain: "WebDAV Error", code: -1,
+                                      userInfo: [NSLocalizedDescriptionKey: "WebDAV sunucusuna bağlanılamadı. Lütfen bilgilerinizi kontrol edin."])
                     }
                 }
+            } catch let error as FTPError {
+                connectionStatus = .failure("FTP hatası: \(error.localizedDescription)")
+            } catch {
+                connectionStatus = .failure("Bağlantı hatası: \(error.localizedDescription)")
             }
-        } else if photoLibraryManager.authorizationStatus != .authorized && photoLibraryManager.authorizationStatus != .limited {
-            showingPhotoLibraryDeniedAlert = true
-        }
-    }
-    
-    private func saveTask() async {
-        // Check if either folder or photo library is selected
-        guard isPhotoLibrarySelected || selectedURL != nil else {
-            saveAlertMessage = "Lütfen bir kaynak seçin"
-            showingSaveAlert = true
-            return
+            
+            isTestingConnection = false
         }
         
-        // If photo library is selected, check permission
-        if isPhotoLibrarySelected {
-            let status = PHPhotoLibrary.authorizationStatus()
-            guard status == .authorized || status == .limited else {
-                saveAlertMessage = "Fotoğraf galerisine erişim izni verilmedi"
+        func requestPhotoLibraryAccess() {
+            let photoLibraryManager = PhotoLibraryManager.shared
+            if photoLibraryManager.authorizationStatus == .notDetermined {
+                photoLibraryManager.requestAuthorization { granted in
+                    if !granted {
+                        DispatchQueue.main.async {
+                            self.showingPhotoLibraryDeniedAlert = true
+                        }
+                    }
+                }
+            } else if photoLibraryManager.authorizationStatus != .authorized && photoLibraryManager.authorizationStatus != .limited {
+                showingPhotoLibraryDeniedAlert = true
+            }
+        }
+        
+        func saveTask() async {
+            // Check if either folder or photo library is selected
+            guard isPhotoLibrarySelected || selectedURL != nil else {
+                saveAlertMessage = "Lütfen bir kaynak seçin"
                 showingSaveAlert = true
                 return
             }
-        }
-        
-        // Check folder access if a folder is selected
-        if !isPhotoLibrarySelected, let sourceURL = selectedURL {
-            guard sourceURL.startAccessingSecurityScopedResource() else {
-                saveAlertMessage = "Klasöre erişim izni alınamadı. Lütfen tekrar deneyin."
-                showingSaveAlert = true
-                return
-            }
             
-            // We need to verify the URL is accessible
-            var isDirectory: ObjCBool = false
-            let exists = FileManager.default.fileExists(atPath: sourceURL.path, isDirectory: &isDirectory)
-            
-            // Stop accessing the resource
-            sourceURL.stopAccessingSecurityScopedResource()
-            
-            // Check if the path exists and is a directory
-            guard exists && isDirectory.boolValue else {
-                saveAlertMessage = "Geçersiz klasör yolu. Lütfen tekrar deneyin."
-                showingSaveAlert = true
-                return
-            }
-        }
-        
-        guard !ftpHost.isEmpty else {
-            saveAlertMessage = "Lütfen FTP sunucu adresini girin"
-            showingSaveAlert = true
-            return
-        }
-        
-        let port = Int(ftpPort) ?? 21
-        
-        // Create and save the backup task
-        // Create the appropriate frequency based on the selected type
-        let frequency: BackupFrequency = {
-            switch frequencyType {
-            case .manual:
-                return .manual
-            case .daily:
-                return .daily(time: selectedTime)
-            case .weekly:
-                return .weekly(day: selectedDay, time: selectedTime)
-            }
-        }()
-        
-        // Determine source path and display name based on selection
-        let sourcePath = isPhotoLibrarySelected ? "PHOTOS_LIBRARY" : (selectedURL?.path ?? "")
-        let displayName = isPhotoLibrarySelected ? selectedMediaType.displayName : (selectedURL?.lastPathComponent ?? "")
-        
-        let task = BackupTask(
-            sourcePath: sourcePath,
-            ftpHost: ftpHost,
-            ftpPort: port,
-            ftpUsername: isAnonymous ? "" : ftpUsername,
-            ftpPassword: isAnonymous ? "" : ftpPassword,
-            isAnonymous: isAnonymous,
-            displayName: displayName,
-            isEnabled: true,
-            frequency: frequency,
-            scheduledTime: (frequencyType == .daily || frequencyType == .weekly) ? selectedTime : nil,
-            scheduledWeekday: (frequencyType == .weekly) ? selectedDay : nil,
-            mediaType: isPhotoLibrarySelected ? selectedMediaType : .photosOnly // Foto kütüphanesi seçilmişse kullanıcının tercihini, değilse varsayılan değeri kullan
-        )
-        
-        modelContext.insert(task)
-        
-        do {
-            try modelContext.save()
-            print("✅ BackupFlow: Görev başarıyla kaydedildi - \(displayName)")
-            saveAlertMessage = "Görev başarıyla kaydedildi"
-            
-            // Schedule the backup if frequency is set
-            if task.frequency != .manual {
-                do {
-                    try await BackupScheduler.shared.scheduleBackup(task: task)
-                    saveAlertMessage += " ve planlandı"
-                } catch {
-                    saveAlertMessage += ", ancak planlama sırasında hata oluştu: \(error.localizedDescription)"
+            // If photo library is selected, check permission
+            if isPhotoLibrarySelected {
+                let status = PHPhotoLibrary.authorizationStatus()
+                guard status == .authorized || status == .limited else {
+                    saveAlertMessage = "Fotoğraf galerisine erişim izni verilmedi"
+                    showingSaveAlert = true
+                    return
                 }
             }
             
-            // Reset form
+            // Check folder access if a folder is selected
+            if !isPhotoLibrarySelected, let sourceURL = selectedURL {
+                guard sourceURL.startAccessingSecurityScopedResource() else {
+                    saveAlertMessage = "Klasöre erişim izni alınamadı. Lütfen tekrar deneyin."
+                    showingSaveAlert = true
+                    return
+                }
+                
+                // We need to verify the URL is accessible
+                var isDirectory: ObjCBool = false
+                let exists = FileManager.default.fileExists(atPath: sourceURL.path, isDirectory: &isDirectory)
+                
+                // Stop accessing the resource
+                sourceURL.stopAccessingSecurityScopedResource()
+                
+                // Check if the path exists and is a directory
+                guard exists && isDirectory.boolValue else {
+                    saveAlertMessage = "Geçersiz klasör yolu. Lütfen tekrar deneyin."
+                    showingSaveAlert = true
+                    return
+                }
+            }
+            
+            // Create the frequency based on the selected type
+            let frequency: BackupFrequency = {
+                switch frequencyType {
+                case .manual:
+                    return BackupFrequency.manual
+                case .daily:
+                    let time = ScheduleTime(hour: selectedTime.hour, minute: selectedTime.minute)
+                    return BackupFrequency.daily(time: time)
+                case .weekly:
+                    let time = ScheduleTime(hour: selectedTime.hour, minute: selectedTime.minute)
+                    return BackupFrequency.weekly(day: selectedDay, time: time)
+                }
+            }()
+            
+            // Determine source path and display name based on selection
+            let sourcePath = isPhotoLibrarySelected ? "PHOTOS_LIBRARY" : (selectedURL?.path ?? "")
+            let displayNameValue = isPhotoLibrarySelected ? selectedMediaType.displayName : (selectedURL?.lastPathComponent ?? "Yeni Yedekleme")
+            
+            let task: BackupTask
+            
+            switch selectedTarget {
+            case .ftp:
+                guard !ftpHost.isEmpty else {
+                    saveAlertMessage = "Lütfen FTP sunucu adresini girin"
+                    showingSaveAlert = true
+                    return
+                }
+                
+                let port = Int(ftpPort) ?? 21
+                
+                task = BackupTask(
+                    sourcePath: sourcePath,
+                    backupType: .ftp,
+                    serverHost: ftpHost,
+                    serverPort: port,
+                    serverUsername: isAnonymous ? "" : ftpUsername,
+                    serverPassword: isAnonymous ? "" : ftpPassword,
+                    destinationPath: destinationPath,
+                    displayName: displayNameValue,
+                    isEnabled: true,
+                    isPaused: false,
+                    frequency: frequency,
+                    scheduledTime: (frequencyType == .daily || frequencyType == .weekly) ? selectedTime : nil,
+                    scheduledWeekday: (frequencyType == .weekly) ? selectedDay : nil,
+                    mediaType: isPhotoLibrarySelected ? selectedMediaType : .photosOnly
+                )
+                
+            case .webdav:
+                guard !webdavURL.isEmpty else {
+                    saveAlertMessage = "Lütfen WebDAV sunucu URL'sini girin"
+                    showingSaveAlert = true
+                    return
+                }
+                
+                task = BackupTask(
+                    sourcePath: sourcePath,
+                    backupType: .webdav,
+                    serverHost: webdavURL,
+                    serverPort: 443, // Default HTTPS port for WebDAV
+                    serverUsername: webdavUsername,
+                    serverPassword: webdavPassword,
+                    destinationPath: webdavPath,
+                    displayName: displayNameValue,
+                    isEnabled: true,
+                    isPaused: false,
+                    frequency: frequency,
+                    scheduledTime: (frequencyType == .daily || frequencyType == .weekly) ? selectedTime : nil,
+                    scheduledWeekday: (frequencyType == .weekly) ? selectedDay : nil,
+                    mediaType: isPhotoLibrarySelected ? selectedMediaType : .photosOnly
+                )
+            }
+            
+            modelContext.insert(task)
+            
+            do {
+                try modelContext.save()
+                print("✅ BackupFlow: Görev başarıyla kaydedildi - \(displayNameValue)")
+                saveAlertMessage = "Görev başarıyla kaydedildi"
+                
+                // Schedule the backup if frequency is set
+                if task.frequency != .manual {
+                    do {
+                        try await BackupScheduler.shared.scheduleBackup(task: task)
+                        saveAlertMessage += " ve planlandı"
+                    } catch {
+                        saveAlertMessage += ", ancak planlama sırasında hata oluştu: \(error.localizedDescription)"
+                    }
+                }
+                
+                // Reset form
+                selectedURL = nil
+                ftpHost = Self.defaultFTPHost
+                ftpPort = "21"
+                ftpUsername = ""
+                ftpPassword = ""
+                isAnonymous = false
+                
+                showingSaveAlert = true
+            } catch {
+                saveAlertMessage = "Görev kaydedilirken hata oluştu: \(error.localizedDescription)"
+                showingSaveAlert = true
+            }
+        }
+        
+        // MARK: - WebDAV Helper
+        
+        func parseWebDAVURL(_ urlString: String) -> (host: String, port: Int) {
+            var host = urlString
+            var port = 443 // Default HTTPS port
+            
+            // Remove http:// or https:// prefix if exists
+            if let range = host.range(of: "https://") {
+                host.removeSubrange(range)
+            } else if let range = host.range(of: "http://") {
+                host.removeSubrange(range)
+                port = 80 // Default HTTP port
+            }
+            
+            // Check for custom port
+            if let portRange = host.range(of: ":") {
+                let portString = String(host[portRange.upperBound...])
+                if let customPort = Int(portString) {
+                    port = customPort
+                    host = String(host[..<portRange.lowerBound])
+                }
+            }
+            
+            // Remove trailing slashes
+            host = host.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+            
+            return (host, port)
+        }
+        
+        // MARK: - Helper Methods
+        
+        func resetForm() {
             selectedURL = nil
+            isPhotoLibrarySelected = false
+            selectedMediaType = .photosOnly
             ftpHost = Self.defaultFTPHost
             ftpPort = "21"
             ftpUsername = ""
             ftpPassword = ""
             isAnonymous = false
-            
-            showingSaveAlert = true
-        } catch {
-            saveAlertMessage = "Görev kaydedilirken hata oluştu: \(error.localizedDescription)"
-            showingSaveAlert = true
+            destinationPath = "/"
+            frequencyType = .manual
+            selectedTime = ScheduleTime(hour: 0, minute: 0)
+            selectedDay = 1
+            connectionStatus = .idle
+            saveAlertMessage = ""
         }
-    }
-    
-    // MARK: - Helper Methods
-    private func resetForm() {
-        selectedURL = nil
-        isPhotoLibrarySelected = false
-        selectedMediaType = .photosOnly
-        ftpHost = Self.defaultFTPHost
-        ftpPort = "21"
-        ftpUsername = ""
-        ftpPassword = ""
-        isAnonymous = false
-        destinationPath = "/"
-        frequencyType = .manual
-        selectedTime = ScheduleTime(hour: 0, minute: 0)
-        selectedDay = 1
-        connectionStatus = .idle
-        saveAlertMessage = ""
     }
 }

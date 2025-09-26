@@ -176,11 +176,9 @@ struct HistoryView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
-                    if let mt = task.mediaType {
-                        Label("Medya Türü: \(mt.displayName)", systemImage: "photo.on.rectangle")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
+                    Label("Medya Türü: \(task.mediaType.displayName)", systemImage: "photo.on.rectangle")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 } else {
                     Text("Bilinmiyor")
                         .font(.system(.body, design: .monospaced))
@@ -193,9 +191,6 @@ struct HistoryView: View {
                 LabeledContent("Toplam Dosya", value: "\(item.totalFiles)")
                 if item.skippedFiles > 0 {
                     LabeledContent("Atlanan Dosya", value: "\(item.skippedFiles)")
-                }
-                if item.deletedFiles > 0 {
-                    LabeledContent("Silinen Dosya", value: "\(item.deletedFiles)")
                 }
                 LabeledContent("Toplam Boyut", value: formatFileSize(item.totalBytes))
                 LabeledContent("Süre", value: formatDuration(item.duration))

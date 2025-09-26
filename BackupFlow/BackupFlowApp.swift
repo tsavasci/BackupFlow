@@ -17,7 +17,11 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         print("🔄 BackupFlow: AppDelegate başlatıldı (BGTaskScheduler mode)")
-
+        
+        // Suppress auto-layout constraint warnings
+        UserDefaults.standard.set(false, forKey: "_UIConstraintBasedLayoutLogUnsatisfiable")
+        UserDefaults.standard.set(false, forKey: "_UIConstraintBasedLayoutLogUnsatisfied")
+        
         registerBackgroundTask()
         
         // Request notification permissions on app launch
@@ -119,23 +123,14 @@ struct BackupFlowApp: App {
         let context = ModelContext(container)
         
         do {
-            let descriptor = FetchDescriptor<BackupTask>()
-            let tasks = try context.fetch(descriptor)
+            // MediaType artık nil olamaz, bu yüzden migration gerekli değil
+            // Eski verilerle uyumluluk için gerekliyse, başka bir migration stratejisi uygulanabilir
             
-            var migrationNeeded = false
-            for task in tasks {
-                if task.mediaType == nil {
-                    task.mediaType = .photosOnly // Default değer ata
-                    migrationNeeded = true
-                }
-            }
-            
-            if migrationNeeded {
-                try context.save()
-                print("✅ BackupFlow: MediaType migration tamamlandı")
-            }
+            // Eğer başka migration işlemleri yapılıyorsa, burada devam edilebilir
+            try context.save()
+            print("✅ BackupFlow: Veritabanı güncellendi")
         } catch {
-            print("❌ BackupFlow: MediaType migration hatası: \(error)")
+            print("❌ BackupFlow: Veritabanı güncelleme hatası: \(error)")
         }
     }
     
