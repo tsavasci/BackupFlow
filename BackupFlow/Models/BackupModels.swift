@@ -253,6 +253,8 @@ final class BackupHistory: Identifiable {
     var totalBytes: Int64
     var errorMessage: String?
     var duration: TimeInterval
+    var skippedFiles: Int = 0
+    var deletedFiles: Int = 0
     
     // Relationship to parent task - simplified to avoid circular reference
     var task: BackupTask?
@@ -296,6 +298,8 @@ final class BackupHistory: Identifiable {
         totalBytes: Int64 = 0,
         errorMessage: String? = nil,
         duration: TimeInterval = 0,
+        skippedFiles: Int = 0,
+        deletedFiles: Int = 0,
         task: BackupTask? = nil
     ) {
         self.id = id
@@ -307,6 +311,8 @@ final class BackupHistory: Identifiable {
         self.totalBytes = totalBytes
         self.errorMessage = errorMessage
         self.duration = duration
+        self.skippedFiles = skippedFiles
+        self.deletedFiles = deletedFiles
         self.task = task
     }
 }

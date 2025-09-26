@@ -66,6 +66,53 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             await performScheduling()
         }
     }
+
+    /// Daha uzun ve ağ bağlantısı gerektiren işler için BGProcessing görevi planlar.
+    public func scheduleProcessingTask() {
+        let identifier = "com.tamersavasci.BackupFlow.processing"
+
+        let request = BGProcessingTaskRequest(identifier: identifier)
+        request.requiresNetworkConnectivity = true
+        request.requiresExternalPower = false // İsteğe bağlı: Gece şarja takılıyken daha güvenilir olması için true yapılabilir
+
+        // earliestBeginDate'i, en yakın nextRunTime'a göre ayarla (en az 15 dk kuralına uyarak)
+        if let container = Self.sharedModelContainer {
+            let context = ModelContext(container)
+            if let tasks = try? context.fetch(FetchDescriptor<BackupTask>()) {
+                if let earliest = tasks.compactMap({ $0.nextRunTime }).sorted().first {
+                    let now = Date()
+                    var candidate = earliest < now ? now.addingTimeInterval(300) : earliest
+                    let minimumLead: TimeInterval = 15 * 60
+                    if candidate.timeIntervalSince(now) < minimumLead {
+                        candidate = now.addingTimeInterval(minimumLead)
+                        print("ℹ️ BGTaskScheduler: Processing earliest çok yakın, 15 dk'ya yuvarlandı -> \(candidate)")
+                    }
+                    request.earliestBeginDate = candidate
+                }
+            }
+        }
+
+        do {
+            try BGTaskScheduler.shared.submit(request)
+            if let d = request.earliestBeginDate {
+                print("✅ BGTaskScheduler: Processing görevi planlandı -> \(d)")
+            } else {
+                print("✅ BGTaskScheduler: Processing görevi planlandı (tarih yok)")
+            }
+        } catch {
+            let nsError = error as NSError
+            var reason = "bilinmeyen"
+            if nsError.domain == "BGTaskSchedulerErrorDomain" {
+                switch nsError.code {
+                case 1: reason = "notPermitted (Background Modes veya identifier)"
+                case 2: reason = "tooManyPendingTaskRequests"
+                case 3: reason = "noSuchTaskRequest (identifier yanlış?)"
+                default: break
+                }
+            }
+            print("❌ BGTaskScheduler: Processing planlanamadı (code=\(nsError.code) reason=\(reason)): \(error)")
+        }
+    }
     
     public func pauseTask(_ task: BackupTask) {
         cancelTimer(for: task.id)
@@ -163,8 +210,8 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                 // Find the task by ID
                 guard let container = Self.sharedModelContainer else { return }
                 let context = ModelContext(container)
-                let descriptor = FetchDescriptor<BackupTask>(predicate: #Predicate<BackupTask> { $0.id == taskId })
-                if let foundTask = try? context.fetch(descriptor).first {
+                let descriptor = FetchDescriptor<BackupTask>()
+                if let foundTask = try? context.fetch(descriptor).first(where: { $0.id == taskId }) {
                     // Uygulama ön plandaysa direkt başlat
                     if UIApplication.shared.applicationState == .active {
                         print("📱 BackupFlow: Uygulama aktif - Yedekleme direkt başlatılıyor")
@@ -561,7 +608,11 @@ extension BackupScheduler: URLSessionDelegate, URLSessionTaskDelegate {
             task.nextRunTime = calculateNextRunTime(for: task)
             
             print("✅ BackupFlow: Gerçek FTP yedekleme tamamlandı: \(task.displayName)")
-            print("⏰ BackupFlow: Sonraki çalışma zamanı: \(userLocalDateFormatter.string(from: task.nextRunTime!))")
+            if let next = task.nextRunTime {
+                print("⏰ BackupFlow: Sonraki çalışma zamanı: \(userLocalDateFormatter.string(from: next))")
+            } else {
+                print("⏰ BackupFlow: Sonraki çalışma zamanı: (manuel görev - zamanlanmadı)")
+            }
             
             // Create backup history record
             let duration = Date().timeIntervalSince(startTime)
@@ -646,33 +697,68 @@ extension BackupScheduler: URLSessionDelegate, URLSessionTaskDelegate {
         errorMessage: String? = nil
     ) async {
         guard let container = Self.sharedModelContainer else { return }
-        
+
+        // Prefer the task's own ModelContext to avoid cross-context attachment
+        if let taskContext = task.modelContext {
+            let context = taskContext
+
+            // Build history in the SAME context as task
+            let historyRecord = BackupHistory(
+                id: UUID(),
+                timestamp: Date(),
+                status: status,
+                filesProcessed: syncResult.totalProcessed,
+                totalFiles: syncResult.totalProcessed,
+                bytesTransferred: syncResult.totalBytes,
+                totalBytes: syncResult.totalBytes,
+                errorMessage: errorMessage,
+                duration: duration,
+                skippedFiles: syncResult.skippedFiles,
+                deletedFiles: syncResult.deletedFiles
+            )
+
+            // Attach and save
+            historyRecord.task = task
+            task.history.append(historyRecord)
+
+            do {
+                // In many cases, appending to a relationship is enough; insert is optional
+                try context.save()
+                print("📝 BackupFlow: Geçmiş kaydı eklendi - \(syncResult.totalProcessed) dosya, \(Int(duration))s")
+            } catch {
+                print("❌ BackupFlow: Geçmiş kaydı hatası (taskContext): \(error)")
+            }
+            return
+        }
+
+        // Fallback: no task.modelContext (edge case). Use a new context and refetch task in that context.
         let context = ModelContext(container)
-        
-        // Create backup history record
-        let historyRecord = BackupHistory(
-            id: UUID(),
-            timestamp: Date(),
-            status: status,
-            filesProcessed: syncResult.totalProcessed,
-            totalFiles: syncResult.totalProcessed,
-            bytesTransferred: 0, // FTP service doesn't track bytes yet
-            totalBytes: 0,       // Could be enhanced in future
-            errorMessage: errorMessage,
-            duration: duration
-        )
-        
-        // Link to task
-        historyRecord.task = task
-        task.history.append(historyRecord)
-        
-        // Save to database
         do {
-            context.insert(historyRecord)
+            let fetch = FetchDescriptor<BackupTask>()
+            guard let taskInContext = try context.fetch(fetch).first(where: { $0.id == task.id }) else {
+                print("❌ BackupFlow: Geçmiş kaydı için görev bulunamadı (refetch failed)")
+                return
+            }
+
+            let historyRecord = BackupHistory(
+                id: UUID(),
+                timestamp: Date(),
+                status: status,
+                filesProcessed: syncResult.totalProcessed,
+                totalFiles: syncResult.totalProcessed,
+                bytesTransferred: syncResult.totalBytes,
+                totalBytes: syncResult.totalBytes,
+                errorMessage: errorMessage,
+                duration: duration
+            )
+
+            historyRecord.task = taskInContext
+            taskInContext.history.append(historyRecord)
+
             try context.save()
-            print("📝 BackupFlow: Geçmiş kaydı eklendi - \(syncResult.totalProcessed) dosya, \(Int(duration))s")
+            print("📝 BackupFlow: Geçmiş kaydı eklendi (refetched) - \(syncResult.totalProcessed) dosya, \(Int(duration))s")
         } catch {
-            print("❌ BackupFlow: Geçmiş kaydı hatası: \(error)")
+            print("❌ BackupFlow: Geçmiş kaydı hatası (refetch): \(error)")
         }
     }
 }

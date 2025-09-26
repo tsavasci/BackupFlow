@@ -62,6 +62,11 @@
 			path = BackupFlowUITests;
 			sourceTree = "<group>";
 		};
+		F2E835872E82B91800F0A9D0 /* BackupFlowMac */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = BackupFlowMac;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -96,6 +101,7 @@
 				F2DA234B2E7D5FD900B2727D /* BackupFlow */,
 				F2DA235B2E7D5FDA00B2727D /* BackupFlowTests */,
 				F2DA23652E7D5FDA00B2727D /* BackupFlowUITests */,
+				F2E835872E82B91800F0A9D0 /* BackupFlowMac */,
 				A085785A2E231DAC008FF3ED /* Products */,
 			);
 			sourceTree = "<group>";

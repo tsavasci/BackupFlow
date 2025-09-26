@@ -167,6 +167,20 @@ struct HistoryView: View {
                 if let task = item.task {
                     Text("\(task.ftpHost):\(task.ftpPort)")
                         .font(.system(.body, design: .monospaced))
+                    if task.isAnonymous {
+                        Label("Anonim FTP", systemImage: "person.crop.circle.badge.questionmark")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else if !task.ftpUsername.isEmpty {
+                        Label("Kullanıcı: \(task.ftpUsername)", systemImage: "person.crop.circle")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    if let mt = task.mediaType {
+                        Label("Medya Türü: \(mt.displayName)", systemImage: "photo.on.rectangle")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 } else {
                     Text("Bilinmiyor")
                         .font(.system(.body, design: .monospaced))
@@ -177,13 +191,24 @@ struct HistoryView: View {
                 LabeledContent("Durum", value: item.status)
                 LabeledContent("Yedeklenen Dosya", value: "\(item.filesProcessed)")
                 LabeledContent("Toplam Dosya", value: "\(item.totalFiles)")
-                let skippedCount = item.totalFiles - item.filesProcessed
-                if skippedCount > 0 {
-                    LabeledContent("Pas Geçilen Dosya", value: "\(skippedCount)")
+                if item.skippedFiles > 0 {
+                    LabeledContent("Atlanan Dosya", value: "\(item.skippedFiles)")
+                }
+                if item.deletedFiles > 0 {
+                    LabeledContent("Silinen Dosya", value: "\(item.deletedFiles)")
                 }
                 LabeledContent("Toplam Boyut", value: formatFileSize(item.totalBytes))
                 LabeledContent("Süre", value: formatDuration(item.duration))
                 LabeledContent("Tarih", value: item.timestamp.formatted(date: .long, time: .standard))
+            }
+
+            if let err = item.errorMessage, !err.isEmpty {
+                Section("Hata") {
+                    Text(err)
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                        .textSelection(.enabled)
+                }
             }
         }
         .navigationTitle("Yedekleme Detayı")

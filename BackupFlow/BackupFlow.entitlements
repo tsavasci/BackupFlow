@@ -2,20 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>com.apple.security.application-groups</key>
-	<array>
-		<string>group.tsavasci.BackupFlow</string>
-	</array>
-	<key>com.apple.security.files.all</key>
-	<true/>
-	<key>com.apple.security.files.bookmarks.app-scope</key>
-	<true/>
-	<key>com.apple.security.files.bookmarks.document-scope</key>
-	<true/>
-	<key>com.apple.developer.background-tasks</key>
-	<array>
-		<string>tsavasci.BackupFlow.refresh</string>
-		<string>tsavasci.BackupFlow.processing</string>
-	</array>
+    <key>com.apple.developer.background-tasks</key>
+    <array>
+        <string>com.tamersavasci.BackupFlow.backupTask</string>
+        <string>com.tamersavasci.BackupFlow.processing</string>
+    </array>
 </dict>
 </plist>

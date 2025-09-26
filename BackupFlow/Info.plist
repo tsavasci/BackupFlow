@@ -5,11 +5,12 @@
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
 		<string>com.tamersavasci.BackupFlow.backupTask</string>
+		<string>com.tamersavasci.BackupFlow.processing</string>
 	</array>
 	<key>UIBackgroundModes</key>
 	<array>
-		<string>background-processing</string>
 		<string>fetch</string>
+		<string>processing</string>
 	</array>
 </dict>
 </plist>

@@ -13,6 +13,7 @@ import BackgroundTasks
 // MARK: - AppDelegate for handling app lifecycle
 class AppDelegate: NSObject, UIApplicationDelegate {
     let backgroundTaskIdentifier = "com.tamersavasci.BackupFlow.backupTask"
+    let processingTaskIdentifier = "com.tamersavasci.BackupFlow.processing"
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         print("🔄 BackupFlow: AppDelegate başlatıldı (BGTaskScheduler mode)")
@@ -43,6 +44,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             print("🔄 BGTaskScheduler: Görev çalıştırılıyor.")
             self.handleAppRefresh(task: task as! BGAppRefreshTask)
         }
+        BGTaskScheduler.shared.register(forTaskWithIdentifier: processingTaskIdentifier, using: nil) { task in
+            print("🔄 BGTaskScheduler: Processing görevi çalıştırılıyor.")
+            self.handleProcessing(task: task as! BGProcessingTask)
+        }
         print("✅ BGTaskScheduler: Arka plan görevi kaydedildi.")
     }
 
@@ -61,6 +66,23 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             print("⏳ BGTaskScheduler: Yedekleme işlemi başlatılıyor...")
             let success = await BackupScheduler.shared.executeBackgroundTask()
             print(success ? "✅ BGTaskScheduler: Görev başarıyla tamamlandı." : "⚠️ BGTaskScheduler: Görev tamamlandı ancak yedekleme yapılamadı.")
+            task.setTaskCompleted(success: success)
+        }
+    }
+
+    func handleProcessing(task: BGProcessingTask) {
+        // Re-schedule after finish
+        BackupScheduler.shared.scheduleProcessingTask()
+
+        task.expirationHandler = {
+            task.setTaskCompleted(success: false)
+            print("❌ BGTaskScheduler: Processing süresi doldu, iptal edildi.")
+        }
+
+        Task {
+            print("⏳ BGTaskScheduler: Processing ile yedekleme başlatılıyor...")
+            let success = await BackupScheduler.shared.executeBackgroundTask()
+            print(success ? "✅ BGTaskScheduler: Processing görev başarıyla tamamlandı." : "⚠️ BGTaskScheduler: Processing tamamlandı ancak yedekleme yapılamadı.")
             task.setTaskCompleted(success: success)
         }
     }
@@ -143,6 +165,8 @@ struct BackupFlowApp: App {
             if newValue == .background {
                 print("🔄 App moved to background. Scheduling app refresh task.")
                 BackupScheduler.shared.scheduleAppRefresh()
+                // Ayrıca processing görevi de planla (ağ gereksinimi olan daha uzun işler için)
+                BackupScheduler.shared.scheduleProcessingTask()
             } else if newValue == .active {
                 // App açıldığında badge'i temizle
                 Task {
