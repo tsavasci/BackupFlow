@@ -472,6 +472,34 @@ struct BackupView: View {
             let sourcePath = isPhotoLibrarySelected ? "PHOTOS_LIBRARY" : (selectedURL?.path ?? "")
             let displayNameValue = isPhotoLibrarySelected ? selectedMediaType.displayName : (selectedURL?.lastPathComponent ?? "Yeni Yedekleme")
             
+            // Check for existing tasks with the same configuration
+            let hostToCheck = selectedTarget == .ftp ? ftpHost.lowercased() : webdavURL.lowercased()
+            let destPathToCheck = selectedTarget == .ftp ? destinationPath : webdavPath
+            
+            // Create a simple predicate to avoid type-checking issues
+            let fetchRequest = FetchDescriptor<BackupTask>()
+            
+            do {
+                let allTasks = try modelContext.fetch(fetchRequest)
+                let hasDuplicate = allTasks.contains { task in
+                    let isSameSource = task.sourcePath == sourcePath
+                    let backupType: BackupType = selectedTarget == .ftp ? .ftp : .webdav
+                    let isSameType = task.backupType == backupType
+                    let isSameHost = task.serverHost.lowercased() == hostToCheck
+                    let isSameDest = task.destinationPath == destPathToCheck
+                    
+                    return isSameSource && isSameType && isSameHost && isSameDest
+                }
+                
+                if hasDuplicate {
+                    saveAlertMessage = "Aynı ayarlara sahip bir görev zaten mevcut"
+                    showingSaveAlert = true
+                    return
+                }
+            } catch {
+                print("Görev kontrolü sırasında hata oluştu: \(error.localizedDescription)")
+            }
+            
             let task: BackupTask
             
             switch selectedTarget {
