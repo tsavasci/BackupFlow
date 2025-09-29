@@ -4,8 +4,8 @@
 <dict>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
-		<string>com.tamersavasci.BackupFlow.backupTask</string>
-		<string>com.tamersavasci.BackupFlow.processing</string>
+		<string>tamersavasci.BackupFlow.backupTask</string>
+		<string>tamersavasci.BackupFlow.processing</string>
 	</array>
 	<key>UIBackgroundModes</key>
 	<array>

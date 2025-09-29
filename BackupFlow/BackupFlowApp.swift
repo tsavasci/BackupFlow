@@ -12,8 +12,14 @@ import BackgroundTasks
 
 // MARK: - AppDelegate for handling app lifecycle
 class AppDelegate: NSObject, UIApplicationDelegate {
-    let backgroundTaskIdentifier = "com.tamersavasci.BackupFlow.backupTask"
-    let processingTaskIdentifier = "com.tamersavasci.BackupFlow.processing"
+    lazy var backgroundTaskIdentifier: String = {
+        let base = Bundle.main.bundleIdentifier ?? "tamersavasci.BackupFlow"
+        return base + ".backupTask"
+    }()
+    lazy var processingTaskIdentifier: String = {
+        let base = Bundle.main.bundleIdentifier ?? "tamersavasci.BackupFlow"
+        return base + ".processing"
+    }()
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         print("🔄 BackupFlow: AppDelegate başlatıldı (BGTaskScheduler mode)")

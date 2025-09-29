@@ -18,7 +18,10 @@ struct HistoryView: View {
                     }
                 }
         }
-        .onAppear(perform: loadHistory)
+        .onAppear {
+            cleanUpInvalidHistory()
+            loadHistory()
+        }
     }
     
     @ViewBuilder
@@ -60,28 +63,31 @@ struct HistoryView: View {
     
     private var historyListView: some View {
         List {
-            ForEach(history) { item in
-                NavigationLink {
-                    historyDetailView(for: item)
-                } label: {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text(item.task?.sourcePath.components(separatedBy: "/").last ?? "Bilinmeyen")
-                                .font(.headline)
-                            Spacer()
-                            Text(item.status)
-                                .font(.caption)
-                                .padding(4)
-                                .background(item.status == "completed" ? Color.green.opacity(0.2) : Color.red.opacity(0.2))
-                                .foregroundStyle(item.status == "completed" ? .green : .red)
-                                .clipShape(RoundedRectangle(cornerRadius: 4))
-                        }
+            ForEach(history, id: \.persistentModelID) { item in
+                // Skip items with invalid task references
+                if item.task == nil {
+                    EmptyView()
+                } else {
+                    NavigationLink {
+                        historyDetailView(for: item)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text(item.task?.displayName ?? "Bilinmeyen Görev")
+                                    .font(.headline)
+                                Spacer()
+                                Text(item.status)
+                                    .font(.caption)
+                                    .padding(4)
+                                    .background(item.status == "completed" ? Color.green.opacity(0.2) : Color.red.opacity(0.2))
+                                    .foregroundStyle(item.status == "completed" ? .green : .red)
+                                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                            }
                         
                         HStack(spacing: 12) {
                             Label("\(item.totalFiles) dosya", systemImage: "doc")
-                            let skippedCount = item.totalFiles - item.filesProcessed
-                            if skippedCount > 0 {
-                                Label("\(skippedCount) pas geçildi", systemImage: "arrow.forward.circle")
+                            if (item.totalFiles - item.filesProcessed) > 0 {
+                                Label("\(item.totalFiles - item.filesProcessed) pas geçildi", systemImage: "arrow.forward.circle")
                             }
                             Label(formatFileSize(item.totalBytes), systemImage: "folder")
                         }
@@ -97,6 +103,7 @@ struct HistoryView: View {
                         }
                         .font(.caption2)
                         .foregroundStyle(.secondary)
+                        }
                     }
                     .padding(.vertical, 4)
                 }
@@ -105,8 +112,7 @@ struct HistoryView: View {
         }
         .animation(.default, value: history)
     }
-    
-    private var clearHistoryButton: some View {
+    var clearHistoryButton: some View {
         Button(role: .destructive) {
             clearHistory()
         } label: {
@@ -115,28 +121,41 @@ struct HistoryView: View {
         .disabled(history.isEmpty)
     }
     
-    private func loadHistory() {
+    func loadHistory() {
         isLoading = true
         loadError = nil
         // SwiftData sorguları otomatik olduğu için ek iş yapılmıyor
         isLoading = false
     }
     
-    private func deleteItems(offsets: IndexSet) {
+    func deleteItems(offsets: IndexSet) {
         for index in offsets {
+            guard index < history.count else { continue }
             modelContext.delete(history[index])
         }
+        try? modelContext.save()
     }
     
-    private func clearHistory() {
+    func clearHistory() {
         isLoading = true
         do {
             try modelContext.delete(model: BackupHistory.self)
+            try modelContext.save()
         } catch {
-            loadError = error
+            print("Geçmiş temizlenirken hata oluştu: \(error)")
         }
         isLoading = false
         loadHistory()
+    }
+    
+    private func cleanUpInvalidHistory() {
+        let invalidEntries = history.filter { $0.task == nil }
+        if !invalidEntries.isEmpty {
+            for entry in invalidEntries {
+                modelContext.delete(entry)
+            }
+            try? modelContext.save()
+        }
     }
     
     private func formatFileSize(_ bytes: Int64) -> String {

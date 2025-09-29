@@ -71,7 +71,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
 
     /// Daha uzun ve ağ bağlantısı gerektiren işler için BGProcessing görevi planlar.
     public func scheduleProcessingTask() {
-        let identifier = "com.tamersavasci.BackupFlow.processing"
+        let identifier = (Bundle.main.bundleIdentifier ?? "tamersavasci.BackupFlow") + ".processing"
 
         let request = BGProcessingTaskRequest(identifier: identifier)
         request.requiresNetworkConnectivity = true
@@ -495,7 +495,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     // MARK: - BGTaskScheduler Integration
     /// iOS arka plan yenileme görevi planlar.
     public func scheduleAppRefresh() {
-        let identifier = "com.tamersavasci.BackupFlow.backupTask"
+        let identifier = (Bundle.main.bundleIdentifier ?? "tamersavasci.BackupFlow") + ".backupTask"
 
         // En erken tarih hesapla
         let earliestDate: Date? = {

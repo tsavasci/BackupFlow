@@ -31,73 +31,78 @@ struct TaskRow: View {
     
     public var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Başlık ve Durum
-            HStack {
+            // 1. Satır: Görev adı ve aksiyon butonları
+            HStack(alignment: .top) {
+                // Görev adı (tüm genişliği kaplar)
                 VStack(alignment: .leading, spacing: 4) {
-                    HStack(alignment: .center, spacing: 8) {
-                        // Medya türü ikonu (sadece foto galerisi yedeklemeleri için)
-                        if task.sourcePath == "PHOTOS_LIBRARY" {
-                            Image(systemName: task.mediaType.systemImageName)
-                                .foregroundColor(.blue)
-                                .font(.caption)
-                        }
-                        
-                        Text(task.displayName)
-                            .font(.headline)
-                            .lineLimit(1)
-                        
-                        // Backup type badge
-                        Text(task.backupType.rawValue.uppercased())
-                            .font(.system(size: 10, weight: .semibold))
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(task.backupType == .ftp ? Color.blue.opacity(0.2) : Color.green.opacity(0.2))
-                            .foregroundColor(task.backupType == .ftp ? .blue : .green)
-                            .cornerRadius(4)
-                        
-                        if task.backupStatus != .idle {
-                            Text(task.backupStatus.displayName)
-                                .font(.caption)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(task.backupStatus.color.opacity(0.2))
-                                .cornerRadius(4)
-                                .foregroundColor(task.backupStatus.color)
-                        }
-                        
-                        // Pause/Resume badge
-                        if task.isPaused {
-                            Text("Duraklatıldı")
-                                .font(.caption)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Color.orange.opacity(0.2))
-                                .cornerRadius(4)
-                                .foregroundColor(.orange)
-                        }
-                    }
-                }
-                Spacer()
-                
-                // Pause/Play Button
-                HStack {
-                    if task.backupStatus == .uploading {
-                        Text("(\(Int(task.progress * 100))%)")
-                            .font(.caption.bold())
-                            .foregroundColor(.accentColor)
+                    if task.sourcePath == "PHOTOS_LIBRARY" {
+                        Image(systemName: task.mediaType.systemImageName)
+                            .foregroundColor(.blue)
+                            .font(.caption)
                     }
                     
-                    // Pause/Play button - only for scheduled tasks
-                    if task.frequency != .manual {
-                        Button(action: {
-                            togglePauseResume()
-                        }) {
-                            Image(systemName: task.isPaused ? "play.circle.fill" : "pause.circle.fill")
-                                .font(.title2)
-                                .foregroundColor(task.isPaused ? .green : .orange)
-                        }
-                        .buttonStyle(PlainButtonStyle())
+                    Text(task.displayName)
+                        .font(.headline)
+                        .lineLimit(1)
+                        .padding(.trailing, 8)
+                }
+                
+                Spacer()
+                
+                // Pause/Play Button (sağ üstte sabit)
+                if task.frequency != .manual {
+                    Button(action: {
+                        togglePauseResume()
+                    }) {
+                        Image(systemName: task.isPaused ? "play.circle.fill" : "pause.circle.fill")
+                            .font(.title2)
+                            .foregroundColor(task.isPaused ? .green : .orange)
                     }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+            
+            // 2. Satır: Durum ve WebDAV rozeti
+            HStack(spacing: 8) {
+                if task.backupStatus != .idle {
+                    Text(task.backupStatus.displayName)
+                        .font(.caption)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(task.backupStatus.color.opacity(0.2))
+                        .cornerRadius(4)
+                        .foregroundColor(task.backupStatus.color)
+                }
+                
+                // WebDAV rozeti
+                if task.backupType == .webdav {
+                    Text("WebDAV")
+                        .font(.caption)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.green.opacity(0.2))
+                        .foregroundColor(.green)
+                        .cornerRadius(4)
+                }
+                
+                // Pause/Resume badge
+                if task.isPaused {
+                    Text("Duraklatıldı")
+                        .font(.caption)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.orange.opacity(0.2))
+                        .cornerRadius(4)
+                        .foregroundColor(.orange)
+                }
+                
+                Spacer()
+                
+                // İlerleme yüzdesi (sağ üstte)
+                if task.backupStatus == .uploading {
+                    Text("%\(Int(task.progress * 100))")
+                        .font(.caption.bold())
+                        .foregroundColor(.accentColor)
                 }
             }
             
