@@ -211,6 +211,9 @@ struct HistoryView: View {
                 if item.skippedFiles > 0 {
                     LabeledContent("Atlanan Dosya", value: "\(item.skippedFiles)")
                 }
+                if item.deletedFiles > 0 {
+                    LabeledContent("Silinen Dosya", value: "\(item.deletedFiles)")
+                }
                 LabeledContent("Toplam Boyut", value: formatFileSize(item.totalBytes))
                 LabeledContent("Süre", value: formatDuration(item.duration))
                 LabeledContent("Tarih", value: item.timestamp.formatted(date: .long, time: .standard))

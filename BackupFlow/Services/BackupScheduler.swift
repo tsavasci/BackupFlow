@@ -75,7 +75,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
 
         let request = BGProcessingTaskRequest(identifier: identifier)
         request.requiresNetworkConnectivity = true
-        request.requiresExternalPower = false // İsteğe bağlı: Gece şarja takılıyken daha güvenilir olması için true yapılabilir
+        request.requiresExternalPower = true // Şarja takılıyken daha güvenilir (uzun işlemler için tercih)
 
         // earliestBeginDate'i, en yakın nextRunTime'a göre ayarla (en az 15 dk kuralına uyarak)
         if let container = Self.sharedModelContainer {
@@ -87,7 +87,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                     let minimumLead: TimeInterval = 15 * 60
                     if candidate.timeIntervalSince(now) < minimumLead {
                         candidate = now.addingTimeInterval(minimumLead)
-                        print("ℹ️ BGTaskScheduler: Processing earliest çok yakın, 15 dk'ya yuvarlandı -> \(candidate)")
+                        print("ℹ️ BGTaskScheduler: Processing earliest çok yakın, 15 dk'ya yuvarlandı -> \(userLocalDateFormatter.string(from: candidate))")
                     }
                     request.earliestBeginDate = candidate
                 }
@@ -97,7 +97,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         do {
             try BGTaskScheduler.shared.submit(request)
             if let d = request.earliestBeginDate {
-                print("✅ BGTaskScheduler: Processing görevi planlandı -> \(d)")
+                print("✅ BGTaskScheduler: Processing görevi planlandı -> \(userLocalDateFormatter.string(from: d))")
             } else {
                 print("✅ BGTaskScheduler: Processing görevi planlandı (tarih yok)")
             }
@@ -232,9 +232,13 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                         print("📱 BackupFlow: Uygulama aktif - Yedekleme direkt başlatılıyor")
                         try? await self?.performBackup(task: foundTask)
                     } else {
-                        // Arka plandaysa bildirim gönder
-                        print("🔔 BackupFlow: Uygulama arka planda - Bildirim gönderiliyor")
-                        self?.sendScheduledBackupNotification(for: foundTask)
+                        // Arka plandaysa: yalnızca MANUEL görevler için bildirim gönder
+                        if foundTask.frequency == .manual {
+                            print("🔔 BackupFlow: Uygulama arka planda - Bildirim gönderiliyor (manuel görev)")
+                            self?.sendScheduledBackupNotification(for: foundTask)
+                        } else {
+                            print("ℹ️ BackupFlow: Arka planda bildirim atlandı (otomatik görev)")
+                        }
                     }
                 }
             }
@@ -518,7 +522,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             let minimumLead: TimeInterval = 15 * 60
             if candidate.timeIntervalSince(now) < minimumLead {
                 candidate = now.addingTimeInterval(minimumLead)
-                print("ℹ️ BGTaskScheduler: Earliest çok yakın, 15 dk'ya yuvarlandı -> \(candidate)")
+                print("ℹ️ BGTaskScheduler: Earliest çok yakın, 15 dk'ya yuvarlandı -> \(userLocalDateFormatter.string(from: candidate))")
             }
             request.earliestBeginDate = candidate
         } else {
@@ -529,7 +533,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         do {
             try BGTaskScheduler.shared.submit(request)
             if let d = request.earliestBeginDate {
-                print("✅ BGTaskScheduler: App refresh görevi planlandı -> \(d)")
+                print("✅ BGTaskScheduler: App refresh görevi planlandı -> \(userLocalDateFormatter.string(from: d))")
             } else {
                 print("✅ BGTaskScheduler: App refresh görevi planlandı (tarih yok)")
             }
@@ -551,6 +555,14 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
 
     /// Arka plan görevi tetiklendiğinde çağrılır.
     public func executeBackgroundTask() async -> Bool {
+        // Re-entrancy guard: allow only one background execution at a time
+        if isProcessing {
+            print("ℹ️ BGTaskScheduler: Zaten bir işlem sürüyor, yeni görev atlandı")
+            return false
+        }
+        isProcessing = true
+        defer { isProcessing = false }
+
         guard let container = Self.sharedModelContainer else {
             print("❌ BGTaskScheduler: ModelContainer yok")
             return false
@@ -845,7 +857,8 @@ syncResult: FTPService.SyncResult(newFiles: 0, skippedFiles: 0, totalBytes: 0),
                 totalBytes: syncResult.totalBytes,
                 errorMessage: errorMessage,
                 duration: duration,
-                skippedFiles: syncResult.skippedFiles
+                skippedFiles: syncResult.skippedFiles,
+                deletedFiles: syncResult.deletedFiles
             )
 
             // Attach the task to the history record
@@ -879,7 +892,9 @@ syncResult: FTPService.SyncResult(newFiles: 0, skippedFiles: 0, totalBytes: 0),
                 bytesTransferred: syncResult.totalBytes,
                 totalBytes: syncResult.totalBytes,
                 errorMessage: errorMessage,
-                duration: duration
+                duration: duration,
+                skippedFiles: syncResult.skippedFiles,
+                deletedFiles: syncResult.deletedFiles
             )
 
             historyRecord.task = taskInContext

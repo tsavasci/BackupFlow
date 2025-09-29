@@ -382,6 +382,104 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         }
     }
     
+    // Returns size of remote item if exists, nil if not exists, throws for other errors
+    private func getRemoteItemSize(at path: String) async throws -> Int64? {
+        guard let provider = webdavProvider else {
+            throw BackupServiceError.connectionFailed
+        }
+        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Int64?, Error>) in
+            provider.attributesOfItem(path: path) { file, error in
+                if error != nil {
+                    // Treat any error as non-existent to allow upload to proceed; copy will fail if truly forbidden
+                    continuation.resume(returning: nil)
+                } else if let file = file {
+                    continuation.resume(returning: file.size)
+                } else {
+                    continuation.resume(returning: nil)
+                }
+            }
+        }
+    }
+
+    // Mirror-style sync upload (like FTPService.syncUploadDirectory)
+    private func syncUploadDirectory(
+        localPath: String,
+        remoteBasePath: String,
+        progressHandler: @escaping (Double) -> Void
+    ) async throws -> (filesUploaded: Int, filesSkipped: Int, filesFailed: Int, bytesTransferred: Int64, deletedFiles: Int) {
+        guard let provider = webdavProvider else {
+            throw BackupServiceError.connectionFailed
+        }
+
+        // Ensure remote base exists
+        try await ensureDirectoryExists(at: remoteBasePath)
+
+        // Collect local files recursively
+        let fileURLs = fileManager.enumerator(
+            at: URL(fileURLWithPath: localPath),
+            includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey],
+            options: [.skipsHiddenFiles]
+        )?.compactMap { $0 as? URL }.filter {
+            (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == false
+        } ?? []
+
+        let totalFiles = fileURLs.count
+        var uploaded = 0, skipped = 0, failed = 0, deleted = 0
+        var transferred: Int64 = 0
+
+        // Upload/update files
+        for (index, fileURL) in fileURLs.enumerated() {
+            let relativePath = String(fileURL.path.dropFirst(localPath.count)).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+            let remotePath = remoteBasePath.isEmpty ? relativePath : ((remoteBasePath as NSString).appendingPathComponent(relativePath))
+
+            // Ensure parent directories exist
+            let parentPath = (remotePath as NSString).deletingLastPathComponent
+            if !parentPath.isEmpty {
+                try await ensureDirectoryExists(at: parentPath)
+            }
+
+            let size = Int64((try? fileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
+            do {
+                let existingSize = try await getRemoteItemSize(at: remotePath)
+                if let existingSize = existingSize, existingSize == size {
+                    skipped += 1
+                } else {
+                    try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                        provider.copyItem(localFile: fileURL, to: remotePath, overwrite: true) { error in
+                            if let error = error {
+                                failed += 1
+                                continuation.resume(throwing: self.mapError(error))
+                            } else {
+                                uploaded += 1
+                                transferred += size
+                                continuation.resume()
+                            }
+                        }
+                    }
+                }
+            } catch {
+                failed += 1
+            }
+
+            progressHandler(Double(index + 1) / Double(max(totalFiles, 1)))
+        }
+
+        // Orphan deletion at top-level of remoteBasePath (same strategy as FTP)
+        do {
+            let localNames = Set(fileURLs.map { $0.lastPathComponent })
+            let remoteFiles = try await listDirectory(at: remoteBasePath)
+            for file in remoteFiles where !file.isDirectory {
+                if !localNames.contains(file.name) {
+                    do { try await deleteFile(at: (remoteBasePath as NSString).appendingPathComponent(file.name)); deleted += 1 } catch { }
+                }
+            }
+        } catch {
+            // ignore orphan deletion errors
+        }
+
+        return (uploaded, skipped, failed, transferred, deleted)
+    }
+
     func createDirectory(at path: String) async throws {
         guard let provider = webdavProvider else {
             throw BackupServiceError.connectionFailed
@@ -848,11 +946,6 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         self.logger.info("Backup - Connecting to WebDAV server...")
         try await connect(host: cleanHost, port: port, username: username, password: password)
         
-        // Check and create target directory
-        let targetPath = webdavPath + "backup/" + Date().ISO8601Format().replacingOccurrences(of: ":", with: "-")
-        self.logger.info("Backup - Target directory: \(targetPath)")
-        try await ensureDirectoryExists(at: targetPath)
-        
         guard webdavProvider != nil else {
             throw NSError(domain: "WebDAVError", code: -1, userInfo: [NSLocalizedDescriptionKey: "WebDAV provider is not available"])
         }
@@ -870,44 +963,31 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
                 progressHandler(p * 0.5)
             }
             self.logger.info("Backed up \(photoCount) photos to temporary directory")
-            
-            // Upload the files from temp directory to WebDAV
-            let uploadResult = try await uploadDirectory(
+
+            // Mirror to a fixed 'photos' directory (no timestamp), with skip/update + orphan delete
+            let remotePhotosBase = webdavPath + "photos"
+            try await ensureDirectoryExists(at: remotePhotosBase)
+            let sync = try await syncUploadDirectory(
                 localPath: tempDir.path,
-                remotePath: targetPath,
-                progressHandler: { p in
-                    progressHandler(0.5 + p * 0.5)
-                }
+                remoteBasePath: remotePhotosBase,
+                progressHandler: { p in progressHandler(0.5 + p * 0.5) }
             )
-            
-            result.newFiles = uploadResult.filesUploaded
-            result.skippedFiles = uploadResult.filesSkipped + uploadResult.filesFailed
-            result.totalBytes = uploadResult.bytesTransferred
-            
-            if uploadResult.filesFailed > 0 {
-                self.logger.error("Failed to upload \(uploadResult.filesFailed) files")
-            }
-            
-            self.logger.info("Successfully uploaded \(uploadResult.filesUploaded) files to WebDAV")
-            
+            result.newFiles = sync.filesUploaded
+            result.skippedFiles = sync.filesSkipped
+            result.totalBytes = sync.bytesTransferred
+            self.logger.info("Successfully synced photos to WebDAV (uploaded: \(sync.filesUploaded), skipped: \(sync.filesSkipped), deleted: \(sync.deletedFiles))")
         } else {
-            // For non-photo library backups
-            self.logger.info("Backing up directory: \(sourcePath)")
-            let uploadResult = try await uploadDirectory(
+            // Directory mirror to base WebDAV path (no timestamp)
+            self.logger.info("Backing up directory (mirror): \(sourcePath)")
+            let sync = try await syncUploadDirectory(
                 localPath: sourcePath,
-                remotePath: targetPath,
+                remoteBasePath: webdavPath,
                 progressHandler: progressHandler
             )
-            
-            result.newFiles = uploadResult.filesUploaded
-            result.skippedFiles = uploadResult.filesSkipped + uploadResult.filesFailed
-            result.totalBytes = uploadResult.bytesTransferred
-            
-            if uploadResult.filesFailed > 0 {
-                self.logger.error("Failed to upload \(uploadResult.filesFailed) files")
-            }
-            
-            self.logger.info("Successfully uploaded \(uploadResult.filesUploaded) files to WebDAV")
+            result.newFiles = sync.filesUploaded
+            result.skippedFiles = sync.filesSkipped
+            result.totalBytes = sync.bytesTransferred
+            self.logger.info("Successfully synced directory to WebDAV (uploaded: \(sync.filesUploaded), skipped: \(sync.filesSkipped), deleted: \(sync.deletedFiles))")
         }
         
         return result

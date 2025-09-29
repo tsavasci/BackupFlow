@@ -312,6 +312,7 @@ final class BackupHistory: Identifiable {
     var errorMessage: String?
     var duration: TimeInterval
     var skippedFiles: Int = 0
+    var deletedFiles: Int = 0
     
     // Relationship to the task that created this history entry
     @Relationship var task: BackupTask?
@@ -327,6 +328,7 @@ final class BackupHistory: Identifiable {
         errorMessage: String? = nil,
         duration: TimeInterval = 0,
         skippedFiles: Int = 0,
+        deletedFiles: Int = 0,
         task: BackupTask? = nil
     ) {
         self.id = id
@@ -339,6 +341,7 @@ final class BackupHistory: Identifiable {
         self.errorMessage = errorMessage
         self.duration = duration
         self.skippedFiles = skippedFiles
+        self.deletedFiles = deletedFiles
         self.task = task
     }
     
