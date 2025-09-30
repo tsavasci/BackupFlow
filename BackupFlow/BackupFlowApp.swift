@@ -62,37 +62,101 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     }
 
     func handleAppRefresh(task: BGAppRefreshTask) {
+        print("🔄 BGTaskScheduler: Arka plan yenileme görevi başlatılıyor...")
+        
         // Schedule a new refresh task for the future
         BackupScheduler.shared.scheduleAppRefresh()
-
+        
+        // Log task details
+        print("ℹ️ Görev detayları:")
+        print("   - ID: \(task.identifier)")
+        print("   - Başlangıç: \(Date())")
+        
         task.expirationHandler = {
             // Clean up any unfinished work
+            print("⚠️ BGTaskScheduler: Görev süresi doluyor, işlemler sonlandırılıyor...")
             task.setTaskCompleted(success: false)
             print("❌ BGTaskScheduler: Görev süresi doldu, iptal edildi.")
         }
 
         // Perform the backup in a background-safe way
+        let startTime = Date()
         Task {
             print("⏳ BGTaskScheduler: Yedekleme işlemi başlatılıyor...")
+            
+            // Log available background time
+            let remainingTime = UIApplication.shared.backgroundTimeRemaining
+            print("   ⏳ Kalan arka plan süresi: \(String(format: "%.1f", remainingTime)) saniye")
+            
             let success = await BackupScheduler.shared.executeBackgroundTask()
-            print(success ? "✅ BGTaskScheduler: Görev başarıyla tamamlandı." : "⚠️ BGTaskScheduler: Görev tamamlandı ancak yedekleme yapılamadı.")
+            
+            // Log completion status and duration
+            let duration = Date().timeIntervalSince(startTime)
+            if success {
+                print("✅ BGTaskScheduler: Görev başarıyla tamamlandı.")
+                print("   ⏱️ Toplam süre: \(String(format: "%.1f", duration)) saniye")
+            } else {
+                print("⚠️ BGTaskScheduler: Görev tamamlandı ancak yedekleme yapılamadı.")
+            }
+            
             task.setTaskCompleted(success: success)
         }
     }
 
     func handleProcessing(task: BGProcessingTask) {
+        print("🔄 BGTaskScheduler: Uzun süreli işlem görevi başlatılıyor...")
+        
         // Re-schedule after finish
         BackupScheduler.shared.scheduleProcessingTask()
-
+        
+        // Log task details
+        print("ℹ️ İşlem görevi detayları:")
+        print("   - ID: \(task.identifier)")
+        print("   - Başlangıç: \(Date())")
+        print("   - Ağ bağlantısı gerekli: \(task.requiresNetworkConnectivity)")
+        print("   - Şarj gereksinimi: \(task.requiresExternalPower ? "Şarjda olmalı" : "Pil yeterli")")
+        
         task.expirationHandler = {
+            print("⚠️ BGTaskScheduler: İşlem süresi doluyor, temizlik yapılıyor...")
             task.setTaskCompleted(success: false)
-            print("❌ BGTaskScheduler: Processing süresi doldu, iptal edildi.")
+            print("❌ BGTaskScheduler: İşlem süresi doldu, iptal edildi.")
         }
 
+        // Start a background task to ensure we have enough time
+        var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
+        backgroundTaskID = UIApplication.shared.beginBackgroundTask {
+            print("⚠️ Arka plan süresi doluyor, işlem sonlandırılıyor...")
+            if backgroundTaskID != .invalid {
+                UIApplication.shared.endBackgroundTask(backgroundTaskID)
+                backgroundTaskID = .invalid
+            }
+        }
+        
+        let startTime = Date()
         Task {
-            print("⏳ BGTaskScheduler: Processing ile yedekleme başlatılıyor...")
+            print("⏳ BGTaskScheduler: Uzun süreli yedekleme işlemi başlatılıyor...")
+            
+            // Log available background time
+            let remainingTime = UIApplication.shared.backgroundTimeRemaining
+            print("   ⏳ Kalan arka plan süresi: \(String(format: "%.1f", remainingTime)) saniye")
+            
             let success = await BackupScheduler.shared.executeBackgroundTask()
-            print(success ? "✅ BGTaskScheduler: Processing görev başarıyla tamamlandı." : "⚠️ BGTaskScheduler: Processing tamamlandı ancak yedekleme yapılamadı.")
+            
+            // Log completion status and duration
+            let duration = Date().timeIntervalSince(startTime)
+            if success {
+                print("✅ BGTaskScheduler: İşlem görevi başarıyla tamamlandı.")
+                print("   ⏱️ Toplam süre: \(String(format: "%.1f", duration)) saniye")
+            } else {
+                print("⚠️ BGTaskScheduler: İşlem tamamlandı ancak yedekleme yapılamadı.")
+            }
+            
+            // End the background task
+            if backgroundTaskID != .invalid {
+                UIApplication.shared.endBackgroundTask(backgroundTaskID)
+                backgroundTaskID = .invalid
+            }
+            
             task.setTaskCompleted(success: success)
         }
     }

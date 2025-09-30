@@ -19,7 +19,9 @@
 "settings.developer_settings" = "Geliştirici Ayarları";
 "settings.ftp_connection_test" = "FTP Bağlantı Testi";
 "settings.reset_all_data" = "Tüm Verileri Sıfırla";
-
+"settings.reset" = "Sıfırla";
+"settings.reset_confirm_title" = "Ayarları Sıfırla";
+"settings.reset_confirm_message" = "Tüm ayarlar varsayılan değerlerine sıfırlanacak. Devam etmek istiyor musunuz?";
 // Task Pause/Resume System
 "task.paused.notification.title" = "🎬 BackupFlow";
 "task.paused.notification.body" = "Görev duraklatıldı: %@";
