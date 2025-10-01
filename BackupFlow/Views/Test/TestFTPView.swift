@@ -104,10 +104,10 @@ struct TestFTPView: View {
                 return
             }
             
-            // Show notification
+            // Show initial notification
             let content = UNMutableNotificationContent()
             content.title = "Test Başlatılıyor"
-            content.body = "FTP bağlantı testi başlatılıyor..."
+            content.body = "FTP bağlantı testi başlatılıyor... (İlk kullanımda iOS ağ izni isteyebilir)"
             content.sound = .default
             
             let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)

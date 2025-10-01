@@ -15,7 +15,7 @@ enum PhotoLibraryPermission {
 
 enum ConnectionStatus: Equatable {
     case idle
-    case testing
+    case testing(String)
     case success(String)
     case failure(String)
     
@@ -31,8 +31,10 @@ enum ConnectionStatus: Equatable {
     
     var message: String? {
         switch self {
-        case .idle, .testing:
+        case .idle:
             return nil
+        case .testing(let message):
+            return message
         case .success(let message):
             return message
         case .failure(let error):
@@ -352,13 +354,16 @@ struct BackupView: View {
             }
             
             isTestingConnection = true
-            connectionStatus = .testing
+            connectionStatus = .testing("Bağlantı test ediliyor...")
             
             do {
                 switch selectedTarget {
                 case .ftp:
                     let ftpService = FTPService.shared
                     let port = Int(ftpPort) ?? 21
+                    
+                    // İlk kurulumda ağ izni bildirimi göster
+                    connectionStatus = .testing("Ağ izni kontrol ediliyor... (İlk kullanımda iOS izin isteyebilir)")
                     
                     try await ftpService.connect(
                         host: ftpHost,
@@ -373,6 +378,9 @@ struct BackupView: View {
                     // Extract host and port from webdavURL
                     let (host, port) = parseWebDAVURL(webdavURL)
                     
+                    // İlk kurulumda ağ izni bildirimi göster
+                    connectionStatus = .testing("Ağ izni kontrol ediliyor... (İlk kullanımda iOS izin isteyebilir)")
+                    
                     // Test WebDAV connection
                     let webDAVService = WebDAVService.shared
                     let isConnected = await webDAVService.testConnection(
@@ -385,8 +393,9 @@ struct BackupView: View {
                     if isConnected {
                         connectionStatus = .success("✅ WebDAV bağlantısı başarılı!")
                     } else {
+                        let errorMessage = webDAVService.lastError?.localizedDescription ?? "WebDAV sunucusuna bağlanılamadı"
                         throw NSError(domain: "WebDAV Error", code: -1,
-                                      userInfo: [NSLocalizedDescriptionKey: "WebDAV sunucusuna bağlanılamadı. Lütfen bilgilerinizi kontrol edin."])
+                                      userInfo: [NSLocalizedDescriptionKey: errorMessage])
                     }
                 }
             } catch let error as FTPError {

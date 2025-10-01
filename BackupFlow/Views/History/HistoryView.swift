@@ -62,57 +62,98 @@ struct HistoryView: View {
     }
     
     private var historyListView: some View {
-        List {
-            ForEach(history, id: \.persistentModelID) { item in
-                // Skip items with invalid task references
-                if item.task == nil {
-                    EmptyView()
-                } else {
-                    NavigationLink {
-                        historyDetailView(for: item)
-                    } label: {
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Text(item.task?.displayName ?? "Bilinmeyen Görev")
-                                    .font(.headline)
-                                Spacer()
-                                Text(item.status)
-                                    .font(.caption)
-                                    .padding(4)
-                                    .background(item.status == "completed" ? Color.green.opacity(0.2) : Color.red.opacity(0.2))
-                                    .foregroundStyle(item.status == "completed" ? .green : .red)
-                                    .clipShape(RoundedRectangle(cornerRadius: 4))
+        ScrollView {
+            LazyVStack(spacing: 12) {
+                ForEach(history, id: \.persistentModelID) { item in
+                    if item.task == nil {
+                        EmptyView()
+                    } else {
+                        NavigationLink {
+                            historyDetailView(for: item)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 10) {
+                                // Başlık ve durum
+                                HStack {
+                                    Text(item.task?.displayName ?? "Bilinmeyen Görev")
+                                        .font(.headline)
+                                        .fontWeight(.semibold)
+                                    Spacer()
+                                    Text(item.status == "completed" ? "Tamamlandı" : item.status.capitalized)
+                                        .font(.caption)
+                                        .fontWeight(.medium)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(item.status == "completed" ? Color.green.opacity(0.15) : Color.red.opacity(0.15))
+                                        .foregroundStyle(item.status == "completed" ? .green : .red)
+                                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                                }
+                                
+                                // İstatistikler - İlk satır
+                                HStack(spacing: 16) {
+                                    Label("\(item.filesProcessed)/\(item.totalFiles)", systemImage: "doc.text")
+                                        .font(.caption)
+                                        .foregroundColor(item.filesProcessed > 0 ? .primary : .secondary)
+                                    
+                                    if item.skippedFiles > 0 {
+                                        Label("\(item.skippedFiles) atlandı", systemImage: "doc.badge.clock")
+                                            .font(.caption)
+                                            .foregroundColor(.orange)
+                                    }
+                                    
+                                    if item.deletedFiles > 0 {
+                                        Label("\(item.deletedFiles) silindi", systemImage: "trash")
+                                            .font(.caption)
+                                            .foregroundColor(.red)
+                                    }
+                                    
+                                    Spacer()
+                                }
+                                
+                                // İstatistikler - İkinci satır
+                                HStack(spacing: 16) {
+                                    Label(formatFileSize(item.bytesTransferred), systemImage: "arrow.up.circle")
+                                        .font(.caption)
+                                        .foregroundColor(.blue)
+                                    
+                                    Spacer()
+                                    
+                                    Text(item.timestamp.formatted(date: .abbreviated, time: .shortened))
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    
+                                    if item.status.lowercased() == "completed" {
+                                        Text("•")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                        Text(formatDuration(item.duration))
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
                             }
-                        
-                        HStack(spacing: 12) {
-                            Label("\(item.totalFiles) dosya", systemImage: "doc")
-                            if (item.totalFiles - item.filesProcessed) > 0 {
-                                Label("\(item.totalFiles - item.filesProcessed) pas geçildi", systemImage: "arrow.forward.circle")
-                            }
-                            Label(formatFileSize(item.totalBytes), systemImage: "folder")
                         }
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        
-                        HStack {
-                            Text(item.timestamp.formatted(date: .abbreviated, time: .shortened))
-                            if item.status.lowercased() == "completed" {
-                                Text("•")
-                                Text(formatDuration(item.duration))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(Color(.systemBackground))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+                        .contextMenu {
+                            Button(role: .destructive) {
+                                if let index = history.firstIndex(where: { $0.persistentModelID == item.persistentModelID }) {
+                                    deleteItems(offsets: IndexSet([index]))
+                                }
+                            } label: {
+                                Label("Sil", systemImage: "trash")
                             }
-                        }
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
                         }
                     }
-                    .padding(.vertical, 4)
                 }
             }
-            .onDelete(perform: deleteItems)
+            .padding(.horizontal, 16)
         }
         .animation(.default, value: history)
     }
-    var clearHistoryButton: some View {
+    private var clearHistoryButton: some View {
         Button(role: .destructive) {
             clearHistory()
         } label: {
@@ -121,14 +162,14 @@ struct HistoryView: View {
         .disabled(history.isEmpty)
     }
     
-    func loadHistory() {
+    private func loadHistory() {
         isLoading = true
         loadError = nil
         // SwiftData sorguları otomatik olduğu için ek iş yapılmıyor
         isLoading = false
     }
     
-    func deleteItems(offsets: IndexSet) {
+    private func deleteItems(offsets: IndexSet) {
         for index in offsets {
             guard index < history.count else { continue }
             modelContext.delete(history[index])
@@ -136,7 +177,7 @@ struct HistoryView: View {
         try? modelContext.save()
     }
     
-    func clearHistory() {
+    private func clearHistory() {
         isLoading = true
         do {
             try modelContext.delete(model: BackupHistory.self)

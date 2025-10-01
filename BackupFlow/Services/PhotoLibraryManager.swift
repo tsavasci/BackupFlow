@@ -1,4 +1,4 @@
-import Photos
+@preconcurrency import Photos
 import PhotosUI
 import SwiftUI
 import Combine
@@ -134,6 +134,10 @@ class PhotoLibraryManager: NSObject, ObservableObject {
         
         let fetchOptions = PHFetchOptions()
         
+        // Metadata'yı önceden yükle - performans optimizasyonu
+        fetchOptions.includeAssetSourceTypes = [.typeUserLibrary, .typeCloudShared]
+        fetchOptions.includeHiddenAssets = false
+        
         switch mediaType {
         case .photosOnly:
             fetchOptions.predicate = NSPredicate(format: "mediaType = %d", PHAssetMediaType.image.rawValue)
@@ -164,8 +168,12 @@ class PhotoLibraryManager: NSObject, ObservableObject {
             options.isSynchronous = false
             options.isNetworkAccessAllowed = true
             options.deliveryMode = .highQualityFormat
+            options.resizeMode = .none
+            // Performans için: Ana thread'de çalışmayı zorla
+            options.isSynchronous = false
             
             if asset.mediaType == .image {
+                // PHImageRequestOptions'ı main thread'de kullan
                 PHImageManager.default().requestImageDataAndOrientation(for: asset, options: options) { data, _, _, _ in
                     continuation.resume(returning: data)
                 }
@@ -174,6 +182,7 @@ class PhotoLibraryManager: NSObject, ObservableObject {
                 videoOptions.isNetworkAccessAllowed = true
                 videoOptions.deliveryMode = .highQualityFormat
                 
+                // PHVideoRequestOptions'ı main thread'de kullan
                 PHImageManager.default().requestAVAsset(forVideo: asset, options: videoOptions) { avAsset, _, _ in
                     // For videos, we would need to export the asset to data
                     // This is a simplified version - real implementation would export video

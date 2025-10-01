@@ -560,8 +560,18 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             print("ℹ️ BGTaskScheduler: Zaten bir işlem sürüyor, yeni görev atlandı")
             return false
         }
-        isProcessing = true
-        defer { isProcessing = false }
+        
+        // İşlem başladığını işaretle
+        await MainActor.run {
+            isProcessing = true
+        }
+        
+        defer {
+            // İşlem bittiğinde işareti temizle
+            Task { @MainActor in
+                isProcessing = false
+            }
+        }
 
         guard let container = Self.sharedModelContainer else {
             print("❌ BGTaskScheduler: ModelContainer yok")

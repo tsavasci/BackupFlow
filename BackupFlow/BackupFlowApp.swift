@@ -113,8 +113,6 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         print("ℹ️ İşlem görevi detayları:")
         print("   - ID: \(task.identifier)")
         print("   - Başlangıç: \(Date())")
-        print("   - Ağ bağlantısı gerekli: \(task.requiresNetworkConnectivity)")
-        print("   - Şarj gereksinimi: \(task.requiresExternalPower ? "Şarjda olmalı" : "Pil yeterli")")
         
         task.expirationHandler = {
             print("⚠️ BGTaskScheduler: İşlem süresi doluyor, temizlik yapılıyor...")

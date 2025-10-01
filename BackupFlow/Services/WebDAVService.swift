@@ -2,8 +2,9 @@ import Foundation
 import FilesProvider
 import OSLog
 import Combine
-import Photos
+@preconcurrency import Photos
 import AVFoundation
+import Network
 
 // Define FileProviderError if not provided by the FilesProvider framework
 enum FileProviderError: Error, Equatable {
@@ -43,7 +44,11 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
     @Published private(set) var isConnected = false
     @Published private(set) var progress: Double = 0.0
     @Published private(set) var currentFile: String = ""
+    @Published private(set) var networkPermissionGranted = false
     private(set) var lastError: Error?
+    
+    private var networkMonitor: NWPathMonitor?
+    private var networkQueue = DispatchQueue(label: "NetworkMonitor")
     
     // MARK: - FileProviderDelegate
     func fileproviderSucceed(_ fileProvider: FileProviderOperations, operation: FileOperationType) {
@@ -68,6 +73,70 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
     // MARK: - Initialization
     private override init() {
         super.init()
+        setupNetworkMonitoring()
+    }
+    
+    // MARK: - Network Permission Management
+    private func setupNetworkMonitoring() {
+        networkMonitor = NWPathMonitor()
+        networkMonitor?.pathUpdateHandler = { [weak self] path in
+            DispatchQueue.main.async {
+                self?.networkPermissionGranted = path.status == .satisfied
+                if path.status == .satisfied {
+                    self?.logger.info("Ağ bağlantısı kullanılabilir")
+                } else {
+                    let statusString = self?.networkStatusString(path.status) ?? "bilinmeyen"
+                    self?.logger.warning("Ağ bağlantısı kullanılamıyor: \(statusString)")
+                }
+            }
+        }
+        networkMonitor?.start(queue: networkQueue)
+    }
+    
+    private func networkStatusString(_ status: NWPath.Status) -> String {
+        switch status {
+        case .satisfied:
+            return "satisfied"
+        case .unsatisfied:
+            return "unsatisfied"
+        case .requiresConnection:
+            return "requiresConnection"
+        @unknown default:
+            return "unknown"
+        }
+    }
+    
+    /// Ağ izninin verilmesini bekler ve gerekirse kullanıcıyı bilgilendirir
+    private func waitForNetworkPermission() async throws {
+        // İlk kez deneme - eğer ağ zaten varsa direkt geç
+        if networkPermissionGranted {
+            return
+        }
+        
+        self.logger.info("Ağ izni bekleniyor... (İlk bağlantı için iOS izin isteyebilir)")
+        
+        // 10 saniye kadar bekle
+        for i in 1...10 {
+            try await Task.sleep(nanoseconds: 1_000_000_000) // 1 saniye
+            
+            if networkPermissionGranted {
+                self.logger.info("Ağ izni alındı (\(i). saniyede)")
+                return
+            }
+            
+            if i == 5 {
+                self.logger.warning("Ağ izni hala bekleniyor... Kullanıcı pop-up'ı görmüş olabilir")
+            }
+        }
+        
+        // Hala ağ yoksa hata fırlat
+        if !networkPermissionGranted {
+            throw NSError(
+                domain: "WebDAVError",
+                code: -1009,
+                userInfo: [NSLocalizedDescriptionKey: "Ağ bağlantısı için izin gerekli. Lütfen Ayarlar > Gizlilik ve Güvenlik > Yerel Ağ'dan uygulamaya izin verin."]
+            )
+        }
     }
     
     // MARK: - Error Handling
@@ -114,6 +183,9 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
     
     // MARK: - BackupServiceProtocol
     func connect(host: String, port: Int, username: String?, password: String?) async throws {
+        // Önce ağ iznini bekle
+        try await waitForNetworkPermission()
+        
         self.logger.info("Starting WebDAV connection: \(host):\(port)")
         
         // Clean and validate the host string
@@ -121,6 +193,18 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         var webdavPath = "/webdav" // Default WebDAV path
         
         self.logger.debug("Initial host: '\(host)'")
+        
+        // Handle malformed URLs like "http:/192.168.2.106" (missing second slash)
+        cleanHost = cleanHost.replacingOccurrences(of: "http:/", with: "http://")
+        cleanHost = cleanHost.replacingOccurrences(of: "https:/", with: "https://")
+        cleanHost = cleanHost.replacingOccurrences(of: "://http://", with: "://") // Fix double protocol
+        cleanHost = cleanHost.replacingOccurrences(of: "://https://", with: "://") // Fix double protocol
+        
+        // Remove any URL scheme if present
+        if let schemeRange = cleanHost.range(of: "://") {
+            cleanHost = String(cleanHost[schemeRange.upperBound...])
+            self.logger.debug("Removed URL scheme, new host: '\(cleanHost)'")
+        }
         
         // Extract WebDAV path if present (e.g., example.com/webdav)
         if let pathRange = cleanHost.range(of: "/") {
@@ -132,22 +216,16 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
             self.logger.info("Using default WebDAV path: '\(webdavPath)'")
         }
         
-        // Remove any URL scheme if present
-        if let schemeRange = cleanHost.range(of: "://") {
-            cleanHost = String(cleanHost[schemeRange.upperBound...])
-            self.logger.debug("Removed URL scheme, new host: '\(cleanHost)'")
-        }
-        
         // Remove any trailing slashes from host
         cleanHost = cleanHost.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         self.logger.debug("Removed trailing slashes, final host: '\(cleanHost)'")
         
-        // Validate host format
-        guard !cleanHost.isEmpty else {
+        // Validate that we have a valid host after cleaning
+        guard !cleanHost.isEmpty && cleanHost != "http:" && cleanHost != "https:" else {
             let error = NSError(
                 domain: "WebDAVError",
                 code: -1,
-                userInfo: [NSLocalizedDescriptionKey: "Invalid server address. Please enter a valid address."]
+                userInfo: [NSLocalizedDescriptionKey: "Geçersiz sunucu adresi. Lütfen 'http://192.168.1.1' veya '192.168.1.1' formatında girin."]
             )
             self.logger.error("\(error.localizedDescription)")
             throw error
@@ -382,26 +460,60 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         }
     }
     
-    // Returns size of remote item if exists, nil if not exists, throws for other errors
-    private func getRemoteItemSize(at path: String) async throws -> Int64? {
+    // Returns file info (size, name) of remote item if exists, nil if not exists
+    private func getRemoteFileInfo(at path: String) async throws -> (size: Int64, name: String)? {
         guard let provider = webdavProvider else {
             throw BackupServiceError.connectionFailed
         }
-        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Int64?, Error>) in
+        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<(size: Int64, name: String)?, Error>) in
             provider.attributesOfItem(path: path) { file, error in
                 if error != nil {
-                    // Treat any error as non-existent to allow upload to proceed; copy will fail if truly forbidden
+                    // Treat any error as non-existent to allow upload to proceed
                     continuation.resume(returning: nil)
                 } else if let file = file {
-                    continuation.resume(returning: file.size)
+                    continuation.resume(returning: (size: file.size, name: file.name))
                 } else {
                     continuation.resume(returning: nil)
                 }
             }
         }
     }
+    
+    // Recursive function to list all files in a directory with their relative paths
+    private func listAllFiles(at path: String, relativeTo basePath: String = "") async throws -> [String: FileObject] {
+        guard let provider = webdavProvider else {
+            throw BackupServiceError.connectionFailed
+        }
+        
+        var allFiles: [String: FileObject] = [:]
+        
+        let files = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[FileObject], Error>) in
+            provider.contentsOfDirectory(path: path) { files, error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume(returning: files)
+                }
+            }
+        }
+        
+        for file in files {
+            let relativePath = basePath.isEmpty ? file.name : "\(basePath)/\(file.name)"
+            
+            if file.isDirectory {
+                // Recursively list subdirectory
+                let subdirPath = path == "/" ? "/\(file.name)" : "\(path)/\(file.name)"
+                let subFiles = try await listAllFiles(at: subdirPath, relativeTo: relativePath)
+                allFiles.merge(subFiles) { _, new in new }
+            } else {
+                allFiles[relativePath] = file
+            }
+        }
+        
+        return allFiles
+    }
 
-    // Mirror-style sync upload (like FTPService.syncUploadDirectory)
+    // Mirror-style sync upload with full synchronization (upload new, skip identical, delete orphans)
     private func syncUploadDirectory(
         localPath: String,
         remoteBasePath: String,
@@ -411,73 +523,124 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
             throw BackupServiceError.connectionFailed
         }
 
+        self.logger.info("Starting mirror sync: \(localPath) -> \(remoteBasePath)")
+        
         // Ensure remote base exists
         try await ensureDirectoryExists(at: remoteBasePath)
 
-        // Collect local files recursively
-        let fileURLs = fileManager.enumerator(
-            at: URL(fileURLWithPath: localPath),
-            includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey],
-            options: [.skipsHiddenFiles]
-        )?.compactMap { $0 as? URL }.filter {
-            (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == false
-        } ?? []
-
-        let totalFiles = fileURLs.count
+        // Collect local files recursively with their relative paths
+        let localFileMap = try collectLocalFiles(from: localPath)
+        let totalFiles = localFileMap.count
+        
+        self.logger.info("Found \(totalFiles) local files to sync")
+        
+        // Get all remote files with their relative paths
+        let remoteFileMap = try await listAllFiles(at: remoteBasePath)
+        
+        self.logger.info("Found \(remoteFileMap.count) remote files")
+        
         var uploaded = 0, skipped = 0, failed = 0, deleted = 0
         var transferred: Int64 = 0
-
-        // Upload/update files
-        for (index, fileURL) in fileURLs.enumerated() {
-            let relativePath = String(fileURL.path.dropFirst(localPath.count)).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-            let remotePath = remoteBasePath.isEmpty ? relativePath : ((remoteBasePath as NSString).appendingPathComponent(relativePath))
-
+        
+        // Phase 1: Upload/update files from local to remote
+        for (index, (relativePath, localFileURL)) in localFileMap.enumerated() {
+            let remotePath = remoteBasePath == "/" ? "/\(relativePath)" : "\(remoteBasePath)/\(relativePath)"
+            
             // Ensure parent directories exist
             let parentPath = (remotePath as NSString).deletingLastPathComponent
-            if !parentPath.isEmpty {
+            if !parentPath.isEmpty && parentPath != "/" {
                 try await ensureDirectoryExists(at: parentPath)
             }
-
-            let size = Int64((try? fileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
-            do {
-                let existingSize = try await getRemoteItemSize(at: remotePath)
-                if let existingSize = existingSize, existingSize == size {
-                    skipped += 1
-                } else {
+            
+            let localSize = Int64((try? localFileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
+            let fileName = localFileURL.lastPathComponent
+            
+            self.currentFile = fileName
+            
+            // Check if remote file exists and compare size and name
+            if let remoteFile = remoteFileMap[relativePath],
+               remoteFile.size == localSize,
+               remoteFile.name == fileName {
+                // File exists with same size and name - skip
+                self.logger.debug("Skipping identical file: \(relativePath) (\(ByteCountFormatter.string(fromByteCount: localSize, countStyle: .file)))")
+                skipped += 1
+            } else {
+                // File doesn't exist, has different size, or different name - upload
+                do {
+                    self.logger.info("Uploading: \(relativePath) (\(ByteCountFormatter.string(fromByteCount: localSize, countStyle: .file)))")
+                    
                     try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                        provider.copyItem(localFile: fileURL, to: remotePath, overwrite: true) { error in
+                        provider.copyItem(localFile: localFileURL, to: remotePath, overwrite: true) { error in
                             if let error = error {
+                                self.logger.error("Failed to upload \(relativePath): \(error.localizedDescription)")
                                 failed += 1
                                 continuation.resume(throwing: self.mapError(error))
                             } else {
+                                self.logger.debug("Successfully uploaded: \(relativePath)")
                                 uploaded += 1
-                                transferred += size
+                                transferred += localSize
                                 continuation.resume()
                             }
                         }
                     }
-                }
-            } catch {
-                failed += 1
-            }
-
-            progressHandler(Double(index + 1) / Double(max(totalFiles, 1)))
-        }
-
-        // Orphan deletion at top-level of remoteBasePath (same strategy as FTP)
-        do {
-            let localNames = Set(fileURLs.map { $0.lastPathComponent })
-            let remoteFiles = try await listDirectory(at: remoteBasePath)
-            for file in remoteFiles where !file.isDirectory {
-                if !localNames.contains(file.name) {
-                    do { try await deleteFile(at: (remoteBasePath as NSString).appendingPathComponent(file.name)); deleted += 1 } catch { }
+                } catch {
+                    self.logger.error("Upload failed for \(relativePath): \(error.localizedDescription)")
+                    failed += 1
                 }
             }
-        } catch {
-            // ignore orphan deletion errors
+            
+            progressHandler(Double(index + 1) / Double(max(totalFiles, 1)) * 0.8) // 80% for upload phase
         }
-
+        
+        // Phase 2: Delete orphaned files from remote (files that don't exist in local)
+        self.logger.info("Checking for orphaned files to delete...")
+        let localRelativePaths = Set(localFileMap.keys)
+        
+        for (remotePath, _) in remoteFileMap {
+            if !localRelativePaths.contains(remotePath) {
+                // This remote file doesn't exist in local - delete it
+                let fullRemotePath = remoteBasePath == "/" ? "/\(remotePath)" : "\(remoteBasePath)/\(remotePath)"
+                
+                do {
+                    self.logger.info("Deleting orphaned file: \(remotePath)")
+                    try await deleteFile(at: fullRemotePath)
+                    deleted += 1
+                    self.logger.debug("Successfully deleted: \(remotePath)")
+                } catch {
+                    self.logger.error("Failed to delete orphaned file \(remotePath): \(error.localizedDescription)")
+                }
+            }
+        }
+        
+        progressHandler(1.0) // 100% complete
+        
+        self.logger.info("Mirror sync completed - Uploaded: \(uploaded), Skipped: \(skipped), Failed: \(failed), Deleted: \(deleted)")
+        
         return (uploaded, skipped, failed, transferred, deleted)
+    }
+    
+    // Helper function to collect local files with their relative paths
+    private func collectLocalFiles(from localPath: String) throws -> [String: URL] {
+        var fileMap: [String: URL] = [:]
+        
+        guard let enumerator = fileManager.enumerator(
+            at: URL(fileURLWithPath: localPath),
+            includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey],
+            options: [.skipsHiddenFiles]
+        ) else {
+            throw NSError(domain: "WebDAVError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Could not enumerate local directory"])
+        }
+        
+        for case let fileURL as URL in enumerator {
+            let resourceValues = try fileURL.resourceValues(forKeys: [.isDirectoryKey])
+            if resourceValues.isDirectory != true {
+                // This is a file, not a directory
+                let relativePath = String(fileURL.path.dropFirst(localPath.count + 1)) // +1 for the trailing slash
+                fileMap[relativePath] = fileURL
+            }
+        }
+        
+        return fileMap
     }
 
     func createDirectory(at path: String) async throws {
@@ -581,6 +744,9 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         disconnect()
         
         do {
+            // Önce ağ iznini bekle
+            try await waitForNetworkPermission()
+            
             // First, try to connect with the provided credentials
             self.logger.info("Connecting to WebDAV server...")
             self.logger.info("   - Host: \(host)")
@@ -845,12 +1011,19 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         }
         
         let fetchOptions = PHFetchOptions()
+        
+        // Metadata optimizasyonu - PHAsset özelliklerini önceden yükle
+        fetchOptions.includeAssetSourceTypes = [.typeUserLibrary, .typeCloudShared]
+        fetchOptions.includeHiddenAssets = false
+        
         let fetchResult: PHFetchResult<PHAsset>
         
         switch mediaType {
         case .photosOnly: 
+            fetchOptions.predicate = NSPredicate(format: "mediaType = %d", PHAssetMediaType.image.rawValue)
             fetchResult = PHAsset.fetchAssets(with: .image, options: fetchOptions)
         case .videosOnly: 
+            fetchOptions.predicate = NSPredicate(format: "mediaType = %d", PHAssetMediaType.video.rawValue)
             fetchResult = PHAsset.fetchAssets(with: .video, options: fetchOptions)
         case .photosAndVideos: 
             fetchResult = PHAsset.fetchAssets(with: fetchOptions)
@@ -868,11 +1041,15 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
             let progress = Double(i + 1) / Double(count)
             progressHandler(progress)
             
-            let resource = PHAssetResource.assetResources(for: asset).first
-            let originalFilename = resource?.originalFilename ?? "\(Int(Date().timeIntervalSince1970))"
-            let ext = URL(fileURLWithPath: originalFilename).pathExtension.lowercased()
-            let uniqueFilename = "\(UUID().uuidString).\(ext)"
-            let fileURL = destination.appendingPathComponent(uniqueFilename)
+            // Generate consistent filename like FTP service
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
+            let date = asset.creationDate ?? Date()
+            let dateString = dateFormatter.string(from: date)
+            
+            let fileExtension = asset.mediaType == .image ? "jpg" : "mp4"
+            let consistentFilename = "\(dateString)_\(String(i + 1).padding(toLength: 3, withPad: "0", startingAt: 0)).\(fileExtension)"
+            let fileURL = destination.appendingPathComponent(consistentFilename)
             
             if fileManager.fileExists(atPath: fileURL.path) { 
                 saved += 1
@@ -881,16 +1058,25 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
             
             if asset.mediaType == .image {
                 try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                    imageManager.requestImageDataAndOrientation(for: asset, options: nil) { data, _, _, _ in
-                        do {
-                            if let data = data {
-                                try data.write(to: fileURL)
-                                saved += 1
+                    // Performans için background thread'de çalıştır
+                    DispatchQueue.global(qos: .userInitiated).async {
+                        let options = PHImageRequestOptions()
+                        options.isNetworkAccessAllowed = true
+                        options.deliveryMode = .highQualityFormat
+                        options.resizeMode = .none
+                        options.isSynchronous = false
+                        
+                        imageManager.requestImageDataAndOrientation(for: asset, options: options) { data, _, _, _ in
+                            do {
+                                if let data = data {
+                                    try data.write(to: fileURL)
+                                    saved += 1
+                                }
+                                continuation.resume()
+                            } catch {
+                                self.logger.error("Failed to save image: \(error.localizedDescription)")
+                                continuation.resume(throwing: error)
                             }
-                            continuation.resume()
-                        } catch {
-                            self.logger.error("Failed to save image: \(error.localizedDescription)")
-                            continuation.resume(throwing: error)
                         }
                     }
                 }
@@ -899,6 +1085,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
                     let options = PHVideoRequestOptions()
                     options.isNetworkAccessAllowed = true
                     
+                    // options'ı main thread'de kullan
                     imageManager.requestExportSession(forVideo: asset, options: options, exportPreset: AVAssetExportPresetHighestQuality) { exportSession, _ in
                         guard let exportSession = exportSession else { 
                             continuation.resume()
@@ -933,6 +1120,17 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         var webdavPath = "/"
         
         self.logger.debug("Backup - Initial host: '\(host)'")
+        
+        // Handle malformed URLs like "http:/192.168.2.106" (missing second slash)
+        cleanHost = cleanHost.replacingOccurrences(of: "http:/", with: "http://")
+        cleanHost = cleanHost.replacingOccurrences(of: "https:/", with: "https://")
+        cleanHost = cleanHost.replacingOccurrences(of: "://http://", with: "://") // Fix double protocol
+        cleanHost = cleanHost.replacingOccurrences(of: "://https://", with: "://") // Fix double protocol
+        
+        // Remove any URL scheme if present
+        if let schemeRange = cleanHost.range(of: "://") {
+            cleanHost = String(cleanHost[schemeRange.upperBound...])
+        }
         
         // Extract WebDAV path if present (e.g., example.com/webdav)
         if let pathRange = cleanHost.range(of: "/") {
@@ -974,6 +1172,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
             )
             result.newFiles = sync.filesUploaded
             result.skippedFiles = sync.filesSkipped
+            result.deletedFiles = sync.deletedFiles
             result.totalBytes = sync.bytesTransferred
             self.logger.info("Successfully synced photos to WebDAV (uploaded: \(sync.filesUploaded), skipped: \(sync.filesSkipped), deleted: \(sync.deletedFiles))")
         } else {
@@ -986,6 +1185,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
             )
             result.newFiles = sync.filesUploaded
             result.skippedFiles = sync.filesSkipped
+            result.deletedFiles = sync.deletedFiles
             result.totalBytes = sync.bytesTransferred
             self.logger.info("Successfully synced directory to WebDAV (uploaded: \(sync.filesUploaded), skipped: \(sync.filesSkipped), deleted: \(sync.deletedFiles))")
         }
