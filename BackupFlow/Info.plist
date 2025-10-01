@@ -22,5 +22,34 @@
 	<array>
 		<string>tr</string>
 	</array>
+	<key>UISupportsDocumentBrowser</key>
+	<true/>
+	<key>NSDocumentDirectory</key>
+	<true/>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
+	<key>NSFileProviderPresenceUpdate</key>
+	<true/>
+	<key>NSFileProviderDomainUsageDescription</key>
+	<string>Bu uygulama, dosyalarınızı yedeklemek için iCloud Drive ve Files uygulamasındaki klasörlere erişim gerektirir.</string>
+	<key>NSDocumentsDirUsageDescription</key>
+	<string>Belgelerinizi yedeklemek için Belgeler klasörüne erişim gereklidir.</string>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>All Files</string>
+			<key>UTTypeIdentifier</key>
+			<string>public.item</string>
+		</dict>
+	</array>
 </dict>
 </plist>

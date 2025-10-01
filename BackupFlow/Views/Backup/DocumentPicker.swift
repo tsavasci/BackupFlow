@@ -29,34 +29,76 @@ struct DocumentPicker: UIViewControllerRepresentable {
         }
         
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
-            guard let url = urls.first else { return }
+            guard let selectedURL = urls.first else { return }
             
-            // Start accessing the security-scoped resource
-            guard url.startAccessingSecurityScopedResource() else {
-                print("Failed to access security scoped resource")
-                return
+            let path = selectedURL.path
+            print("📁 Selected path: \(path)")
+            
+            // Start accessing security scoped resource
+            let isScoped = selectedURL.startAccessingSecurityScopedResource()
+            print("🔑 Security scoped access started: \(isScoped)")
+            
+            defer {
+                if isScoped {
+                    selectedURL.stopAccessingSecurityScopedResource()
+                    print("🔒 Security scoped access stopped")
+                }
             }
             
-            // Store the bookmark for persistent access
+            // Save bookmark before updating the URL
             do {
-                let bookmarkData = try url.bookmarkData(
-                    options: .minimalBookmark,
-                    includingResourceValuesForKeys: nil,
+                // For iOS, use minimal bookmark for File Provider access
+                let bookmark = try selectedURL.bookmarkData(
+                    options: [.minimalBookmark],
+                    includingResourceValuesForKeys: [.isDirectoryKey, .nameKey],
                     relativeTo: nil
                 )
                 
-                // Save the bookmark data for later use if needed
-                UserDefaults.standard.set(bookmarkData, forKey: "selectedFolderBookmark")
+                // Save general bookmark
+                UserDefaults.standard.set(bookmark, forKey: "selectedFolderBookmark")
+                print("💾 General bookmark saved")
+                
+                // Generate key from path for saving bookmark
+                let bookmarkKey = "folder_bookmark_\(path.replacingOccurrences(of: "/", with: "_"))"
+                
+                UserDefaults.standard.set(bookmark, forKey: bookmarkKey)
+                UserDefaults.standard.set(path, forKey: "folder_bookmark_path_\(bookmarkKey)")
+                
+                print("💾 Bookmark saved for path: \(path)")
+                print("🔑 Bookmark key: \(bookmarkKey)")
+                
+                // Test bookmark resolution immediately
+                do {
+                    var isStale = false
+                    let resolvedURL = try URL(
+                        resolvingBookmarkData: bookmark,
+                        options: [],
+                        relativeTo: nil,
+                        bookmarkDataIsStale: &isStale
+                    )
+                    
+                    print("✅ Bookmark resolution test successful: \(resolvedURL.path)")
+                    print("� Resolved URL: \(resolvedURL)")
+                    
+                    // Also save using FileAccessManager
+                    do {
+                        try FileAccessManager.shared.saveBookmark(for: selectedURL, key: path)
+                        print("💾 Bookmark also saved via FileAccessManager")
+                    } catch {
+                        print("⚠️ FileAccessManager bookmark save failed: \(error)")
+                    }
+                    
+                } catch {
+                    print("❌ Bookmark resolution test failed: \(error)")
+                }
                 
                 // Store the URL
-                parent.url = url
-                
-                // Stop accessing the security-scoped resource
-                url.stopAccessingSecurityScopedResource()
+                parent.url = selectedURL
                 
             } catch {
-                print("Error creating bookmark: \(error.localizedDescription)")
-                url.stopAccessingSecurityScopedResource()
+                print("❌ Failed to create bookmark: \(error)")
+                // Still store the URL even if bookmark creation fails
+                parent.url = selectedURL
             }
             
             parent.onDismiss()

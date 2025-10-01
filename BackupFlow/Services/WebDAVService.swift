@@ -623,21 +623,69 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
     private func collectLocalFiles(from localPath: String) throws -> [String: URL] {
         var fileMap: [String: URL] = [:]
         
-        guard let enumerator = fileManager.enumerator(
-            at: URL(fileURLWithPath: localPath),
-            includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey],
-            options: [.skipsHiddenFiles]
-        ) else {
-            throw NSError(domain: "WebDAVError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Could not enumerate local directory"])
-        }
+        self.logger.info("🔍 Collecting files from: \(localPath)")
         
-        for case let fileURL as URL in enumerator {
-            let resourceValues = try fileURL.resourceValues(forKeys: [.isDirectoryKey])
-            if resourceValues.isDirectory != true {
-                // This is a file, not a directory
-                let relativePath = String(fileURL.path.dropFirst(localPath.count + 1)) // +1 for the trailing slash
-                fileMap[relativePath] = fileURL
+        // Use FileAccessManager for File Provider files
+        do {
+            try FileAccessManager.shared.accessFileProviderFiles(at: localPath) { coordinatedURL in
+                self.logger.info("📂 Accessing coordinated URL: \(coordinatedURL.path)")
+                
+                var isDirectory: ObjCBool = false
+                let exists = self.fileManager.fileExists(atPath: coordinatedURL.path, isDirectory: &isDirectory)
+                
+                self.logger.info("📂 Directory exists: \(exists), isDirectory: \(isDirectory.boolValue)")
+                
+                guard exists && isDirectory.boolValue else {
+                    throw NSError(domain: "WebDAVError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Directory does not exist or is not accessible"])
+                }
+                
+                // Try to read directory contents
+                do {
+                    let contents = try self.fileManager.contentsOfDirectory(atPath: coordinatedURL.path)
+                    self.logger.info("📁 Directory contents count: \(contents.count)")
+                    if contents.isEmpty {
+                        self.logger.warning("⚠️ Directory is empty: \(coordinatedURL.path)")
+                    } else {
+                        self.logger.info("📄 Directory contents: \(contents.prefix(5).joined(separator: ", "))\(contents.count > 5 ? "..." : "")")
+                    }
+                } catch {
+                    self.logger.error("❌ Could not read directory contents: \(error.localizedDescription)")
+                    throw error
+                }
+                
+                guard let enumerator = self.fileManager.enumerator(
+                    at: coordinatedURL,
+                    includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey],
+                    options: [.skipsHiddenFiles]
+                ) else {
+                    self.logger.error("❌ Could not create file enumerator for: \(coordinatedURL.path)")
+                    throw NSError(domain: "WebDAVError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Could not enumerate directory"])
+                }
+                
+                var fileCount = 0
+                for case let fileURL as URL in enumerator {
+                    do {
+                        let resourceValues = try fileURL.resourceValues(forKeys: [.isDirectoryKey])
+                        if resourceValues.isDirectory != true {
+                            // This is a file, not a directory
+                            let relativePath = String(fileURL.path.dropFirst(coordinatedURL.path.count + 1))
+                            fileMap[relativePath] = fileURL
+                            fileCount += 1
+                            
+                            if fileCount <= 5 {
+                                self.logger.info("📄 Found file: \(relativePath)")
+                            }
+                        }
+                    } catch {
+                        self.logger.warning("⚠️ Could not get resource values for: \(fileURL.path) - \(error.localizedDescription)")
+                    }
+                }
+                
+                self.logger.info("📊 Total files collected: \(fileMap.count)")
             }
+        } catch {
+            self.logger.error("❌ Failed to access files: \(error.localizedDescription)")
+            throw error
         }
         
         return fileMap
@@ -1113,7 +1161,11 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
     // MARK: - Backup Implementation
     func performBackup(host: String, port: Int, username: String?, password: String?, sourcePath: String, isAnonymous: Bool, mediaType: MediaType, progressHandler: @escaping (Double) -> Void) async throws -> FTPService.SyncResult {
         self.logger.info("Starting backup: \(host):\(port)")
-        self.logger.info("Media type: \(mediaType == .photosOnly ? "Photos only" : "Photos and Videos")")
+        if sourcePath == "PHOTOS_LIBRARY" {
+            self.logger.info("Media type: \(mediaType == .photosOnly ? "Photos only" : "Photos and Videos")")
+        } else {
+            self.logger.info("Media type: Directory backup")
+        }
         
         // Clean and validate the host string
         var cleanHost = host.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1176,18 +1228,22 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
             result.totalBytes = sync.bytesTransferred
             self.logger.info("Successfully synced photos to WebDAV (uploaded: \(sync.filesUploaded), skipped: \(sync.filesSkipped), deleted: \(sync.deletedFiles))")
         } else {
-            // Directory mirror to base WebDAV path (no timestamp)
+            // Directory mirror - preserve source folder name
             self.logger.info("Backing up directory (mirror): \(sourcePath)")
+            let sourceURL = URL(fileURLWithPath: sourcePath)
+            let sourceFolderName = sourceURL.lastPathComponent
+            let remoteDocumentsBase = webdavPath.hasSuffix("/") ? webdavPath + sourceFolderName : webdavPath + "/" + sourceFolderName
+            try await ensureDirectoryExists(at: remoteDocumentsBase)
             let sync = try await syncUploadDirectory(
                 localPath: sourcePath,
-                remoteBasePath: webdavPath,
+                remoteBasePath: remoteDocumentsBase,
                 progressHandler: progressHandler
             )
             result.newFiles = sync.filesUploaded
             result.skippedFiles = sync.filesSkipped
             result.deletedFiles = sync.deletedFiles
             result.totalBytes = sync.bytesTransferred
-            self.logger.info("Successfully synced directory to WebDAV (uploaded: \(sync.filesUploaded), skipped: \(sync.filesSkipped), deleted: \(sync.deletedFiles))")
+            self.logger.info("Successfully synced directory to WebDAV: \(sourceFolderName)/ (uploaded: \(sync.filesUploaded), skipped: \(sync.filesSkipped), deleted: \(sync.deletedFiles))")
         }
         
         return result

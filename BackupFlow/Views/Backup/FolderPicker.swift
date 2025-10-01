@@ -70,13 +70,18 @@ struct FolderPicker: UIViewControllerRepresentable {
                     return
                 }
                 
-                // Save the bookmark to UserDefaults
+                // Save the bookmark to UserDefaults with path as key
+                let pathKey = resolvedURL.path
+                UserDefaults.standard.set(bookmarkData, forKey: "bookmark_\(pathKey)")
+                
+                // Also save general bookmark
                 UserDefaults.standard.set(bookmarkData, forKey: "selectedFolderBookmark")
                 
                 // Update the selected URL
                 parent.selectedURL = resolvedURL
                 
                 parent.logger.info("Successfully saved bookmark for: \(resolvedURL.path)")
+                parent.logger.info("Bookmark key: bookmark_\(pathKey)")
             } catch {
                 parent.logger.error("Error creating or resolving bookmark: \(error.localizedDescription)")
             }

@@ -903,23 +903,70 @@ func listDirectory(at path: String) async throws -> [FileObject] {
     /// Helper function to collect local files with their relative paths
     private func collectLocalFiles(from localPath: String) throws -> [String: URL] {
         var fileMap: [String: URL] = [:]
-        let fileManager = FileManager.default
         
-        guard let enumerator = fileManager.enumerator(
-            at: URL(fileURLWithPath: localPath),
-            includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey],
-            options: [.skipsHiddenFiles]
-        ) else {
-            throw FTPError.fileOperationFailed
-        }
+        self.logger.info("🔍 Collecting files from: \(localPath)")
         
-        for case let fileURL as URL in enumerator {
-            let resourceValues = try fileURL.resourceValues(forKeys: [.isDirectoryKey])
-            if resourceValues.isDirectory != true {
-                // This is a file, not a directory
-                let relativePath = String(fileURL.path.dropFirst(localPath.count + 1)) // +1 for the trailing slash
-                fileMap[relativePath] = fileURL
+        // Use FileAccessManager for File Provider files
+        do {
+            try FileAccessManager.shared.accessFileProviderFiles(at: localPath) { coordinatedURL in
+                self.logger.info("📂 Accessing coordinated URL: \(coordinatedURL.path)")
+                
+                var isDirectory: ObjCBool = false
+                let exists = FileManager.default.fileExists(atPath: coordinatedURL.path, isDirectory: &isDirectory)
+                
+                self.logger.info("📂 Directory exists: \(exists), isDirectory: \(isDirectory.boolValue)")
+                
+                guard exists && isDirectory.boolValue else {
+                    throw NSError(domain: "FTPError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Directory does not exist or is not accessible"])
+                }
+                
+                // Try to read directory contents
+                do {
+                    let contents = try FileManager.default.contentsOfDirectory(atPath: coordinatedURL.path)
+                    self.logger.info("📁 Directory contents count: \(contents.count)")
+                    if contents.isEmpty {
+                        self.logger.warning("⚠️ Directory is empty: \(coordinatedURL.path)")
+                    } else {
+                        self.logger.info("📄 Directory contents: \(contents.prefix(5).joined(separator: ", "))\(contents.count > 5 ? "..." : "")")
+                    }
+                } catch {
+                    self.logger.error("❌ Could not read directory contents: \(error.localizedDescription)")
+                    throw error
+                }
+                
+                guard let enumerator = FileManager.default.enumerator(
+                    at: coordinatedURL,
+                    includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey],
+                    options: [.skipsHiddenFiles]
+                ) else {
+                    self.logger.error("❌ Could not create file enumerator for: \(coordinatedURL.path)")
+                    throw NSError(domain: "FTPError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Could not enumerate directory"])
+                }
+                
+                var fileCount = 0
+                for case let fileURL as URL in enumerator {
+                    do {
+                        let resourceValues = try fileURL.resourceValues(forKeys: [.isDirectoryKey])
+                        if resourceValues.isDirectory != true {
+                            // This is a file, not a directory
+                            let relativePath = String(fileURL.path.dropFirst(coordinatedURL.path.count + 1))
+                            fileMap[relativePath] = fileURL
+                            fileCount += 1
+                            
+                            if fileCount <= 5 {
+                                self.logger.info("📄 Found file: \(relativePath)")
+                            }
+                        }
+                    } catch {
+                        self.logger.warning("⚠️ Could not get resource values for: \(fileURL.path) - \(error.localizedDescription)")
+                    }
+                }
+                
+                self.logger.info("📊 Total files collected: \(fileMap.count)")
             }
+        } catch {
+            self.logger.error("❌ Failed to access files: \(error.localizedDescription)")
+            throw error
         }
         
         return fileMap
@@ -1262,9 +1309,10 @@ func deleteFile(at path: String) async throws {
             // Photo library sync backup
             syncResult = try await syncBackupPhotoLibrary(mediaType: mediaType, progressHandler: progressHandler)
         } else {
-            // Directory sync backup
+            // Directory sync backup - preserve source folder name
             let sourceURL = URL(fileURLWithPath: sourcePath)
-            syncResult = try await syncUploadDirectory(localURL: sourceURL, remotePath: "", progressHandler: progressHandler)
+            let sourceFolderName = sourceURL.lastPathComponent
+            syncResult = try await syncUploadDirectory(localURL: sourceURL, remotePath: sourceFolderName, progressHandler: progressHandler)
         }
         
         // Print detailed report
