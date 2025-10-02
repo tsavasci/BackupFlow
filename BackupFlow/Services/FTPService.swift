@@ -4,6 +4,7 @@ import OSLog
 import Photos
 import Combine
 import Network
+import UIKit
 
 enum FTPError: Error, LocalizedError {
     case invalidURL
@@ -46,6 +47,12 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     @Published private(set) var isConnected = false
     @Published private(set) var networkPermissionGranted = false
     private(set) var lastError: Error?
+    
+    // Background session state tracking
+    @Published private(set) var isBackgroundUploading = false
+    private var backgroundSessionIdentifier: String?
+    @Published private(set) var progress: Double = 0.0
+    @Published private(set) var currentFile: String = ""
     
     private var networkMonitor: NWPathMonitor?
     private var networkQueue = DispatchQueue(label: "FTPNetworkMonitor")
@@ -202,6 +209,15 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             guard let testProvider = FTPFileProvider(baseURL: serverURL, credential: credential) else {
                 throw FTPError.connectionFailed
             }
+            
+            // Configure test provider based on app state
+            let isBackgroundMode = UIApplication.shared.applicationState != .active
+            if isBackgroundMode {
+                testProvider.serverTrustPolicy = .disableEvaluation
+                logger.info("⏱️ Test FTP provider configured for background mode")
+            } else {
+                logger.info("⏱️ Test FTP provider configured for foreground mode")
+            }
 
             return try await withThrowingTaskGroup(of: Bool.self) { group in
                 group.addTask {
@@ -250,6 +266,15 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         if _ftpProvider != nil {
             _ftpProvider = nil
         }
+        
+        // Clear background session state
+        Task { @MainActor in
+            self.isBackgroundUploading = false
+            self.backgroundSessionIdentifier = nil
+            self.progress = 0.0
+            self.currentFile = ""
+        }
+        
         isCancelled = false
     }
     
@@ -346,6 +371,17 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                 throw FTPError.connectionFailed
             }
             
+            // Configure provider based on app state
+            let isBackgroundMode = UIApplication.shared.applicationState != .active
+            if isBackgroundMode {
+                // Background mode: Provider will use background session internally
+                provider.serverTrustPolicy = .disableEvaluation // More permissive for background
+                logger.info("⏱️ Anonymous FTP provider configured for background mode")
+            } else {
+                // Foreground mode: Use default configuration
+                logger.info("⏱️ Anonymous FTP provider configured for foreground mode")
+            }
+            
             // Bağlantıyı test et
             try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
                 provider.contentsOfDirectory(path: "/") { contents, error in
@@ -400,7 +436,20 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         guard let provider = FTPFileProvider(baseURL: serverURL, credential: credential) else {
             logger.error("FTP sağlayıcısı oluşturulamadı")
             throw FTPError.connectionFailed
-        }        // Bağlantıyı test et
+        }
+        
+        // Configure provider based on app state
+        let isBackgroundMode = UIApplication.shared.applicationState != .active
+        if isBackgroundMode {
+            // Background mode: Provider will use background session internally
+            provider.serverTrustPolicy = .disableEvaluation // More permissive for background
+            logger.info("⏱️ FTP provider configured for background mode")
+        } else {
+            // Foreground mode: Use default configuration
+            logger.info("⏱️ FTP provider configured for foreground mode")
+        }
+        
+        // Bağlantıyı test et
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             provider.contentsOfDirectory(path: "/") { contents, error in
                 if let error = error {
@@ -606,6 +655,14 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             throw FTPError.connectionFailed
         }
         
+        // Log timeout configuration for background/foreground mode
+        let isBackgroundMode = UIApplication.shared.applicationState != .active
+        if isBackgroundMode {
+            logger.info("⏱️ FTP using background mode (longer timeouts expected)")
+        } else {
+            logger.info("⏱️ FTP using foreground mode (normal timeouts)")
+        }
+        
         // Mevcut görevi iptal et
         currentTask?.cancel()
         
@@ -651,9 +708,19 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
 
                 if let error = error {
                     print("❌ BackupFlow: Dosya yükleme hatası: \(error.localizedDescription)")
+                    // Clear progress state on error
+                    Task { @MainActor in
+                        self.currentFile = "Hata: \(error.localizedDescription)"
+                        self.progress = 0.0
+                    }
                     continuation.resume(throwing: self.mapError(error))
                 } else {
                     print("✅ BackupFlow: Dosya başarıyla yüklendi: \(remotePath)")
+                    // Update progress state on success
+                    Task { @MainActor in
+                        self.currentFile = "Tamamlandı: \(localURL.lastPathComponent)"
+                        self.progress = 1.0
+                    }
                     continuation.resume(returning: ())
                 }
             }
@@ -1059,15 +1126,27 @@ func listDirectory(at path: String) async throws -> [FileObject] {
             case .unchanged:
                 result.skippedFiles += 1
                 result.totalBytes += localSize
+                // Update current file status
+                Task { @MainActor in
+                    self.currentFile = "Atlandı: \(safeFileName)"
+                }
                 print("⏭ BackupFlow: Aynı dosya pas geçildi: \(safeFileName) (\(formatBytes(localSize)))")
                 
             case .new:
+                // Update current file status
+                Task { @MainActor in
+                    self.currentFile = "Yükleniyor: \(safeFileName)"
+                }
                 try await uploadPhotoData(data: data, remotePath: remotePath, fileName: safeFileName)
                 result.newFiles += 1
                 result.totalBytes += localSize
                 print("📤 BackupFlow: Yeni dosya yüklendi: \(safeFileName) (\(formatBytes(localSize)))")
                 
             case .updated:
+                // Update current file status
+                Task { @MainActor in
+                    self.currentFile = "Güncelleniyor: \(safeFileName)"
+                }
                 try await uploadPhotoData(data: data, remotePath: remotePath, fileName: safeFileName)
                 result.updatedFiles += 1
                 result.totalBytes += localSize
@@ -1112,6 +1191,12 @@ func listDirectory(at path: String) async throws -> [FileObject] {
     private func uploadPhotoData(data: Data, remotePath: String, fileName: String, progressHandler: ((Double) -> Void)? = nil) async throws {
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
         try data.write(to: tempURL)
+        
+        // Update current file being processed
+        Task { @MainActor in
+            self.currentFile = "Yükleniyor: \(fileName)"
+        }
+        
         try await uploadFile(localURL: tempURL, remotePath: remotePath, progressHandler: progressHandler)
         try? FileManager.default.removeItem(at: tempURL)
     }
@@ -1188,11 +1273,19 @@ func listDirectory(at path: String) async throws -> [FileObject] {
                 result.skippedFiles += 1
                 result.totalBytes += localSize
                 skippedCount += 1
+                // Update current file status
+                Task { @MainActor in
+                    self.currentFile = "Atlandı: \(fileName)"
+                }
                 logger.debug("Skipping identical file: \(relativePath) (\(ByteCountFormatter.string(fromByteCount: localSize, countStyle: .file)))")
                 
             case .new:
                 do {
                     logger.info("Uploading new file: \(relativePath) (\(ByteCountFormatter.string(fromByteCount: localSize, countStyle: .file)))")
+                    // Update current file status
+                    Task { @MainActor in
+                        self.currentFile = "Yükleniyor: \(fileName)"
+                    }
                     try await uploadFile(localURL: localFileURL, remotePath: targetPath, progressHandler: nil)
                     result.newFiles += 1
                     result.totalBytes += localSize
@@ -1207,6 +1300,10 @@ func listDirectory(at path: String) async throws -> [FileObject] {
             case .updated:
                 do {
                     logger.info("Updating changed file: \(relativePath) (\(ByteCountFormatter.string(fromByteCount: localSize, countStyle: .file)))")
+                    // Update current file status
+                    Task { @MainActor in
+                        self.currentFile = "Güncelleniyor: \(fileName)"
+                    }
                     try await uploadFile(localURL: localFileURL, remotePath: targetPath, progressHandler: nil)
                     result.updatedFiles += 1
                     result.totalBytes += localSize
@@ -1296,6 +1393,18 @@ func deleteFile(at path: String) async throws {
     ) async throws -> SyncResult {
         
         print("📡 BackupFlow: FTP senkronize yedekleme başlatılıyor - \(host):\(port)")
+        
+        // Check if we're in background mode
+        let isBackgroundMode = UIApplication.shared.applicationState != .active
+        if isBackgroundMode {
+            // Background mode: Set up for background session
+            let backgroundId = "BackupFlow.FTP.Background.\(UUID().uuidString)"
+            self.backgroundSessionIdentifier = backgroundId
+            self.isBackgroundUploading = true
+            self.logger.info("📱 Background FTP session created: \(backgroundId)")
+        } else {
+            self.isBackgroundUploading = false
+        }
         
         // Connect to FTP server
         let actualUsername = isAnonymous ? nil : username

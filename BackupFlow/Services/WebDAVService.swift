@@ -5,6 +5,7 @@ import Combine
 @preconcurrency import Photos
 import AVFoundation
 import Network
+import UIKit
 
 // Define FileProviderError if not provided by the FilesProvider framework
 enum FileProviderError: Error, Equatable {
@@ -40,6 +41,10 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
     private var webdavProvider: WebDAVFileProvider?
     private var cancellables = Set<AnyCancellable>()
     private let lock = NSLock()
+    
+    // Background session state tracking
+    @Published private(set) var isBackgroundUploading = false
+    private var backgroundSessionIdentifier: String?
     
     @Published private(set) var isConnected = false
     @Published private(set) var progress: Double = 0.0
@@ -237,9 +242,37 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         self.logger.info("Determined scheme: \(scheme) (Port: \(port))")
         
         // Configure URLSession with custom configuration
-        let config = URLSessionConfiguration.default
-        config.timeoutIntervalForRequest = 30.0
-        config.timeoutIntervalForResource = 60.0
+        let isBackgroundMode = UIApplication.shared.applicationState != .active
+        let config: URLSessionConfiguration
+        
+        if isBackgroundMode {
+            // Background mode: Use background session for long uploads
+            let backgroundId = "BackupFlow.WebDAV.Background.\(UUID().uuidString)"
+            config = URLSessionConfiguration.background(withIdentifier: backgroundId)
+            config.sessionSendsLaunchEvents = true
+            config.isDiscretionary = false  // Don't wait for optimal conditions
+            
+            // Store background session identifier and set flag
+            self.backgroundSessionIdentifier = backgroundId
+            self.isBackgroundUploading = true
+            self.logger.info("📱 Background upload session created: \(backgroundId)")
+        } else {
+            // Foreground mode: Use default session
+            config = URLSessionConfiguration.default
+            self.isBackgroundUploading = false
+        }
+        // Configure timeout values based on app state
+        if isBackgroundMode {
+            // Longer timeouts for background mode - large file uploads
+            config.timeoutIntervalForRequest = 60.0
+            config.timeoutIntervalForResource = 180.0
+            self.logger.info("⏱️ Using background session timeouts: 60s/180s")
+        } else {
+            // Normal timeouts for foreground mode
+            config.timeoutIntervalForRequest = 30.0
+            config.timeoutIntervalForResource = 60.0
+            self.logger.info("⏱️ Using foreground mode timeouts: 30s/60s")
+        }
         config.requestCachePolicy = .reloadIgnoringLocalCacheData
         config.urlCache = nil
         config.httpShouldUsePipelining = true
@@ -321,7 +354,9 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         // Disconnect any existing connection
         disconnect()
         
-        // Log the final configuration
+        // Log the final configuration (reuse isBackgroundMode from above)
+        let timeoutText = isBackgroundMode ? "15s/30s" : "30s/60s"
+        
         self.logger.debug("""
         WebDAV Connection Settings:
         - URL: \(url.absoluteString)
@@ -329,7 +364,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         - Host: \(cleanHost)
         - Port: \(port)
         - Path: \(url.path)
-        - Timeout: 30s/60s
+        - Timeout: \(timeoutText)
         - Pipelining: \(config.httpShouldUsePipelining ? "On" : "Off")
         - Max Connections: \(config.httpMaximumConnectionsPerHost)
         """)

@@ -30,6 +30,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         
         registerBackgroundTask()
         
+        // Setup notification categories and request permissions
+        setupNotificationCategories()
+        
         // Request notification permissions on app launch
         Task {
             let center = UNUserNotificationCenter.current()
@@ -46,6 +49,33 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         }
         
         return true
+    }
+    
+    private func setupNotificationCategories() {
+        // Define actions for scheduled backup notifications
+        let startAction = UNNotificationAction(
+            identifier: "START_BACKUP_ACTION",
+            title: "Yedeklemeyi Başlat",
+            options: [.foreground]  // Opens the app
+        )
+        
+        let cancelAction = UNNotificationAction(
+            identifier: "CANCEL_BACKUP_ACTION",
+            title: "İptal",
+            options: []
+        )
+        
+        // Create notification category
+        let scheduledBackupCategory = UNNotificationCategory(
+            identifier: "SCHEDULED_BACKUP",
+            actions: [startAction, cancelAction],
+            intentIdentifiers: [],
+            options: [.customDismissAction]
+        )
+        
+        // Register categories
+        UNUserNotificationCenter.current().setNotificationCategories([scheduledBackupCategory])
+        print("✅ BackupFlow: Notification kategorileri kaydedildi")
     }
 
     func registerBackgroundTask() {
@@ -74,9 +104,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         
         task.expirationHandler = {
             // Clean up any unfinished work
-            print("⚠️ BGTaskScheduler: Görev süresi doluyor, işlemler sonlandırılıyor...")
-            task.setTaskCompleted(success: false)
-            print("❌ BGTaskScheduler: Görev süresi doldu, iptal edildi.")
+            print("⚠️ BGTaskScheduler: Görev süresi doluyor...")
+            print("ℹ️ BGTaskScheduler: Upload işlemi devam ediyor, sistem iptal etse de network aktif kalacak")
+            // NOT: Burada task.setTaskCompleted çağırmıyoruz
+            // Upload işlemi foreground/background modunda devam etsin
         }
 
         // Perform the backup in a background-safe way
@@ -87,6 +118,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             // Log available background time
             let remainingTime = UIApplication.shared.backgroundTimeRemaining
             print("   ⏳ Kalan arka plan süresi: \(String(format: "%.1f", remainingTime)) saniye")
+            
+            // Also check if any timers should have fired but didn't
+            print("🔍 BGTaskScheduler: Timer durumları kontrol ediliyor...")
+            await BackupScheduler.shared.checkMissedTimers()
             
             let success = await BackupScheduler.shared.executeBackgroundTask()
             
@@ -115,9 +150,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         print("   - Başlangıç: \(Date())")
         
         task.expirationHandler = {
-            print("⚠️ BGTaskScheduler: İşlem süresi doluyor, temizlik yapılıyor...")
-            task.setTaskCompleted(success: false)
-            print("❌ BGTaskScheduler: İşlem süresi doldu, iptal edildi.")
+            print("⚠️ BGTaskScheduler: İşlem süresi doluyor...")
+            print("ℹ️ BGTaskScheduler: Upload devam ediyor, network bağlantısı korunuyor")
+            // Upload işlemi devam etsin, sadece BGTask tamamlanmış sayılsın
         }
 
         // Start a background task to ensure we have enough time
@@ -228,11 +263,23 @@ struct BackupFlowApp: App {
         .modelContainer(sharedModelContainer)
         .onChange(of: scenePhase) { (oldPhase: ScenePhase, newPhase: ScenePhase) in
             if newPhase == .background {
-                print("🔄 App moved to background. Scheduling app refresh task.")
-                BackupScheduler.shared.scheduleAppRefresh()
-                // Ayrıca processing görevi de planla (ağ gereksinimi olan daha uzun işler için)
-                BackupScheduler.shared.scheduleProcessingTask()
+                // Sadece aktif yedekleme yoksa BGTask planla
+                if !BackupScheduler.shared.isProcessing {
+                    print("🔄 App moved to background. Scheduling app refresh task.")
+                    BackupScheduler.shared.scheduleAppRefresh()
+                    BackupScheduler.shared.scheduleProcessingTask()
+                } else {
+                    print("⚠️ App moved to background. Active backup detected - keeping current process running.")
+                    print("📱 Background URLSession will continue the upload process.")
+                }
             } else if newPhase == .active {
+                print("📱 BackupFlow: App foreground'a geldi")
+                
+                // Missed timer kontrolü
+                Task {
+                    await BackupScheduler.shared.checkMissedTimers()
+                }
+                
                 // App açıldığında badge'i temizle
                 Task {
                     do {

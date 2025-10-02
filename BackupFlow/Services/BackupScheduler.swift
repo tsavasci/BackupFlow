@@ -9,6 +9,7 @@ import UniformTypeIdentifiers
 import Photos
 import AVFoundation
 import BackgroundTasks
+import Network
 
 @MainActor
 final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCenterDelegate {
@@ -166,7 +167,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         }
         
         // Skip manual tasks
-        if task.frequency == .manual {
+        if case .manual = task.frequency {
             print("📝 BackupFlow: Manuel görev, zamanlama atlanıyor: \(task.displayName)")
             return
         }
@@ -217,34 +218,44 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         print("   📅 Şu anda: \(userLocalDateFormatter.string(from: now))")
         print("   📅 Sonraki çalışma: \(userLocalDateFormatter.string(from: nextRunTime))")
         print("   ⏳ Kalan süre: \(formatTimeInterval(timeInterval))")
+        print("   📱 Mevcut app state: \(UIApplication.shared.applicationState.rawValue)")
         
         let timer = Timer.scheduledTimer(withTimeInterval: timeInterval, repeats: false) { [weak self, taskId = task.id] _ in
+            print("⏰ BackupFlow: Timer tetiklendi! Task ID: \(taskId)")
             Task { @MainActor in
+                print("📱 BackupFlow: Timer callback MainActor'da çalışıyor")
                 self?.scheduledTimers.removeValue(forKey: taskId)
                 
                 // Find the task by ID
-                guard let container = Self.sharedModelContainer else { return }
+                guard let container = Self.sharedModelContainer else { 
+                    print("❌ BackupFlow: ModelContainer bulunamadı!")
+                    return 
+                }
                 let context = ModelContext(container)
                 let descriptor = FetchDescriptor<BackupTask>()
                 if let foundTask = try? context.fetch(descriptor).first(where: { $0.id == taskId }) {
-                    // Uygulama ön plandaysa direkt başlat
-                    if UIApplication.shared.applicationState == .active {
+                    print("✅ BackupFlow: Timer'da görev bulundu: \(foundTask.displayName)")
+                    // App state'ini tekrar kontrol et (arka plana geçmiş olabilir)
+                    let currentAppState = UIApplication.shared.applicationState
+                    print("📲 BackupFlow: Mevcut app state: \(currentAppState.rawValue)")
+                    if currentAppState == .active {
                         print("📱 BackupFlow: Uygulama aktif - Yedekleme direkt başlatılıyor")
                         try? await self?.performBackup(task: foundTask)
                     } else {
-                        // Arka plandaysa: yalnızca MANUEL görevler için bildirim gönder
-                        if foundTask.frequency == .manual {
-                            print("🔔 BackupFlow: Uygulama arka planda - Bildirim gönderiliyor (manuel görev)")
-                            self?.sendScheduledBackupNotification(for: foundTask)
-                        } else {
-                            print("ℹ️ BackupFlow: Arka planda bildirim atlandı (otomatik görev)")
-                        }
+                        print("🔔 BackupFlow: Uygulama arka planda (state: \(currentAppState.rawValue)) - Bildirim gönderiliyor")
+                        self?.sendScheduledBackupNotification(for: foundTask)
                     }
+                } else {
+                    print("❌ BackupFlow: Timer'da görev bulunamadı! Task ID: \(taskId)")
                 }
             }
         }
         
         scheduledTimers[task.id] = timer
+        
+        // Timer'ın background'da çalışması için RunLoop'a ekle
+        RunLoop.main.add(timer, forMode: .common)
+        print("✅ BackupFlow: Timer RunLoop'a eklendi (common mode)")
     }
     
     @MainActor
@@ -297,20 +308,32 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             return
         }
         
+        // Set processing flag to prevent interruption
+        await MainActor.run {
+            isProcessing = true
+        }
+        
+        defer {
+            // Clear processing flag when done
+            Task { @MainActor in
+                isProcessing = false
+            }
+        }
+        
         print("🚀 BackupFlow: Yedekleme başlatılıyor: \(task.displayName)")
         
-        // Update task status
+        // Update task status with safe initial progress
         task.backupStatus = .preparing
-        task.progress = 0.0
+        task.progress = 0.0  // Start at 0.0, safe value
         task.lastError = nil
         
         do {
             // Perform the actual backup
             try await executeBackup(task: task)
             
-            // Update task on success
+            // Update task on success with safe progress
             task.backupStatus = .completed
-            task.progress = 1.0
+            task.progress = 1.0  // Success is always 1.0, safe value
             task.lastBackupDate = Date()
             
             // Schedule next run
@@ -353,10 +376,10 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         case .manual:
             return nil
             
-        case .daily:
+        case .daily(let time):
             var components = calendar.dateComponents([.year, .month, .day], from: now)
-            components.hour = task.scheduledTime?.hour ?? 0
-            components.minute = task.scheduledTime?.minute ?? 0
+            components.hour = time.hour
+            components.minute = time.minute
             components.second = 0
             
             guard let scheduledToday = calendar.date(from: components) else { return nil }
@@ -367,12 +390,12 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                 return calendar.date(byAdding: .day, value: 1, to: scheduledToday)
             }
             
-        case .weekly:
-            let targetWeekday = task.scheduledWeekday ?? 1 // 1 = Sunday
+        case .weekly(let day, let time):
+            let targetWeekday = day // 1 = Sunday
             var components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)
             components.weekday = targetWeekday
-            components.hour = task.scheduledTime?.hour ?? 0
-            components.minute = task.scheduledTime?.minute ?? 0
+            components.hour = time.hour
+            components.minute = time.minute
             components.second = 0
             
             guard let scheduledThisWeek = calendar.date(from: components) else { return nil }
@@ -445,32 +468,33 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
 
         let content = UNMutableNotificationContent()
         content.title = "🕐 Yedekleme Zamanı!"
-        content.body = "'\(task.displayName)' görevi çalıştırılmaya hazır."
+        
+        // Görev türüne göre mesajı özelleştir
+        let frequencyText: String
+        switch task.frequency {
+        case .manual:
+            frequencyText = "Manuel"
+        case .daily:
+            frequencyText = "Günlük"
+        case .weekly:
+            frequencyText = "Haftalık"
+        }
+        
+        // Network uyarısı ekle (local server için)
+        var bodyMessage = "'\(task.displayName)' görevi çalıştırılmaya hazır. (\(frequencyText))"
+        if isLocalServer(host: task.serverHost) {
+            if task.allowCellularForLocalServer {
+                bodyMessage += "\n\n📱 Local sunucu için hücresel veri kullanımına izin verildi."
+            } else {
+                bodyMessage += "\n\n⚠️ Local sunucu için WiFi bağlantısı gereklidir."
+            }
+        }
+        
+        content.body = bodyMessage
         content.sound = .default
         content.badge = 1
         
-        // Action button ekle
-        let startAction = UNNotificationAction(
-            identifier: "START_BACKUP_\(task.id)",
-            title: "Yedeklemeyi Başlat",
-            options: [.foreground]  // Uygulamayı açar
-        )
-        
-        let cancelAction = UNNotificationAction(
-            identifier: "CANCEL_BACKUP_\(task.id)",
-            title: "İptal",
-            options: []
-        )
-        
-        let category = UNNotificationCategory(
-            identifier: "SCHEDULED_BACKUP",
-            actions: [startAction, cancelAction],
-            intentIdentifiers: [],
-            options: []
-        )
-        
-        // Category'yi register et
-        UNUserNotificationCenter.current().setNotificationCategories([category])
+        // Kategori zaten AppDelegate'te kaydedildi, sadece identifier'ı ayarla
         content.categoryIdentifier = "SCHEDULED_BACKUP"
         
         // Hemen gönder: önce aynı kimlikli pending ve delivered bildirimleri temizle
@@ -482,7 +506,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [request.identifier])
         UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [request.identifier])
         UNUserNotificationCenter.current().add(request)
-        print("🔔 BackupFlow: Zamanlanmış yedekleme bildirimi gönderildi: \(task.displayName)")
+        print("🔔 BackupFlow: Zamanlanmış yedekleme bildirimi gönderildi: \(task.displayName) (\(frequencyText))")
         lastNotificationSentAt[task.id] = Date()
     }
     
@@ -552,6 +576,52 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             print("⛑ Fallback: Foreground timer'lar çalışmaya devam edecek.")
         }
     }
+    
+    /// Missed timer kontrolü - BGTask tarafından çağrılır
+    public func checkMissedTimers() async {
+        guard let container = Self.sharedModelContainer else {
+            print("❌ checkMissedTimers: ModelContainer yok")
+            return
+        }
+        
+        let context = ModelContext(container)
+        let now = Date()
+        let descriptor = FetchDescriptor<BackupTask>()
+        
+        guard let tasks = try? context.fetch(descriptor) else {
+            print("❌ checkMissedTimers: Görevler yüklenemedi")
+            return
+        }
+        
+        print("🔍 checkMissedTimers: \(tasks.count) görev kontrol ediliyor")
+        
+        for task in tasks {
+            guard !task.isPaused, task.isEnabled else { continue }
+            if case .manual = task.frequency { continue }
+            
+            if let nextRunTime = task.nextRunTime {
+                let timeDiff = now.timeIntervalSince(nextRunTime)
+                
+                // Timer 2+ dakika geç kalmışsa manuel tetikle
+                if timeDiff > 120 { // 2 dakika
+                    print("⚠️ checkMissedTimers: Kaçırılmış görev tespit edildi: \(task.displayName)")
+                    print("   📅 Planlanmış: \(userLocalDateFormatter.string(from: nextRunTime))")
+                    print("   📅 Şu anda: \(userLocalDateFormatter.string(from: now))")
+                    print("   ⏰ Gecikme: \(String(format: "%.1f", timeDiff)) saniye")
+                    
+                    // App state kontrol et
+                    let currentAppState = UIApplication.shared.applicationState
+                    if currentAppState == .active {
+                        print("📱 checkMissedTimers: App aktif - Yedekleme başlatılıyor")
+                        try? await performBackup(task: task)
+                    } else {
+                        print("🔔 checkMissedTimers: App arka planda - Bildirim gönderiliyor")
+                        sendScheduledBackupNotification(for: task)
+                    }
+                }
+            }
+        }
+    }
 
     /// Arka plan görevi tetiklendiğinde çağrılır.
     public func executeBackgroundTask() async -> Bool {
@@ -585,7 +655,9 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             return true
         }
         let dueTasks = tasks.filter { task in
-            guard !task.isPaused, task.isEnabled, task.frequency != .manual else { return false }
+            guard !task.isPaused, task.isEnabled else { return false }
+            // Exclude manual tasks
+            if case .manual = task.frequency { return false }
             if let next = task.nextRunTime { return next <= now }
             return false
         }
@@ -594,16 +666,22 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             scheduleAppRefresh()
             return true
         }
+        
         print("🚀 BGTaskScheduler: \(dueTasks.count) görev arka planda yürütülecek")
+        
+        // Arka plan modunda hızlı işlem için sadece ilk görevi çalıştır
+        let taskToRun = dueTasks.first!
+        print("📱 BGTaskScheduler: Arka plan optimizasyonu - sadece 1 görev: \(taskToRun.displayName)")
+        
         var anySuccess = false
-        for task in dueTasks {
-            do {
-                try await performBackup(task: task)
-                anySuccess = true
-            } catch {
-                print("⚠️ BGTaskScheduler: Görev başarısız -> \(task.displayName) - \(error)")
-            }
+        do {
+            try await performBackup(task: taskToRun)
+            anySuccess = true
+            print("✅ BGTaskScheduler: Arka plan görevi başarıyla tamamlandı: \(taskToRun.displayName)")
+        } catch {
+            print("⚠️ BGTaskScheduler: Arka plan görevi başarısız -> \(taskToRun.displayName) - \(error)")
         }
+        
         scheduleAppRefresh()
         return anySuccess
     }
@@ -614,6 +692,20 @@ extension BackupScheduler: URLSessionDelegate, URLSessionTaskDelegate {
     
     private func executeBackup(task: BackupTask) async throws {
         print("🚀 BackupFlow: Yedekleme başlatılıyor: \(task.displayName) - \(task.backupType.rawValue)")
+        
+        // Network türü kontrolü - local server için WiFi gerekli (ayar kontrollü)
+        if isLocalServer(host: task.serverHost) && !task.allowCellularForLocalServer {
+            let networkType = await getCurrentNetworkType()
+            if networkType != .wifi {
+                let errorMessage = "Local sunucu erişimi için WiFi bağlantısı gerekli (Şu anda: \(networkType.description)). Ayarlardan hücresel veri kullanımını aktifleştirebilirsiniz."
+                print("❌ BackupFlow: \(errorMessage)")
+                throw NSError(domain: "NetworkError", code: -1000, userInfo: [NSLocalizedDescriptionKey: errorMessage])
+            }
+            print("✅ BackupFlow: WiFi bağlantısı tespit edildi, local server erişimi uygun")
+        } else if isLocalServer(host: task.serverHost) && task.allowCellularForLocalServer {
+            let networkType = await getCurrentNetworkType()
+            print("⚠️ BackupFlow: Local server için hücresel veri kullanımına izin verildi (Şu anda: \(networkType.description))")
+        }
         
         task.backupStatus = .preparing
         task.progress = 0.0
@@ -628,7 +720,7 @@ extension BackupScheduler: URLSessionDelegate, URLSessionTaskDelegate {
             }
             
             task.backupStatus = .completed
-            task.progress = 1.0
+            task.progress = 1.0  // Success is always 1.0, safe value
             task.lastBackupDate = Date()
             task.currentFile = nil
             
@@ -676,7 +768,9 @@ extension BackupScheduler: URLSessionDelegate, URLSessionTaskDelegate {
             mediaType: task.mediaType,
             progressHandler: { progress in
                 Task { @MainActor in
-                    task.progress = progress
+                    // NaN kontrolü ile güvenli progress update
+                    let safeProgress = progress.isNaN || progress.isInfinite ? 0.0 : max(0.0, min(1.0, progress))
+                    task.progress = safeProgress
                     task.currentFile = "Uploading..."
                 }
             }
@@ -753,7 +847,9 @@ extension BackupScheduler: URLSessionDelegate, URLSessionTaskDelegate {
                 progressHandler: { progress in
                     // Update progress on main actor
                     Task { @MainActor in
-                        task.progress = progress
+                        // NaN kontrolü ile güvenli progress update
+                        let safeProgress = progress.isNaN || progress.isInfinite ? 0.0 : max(0.0, min(1.0, progress))
+                        task.progress = safeProgress
                         task.currentFile = webDAVService.currentFile
                     }
                 }
@@ -789,7 +885,7 @@ extension BackupScheduler: URLSessionDelegate, URLSessionTaskDelegate {
             
         } catch {
             task.backupStatus = .failed
-            task.progress = 0.0
+            task.progress = 0.0  // Reset to 0.0 on failure, safe value
             task.currentFile = "Hata: \(error.localizedDescription)"
             
             // Create backup history record for failure
@@ -940,19 +1036,21 @@ extension BackupScheduler {
         }
         
         // Action'a göre işlem yap
-        if actionIdentifier.hasPrefix("START_BACKUP_") {
-            // Task ID'yi çıkar
-            let taskIdString = String(actionIdentifier.dropFirst("START_BACKUP_".count))
-            if let taskId = UUID(uuidString: taskIdString) {
-                print("📱 BackupFlow: Yedekleme başlatma talebi - Task ID: \(taskId.uuidString)")
-                
-                // Global state'e yedekleme talebi kaydet
-                UserDefaults.standard.set(taskId.uuidString, forKey: "pendingBackupTaskId")
-                UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "pendingBackupTimestamp")
-                
-                // App açıldığında bu task otomatik başlatılacak
+        if actionIdentifier == "START_BACKUP_ACTION" {
+            // Notification'dan task ID'yi al
+            if identifier.hasPrefix("scheduled-backup-") {
+                let taskIdString = String(identifier.dropFirst("scheduled-backup-".count))
+                if let taskId = UUID(uuidString: taskIdString) {
+                    print("📱 BackupFlow: Yedekleme başlatma talebi - Task ID: \(taskId.uuidString)")
+                    
+                    // Global state'e yedekleme talebi kaydet
+                    UserDefaults.standard.set(taskId.uuidString, forKey: "pendingBackupTaskId")
+                    UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "pendingBackupTimestamp")
+                    
+                    // App açıldığında bu task otomatik başlatılacak
+                }
             }
-        } else if actionIdentifier.hasPrefix("CANCEL_BACKUP_") {
+        } else if actionIdentifier == "CANCEL_BACKUP_ACTION" {
             print("❌ BackupFlow: Kullanıcı yedeklemeyi iptal etti")
             // İsteğe bağlı: İptal bildirimi gönder
         }
@@ -968,6 +1066,73 @@ extension BackupScheduler {
             print("🔔 BackupFlow: App badge manuel olarak temizlendi")
         } catch {
             print("❌ BackupFlow: Badge temizleme hatası: \(error)")
+        }
+    }
+    
+    // MARK: - Network Detection Helpers
+    
+    /// Local server IP adresini kontrol eder
+    private func isLocalServer(host: String) -> Bool {
+        // Local IP ranges: 192.168.x.x, 10.x.x.x, 172.16-31.x.x, localhost
+        let localPatterns = [
+            "^192\\.168\\.",
+            "^10\\.",
+            "^172\\.(1[6-9]|2[0-9]|3[0-1])\\.",
+            "^127\\.",
+            "localhost"
+        ]
+        
+        return localPatterns.contains { pattern in
+            host.range(of: pattern, options: .regularExpression) != nil
+        }
+    }
+    
+    /// Network türünü tespit eder
+    private func getCurrentNetworkType() async -> NetworkType {
+        return await withCheckedContinuation { continuation in
+            let monitor = NWPathMonitor()
+            monitor.pathUpdateHandler = { path in
+                let networkType: NetworkType
+                
+                if path.usesInterfaceType(.wifi) {
+                    networkType = .wifi
+                } else if path.usesInterfaceType(.cellular) {
+                    networkType = .cellular
+                } else if path.usesInterfaceType(.wiredEthernet) {
+                    networkType = .ethernet
+                } else {
+                    networkType = .unknown
+                }
+                
+                monitor.cancel()
+                continuation.resume(returning: networkType)
+            }
+            
+            let queue = DispatchQueue(label: "NetworkMonitor")
+            monitor.start(queue: queue)
+            
+            // Timeout after 5 seconds
+            DispatchQueue.global().asyncAfter(deadline: .now() + 5) {
+                monitor.cancel()
+                continuation.resume(returning: .unknown)
+            }
+        }
+    }
+    
+    /// Network türü enum'u
+    private enum NetworkType {
+        case wifi
+        case cellular
+        case ethernet
+        case unknown
+        
+        var description: String {
+            switch self {
+            case .wifi: return "WiFi"
+            case .cellular: return "Hücresel"
+            case .ethernet: return "Ethernet"
+            case .unknown: return "Bilinmeyen"
+            }
         }
     }
 }

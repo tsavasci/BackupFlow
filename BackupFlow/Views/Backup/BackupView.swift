@@ -147,6 +147,7 @@ struct BackupView: View {
     @State private var frequencyType: FrequencyType = .manual
     @State private var selectedTime = ScheduleTime(hour: 0, minute: 0)
     @State private var selectedDay = 1 // 1: Sunday, 2: Monday, ..., 7: Saturday
+    @State private var allowCellularForLocalServer = false // Network policy
     
     @State private var showingDocumentPicker = false
     @State private var showingSaveAlert = false
@@ -297,6 +298,23 @@ struct BackupView: View {
                 }
             }
             
+            // Network ayarları (sadece local server için)
+            if isLocalServer() {
+                Section(header: Text("Ağ Ayarları")) {
+                    Toggle("Hücresel veri kullanımına izin ver", isOn: $allowCellularForLocalServer)
+                    
+                    if allowCellularForLocalServer {
+                        Text("⚠️ Local sunucu için hücresel veri kullanımı ekstra maliyet oluşturabilir.")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                    } else {
+                        Text("ℹ️ Local sunucu erişimi sadece WiFi ile mümkün olacak.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+            
             Section {
                 Button(action: {
                     Task {
@@ -334,6 +352,30 @@ struct BackupView: View {
             Text(saveAlertMessage)
         }
         
+        func isLocalServer() -> Bool {
+            let host = selectedTarget == .ftp ? ftpHost : webdavURL
+            
+            // Extract hostname from URL if it's a full URL
+            let hostname: String
+            if host.hasPrefix("http://") || host.hasPrefix("https://") {
+                hostname = URL(string: host)?.host ?? host
+            } else {
+                hostname = host
+            }
+            
+            // Local IP ranges: 192.168.x.x, 10.x.x.x, 172.16-31.x.x, localhost
+            let localPatterns = [
+                "^192\\.168\\.",
+                "^10\\.",
+                "^172\\.(1[6-9]|2[0-9]|3[0-1])\\.",
+                "^127\\.",
+                "localhost"
+            ]
+            
+            return localPatterns.contains { pattern in
+                hostname.range(of: pattern, options: .regularExpression) != nil
+            }
+        }
         
         func isValidConnectionSettings() -> Bool {
             switch selectedTarget {
@@ -535,7 +577,8 @@ struct BackupView: View {
                     frequency: frequency,
                     scheduledTime: (frequencyType == .daily || frequencyType == .weekly) ? selectedTime : nil,
                     scheduledWeekday: (frequencyType == .weekly) ? selectedDay : nil,
-                    mediaType: isPhotoLibrarySelected ? selectedMediaType : .photosOnly
+                    mediaType: isPhotoLibrarySelected ? selectedMediaType : .photosOnly,
+                    allowCellularForLocalServer: allowCellularForLocalServer
                 )
                 
             case .webdav:
@@ -559,7 +602,8 @@ struct BackupView: View {
                     frequency: frequency,
                     scheduledTime: (frequencyType == .daily || frequencyType == .weekly) ? selectedTime : nil,
                     scheduledWeekday: (frequencyType == .weekly) ? selectedDay : nil,
-                    mediaType: isPhotoLibrarySelected ? selectedMediaType : .photosOnly
+                    mediaType: isPhotoLibrarySelected ? selectedMediaType : .photosOnly,
+                    allowCellularForLocalServer: allowCellularForLocalServer
                 )
             }
             
