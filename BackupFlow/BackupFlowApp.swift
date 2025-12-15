@@ -88,6 +88,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             print("🔄 BGTaskScheduler: Processing görevi çalıştırılıyor.")
             self.handleProcessing(task: task as! BGProcessingTask)
         }
+        // Not: AppRefresh görevi kayıtlı fakat her background geçişinde planlanmıyor; çifte tetiklemeyi azaltmak için Processing tercih edildi.
         print("✅ BGTaskScheduler: Arka plan görevi kaydedildi.")
     }
 
@@ -265,8 +266,8 @@ struct BackupFlowApp: App {
             if newPhase == .background {
                 // Sadece aktif yedekleme yoksa BGTask planla
                 if !BackupScheduler.shared.isProcessing {
-                    print("🔄 App moved to background. Scheduling app refresh task.")
-                    BackupScheduler.shared.scheduleAppRefresh()
+                    print("🔄 App moved to background. Scheduling processing task only (avoid double scheduling).")
+                    // Processing görevi ağ ve uzun işlem için daha uygun
                     BackupScheduler.shared.scheduleProcessingTask()
                 } else {
                     print("⚠️ App moved to background. Active backup detected - keeping current process running.")
@@ -293,3 +294,4 @@ struct BackupFlowApp: App {
         }
     }
 }
+

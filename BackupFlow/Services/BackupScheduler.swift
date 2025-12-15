@@ -1,18 +1,62 @@
-import Foundation
-import OSLog
-import SwiftUI
-import UIKit
-import SwiftData
-import Combine
-import UserNotifications
-import UniformTypeIdentifiers
-import Photos
 import AVFoundation
 import BackgroundTasks
+import Combine
+import Foundation
 import Network
+import OSLog
+import Photos
+import SwiftData
+import SwiftUI
+import UIKit
+import UniformTypeIdentifiers
+
+/// The type of network connection.
+enum NetworkType {
+    case wifi
+    case cellular
+    case ethernet
+    case unknown
+
+    var description: String {
+        switch self {
+        case .wifi: return "WiFi"
+        case .cellular: return "Hücresel"
+        case .ethernet: return "Ethernet"
+        case .unknown: return "Bilinmeyen"
+        }
+    }
+}
+
+/// A thread-safe, sendable class to manage a `CheckedContinuation`.
+/// This ensures that the continuation is resumed exactly once.
+private final class ResumptionManager: @unchecked Sendable {
+    private let lock = NSLock()
+    private var continuation: CheckedContinuation<NetworkType, Never>?
+
+    init(_ continuation: CheckedContinuation<NetworkType, Never>) {
+        self.continuation = continuation
+    }
+
+    /// Attempts to resume the continuation.
+    /// - Parameter type: The `NetworkType` to resume with.
+    /// - Returns: `true` if the continuation was resumed, `false` otherwise.
+    func resume(with type: NetworkType) -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+
+        if let c = continuation {
+            continuation = nil
+            c.resume(returning: type)
+            return true
+        }
+        return false
+    }
+}
+
 
 @MainActor
 final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCenterDelegate {
+
     
     // MARK: - Singleton & Properties
     static let shared = BackupScheduler()
@@ -50,6 +94,9 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     private var lastScheduledTime: Date?
     private var lastNotificationSentAt: [UUID: Date] = [:]
     private var lastScheduledTargetTime: [UUID: Date] = [:]
+    
+    private var lastRunAt: Date? = nil
+    private let minRunInterval: TimeInterval = 60 // en az 60 sn arayla çalıştır
     
     @Published private(set) var isProcessing = false
     
@@ -216,9 +263,17 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         
         print("⏰ BackupFlow: Görev zamanlandı: \(task.displayName)")
         print("   📅 Şu anda: \(userLocalDateFormatter.string(from: now))")
+        let stateText: String = {
+            switch UIApplication.shared.applicationState {
+            case .active: return "active"
+            case .background: return "background"
+            case .inactive: return "inactive"
+            @unknown default: return "unknown"
+            }
+        }()
+        print("   📱 Mevcut app state: \(stateText)")
         print("   📅 Sonraki çalışma: \(userLocalDateFormatter.string(from: nextRunTime))")
         print("   ⏳ Kalan süre: \(formatTimeInterval(timeInterval))")
-        print("   📱 Mevcut app state: \(UIApplication.shared.applicationState.rawValue)")
         
         let timer = Timer.scheduledTimer(withTimeInterval: timeInterval, repeats: false) { [weak self, taskId = task.id] _ in
             print("⏰ BackupFlow: Timer tetiklendi! Task ID: \(taskId)")
@@ -237,12 +292,20 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                     print("✅ BackupFlow: Timer'da görev bulundu: \(foundTask.displayName)")
                     // App state'ini tekrar kontrol et (arka plana geçmiş olabilir)
                     let currentAppState = UIApplication.shared.applicationState
-                    print("📲 BackupFlow: Mevcut app state: \(currentAppState.rawValue)")
+                    let stateText2: String = {
+                        switch currentAppState {
+                        case .active: return "active"
+                        case .background: return "background"
+                        case .inactive: return "inactive"
+                        @unknown default: return "unknown"
+                        }
+                    }()
+                    print("📲 BackupFlow: Mevcut app state: \(stateText2)")
                     if currentAppState == .active {
                         print("📱 BackupFlow: Uygulama aktif - Yedekleme direkt başlatılıyor")
                         try? await self?.performBackup(task: foundTask)
                     } else {
-                        print("🔔 BackupFlow: Uygulama arka planda (state: \(currentAppState.rawValue)) - Bildirim gönderiliyor")
+                        print("🔔 BackupFlow: Uygulama arka planda (state: \(stateText2)) - Bildirim gönderiliyor")
                         self?.sendScheduledBackupNotification(for: foundTask)
                     }
                 } else {
@@ -303,6 +366,13 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     
     // MARK: - Backup Execution
     public func performBackup(task: BackupTask) async throws {
+        // Re-entrancy guard: Çok sık tetiklemeyi engelle
+        if let last = lastRunAt, Date().timeIntervalSince(last) < minRunInterval {
+            print("ℹ️ BackupFlow: Son çalıştırmadan bu yana minimum süre dolmadı, tetikleme atlandı")
+            return
+        }
+        lastRunAt = Date()
+        
         guard !task.isPaused else {
             print("⏸️ BackupFlow: Görev duraklatılmış, yedekleme atlanıyor: \(task.displayName)")
             return
@@ -424,18 +494,8 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     
     // MARK: - Notifications
     private func setupNotifications() {
+        // Delegate sadece burada atanır. İzin isteği AppDelegate tarafından yönetilir.
         UNUserNotificationCenter.current().delegate = self
-        requestNotificationPermission()
-    }
-    
-    private func requestNotificationPermission() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-            if granted {
-                print("✅ BackupFlow: Bildirim izni verildi")
-            } else {
-                print("❌ BackupFlow: Bildirim izni reddedildi")
-            }
-        }
     }
     
     private func sendPauseNotification(for task: BackupTask) {
@@ -892,7 +952,7 @@ extension BackupScheduler: URLSessionDelegate, URLSessionTaskDelegate {
             let duration = Date().timeIntervalSince(startTime)
             await createBackupHistoryRecord(
                 task: task,
-syncResult: FTPService.SyncResult(newFiles: 0, skippedFiles: 0, totalBytes: 0),
+                syncResult: FTPService.SyncResult(newFiles: 0, skippedFiles: 0, totalBytes: 0),
                 duration: duration,
                 status: "failed",
                 errorMessage: error.localizedDescription
@@ -1091,9 +1151,11 @@ extension BackupScheduler {
     private func getCurrentNetworkType() async -> NetworkType {
         return await withCheckedContinuation { continuation in
             let monitor = NWPathMonitor()
+            let queue = DispatchQueue(label: "NetworkMonitor")
+            let resumptionManager = ResumptionManager(continuation)
+
             monitor.pathUpdateHandler = { path in
                 let networkType: NetworkType
-                
                 if path.usesInterfaceType(.wifi) {
                     networkType = .wifi
                 } else if path.usesInterfaceType(.cellular) {
@@ -1103,35 +1165,23 @@ extension BackupScheduler {
                 } else {
                     networkType = .unknown
                 }
-                
-                monitor.cancel()
-                continuation.resume(returning: networkType)
+
+                Task { @MainActor in
+                    if resumptionManager.resume(with: networkType) {
+                        monitor.cancel()
+                    }
+                }
             }
-            
-            let queue = DispatchQueue(label: "NetworkMonitor")
+
             monitor.start(queue: queue)
-            
-            // Timeout after 5 seconds
-            DispatchQueue.global().asyncAfter(deadline: .now() + 5) {
-                monitor.cancel()
-                continuation.resume(returning: .unknown)
-            }
-        }
-    }
-    
-    /// Network türü enum'u
-    private enum NetworkType {
-        case wifi
-        case cellular
-        case ethernet
-        case unknown
-        
-        var description: String {
-            switch self {
-            case .wifi: return "WiFi"
-            case .cellular: return "Hücresel"
-            case .ethernet: return "Ethernet"
-            case .unknown: return "Bilinmeyen"
+
+            // Timeout after 5 seconds (fallback)
+            queue.asyncAfter(deadline: .now() + 5) {
+                Task { @MainActor in
+                    if resumptionManager.resume(with: .unknown) {
+                        monitor.cancel()
+                    }
+                }
             }
         }
     }
