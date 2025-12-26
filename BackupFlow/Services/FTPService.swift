@@ -1,10 +1,14 @@
+#if canImport(FilesProvider)
+
 import Foundation
 import FilesProvider
 import OSLog
 import Photos
 import Combine
 import Network
+#if canImport(UIKit)
 import UIKit
+#endif
 
 enum FTPError: Error, LocalizedError {
     case invalidURL
@@ -211,7 +215,13 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             }
             
             // Configure test provider based on app state
-            let isBackgroundMode = UIApplication.shared.applicationState != .active
+            let isBackgroundMode: Bool = {
+                #if canImport(UIKit)
+                return UIApplication.shared.applicationState != .active
+                #else
+                return false
+                #endif
+            }()
             if isBackgroundMode {
                 testProvider.serverTrustPolicy = .disableEvaluation
                 logger.info("⏱️ Test FTP provider configured for background mode")
@@ -372,7 +382,13 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             }
             
             // Configure provider based on app state
-            let isBackgroundMode = UIApplication.shared.applicationState != .active
+            let isBackgroundMode: Bool = {
+                #if canImport(UIKit)
+                return UIApplication.shared.applicationState != .active
+                #else
+                return false
+                #endif
+            }()
             if isBackgroundMode {
                 // Background mode: Provider will use background session internally
                 provider.serverTrustPolicy = .disableEvaluation // More permissive for background
@@ -439,7 +455,13 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         }
         
         // Configure provider based on app state
-        let isBackgroundMode = UIApplication.shared.applicationState != .active
+        let isBackgroundMode: Bool = {
+            #if canImport(UIKit)
+            return UIApplication.shared.applicationState != .active
+            #else
+            return false
+            #endif
+        }()
         if isBackgroundMode {
             // Background mode: Provider will use background session internally
             provider.serverTrustPolicy = .disableEvaluation // More permissive for background
@@ -609,7 +631,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                 if skipExisting {
                     if let remoteSize = try? await getRemoteFileInfo(at: targetPath),
                        remoteSize == fileSize {
-                        logger.info("Dosya atlanıyor (zaten var): \(relativePath)")
+                        logger.info("Dosya zaten var ve aynı boyutta (\(fileSize) bytes), atlanıyor: \(targetPath)")
                         processedSize += fileSize
                         overallProgress.completedUnitCount = processedSize
                         skippedCount += 1
@@ -642,7 +664,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         return skippedCount
     }
 
-    func uploadFile(localURL: URL, remotePath: String, progressHandler: ((Double) -> Void)?) async throws {
+    func uploadFile(localURL: URL, remotePath: String, progressHandler: ((Double) -> Void)? = nil) async throws {
         guard !isCancelled else {
             print("🛑 BackupFlow: İşlem iptal edildiği için yükleme iptal edildi")
             logger.info("İşlem iptal edildiği için yükleme iptal edildi")
@@ -656,7 +678,13 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         }
         
         // Log timeout configuration for background/foreground mode
-        let isBackgroundMode = UIApplication.shared.applicationState != .active
+        let isBackgroundMode: Bool = {
+            #if canImport(UIKit)
+            return UIApplication.shared.applicationState != .active
+            #else
+            return false
+            #endif
+        }()
         if isBackgroundMode {
             logger.info("⏱️ FTP using background mode (longer timeouts expected)")
         } else {
@@ -1280,45 +1308,33 @@ func listDirectory(at path: String) async throws -> [FileObject] {
                 logger.debug("Skipping identical file: \(relativePath) (\(ByteCountFormatter.string(fromByteCount: localSize, countStyle: .file)))")
                 
             case .new:
-                do {
-                    logger.info("Uploading new file: \(relativePath) (\(ByteCountFormatter.string(fromByteCount: localSize, countStyle: .file)))")
-                    // Update current file status
-                    Task { @MainActor in
-                        self.currentFile = "Yükleniyor: \(fileName)"
-                    }
-                    try await uploadFile(localURL: localFileURL, remotePath: targetPath, progressHandler: nil)
-                    result.newFiles += 1
-                    result.totalBytes += localSize
-                    transferredBytes += localSize
-                    uploadedCount += 1
-                    logger.debug("Successfully uploaded new file: \(relativePath)")
-                } catch {
-                    logger.error("Failed to upload new file \(relativePath): \(error.localizedDescription)")
-                    failedCount += 1
+                // Update current file status
+                Task { @MainActor in
+                    self.currentFile = "Yükleniyor: \(fileName)"
                 }
+                try await uploadFile(localURL: localFileURL, remotePath: targetPath, progressHandler: nil)
+                result.newFiles += 1
+                result.totalBytes += localSize
+                transferredBytes += localSize
+                uploadedCount += 1
+                logger.debug("Successfully uploaded new file: \(relativePath)")
                 
             case .updated:
-                do {
-                    logger.info("Updating changed file: \(relativePath) (\(ByteCountFormatter.string(fromByteCount: localSize, countStyle: .file)))")
-                    // Update current file status
-                    Task { @MainActor in
-                        self.currentFile = "Güncelleniyor: \(fileName)"
-                    }
-                    try await uploadFile(localURL: localFileURL, remotePath: targetPath, progressHandler: nil)
-                    result.updatedFiles += 1
-                    result.totalBytes += localSize
-                    transferredBytes += localSize
-                    uploadedCount += 1
-                    logger.debug("Successfully updated file: \(relativePath)")
-                } catch {
-                    logger.error("Failed to update file \(relativePath): \(error.localizedDescription)")
-                    failedCount += 1
+                // Update current file status
+                Task { @MainActor in
+                    self.currentFile = "Güncelleniyor: \(fileName)"
                 }
+                try await uploadFile(localURL: localFileURL, remotePath: targetPath, progressHandler: nil)
+                result.updatedFiles += 1
+                result.totalBytes += localSize
+                transferredBytes += localSize
+                uploadedCount += 1
+                logger.debug("Successfully updated file: \(relativePath)")
             }
             
-            // Update progress for upload phase (0-80%)
-            let uploadProgress = Double(index + 1) / Double(max(totalFiles, 1)) * 0.8
-            progressHandler?(uploadProgress)
+            // Update progress
+            let progress = Double(index + 1) / Double(max(totalFiles, 1)) * 0.8
+            progressHandler?(progress)
         }
         
         // Phase 2: Delete orphaned files from remote (80-100% of progress)
@@ -1395,7 +1411,13 @@ func deleteFile(at path: String) async throws {
         print("📡 BackupFlow: FTP senkronize yedekleme başlatılıyor - \(host):\(port)")
         
         // Check if we're in background mode
-        let isBackgroundMode = UIApplication.shared.applicationState != .active
+        let isBackgroundMode: Bool = {
+            #if canImport(UIKit)
+            return UIApplication.shared.applicationState != .active
+            #else
+            return false
+            #endif
+        }()
         if isBackgroundMode {
             // Background mode: Set up for background session
             let backgroundId = "BackupFlow.FTP.Background.\(UUID().uuidString)"
@@ -1500,4 +1522,16 @@ func deleteFile(at path: String) async throws {
         return formatter.string(fromByteCount: bytes)
     }
 }
+
+#else
+
+import Foundation
+
+@MainActor
+final class FTPService: ObservableObject {
+    static let shared = FTPService()
+    private init() {}
+}
+
+#endif
 

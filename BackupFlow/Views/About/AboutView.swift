@@ -18,19 +18,19 @@ struct AboutView: View {
                     .font(.largeTitle)
                     .fontWeight(.bold)
                 
-                Text("Sürüm \(appVersion) (Yapı \(buildNumber))")
+                Text(String(format: "about.version_build".localized, appVersion, buildNumber))
                     .foregroundColor(.secondary)
                     .font(.subheadline)
                 
                 VStack(alignment: .leading, spacing: 16) {
-                    InfoRow(icon: "info.circle", title: "Hakkında", description: "BackupFlow, önemli dosyalarınızı esnek zamanlama seçenekleriyle FTP sunucularına kolayca yedeklemenize yardımcı olur.")
+                    InfoRow(icon: "info.circle", title: "about.title".localized, description: "about.description".localized)
                     
-                    InfoRow(icon: "doc.text", title: "Lisans", description: "Bu uygulama MIT Lisansı altında sağlanmaktadır.")
+                    InfoRow(icon: "doc.text", title: "about.license".localized, description: "about.license_description".localized)
                     
                     Button(action: {
                         openSupportEmail()
                     }) {
-                        InfoRow(icon: "envelope", title: "İletişim", description: "tamersavasci@icloud.com")
+                        InfoRow(icon: "envelope", title: "about.contact".localized, description: "tamersavasci@icloud.com")
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
@@ -43,7 +43,7 @@ struct AboutView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
-                    Text("Tüm hakları saklıdır")
+                    Text("about.rights_reserved".localized)
                         .font(.caption2)
                         .foregroundColor(.secondary)
                 }
@@ -51,7 +51,7 @@ struct AboutView: View {
             }
             .padding()
         }
-        .navigationTitle("Hakkında")
+        .navigationTitle("about.title".localized)
     }
     
     private func openSupportEmail() {

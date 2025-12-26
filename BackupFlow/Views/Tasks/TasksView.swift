@@ -18,15 +18,15 @@ struct TasksView: View {
                     }
                 }
             }
-            .alert("Görevi Sil", isPresented: $showingDeleteAlert) {
-                Button("İptal", role: .cancel) {}
-                Button("Sil", role: .destructive) {
+            .alert("tasks.delete_confirmation".localized, isPresented: $showingDeleteAlert) {
+                Button("alert.cancel".localized, role: .cancel) {}
+                Button("tasks.delete".localized, role: .destructive) {
                     if let task = taskToDelete {
                         deleteTask(task)
                     }
                 }
             } message: {
-                Text("Bu görevi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.")
+                Text("tasks.delete_message_full".localized)
             }
     }
     
@@ -43,9 +43,9 @@ struct TasksView: View {
     
     private var emptyStateView: some View {
         ContentUnavailableView(
-            "Görev Yok",
+            "tasks.no_tasks".localized,
             systemImage: "plus.circle",
-            description: Text("Başlamak için ilk yedekleme görevinizi oluşturun.")
+            description: Text("tasks.create_first_task".localized)
         )
     }
     
@@ -72,7 +72,7 @@ struct TasksView: View {
             taskToDelete = task
             showingDeleteAlert = true
         } label: {
-            Label("Sil", systemImage: "trash")
+            Label("tasks.swipe_delete".localized, systemImage: "trash")
         }
     }
     

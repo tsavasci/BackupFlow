@@ -466,3 +466,32 @@
 "notifications.disabled_warning_title" = "Benachrichtigungen deaktiviert";
 "notifications.disabled_warning_body" = "Sie haben Benachrichtigungen für BackupFlow deaktiviert. Um Sicherungserinnerungen und Statusaktualisierungen zu erhalten, aktivieren Sie diese bitte in der Einstellungs-App.";
 "notifications.open_settings_button" = "Einstellungen öffnen";
+
+"settings.language" = "Sprache";
+"settings.language.system" = "Systemsprache";
+"settings.language.turkish" = "Türkisch";
+"settings.language.english" = "Englisch";
+
+"backup.source_section" = "Quelle";
+"backup.photos_option" = "Fotomediathek";
+"backup.media_type_caption" = "Medientyp";
+"backup.folder_select" = "Ordner auswählen";
+"backup.network_settings" = "Netzwerkeinstellungen";
+"backup.allow_cellular" = "Mobile Daten verwenden";
+"backup.allow_cellular_warning" = "Backups über mobile Daten können zusätzliche Kosten verursachen.";
+"backup.wifi_only_info" = "Backups werden nur über WLAN ausgeführt.";
+"backup.save_task" = "Aufgabe speichern";
+"backup.info_title" = "Info";
+"backup.ok" = "OK";
+"backup.testing_network" = "Netzwerk wird überprüft…";
+"backup.connection_error_ftp" = "FTP-Verbindungsfehler: %@";
+
+"about.version_build" = "Version %@ (Build %@)";
+"about.contact" = "Kontakt";
+"about.rights_reserved" = "Alle Rechte vorbehalten.";
+
+"task.details.title" = "Aufgabendetails";
+
+"backup.cancel_backup_title" = "Backup abbrechen";
+"backup.cancel_backup_confirm" = "Abbrechen";
+"backup.cancel_backup_message" = "Möchten Sie dieses Backup wirklich abbrechen?";

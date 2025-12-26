@@ -35,7 +35,7 @@ struct TaskRow: View {
             HStack(alignment: .top) {
                 // Görev adı (tüm genişliği kaplar)
                 VStack(alignment: .leading, spacing: 4) {
-                    if task.sourcePath == "PHOTOS_LIBRARY" {
+                    if (task.sourcePath ?? "") == "PHOTOS_LIBRARY" {
                         Image(systemName: task.mediaType.systemImageName)
                             .foregroundColor(.blue)
                             .font(.caption)
@@ -188,7 +188,7 @@ struct TaskRow: View {
         .sheet(isPresented: $showDetailsSheet) {
             NavigationView {
                 TaskDetailView(task: task)
-                    .navigationTitle("Görev Detayları")
+                    .navigationTitle("task.details.title".localized)
                     .navigationBarTitleDisplayMode(.inline)
             }
         }
@@ -199,7 +199,7 @@ struct TaskRow: View {
                         try? await BackupScheduler.shared.performBackup(task: task)
                     }
                 }) {
-                    Label("Yedeklemeyi Başlat", systemImage: "play.fill")
+                    Label("backup.notification.action.start".localized, systemImage: "play.fill")
                 }
             }
             
@@ -209,13 +209,13 @@ struct TaskRow: View {
                     Button(action: {
                         resumeTask()
                     }) {
-                        Label("Zamanlamayı Devam Ettir", systemImage: "play.circle")
+                        Label("task.resume.button".localized, systemImage: "play.circle")
                     }
                 } else {
                     Button(action: {
                         pauseTask()
                     }) {
-                        Label("Zamanlamayı Duraklat", systemImage: "pause.circle")
+                        Label("task.pause.button".localized, systemImage: "pause.circle")
                     }
                 }
             }
@@ -225,17 +225,17 @@ struct TaskRow: View {
                     task.backupStatus = .cancelled
                     showCancelAlert = true
                 }) {
-                    Label("Yedeklemeyi İptal Et", systemImage: "xmark.circle.fill")
+                    Label("backup.cancel_backup_title".localized, systemImage: "xmark.circle.fill")
                 }
             }
         }
-        .alert("Yedeklemeyi İptal Et", isPresented: $showCancelAlert) {
-            Button("İptal", role: .cancel) {}
-            Button("İptal Et", role: .destructive) {
+        .alert("backup.cancel_backup_title".localized, isPresented: $showCancelAlert) {
+            Button("alert.cancel".localized, role: .cancel) {}
+            Button("backup.cancel_backup_confirm".localized, role: .destructive) {
                 BackupScheduler.shared.cancelCurrentTask(for: task)
             }
         } message: {
-            Text("Bu yedekleme işlemini durdurmak istediğinizden emin misiniz?")
+            Text("backup.cancel_backup_message".localized)
         }
         .onChange(of: showCancelAlert) { oldValue, newValue in
             if !newValue {
@@ -261,8 +261,8 @@ struct TaskRow: View {
         
         // Send notification
         let content = UNMutableNotificationContent()
-        content.title = "🎬 BackupFlow"
-        content.body = "Görev duraklatıldı: \(task.displayName)"
+        content.title = "task.paused.notification.title".localized
+        content.body = String(format: "task.paused.notification.body".localized, task.displayName)
         content.sound = .default
         
         let request = UNNotificationRequest(
@@ -280,8 +280,8 @@ struct TaskRow: View {
         
         // Send notification
         let content = UNMutableNotificationContent()
-        content.title = "🎬 BackupFlow"
-        content.body = "Görev zamanlaması tekrar başlatıldı: \(task.displayName)"
+        content.title = "task.resumed.notification.title".localized
+        content.body = String(format: "task.resumed.notification.body".localized, task.displayName)
         content.sound = .default
         
         let request = UNNotificationRequest(

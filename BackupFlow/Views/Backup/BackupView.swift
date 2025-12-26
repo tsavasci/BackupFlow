@@ -44,11 +44,22 @@ enum ConnectionStatus: Equatable {
 }
 
 enum FrequencyType: String, CaseIterable, Identifiable {
-    case manual = "Manuel"
-    case daily = "Günlük"
-    case weekly = "Haftalık"
+    case manual
+    case daily
+    case weekly
     
-    var id: String { self.rawValue }
+    var id: String { String(describing: self) }
+    
+    var displayName: String {
+        switch self {
+        case .manual:
+            return "backup.manual".localized
+        case .daily:
+            return "backup.daily".localized
+        case .weekly:
+            return "backup.weekly".localized
+        }
+    }
 }
 
 struct TimePicker: View {
@@ -56,12 +67,12 @@ struct TimePicker: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            Text("Saat Seçiniz")
+            Text("backup.select_time".localized)
                 .font(.caption)
                 .foregroundColor(.secondary)
 
             HStack {
-                Picker("Saat", selection: $time.hour) {
+                Picker("backup.hour".localized, selection: $time.hour) {
                     ForEach(0..<24, id: \ .self) { hour in
                         Text(String(format: "%02d", hour)).tag(hour)
                     }
@@ -74,7 +85,7 @@ struct TimePicker: View {
                     .font(.title2)
                     .padding(.horizontal, -10)
 
-                Picker("Dakika", selection: $time.minute) {
+                Picker("backup.minute".localized, selection: $time.minute) {
                     ForEach(0..<60, id: \ .self) { minute in
                         Text(String(format: "%02d", minute)).tag(minute)
                     }
@@ -92,18 +103,25 @@ struct TimePicker: View {
 struct DayPicker: View {
     @Binding var selectedDay: Int // 1: Sunday, 2: Monday, ..., 7: Saturday
     
-    private let days = [
-        (1, "Pazar"), (2, "Pazartesi"), (3, "Salı"), 
-        (4, "Çarşamba"), (5, "Perşembe"), (6, "Cuma"), (7, "Cumartesi")
-    ]
+    private var days: [(Int, String)] {
+        [
+            (1, "day.names.sunday".localized),
+            (2, "day.names.monday".localized),
+            (3, "day.names.tuesday".localized),
+            (4, "day.names.wednesday".localized),
+            (5, "day.names.thursday".localized),
+            (6, "day.names.friday".localized),
+            (7, "day.names.saturday".localized)
+        ]
+    }
     
     var body: some View {
         VStack(alignment: .leading) {
-            Text("Gün Seçiniz")
+            Text("backup.select_day".localized)
                 .font(.caption)
                 .foregroundColor(.secondary)
             
-            Picker("Gün", selection: $selectedDay) {
+            Picker("backup.day".localized, selection: $selectedDay) {
                 ForEach(days, id: \.0) { day, name in
                     Text(name).tag(day)
                 }
@@ -158,7 +176,7 @@ struct BackupView: View {
     
     var body: some View {
         return Form {
-            Section(header: Text("Kaynak Seçimi")) {
+            Section(header: Text("backup.source_section".localized)) {
                 VStack(alignment: .leading, spacing: 16) {
                     // Photo Library Option
                     Button(action: {
@@ -169,7 +187,7 @@ struct BackupView: View {
                         HStack {
                             Image(systemName: isPhotoLibrarySelected ? "checkmark.circle.fill" : "circle")
                                 .foregroundColor(isPhotoLibrarySelected ? .blue : .gray)
-                            Text("Fotoğraf Galerisini Yedekle")
+                            Text("backup.photos_option".localized)
                             Spacer()
                         }
                         .contentShape(Rectangle())
@@ -179,7 +197,7 @@ struct BackupView: View {
                     // Media Type Selection (only when photo library is selected)
                     if isPhotoLibrarySelected {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Medya Türü Seçimi")
+                            Text("backup.media_type_caption".localized)
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                             
@@ -209,7 +227,7 @@ struct BackupView: View {
                         Rectangle()
                             .frame(height: 1)
                             .foregroundColor(.gray.opacity(0.3))
-                        Text("veya")
+                        Text("backup.or".localized)
                             .font(.caption)
                             .foregroundColor(.gray)
                             .padding(.horizontal, 8)
@@ -232,7 +250,7 @@ struct BackupView: View {
                                 Text(url.lastPathComponent)
                                     .foregroundColor(.blue)
                             } else {
-                                Text("Klasör Seç...")
+                                Text("backup.folder_select".localized)
                                     .foregroundColor(.gray)
                             }
                         }
@@ -258,10 +276,12 @@ struct BackupView: View {
                     webdavPath: $webdavPath
                 )
                 
-                Button("Bağlantıyı Test Et") {
+                Button {
                     Task {
                         await testConnection()
                     }
+                } label: {
+                    Text("backup.test_connection".localized)
                 }
                 .disabled(isTestingConnection || !isValidConnectionSettings())
                 
@@ -281,10 +301,10 @@ struct BackupView: View {
                 }
             }
             
-            Section(header: Text("Zamanlama")) {
-                Picker("Sıklık", selection: $frequencyType) {
+            Section(header: Text("backup.scheduling".localized)) {
+                Picker("backup.frequency".localized, selection: $frequencyType) {
                     ForEach(FrequencyType.allCases) { type in
-                        Text(type.rawValue).tag(type)
+                        Text(type.displayName).tag(type)
                     }
                 }
                 .pickerStyle(SegmentedPickerStyle())
@@ -300,15 +320,15 @@ struct BackupView: View {
             
             // Network ayarları (sadece local server için)
             if isLocalServer() {
-                Section(header: Text("Ağ Ayarları")) {
-                    Toggle("Hücresel veri kullanımına izin ver", isOn: $allowCellularForLocalServer)
+                Section(header: Text("backup.network_settings".localized)) {
+                    Toggle("backup.allow_cellular".localized, isOn: $allowCellularForLocalServer)
                     
                     if allowCellularForLocalServer {
-                        Text("⚠️ Local sunucu için hücresel veri kullanımı ekstra maliyet oluşturabilir.")
+                        Text("backup.allow_cellular_warning".localized)
                             .font(.caption)
                             .foregroundColor(.orange)
                     } else {
-                        Text("ℹ️ Local sunucu erişimi sadece WiFi ile mümkün olacak.")
+                        Text("backup.wifi_only_info".localized)
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -323,7 +343,7 @@ struct BackupView: View {
                 }) {
                     HStack {
                         Spacer()
-                        Text("Görevi Kaydet")
+                        Text("backup.save_task".localized)
                             .fontWeight(.semibold)
                         Spacer()
                     }
@@ -332,10 +352,10 @@ struct BackupView: View {
                 .listRowBackground(Color.clear)
             }
         }
-        .navigationTitle("Yeni Yedekleme")
+        .navigationTitle("backup.new_backup".localized)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Temizle") {
+                Button("backup.clear".localized) {
                     resetForm()
                     showingSaveAlert = false
                 }
@@ -346,8 +366,8 @@ struct BackupView: View {
                 showingDocumentPicker = false
             }
         }
-        .alert("Bilgi", isPresented: $showingSaveAlert) {
-            Button("Tamam", role: .cancel) {}
+        .alert("backup.info_title".localized, isPresented: $showingSaveAlert) {
+            Button("backup.ok".localized, role: .cancel) {}
         } message: {
             Text(saveAlertMessage)
         }
@@ -389,14 +409,14 @@ struct BackupView: View {
         func testConnection() async {
             guard isValidConnectionSettings() else {
                 let errorMessage = selectedTarget == .ftp ?
-                "Lütfen gerekli alanları doldurun (Sunucu adresi ve kullanıcı adı/şifre)" :
-                "Lütfen WebDAV sunucu URL'si ve kullanıcı bilgilerini girin"
+                "backup.fill_required_fields".localized :
+                "backup.webdav_credentials_required".localized
                 connectionStatus = .failure(errorMessage)
                 return
             }
             
             isTestingConnection = true
-            connectionStatus = .testing("Bağlantı test ediliyor...")
+            connectionStatus = .testing("backup.testing_network".localized)
             
             do {
                 switch selectedTarget {
@@ -405,7 +425,7 @@ struct BackupView: View {
                     let port = Int(ftpPort) ?? 21
                     
                     // İlk kurulumda ağ izni bildirimi göster
-                    connectionStatus = .testing("Ağ izni kontrol ediliyor... (İlk kullanımda iOS izin isteyebilir)")
+                    connectionStatus = .testing("backup.connection_testing".localized)
                     
                     try await ftpService.connect(
                         host: ftpHost,
@@ -414,14 +434,14 @@ struct BackupView: View {
                         password: isAnonymous ? nil : ftpPassword
                     )
                     
-                    connectionStatus = .success("FTP bağlantısı başarılı!")
+                    connectionStatus = .success("backup.connection_success_ftp".localized)
                     
                 case .webdav:
                     // Extract host and port from webdavURL
                     let (host, port) = parseWebDAVURL(webdavURL)
                     
                     // İlk kurulumda ağ izni bildirimi göster
-                    connectionStatus = .testing("Ağ izni kontrol ediliyor... (İlk kullanımda iOS izin isteyebilir)")
+                    connectionStatus = .testing("backup.connection_testing".localized)
                     
                     // Test WebDAV connection
                     let webDAVService = WebDAVService.shared
@@ -433,17 +453,17 @@ struct BackupView: View {
                     )
                     
                     if isConnected {
-                        connectionStatus = .success("✅ WebDAV bağlantısı başarılı!")
+                        connectionStatus = .success("backup.connection_success_webdav".localized)
                     } else {
-                        let errorMessage = webDAVService.lastError?.localizedDescription ?? "WebDAV sunucusuna bağlanılamadı"
+                        let errorMessage = webDAVService.lastError?.localizedDescription ?? "backup.connection_error".localized
                         throw NSError(domain: "WebDAV Error", code: -1,
                                       userInfo: [NSLocalizedDescriptionKey: errorMessage])
                     }
                 }
             } catch let error as FTPError {
-                connectionStatus = .failure("FTP hatası: \(error.localizedDescription)")
+                connectionStatus = .failure(String(format: "backup.connection_error_ftp".localized, error.localizedDescription))
             } catch {
-                connectionStatus = .failure("Bağlantı hatası: \(error.localizedDescription)")
+                connectionStatus = .failure(String(format: "backup.connection_error".localized, error.localizedDescription))
             }
             
             isTestingConnection = false
@@ -467,7 +487,7 @@ struct BackupView: View {
         func saveTask() async {
             // Check if either folder or photo library is selected
             guard isPhotoLibrarySelected || selectedURL != nil else {
-                saveAlertMessage = "Lütfen bir kaynak seçin"
+                saveAlertMessage = "backup.source_required".localized
                 showingSaveAlert = true
                 return
             }
@@ -476,7 +496,7 @@ struct BackupView: View {
             if isPhotoLibrarySelected {
                 let status = PHPhotoLibrary.authorizationStatus()
                 guard status == .authorized || status == .limited else {
-                    saveAlertMessage = "Fotoğraf galerisine erişim izni verilmedi"
+                    saveAlertMessage = "backup.photo_permission_required".localized
                     showingSaveAlert = true
                     return
                 }
@@ -485,7 +505,7 @@ struct BackupView: View {
             // Check folder access if a folder is selected
             if !isPhotoLibrarySelected, let sourceURL = selectedURL {
                 guard sourceURL.startAccessingSecurityScopedResource() else {
-                    saveAlertMessage = "Klasöre erişim izni alınamadı. Lütfen tekrar deneyin."
+                    saveAlertMessage = "backup.invalid_folder".localized
                     showingSaveAlert = true
                     return
                 }
@@ -499,7 +519,7 @@ struct BackupView: View {
                 
                 // Check if the path exists and is a directory
                 guard exists && isDirectory.boolValue else {
-                    saveAlertMessage = "Geçersiz klasör yolu. Lütfen tekrar deneyin."
+                    saveAlertMessage = "backup.invalid_folder".localized
                     showingSaveAlert = true
                     return
                 }
@@ -527,23 +547,23 @@ struct BackupView: View {
             let hostToCheck = selectedTarget == .ftp ? ftpHost.lowercased() : webdavURL.lowercased()
             let destPathToCheck = selectedTarget == .ftp ? destinationPath : webdavPath
             
-            // Create a simple predicate to avoid type-checking issues
-            let fetchRequest = FetchDescriptor<BackupTask>()
-            
             do {
-                let allTasks = try modelContext.fetch(fetchRequest)
+                let allTasks = try modelContext.fetch(FetchDescriptor<BackupTask>())
+                let backupType: BackupType = selectedTarget == .ftp ? .ftp : .webdav
+                let portToCheck = selectedTarget == .ftp ? (Int(ftpPort) ?? 21) : 443
+
                 let hasDuplicate = allTasks.contains { task in
-                    let isSameSource = task.sourcePath == sourcePath
-                    let backupType: BackupType = selectedTarget == .ftp ? .ftp : .webdav
+                    let isSameSource = (task.sourcePath ?? "") == sourcePath
                     let isSameType = task.backupType == backupType
                     let isSameHost = task.serverHost.lowercased() == hostToCheck
+                    let isSamePort = task.serverPort == portToCheck
                     let isSameDest = task.destinationPath == destPathToCheck
-                    
-                    return isSameSource && isSameType && isSameHost && isSameDest
+
+                    return isSameSource && isSameType && isSameHost && isSamePort && isSameDest
                 }
-                
+
                 if hasDuplicate {
-                    saveAlertMessage = "Aynı ayarlara sahip bir görev zaten mevcut"
+                    saveAlertMessage = "tasks.duplicate_error".localized
                     showingSaveAlert = true
                     return
                 }
@@ -556,7 +576,7 @@ struct BackupView: View {
             switch selectedTarget {
             case .ftp:
                 guard !ftpHost.isEmpty else {
-                    saveAlertMessage = "Lütfen FTP sunucu adresini girin"
+                    saveAlertMessage = "backup.fill_required_fields".localized
                     showingSaveAlert = true
                     return
                 }
@@ -583,7 +603,7 @@ struct BackupView: View {
                 
             case .webdav:
                 guard !webdavURL.isEmpty else {
-                    saveAlertMessage = "Lütfen WebDAV sunucu URL'sini girin"
+                    saveAlertMessage = "backup.webdav_credentials_required".localized
                     showingSaveAlert = true
                     return
                 }

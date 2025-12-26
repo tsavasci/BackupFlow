@@ -48,18 +48,18 @@ struct MainTabView: View {
         .onAppear {
             checkForPendingBackup()
         }
-        .alert("Yedekleme Başlatılsın mı?", isPresented: $showBackupAlert) {
-            Button("Başlat") {
+        .alert("backup.start_confirmation".localized, isPresented: $showBackupAlert) {
+            Button("backup.start".localized) {
                 if let task = pendingBackupTask {
                     startPendingBackup(task: task)
                 }
             }
-            Button("İptal", role: .cancel) {
+            Button("alert.cancel".localized, role: .cancel) {
                 clearPendingBackup()
             }
         } message: {
             if let task = pendingBackupTask {
-                Text("'\(task.displayName)' görevi bildirimden başlatılmak üzere bekliyor.")
+                Text(String(format: "backup.pending_message".localized, task.displayName))
             }
         }
     }

@@ -469,3 +469,31 @@
 "backup.notification.action.open_settings" = "Open Settings";
 
 "backup.frequency_text.scheduled" = "scheduled";
+"settings.language" = "Language";
+"settings.language.system" = "System Language";
+"settings.language.turkish" = "Turkish";
+"settings.language.english" = "English";
+
+"backup.source_section" = "Source";
+"backup.photos_option" = "Photo Library";
+"backup.media_type_caption" = "Media type";
+"backup.folder_select" = "Select Folder";
+"backup.network_settings" = "Network Settings";
+"backup.allow_cellular" = "Use Cellular Data";
+"backup.allow_cellular_warning" = "Backups over cellular data may incur additional charges.";
+"backup.wifi_only_info" = "Backups run over Wi‑Fi only.";
+"backup.save_task" = "Save Task";
+"backup.info_title" = "Info";
+"backup.ok" = "OK";
+"backup.testing_network" = "Checking network…";
+"backup.connection_error_ftp" = "FTP connection error: %@";
+
+"about.version_build" = "Version %@ (Build %@)";
+"about.contact" = "Contact";
+"about.rights_reserved" = "All rights reserved.";
+
+"task.details.title" = "Task Details";
+
+"backup.cancel_backup_title" = "Cancel Backup";
+"backup.cancel_backup_confirm" = "Cancel";
+"backup.cancel_backup_message" = "Are you sure you want to cancel this backup?";

@@ -37,13 +37,13 @@ enum BackupStatus: String, Codable, CaseIterable, Identifiable {
     
     var displayName: String {
         switch self {
-        case .idle: return "Hazır"
-        case .preparing: return "Hazırlanıyor..."
-        case .scanning: return "Dosyalar taranıyor..."
-        case .uploading: return "Yükleniyor..."
-        case .completed: return "Tamamlandı"
-        case .failed: return "Hata oluştu"
-        case .cancelled: return "İptal edildi"
+        case .idle: return "backup.status.idle".localized
+        case .preparing: return "backup.status.preparing".localized
+        case .scanning: return "backup.status.scanning".localized
+        case .uploading: return "backup.status.uploading".localized
+        case .completed: return "backup.status.completed".localized
+        case .failed: return "backup.status.failed".localized
+        case .cancelled: return "backup.status.cancelled".localized
         }
     }
     
@@ -67,9 +67,9 @@ enum MediaType: String, Codable, CaseIterable, Identifiable {
     
     var displayName: String {
         switch self {
-        case .photosOnly: return "Sadece Fotoğraflar"
-        case .videosOnly: return "Sadece Videolar"
-        case .photosAndVideos: return "Fotoğraflar ve Videolar"
+        case .photosOnly: return "media_type.photos_only".localized
+        case .videosOnly: return "media_type.videos_only".localized
+        case .photosAndVideos: return "media_type.photos_and_videos".localized
         }
     }
     
@@ -164,9 +164,9 @@ nonisolated enum BackupFrequency: Codable, Equatable, Hashable, Identifiable, Ca
     
     var displayName: String {
         switch self {
-        case .manual: return "Manuel"
-        case .daily: return "Günlük"
-        case .weekly: return "Haftalık"
+        case .manual: return "backup.frequency.manual".localized
+        case .daily: return "backup.frequency.daily".localized
+        case .weekly: return "backup.frequency.weekly".localized
         }
     }
     
@@ -183,7 +183,7 @@ nonisolated enum BackupFrequency: Codable, Equatable, Hashable, Identifiable, Ca
 final class BackupTask: Identifiable, Hashable {
     // MARK: - Properties
     @Attribute(.unique) var id: UUID
-    var sourcePath: String
+    var sourcePath: String?
     var nextRunTime: Date?
     var createdAt: Date
     var lastBackupDate: Date?

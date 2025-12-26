@@ -36,26 +36,26 @@ struct TaskDetailView: View {
     var body: some View {
         List {
             // Genel Bilgiler
-            Section("Genel") {
-                LabeledContent("Kaynak", value: URL(fileURLWithPath: task.sourcePath).lastPathComponent)
-                LabeledContent("Durum", value: task.backupStatus.displayName)
-                LabeledContent("Zamanlama", value: task.frequency.displayText)
+            Section("task.general".localized) {
+                LabeledContent("task.source".localized, value: URL(fileURLWithPath: task.sourcePath ?? "").lastPathComponent)
+                LabeledContent("task.status".localized, value: task.backupStatus.displayName)
+                LabeledContent("task.schedule".localized, value: task.frequency.displayText)
                 if let nextRun = task.nextRunTime {
-                    LabeledContent("Sonraki Yedekleme", value: taskDateFormatter.string(from: nextRun))
+                    LabeledContent("task.next_run".localized, value: taskDateFormatter.string(from: nextRun))
                 }
             }
             
             // Sunucu Bilgileri
-            Section("Sunucu") {
-                LabeledContent("Sunucu", value: task.ftpHost)
-                LabeledContent("Port", value: String(task.ftpPort))
-                LabeledContent("Kullanıcı", value: task.isAnonymous ? "Anonim" : task.ftpUsername)
+            Section("task.server_section".localized) {
+                LabeledContent("task.server".localized, value: task.ftpHost)
+                LabeledContent("task.port".localized, value: String(task.ftpPort))
+                LabeledContent("task.user".localized, value: task.isAnonymous ? "task.anonymous".localized : task.ftpUsername)
             }
             
             // Son Yedeklemeler
-            Section("Son Yedeklemeler") {
+            Section("task.recent_backups".localized) {
                 if histories.isEmpty {
-                    Text("Henüz yedekleme yapılmamış")
+                    Text("task.no_backups".localized)
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(histories) { history in
@@ -86,7 +86,7 @@ struct TaskDetailView: View {
         }
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Kapat", action: { dismiss() })
+                Button("common.close".localized, action: { dismiss() })
             }
         }
     }
@@ -106,12 +106,21 @@ extension BackupFrequency {
     var displayText: String {
         switch self {
         case .manual:
-            return "Manuel"
+            return "task.details.manual".localized
         case .daily(let time):
-            return "Her gün \(String(format: "%02d:%02d", time.hour, time.minute))"
+            return "task.details.daily_prefix".localized + String(format: "%02d:%02d", time.hour, time.minute)
         case .weekly(let day, let time):
-            let dayName = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"][day - 1]
-            return "Her \(dayName) \(String(format: "%02d:%02d", time.hour, time.minute))"
+            let dayNames = [
+                "day.names.sunday".localized,
+                "day.names.monday".localized,
+                "day.names.tuesday".localized,
+                "day.names.wednesday".localized,
+                "day.names.thursday".localized,
+                "day.names.friday".localized,
+                "day.names.saturday".localized
+            ]
+            let dayName = (day >= 1 && day <= 7) ? dayNames[day - 1] : ""
+            return "task.details.weekly_prefix".localized + dayName + " " + String(format: "%02d:%02d", time.hour, time.minute)
         }
     }
 }

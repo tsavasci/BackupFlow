@@ -466,3 +466,31 @@
 "notifications.disabled_warning_title" = "Уведомления отключены";
 "notifications.disabled_warning_body" = "Вы отключили уведомления для BackupFlow. Чтобы получать напоминания о резервной копии и обновления статуса, включите их в приложении Параметры.";
 "notifications.open_settings_button" = "Открыть настройки";
+"settings.language" = "Язык";
+"settings.language.system" = "Язык системы";
+"settings.language.turkish" = "Турецкий";
+"settings.language.english" = "Английский";
+
+"backup.source_section" = "Источник";
+"backup.photos_option" = "Фото медиатека";
+"backup.media_type_caption" = "Тип медиа";
+"backup.folder_select" = "Выбрать папку";
+"backup.network_settings" = "Настройки сети";
+"backup.allow_cellular" = "Использовать мобильные данные";
+"backup.allow_cellular_warning" = "Резервное копирование через мобильные данные может повлечь дополнительные расходы.";
+"backup.wifi_only_info" = "Резервное копирование выполняется только через Wi‑Fi.";
+"backup.save_task" = "Сохранить задачу";
+"backup.info_title" = "Информация";
+"backup.ok" = "OK";
+"backup.testing_network" = "Проверка сети…";
+"backup.connection_error_ftp" = "Ошибка подключения FTP: %@";
+
+"about.version_build" = "Версия %@ (Сборка %@)";
+"about.contact" = "Контакты";
+"about.rights_reserved" = "Все права защищены.";
+
+"task.details.title" = "Детали задачи";
+
+"backup.cancel_backup_title" = "Отменить резервное копирование";
+"backup.cancel_backup_confirm" = "Отменить";
+"backup.cancel_backup_message" = "Вы уверены, что хотите отменить это резервное копирование?";

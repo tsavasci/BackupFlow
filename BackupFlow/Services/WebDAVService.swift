@@ -1,3 +1,5 @@
+#if canImport(FilesProvider)
+
 import Foundation
 import FilesProvider
 import OSLog
@@ -5,7 +7,9 @@ import Combine
 @preconcurrency import Photos
 import AVFoundation
 import Network
+#if canImport(UIKit)
 import UIKit
+#endif
 
 // Define FileProviderError if not provided by the FilesProvider framework
 enum FileProviderError: Error, Equatable {
@@ -1390,4 +1394,16 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         
         return result
     }
-    }
+}
+
+#else
+
+import Foundation
+
+@MainActor
+final class WebDAVService: ObservableObject {
+    static let shared = WebDAVService()
+    private init() {}
+}
+
+#endif

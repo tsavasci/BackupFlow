@@ -3,7 +3,7 @@ import SwiftUI
 
 struct HistoryView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \BackupHistory.timestamp, order: .reverse) private var history: [BackupHistory]
+    @Query(sort: [SortDescriptor(\BackupHistory.timestamp, order: .reverse)]) private var history: [BackupHistory]
     
     @State private var isLoading = false
     @State private var loadError: Error?
@@ -11,11 +11,13 @@ struct HistoryView: View {
     var body: some View {
         NavigationStack {
             historyContent
-                .navigationTitle("Yedek Geçmişi")
+                .navigationTitle("history.title".localized)
                 .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        clearHistoryButton
-                    }
+                    #if os(iOS)
+                    ToolbarItem(placement: .navigationBarTrailing) { clearHistoryButton }
+                    #else
+                    ToolbarItem { clearHistoryButton }
+                    #endif
                 }
         }
         .onAppear {
@@ -56,7 +58,7 @@ struct HistoryView: View {
     
     private var emptyView: some View {
         ContentUnavailableView(
-            "Yedek Geçmişi Yok",
+            "history.no_history".localized,
             systemImage: "clock.arrow.circlepath"
         )
     }

@@ -468,3 +468,31 @@
 "notifications.disabled_warning_title" = "通知が無効です";
 "notifications.disabled_warning_body" = "BackupFlowの通知を無効にしています。バックアップリマインダーとステータス更新を受け取るには、設定アプリで有効にしてください。";
 "notifications.open_settings_button" = "設定を開く";
+"settings.language" = "言語";
+"settings.language.system" = "システム言語";
+"settings.language.turkish" = "トルコ語";
+"settings.language.english" = "英語";
+
+"backup.source_section" = "ソース";
+"backup.photos_option" = "写真ライブラリ";
+"backup.media_type_caption" = "メディア種類";
+"backup.folder_select" = "フォルダを選択";
+"backup.network_settings" = "ネットワーク設定";
+"backup.allow_cellular" = "モバイルデータを使用";
+"backup.allow_cellular_warning" = "モバイルデータでのバックアップは追加料金が発生する場合があります。";
+"backup.wifi_only_info" = "バックアップはWi‑Fiのみで実行されます。";
+"backup.save_task" = "タスクを保存";
+"backup.info_title" = "情報";
+"backup.ok" = "OK";
+"backup.testing_network" = "ネットワークを確認中…";
+"backup.connection_error_ftp" = "FTP接続エラー: %@";
+
+"about.version_build" = "バージョン %@ (ビルド %@)";
+"about.contact" = "連絡先";
+"about.rights_reserved" = "All rights reserved.";
+
+"task.details.title" = "タスク詳細";
+
+"backup.cancel_backup_title" = "バックアップをキャンセル";
+"backup.cancel_backup_confirm" = "キャンセル";
+"backup.cancel_backup_message" = "このバックアップをキャンセルしますか？";

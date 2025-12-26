@@ -466,3 +466,31 @@
 "notifications.disabled_warning_title" = "الإشعارات معطلة";
 "notifications.disabled_warning_body" = "لقد قمت بتعطيل الإشعارات لـ BackupFlow. لتلقي تذكيرات النسخ الاحتياطية وتحديثات الحالة، يرجى تفعيلها في تطبيق الإعدادات.";
 "notifications.open_settings_button" = "فتح الإعدادات";
+
+"settings.language" = "اللغة";
+"settings.language.system" = "لغة النظام";
+"settings.language.turkish" = "التركية";
+"settings.language.english" = "الإنجليزية";
+
+"backup.source_section" = "المصدر";
+"backup.photos_option" = "مكتبة الصور";
+"backup.media_type_caption" = "نوع الوسائط";
+"backup.folder_select" = "اختر مجلد";
+"backup.network_settings" = "إعدادات الشبكة";
+"backup.allow_cellular" = "استخدام بيانات الجوال";
+"backup.allow_cellular_warning" = "قد يؤدي النسخ الاحتياطي عبر بيانات الجوال إلى رسوم إضافية.";
+"backup.wifi_only_info" = "سيتم إجراء النسخ الاحتياطي عبر Wi‑Fi فقط.";
+"backup.save_task" = "حفظ المهمة";
+"backup.info_title" = "معلومات";
+"backup.ok" = "موافق";
+"backup.testing_network" = "جارٍ التحقق من الشبكة…";
+"backup.connection_error_ftp" = "خطأ اتصال FTP: %@";
+
+"about.version_build" = "الإصدار %@ (البنية %@)";
+"about.contact" = "اتصال";
+"about.rights_reserved" = "جميع الحقوق محفوظة.";
+
+"task.details.title" = "تفاصيل المهمة";
+"backup.cancel_backup_title" = "إلغاء النسخ الاحتياطي";
+"backup.cancel_backup_confirm" = "إلغاء";
+"backup.cancel_backup_message" = "هل أنت متأكد أنك تريد إلغاء هذا النسخ الاحتياطي؟";

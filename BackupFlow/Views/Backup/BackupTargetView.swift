@@ -21,7 +21,7 @@ struct BackupTargetView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Target Type Picker (Tabs)
-            Picker("Hedef Türü", selection: $selectedTarget) {
+            Picker("backup.target_type".localized, selection: $selectedTarget) {
                 ForEach(BackupTarget.allCases) { target in
                     Label(target.rawValue, systemImage: target.iconName)
                         .tag(target)
@@ -34,28 +34,28 @@ struct BackupTargetView: View {
             if selectedTarget == .ftp {
                 GroupBox {
                     VStack(alignment: .leading, spacing: 12) {
-                        TextField("Sunucu Adresi", text: $ftpHost)
+                        TextField("backup.server_address".localized, text: $ftpHost)
                             .autocapitalization(.none)
                             .disableAutocorrection(true)
                             .textContentType(.URL)
                             .keyboardType(.URL)
                         
-                        TextField("Port (Varsayılan: 21)", text: $ftpPort)
+                        TextField("backup.port_default".localized, text: $ftpPort)
                             .keyboardType(.numberPad)
                         
-                        Toggle("Anonim Giriş", isOn: $isAnonymous)
+                        Toggle("backup.anonymous_login".localized, isOn: $isAnonymous)
                         
                         if !isAnonymous {
-                            TextField("Kullanıcı Adı", text: $ftpUsername)
+                            TextField("backup.username".localized, text: $ftpUsername)
                                 .autocapitalization(.none)
                                 .disableAutocorrection(true)
                                 .textContentType(.username)
                             
-                            SecureField("Şifre", text: $ftpPassword)
+                            SecureField("backup.password".localized, text: $ftpPassword)
                                 .textContentType(.password)
                         }
                         
-                        TextField("Hedef Klasör", text: $destinationPath)
+                        TextField("backup.destination_folder".localized, text: $destinationPath)
                             .autocapitalization(.none)
                             .disableAutocorrection(true)
                     }
@@ -67,21 +67,21 @@ struct BackupTargetView: View {
             else {
                 GroupBox {
                     VStack(alignment: .leading, spacing: 12) {
-                        TextField("Sunucu URL (örn: https://example.com/dav)", text: $webdavURL)
+                        TextField("backup.server_url_example".localized, text: $webdavURL)
                             .autocapitalization(.none)
                             .disableAutocorrection(true)
                             .textContentType(.URL)
                             .keyboardType(.URL)
                         
-                        TextField("Kullanıcı Adı", text: $webdavUsername)
+                        TextField("backup.username".localized, text: $webdavUsername)
                             .autocapitalization(.none)
                             .disableAutocorrection(true)
                             .textContentType(.username)
                         
-                        SecureField("Şifre", text: $webdavPassword)
+                        SecureField("backup.password".localized, text: $webdavPassword)
                             .textContentType(.password)
                         
-                        TextField("Hedef Klasör (isteğe bağlı)", text: $webdavPath)
+                        TextField("backup.destination_folder_optional".localized, text: $webdavPath)
                             .autocapitalization(.none)
                             .disableAutocorrection(true)
                     }

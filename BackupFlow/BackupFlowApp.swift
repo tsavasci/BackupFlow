@@ -55,13 +55,13 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         // Define actions for scheduled backup notifications
         let startAction = UNNotificationAction(
             identifier: "START_BACKUP_ACTION",
-            title: "Yedeklemeyi Başlat",
+            title: "backup.notification.action.start".localized,
             options: [.foreground]  // Opens the app
         )
         
         let cancelAction = UNNotificationAction(
             identifier: "CANCEL_BACKUP_ACTION",
-            title: "İptal",
+            title: "alert.cancel".localized,
             options: []
         )
         

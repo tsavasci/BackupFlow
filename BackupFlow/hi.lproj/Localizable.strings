@@ -484,3 +484,31 @@
 "notifications.disabled_warning_title" = "सूचनाएं अक्षम";
 "notifications.disabled_warning_body" = "आपने BackupFlow के लिए सूचनाएं अक्षम कर दी हैं। बैकअप अनुस्मारक और स्थिति अपडेट प्राप्त करने के लिए, कृपया सेटिंग्स ऐप में उन्हें सक्षम करें।";
 "notifications.open_settings_button" = "सेटिंग्स खोलें";
+"settings.language" = "भाषा";
+"settings.language.system" = "सिस्टम भाषा";
+"settings.language.turkish" = "तुर्की";
+"settings.language.english" = "अंग्रेज़ी";
+
+"backup.source_section" = "स्रोत";
+"backup.photos_option" = "फ़ोटो लाइब्रेरी";
+"backup.media_type_caption" = "मीडिया प्रकार";
+"backup.folder_select" = "फ़ोल्डर चुनें";
+"backup.network_settings" = "नेटवर्क सेटिंग्स";
+"backup.allow_cellular" = "मोबाइल डेटा उपयोग करें";
+"backup.allow_cellular_warning" = "मोबाइल डेटा पर बैकअप से अतिरिक्त शुल्क लग सकता है।";
+"backup.wifi_only_info" = "बैकअप केवल Wi‑Fi पर चलता है।";
+"backup.save_task" = "टास्क सेव करें";
+"backup.info_title" = "जानकारी";
+"backup.ok" = "ठीक है";
+"backup.testing_network" = "नेटवर्क जाँच रहे हैं…";
+"backup.connection_error_ftp" = "FTP कनेक्शन त्रुटि: %@";
+
+"about.version_build" = "संस्करण %@ (बिल्ड %@)";
+"about.contact" = "संपर्क";
+"about.rights_reserved" = "सभी अधिकार सुरक्षित।";
+
+"task.details.title" = "कार्य विवरण";
+
+"backup.cancel_backup_title" = "बैकअप रद्द करें";
+"backup.cancel_backup_confirm" = "रद्द करें";
+"backup.cancel_backup_message" = "क्या आप वाकई इस बैकअप को रद्द करना चाहते हैं?";

@@ -12,9 +12,9 @@ struct TestFTPView: View {
     
     var body: some View {
         Form {
-            Section(header: Text("FTP Bağlantı Bilgileri")) {
+            Section(header: Text("ftp.test.connection_info".localized)) {
                 HStack {
-                    Text("Sunucu Adresi:")
+                    Text("ftp.test.server_address".localized)
                     TextField("192.168.1.1", text: $ftpHost)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .autocapitalization(.none)
@@ -22,14 +22,14 @@ struct TestFTPView: View {
                 }
                 
                 HStack {
-                    Text("Port:")
+                    Text("ftp.test.port".localized)
                     TextField("21", text: $ftpPort)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .keyboardType(.numberPad)
                 }
                 
                 HStack {
-                    Text("Kullanıcı Adı:")
+                    Text("ftp.test.username".localized)
                     TextField("anonymous", text: $username)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .autocapitalization(.none)
@@ -37,14 +37,14 @@ struct TestFTPView: View {
                 }
                 
                 HStack {
-                    Text("Şifre:")
+                    Text("ftp.test.password".localized)
                     SecureField("", text: $password)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                 }
             }
             
-            Section(header: Text("FTP Bağlantı Testi")) {
-                Text("Bu test, FTP sunucusuna bağlanıp küçük bir test dosyası yükleyecektir.")
+            Section(header: Text("ftp.test.connection_test".localized)) {
+                Text("ftp.test.description".localized)
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
@@ -55,7 +55,7 @@ struct TestFTPView: View {
                             ProgressView()
                                 .padding(.trailing, 8)
                         }
-                        Text("Testi Başlat")
+                        Text("ftp.test.start_test".localized)
                         Spacer()
                     }
                 }
@@ -63,29 +63,29 @@ struct TestFTPView: View {
                 
                 if let result = testResult {
                     Text(result)
-                        .foregroundColor(result.contains("başarılı") ? .green : .red)
+                        .foregroundColor(result.contains("✓") ? .green : (result.contains("✗") ? .red : .primary))
                         .padding(.vertical, 8)
                 }
             }
             
-            Section(header: Text("Test Sonuçları")) {
-                Text("• Başarılı bir test, FTP sunucusuna bağlanabildiğinizi ve dosya yükleyebildiğinizi gösterir.")
+            Section(header: Text("ftp.test.results".localized)) {
+                Text("ftp.test.success_info".localized)
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
-                Text("• Hata alırsanız, FTP ayarlarınızı ve internet bağlantınızı kontrol edin.")
+                Text("ftp.test.error_info".localized)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
         }
-        .navigationTitle("FTP Testi")
-        .alert("Test Tamamlandı", isPresented: $showAlert) {
-            Button("Tamam") {}
+        .navigationTitle("ftp.test.title".localized)
+        .alert("ftp.test.completed".localized, isPresented: $showAlert) {
+            Button("alert.ok".localized) {}
         } message: {
             if let result = testResult {
                 Text(result)
             } else {
-                Text("Test tamamlandı.")
+                Text("ftp.test.completed_message".localized)
             }
         }
     }
@@ -98,7 +98,7 @@ struct TestFTPView: View {
             // Validate port
             guard let port = Int(ftpPort), port > 0, port <= 65535 else {
                 await MainActor.run {
-                    testResult = "✗ Hatalı port numarası. 1-65535 arasında bir değer girin."
+                    testResult = "ftp.test.invalid_port".localized
                     isTesting = false
                 }
                 return
@@ -106,8 +106,8 @@ struct TestFTPView: View {
             
             // Show initial notification
             let content = UNMutableNotificationContent()
-            content.title = "Test Başlatılıyor"
-            content.body = "FTP bağlantı testi başlatılıyor... (İlk kullanımda iOS ağ izni isteyebilir)"
+            content.title = "ftp.test.starting".localized
+            content.body = "ftp.test.starting_message".localized
             content.sound = .default
             
             let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
@@ -120,13 +120,13 @@ struct TestFTPView: View {
                 _ = try await FTPService.shared.testConnection(host: ftpHost, port: port, username: username, password: password)
                 
                 await MainActor.run {
-                    testResult = "✓ Test başarılı! FTP sunucusuna bağlanıp dosya yükleyebildiniz."
+                    testResult = "ftp.test.success".localized
                     isTesting = false
                     showAlert = true
                 }
             } catch {
                 await MainActor.run {
-                    testResult = "✗ Test başarısız: \(error.localizedDescription)"
+                    testResult = "ftp.test.failed".localized + " " + error.localizedDescription
                     isTesting = false
                     showAlert = true
                 }

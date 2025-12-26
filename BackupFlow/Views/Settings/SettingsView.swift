@@ -1,6 +1,10 @@
+import Foundation
 import SwiftUI
 import SwiftData
 import StoreKit
+#if canImport(UIKit)
+import UIKit
+#endif
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
@@ -9,6 +13,32 @@ struct SettingsView: View {
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
     @AppStorage("autoStartBackup") private var autoStartBackup = true
     @AppStorage("keepHistoryDays") private var keepHistoryDays = 30
+    @AppStorage("selectedLanguageCode") private var selectedLanguageCode = "system"
+
+    private struct LanguageOption: Identifiable {
+        let code: String
+        let flag: String
+        let name: String
+        var id: String { code }
+    }
+
+    private var supportedLanguages: [LanguageOption] {
+        [
+            .init(code: "system", flag: "🌐", name: "settings.language.system".localized),
+            .init(code: "ar", flag: "🇸🇦", name: "العربية"),
+            .init(code: "de", flag: "🇩🇪", name: "Deutsch"),
+            .init(code: "en", flag: "🇬🇧", name: "English"),
+            .init(code: "es", flag: "🇪🇸", name: "Español"),
+            .init(code: "fr", flag: "🇫🇷", name: "Français"),
+            .init(code: "hi", flag: "🇮🇳", name: "हिन्दी"),
+            .init(code: "ja", flag: "🇯🇵", name: "日本語"),
+            .init(code: "ko", flag: "🇰🇷", name: "한국어"),
+            .init(code: "pt", flag: "🇵🇹", name: "Português"),
+            .init(code: "ru", flag: "🇷🇺", name: "Русский"),
+            .init(code: "tr", flag: "🇹🇷", name: "Türkçe"),
+            .init(code: "zh", flag: "🇨🇳", name: "中文")
+        ]
+    }
     
     var body: some View {
         Form {
@@ -24,6 +54,15 @@ struct SettingsView: View {
                 }
                 
                 // Dil seçimi kaldırıldı - Uygulama sadece Türkçe
+            }
+            
+            Section(header: Text("settings.language".localized)) {
+                Picker("settings.language".localized, selection: $selectedLanguageCode) {
+                    ForEach(supportedLanguages) { language in
+                        Text("\(language.flag) \(language.name)")
+                        .tag(language.code)
+                    }
+                }
             }
             
             Section(header: Text("settings.about_section".localized)) {
@@ -70,6 +109,12 @@ struct SettingsView: View {
             }
         }
         .navigationTitle("settings.title".localized)
+        .onAppear {
+            let codes = Set(supportedLanguages.map { $0.code })
+            if !codes.contains(selectedLanguageCode) {
+                selectedLanguageCode = "system"
+            }
+        }
         .alert("settings.reset_confirm_title".localized, isPresented: $showingResetAlert) {
             Button("alert.cancel".localized, role: .cancel) { }
             Button("settings.reset".localized, role: .destructive) {
@@ -81,6 +126,7 @@ struct SettingsView: View {
     }
     
     private func openAppStoreReview() {
+        #if canImport(UIKit)
         // iOS 14+ için SKStoreReviewController kullan (daha iyi UX)
         if #available(iOS 14.0, *) {
             if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
@@ -92,7 +138,10 @@ struct SettingsView: View {
             SKStoreReviewController.requestReview()
             print("📱 BackupFlow: Review request gönderildi")
         }
-        
+        #else
+        SKStoreReviewController.requestReview()
+        #endif
+
         // Alternatif olarak direkt App Store'a yönlendirmek için:
         // Bu kodu yayınlandıktan sonra gerçek App ID ile kullanabilirsiniz
         /*
@@ -110,8 +159,13 @@ struct SettingsView: View {
         let subject = "BackupFlow Support Request"
         let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
         let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+        #if canImport(UIKit)
         let deviceModel = UIDevice.current.model
-        let iosVersion = UIDevice.current.systemVersion
+        let osVersion = UIDevice.current.systemVersion
+        #else
+        let deviceModel = "Unknown"
+        let osVersion = ProcessInfo.processInfo.operatingSystemVersionString
+        #endif
         
         let body = """
         
@@ -119,7 +173,7 @@ struct SettingsView: View {
         ---
         App Version: \(appVersion) (\(buildNumber))
         Device: \(deviceModel)
-        iOS: \(iosVersion)
+        OS: \(osVersion)
         """
         
         let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
@@ -130,7 +184,8 @@ struct SettingsView: View {
             print("❌ BackupFlow: Geçersiz email URL")
             return
         }
-        
+
+        #if canImport(UIKit)
         if UIApplication.shared.canOpenURL(url) {
             UIApplication.shared.open(url)
             print("📧 BackupFlow: Destek email'i açılıyor")
@@ -139,6 +194,9 @@ struct SettingsView: View {
             UIPasteboard.general.string = email
             print("📋 BackupFlow: Email adresi kopyalandı: \(email)")
         }
+        #else
+        print("📧 BackupFlow: Mail URL: \(mailtoURL)")
+        #endif
     }
     
     private func resetAllData() {

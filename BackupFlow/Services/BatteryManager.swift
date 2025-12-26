@@ -1,5 +1,7 @@
+#if canImport(UIKit)
 import UIKit
 import Combine
+import Foundation
 
 @MainActor
 class BatteryManager: ObservableObject {
@@ -46,19 +48,11 @@ class BatteryManager: ObservableObject {
             }
             .store(in: &cancellables)
     }
-    
-    // MARK: - Battery Level Checks
-    
+
     func shouldAllowBackup() -> Bool {
-        // Allow backup if:
-        // 1. Battery level is above minimum threshold, OR
-        // 2. Device is charging, OR
-        // 3. Device is plugged in
-        
         let batteryPercentage = Int(batteryLevel * 100)
-        
-        return batteryPercentage >= minimumBatteryLevel || 
-               batteryState == .charging || 
+        return batteryPercentage >= minimumBatteryLevel ||
+               batteryState == .charging ||
                batteryState == .full
     }
     
@@ -69,8 +63,6 @@ class BatteryManager: ObservableObject {
         }
         return nil
     }
-    
-    // MARK: - Settings Management
     
     func setMinimumBatteryLevel(_ level: Int) {
         minimumBatteryLevel = max(1, min(100, level))
@@ -84,8 +76,6 @@ class BatteryManager: ObservableObject {
     private func saveSettings() {
         UserDefaults.standard.set(minimumBatteryLevel, forKey: "minimumBatteryLevel")
     }
-    
-    // MARK: - Helper Properties
     
     var batteryPercentage: Int {
         Int(batteryLevel * 100)
@@ -138,3 +128,45 @@ class BatteryManager: ObservableObject {
         }
     }
 }
+
+#else
+
+import Combine
+import Foundation
+
+@MainActor
+class BatteryManager: ObservableObject {
+    static let shared = BatteryManager()
+    
+    @Published var batteryLevel: Float = 1.0
+    @Published var minimumBatteryLevel: Int = 30
+    
+    private init() {
+        loadSettings()
+    }
+    
+    func shouldAllowBackup() -> Bool { true }
+    
+    func getReasonForBlockedBackup() -> String? { nil }
+    
+    func setMinimumBatteryLevel(_ level: Int) {
+        minimumBatteryLevel = max(1, min(100, level))
+        saveSettings()
+    }
+    
+    private func loadSettings() {
+        minimumBatteryLevel = UserDefaults.standard.object(forKey: "minimumBatteryLevel") as? Int ?? 30
+    }
+    
+    private func saveSettings() {
+        UserDefaults.standard.set(minimumBatteryLevel, forKey: "minimumBatteryLevel")
+    }
+    
+    var batteryPercentage: Int { 100 }
+    
+    var batteryStateDescription: String { "battery.state.unknown".localized }
+    
+    var batteryIcon: String { "battery.100" }
+}
+
+#endif

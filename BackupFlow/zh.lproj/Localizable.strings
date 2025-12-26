@@ -468,3 +468,30 @@
 "notifications.disabled_warning_title" = "通知已禁用";
 "notifications.disabled_warning_body" = "您已禁用 BackupFlow 的通知。要接收备份提醒和状态更新，请在设置应用中启用它们。";
 "notifications.open_settings_button" = "打开设置";
+"settings.language" = "语言";
+"settings.language.system" = "系统语言";
+"settings.language.turkish" = "土耳其语";
+"settings.language.english" = "英语";
+
+"backup.source_section" = "来源";
+"backup.photos_option" = "照片图库";
+"backup.media_type_caption" = "媒体类型";
+"backup.folder_select" = "选择文件夹";
+"backup.network_settings" = "网络设置";
+"backup.allow_cellular" = "使用蜂窝数据";
+"backup.allow_cellular_warning" = "通过蜂窝数据备份可能会产生额外费用。";
+"backup.wifi_only_info" = "备份仅通过 Wi‑Fi 运行。";
+"backup.save_task" = "保存任务";
+"backup.info_title" = "信息";
+"backup.ok" = "确定";
+"backup.testing_network" = "正在检查网络…";
+"backup.connection_error_ftp" = "FTP 连接错误：%@";
+
+"about.version_build" = "版本 %@（Build %@）";
+"about.contact" = "联系";
+"about.rights_reserved" = "保留所有权利。";
+
+"task.details.title" = "任务详情";
+"backup.cancel_backup_title" = "取消备份";
+"backup.cancel_backup_confirm" = "取消";
+"backup.cancel_backup_message" = "确定要取消此备份吗？";

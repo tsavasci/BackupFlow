@@ -22,6 +22,10 @@
 "settings.reset" = "Sıfırla";
 "settings.reset_confirm_title" = "Ayarları Sıfırla";
 "settings.reset_confirm_message" = "Tüm ayarlar varsayılan değerlerine sıfırlanacak. Devam etmek istiyor musunuz?";
+"settings.language" = "Dil";
+"settings.language.system" = "Sistem Dili";
+"settings.language.turkish" = "Türkçe";
+"settings.language.english" = "İngilizce";
 // Task Pause/Resume System
 "task.paused.notification.title" = "🎬 BackupFlow";
 "task.paused.notification.body" = "Görev duraklatıldı: %@";
@@ -30,12 +34,18 @@
 "task.pause.button" = "Zamanlamayı Duraklat";
 "task.resume.button" = "Zamanlamayı Devam Ettir";
 "task.status.paused" = "Duraklatıldı";
+"task.details.title" = "Görev Detayları";
+"backup.cancel_backup_title" = "Yedeklemeyi İptal Et";
+"backup.cancel_backup_confirm" = "İptal Et";
+"backup.cancel_backup_message" = "Bu yedekleme işlemini durdurmak istediğinizden emin misiniz?";
 "language.selection" = "Dil";
 "language.system" = "Sistem Dili";
 "language.restart_required" = "Dil Değiştirildi";
 "language.restart_message" = "Uygulama bir sonraki başlatışta yeni dili kullanacaktır.";
 "alert.ok" = "Tamam";
 "alert.cancel" = "İptal";
+"history.title" = "Yedek Geçmişi";
+"history.no_history" = "Yedek Geçmişi Yok";
 "dashboard.title" = "Durum Özeti";
 "dashboard.last_backup" = "Son Yedekleme";
 "dashboard.active_tasks" = "Aktif Görevler";
@@ -72,3 +82,89 @@
 "battery.state.unplugged" = "Şarj değil";
 "battery.state.charging" = "Şarj oluyor";
 "battery.state.full" = "Dolu";
+
+"backup.source_section" = "Kaynak";
+"backup.photos_option" = "Fotoğraf Galerisi";
+"backup.media_type_caption" = "Medya türü";
+"backup.or" = "veya";
+"backup.folder_select" = "Klasör Seç";
+"backup.test_connection" = "Bağlantıyı Test Et";
+
+"backup.scheduling" = "Zamanlama";
+"backup.frequency" = "Sıklık";
+"backup.select_time" = "Saat seç";
+"backup.select_day" = "Gün seç";
+
+"backup.network_settings" = "Ağ Ayarları";
+"backup.allow_cellular" = "Hücresel Veri Kullan";
+"backup.allow_cellular_warning" = "Hücresel veri üzerinden yedekleme ek veri kullanımına neden olabilir.";
+"backup.wifi_only_info" = "Sadece Wi‑Fi üzerinden yedekleme yapılır.";
+
+"backup.save_task" = "Görevi Kaydet";
+"backup.new_backup" = "Yeni Yedekleme";
+"backup.clear" = "Temizle";
+"backup.info_title" = "Bilgi";
+"backup.ok" = "Tamam";
+
+"backup.testing_network" = "Ağ kontrol ediliyor…";
+"backup.connection_testing" = "Bağlantı test ediliyor…";
+"backup.connection_error_ftp" = "FTP bağlantı hatası: %@";
+"backup.connection_error" = "Bağlantı hatası: %@";
+
+"about.title" = "Hakkında";
+"about.version_build" = "Sürüm %@ (Build %@)";
+"about.description" = "BackupFlow, dosyalarınızı belirlediğiniz hedefe planlı veya manuel olarak yedeklemenize yardımcı olur.";
+"about.license" = "Lisans";
+"about.license_description" = "Bu uygulama üçüncü taraf bileşenler içerebilir. Detaylar için ilgili lisans metinlerini inceleyin.";
+"about.contact" = "İletişim";
+"about.rights_reserved" = "Tüm hakları saklıdır.";
+
+// Eksik keyler eklendi - $(date)
+"tasks.create_task" = "Yeni Görev";
+"tasks.edit_task" = "Görevi Düzenle";
+"tasks.task_name" = "Görev Adı";
+"tasks.source_path" = "Kaynak Dizin";
+"tasks.destination" = "Hedef";
+"tasks.schedule" = "Zamanlama";
+"tasks.status" = "Durum";
+"tasks.delete" = "Sil";
+"tasks.save" = "Kaydet";
+
+// Yedekleme
+"backup.source_selection" = "Kaynak Seçimi";
+"backup.select_folder" = "Klasör Seçin";
+"backup.photo_library" = "Fotoğraf Kütüphanesi";
+"backup.scheduling" = "Zamanlama";
+"backup.frequency" = "Sıklık";
+"backup.manual" = "Manuel";
+"backup.daily" = "Günlük";
+"backup.weekly" = "Haftalık";
+
+// Hata Mesajları
+"error.network_unavailable" = "Ağ bağlantısı yok";
+"error.server_unreachable" = "Sunucuya ulaşılamıyor";
+"error.authentication_failed" = "Kimlik doğrulama başarısız";
+"error.permission_denied" = "İzin reddedildi";
+
+// Dil Seçenekleri
+"language.english" = "İngilizce";
+"language.turkish" = "Türkçe";
+"language.german" = "Almanca";
+"language.french" = "Fransızca";
+"language.spanish" = "İspanyolca";
+"language.russian" = "Rusça";
+"language.japanese" = "Japonca";
+"language.korean" = "Korece";
+"language.chinese" = "Çince";
+"language.arabic" = "Arapça";
+"language.hindi" = "Hintçe";
+"language.portuguese" = "Portekizce";
+
+// Günler
+"day.monday" = "Pazartesi";
+"day.tuesday" = "Salı";
+"day.wednesday" = "Çarşamba";
+"day.thursday" = "Perşembe";
+"day.friday" = "Cuma";
+"day.saturday" = "Cumartesi";
+"day.sunday" = "Pazar";
