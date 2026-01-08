@@ -495,3 +495,96 @@
 "backup.cancel_backup_title" = "Backup abbrechen";
 "backup.cancel_backup_confirm" = "Abbrechen";
 "backup.cancel_backup_message" = "Möchten Sie dieses Backup wirklich abbrechen?";
+
+// Missing Localization Keys
+"backup.notification.action.start" = "Jetzt starten";
+"backup.start_confirmation" = "Backup starten?";
+"backup.start" = "Starten";
+"backup.target_type" = "Zieltyp";
+"backup.server_address" = "Serveradresse";
+"backup.port_default" = "Port (Standard: 21)";
+"backup.anonymous_login" = "Anonyme Anmeldung";
+"backup.username" = "Benutzername";
+"backup.password" = "Passwort";
+"backup.destination_folder" = "Zielordner";
+"backup.hour" = "Stunde";
+"backup.minute" = "Minute";
+"backup.day" = "Tag";
+"day.names.sunday" = "Sonntag";
+"day.names.monday" = "Montag";
+"day.names.tuesday" = "Dienstag";
+"day.names.wednesday" = "Mittwoch";
+"day.names.thursday" = "Donnerstag";
+"day.names.friday" = "Freitag";
+"day.names.saturday" = "Samstag";
+"tasks.no_tasks" = "Keine Aufgaben";
+"tasks.create_first_task" = "Erstellen Sie Ihre erste Backup-Aufgabe, um zu beginnen.";
+"tasks.delete_confirmation" = "Aufgabe löschen";
+"tasks.delete_message_full" = "Möchten Sie diese Aufgabe wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.";
+
+// FTP Test und WebDAV URLs
+"ftp.test.connection_info" = "FTP-Verbindungsinformationen";
+"ftp.test.server_address" = "Serveradresse:";
+"ftp.test.port" = "Port:";
+"ftp.test.username" = "Benutzername:";
+"ftp.test.password" = "Passwort:";
+"ftp.test.connection_test" = "FTP-Verbindungstest";
+"ftp.test.description" = "Dieser Test stellt eine Verbindung zum FTP-Server her und lädt eine kleine Testdatei hoch.";
+"ftp.test.start_test" = "Test starten";
+"ftp.test.results" = "Testergebnisse";
+"ftp.test.success_info" = "• Ein erfolgreicher Test zeigt, dass Sie sich mit dem FTP-Server verbinden und Dateien hochladen können.";
+"ftp.test.error_info" = "• Wenn Sie einen Fehler erhalten, überprüfen Sie Ihre FTP-Einstellungen und Internetverbindung.";
+"ftp.test.title" = "FTP-Test";
+"ftp.test.completed" = "Test abgeschlossen";
+"ftp.test.completed_message" = "Test abgeschlossen.";
+"backup.server_url_example" = "Server-URL (z.B: https://example.com/dav)";
+"backup.destination_folder_optional" = "Zielordner (optional)";
+"media_type.photos_only" = "Nur Fotos";
+"media_type.videos_only" = "Nur Videos";
+"media_type.photos_and_videos" = "Fotos und Videos";
+// Additional localization keys to match Turkish base
+"backup.frequency" = "Häufigkeit";
+"backup.scheduling" = "Planung";
+"error.network_unavailable" = "Netzwerkverbindung nicht verfügbar";
+"error.server_unreachable" = "Server nicht erreichbar";
+"language.english" = "Englisch";
+"language.turkish" = "Türkisch";
+"language.german" = "Deutsch";
+"language.french" = "Französisch";
+"language.spanish" = "Spanisch";
+"language.russian" = "Russisch";
+"language.japanese" = "Japanisch";
+"language.korean" = "Koreanisch";
+"language.portuguese" = "Portugiesisch";
+"language.arabic" = "Arabisch";
+"language.hindi" = "Hindi";
+"language.chinese" = "Chinesisch";
+
+// Task Details
+"task.details.general" = "Allgemein";
+"task.details.source" = "Quelle";
+"task.details.status" = "Status";
+"task.details.schedule" = "Zeitplan";
+"task.details.next_backup" = "Nächstes Backup";
+"task.details.server_section" = "Server";
+"task.details.server" = "Server";
+"task.details.port" = "Port";
+"task.details.user" = "Benutzer";
+"task.details.anonymous" = "Anonym";
+"task.details.recent_backups" = "Letzte Sicherungen";
+"task.details.no_backups" = "Noch keine Sicherungen durchgeführt";
+"task.details.files_size" = " Dateien, ";
+"task.details.duration_prefix" = "Dauer: ";
+"task.details.close" = "Schließen";
+"task.details.minutes_short" = " Min ";
+"task.details.seconds_short" = " Sek";
+"task.details.manual" = "Manuell";
+"task.details.daily_prefix" = "Täglich um ";
+"task.details.weekly_prefix" = "Jeden ";// Backup Status Messages
+"backup.status.idle" = "Bereit";
+"backup.status.preparing" = "Vorbereitung...";
+"backup.status.scanning" = "Dateien scannen...";
+"backup.status.uploading" = "Hochladen...";
+"backup.status.completed" = "Abgeschlossen";
+"backup.status.failed" = "Fehlgeschlagen";
+"backup.status.cancelled" = "Abgebrochen";"tasks.swipe_delete" = "Löschen";

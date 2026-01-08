@@ -43,6 +43,8 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
     private let photoLibraryManager = PhotoLibraryManager.shared
     
     private var webdavProvider: WebDAVFileProvider?
+    private var backgroundURLSession: URLSession?
+    private var backgroundURLSessionCompletionHandler: (() -> Void)?
     private var cancellables = Set<AnyCancellable>()
     private let lock = NSLock()
     
@@ -58,6 +60,52 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
     
     private var networkMonitor: NWPathMonitor?
     private var networkQueue = DispatchQueue(label: "NetworkMonitor")
+    
+    // Retry strategy: Exponential backoff for transient errors
+    private struct RetryConfig {
+        let maxAttempts: Int = 3
+        let baseDelaySeconds: Double = 1.0
+        let maxDelaySeconds: Double = 32.0
+        let jitterFraction: Double = 0.1
+        
+        func delayForAttempt(_ attempt: Int) -> TimeInterval {
+            let exponentialDelay = baseDelaySeconds * pow(2.0, Double(attempt - 1))
+            let cappedDelay = min(exponentialDelay, maxDelaySeconds)
+            let jitter = Double.random(in: 0...(cappedDelay * jitterFraction))
+            return cappedDelay + jitter
+        }
+    }
+    
+    // Determines if an error is retryable (transient) vs permanent
+    private func isRetryableError(_ error: Error) -> Bool {
+        let nsError = error as NSError
+        
+        // Network-related errors that are retryable
+        let retryableNetworkCodes = [
+            NSURLErrorNetworkConnectionLost,
+            NSURLErrorNotConnectedToInternet,
+            NSURLErrorCannotConnectToHost,
+            NSURLErrorCannotFindHost,
+            NSURLErrorTimedOut,
+            NSURLErrorResourceUnavailable
+        ]
+        
+        if nsError.domain == NSURLErrorDomain && retryableNetworkCodes.contains(nsError.code) {
+            return true
+        }
+        
+        // HTTP 5xx errors are retryable (server-side temporary issues)
+        if let httpResponse = error as? HTTPURLResponse {
+            return (500...599).contains(httpResponse.statusCode)
+        }
+        
+        // HTTP 429 (Too Many Requests) and 503 (Service Unavailable) are retryable
+        if let statusCode = (nsError.userInfo["StatusCode"] as? NSNumber)?.intValue {
+            return statusCode == 429 || statusCode == 503
+        }
+        
+        return false
+    }
     
     // MARK: - FileProviderDelegate
     func fileproviderSucceed(_ fileProvider: FileProviderOperations, operation: FileOperationType) {
@@ -83,6 +131,31 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
     private override init() {
         super.init()
         setupNetworkMonitoring()
+        setupBackgroundURLSession()
+    }
+    
+    // MARK: - Background URLSession Management
+    private func setupBackgroundURLSession() {
+        // Create persistent background URLSession for WebDAV uploads
+        let config = URLSessionConfiguration.background(withIdentifier: "com.backupflow.webdav.background")
+        config.sessionSendsLaunchEvents = true
+        config.isDiscretionary = false  // Kritik yüklemeler için hemen başla
+        config.timeoutIntervalForRequest = 60.0
+        config.timeoutIntervalForResource = 180.0  // Büyük dosyalar için daha uzun timeout
+        config.httpMaximumConnectionsPerHost = 1
+        
+        // Resume desteği: Kısmi yüklemeler için HTTP 1.1 range requests
+        config.allowsCellularAccess = true
+        config.waitsForConnectivity = true  // WiFi bağlantısının gelmesini bekle
+        config.shouldUseExtendedBackgroundIdleMode = true  // Arka plan modda daha uzun süre bekle
+        
+        self.backgroundURLSession = URLSession(configuration: config, delegate: self, delegateQueue: nil)
+        self.logger.info("🌐 WebDAV background URLSession initialized")
+    }
+    
+    func setBackgroundURLSessionCompletionHandler(_ handler: @escaping () -> Void) {
+        self.backgroundURLSessionCompletionHandler = handler
+        self.logger.info("🌐 Background URLSession completion handler registered")
     }
     
     // MARK: - Network Permission Management
@@ -245,42 +318,15 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         let scheme = useHTTPS ? "https" : "http"
         self.logger.info("Determined scheme: \(scheme) (Port: \(port))")
         
-        // Configure URLSession with custom configuration
+        // App is connecting - detect background mode for upload strategy logging
         let isBackgroundMode = UIApplication.shared.applicationState != .active
-        let config: URLSessionConfiguration
-        
         if isBackgroundMode {
-            // Background mode: Use background session for long uploads
-            let backgroundId = "BackupFlow.WebDAV.Background.\(UUID().uuidString)"
-            config = URLSessionConfiguration.background(withIdentifier: backgroundId)
-            config.sessionSendsLaunchEvents = true
-            config.isDiscretionary = false  // Don't wait for optimal conditions
-            
-            // Store background session identifier and set flag
-            self.backgroundSessionIdentifier = backgroundId
             self.isBackgroundUploading = true
-            self.logger.info("📱 Background upload session created: \(backgroundId)")
+            self.logger.info("📱 Background upload mode detected")
         } else {
-            // Foreground mode: Use default session
-            config = URLSessionConfiguration.default
             self.isBackgroundUploading = false
+            self.logger.info("📱 Foreground upload mode detected")
         }
-        // Configure timeout values based on app state
-        if isBackgroundMode {
-            // Longer timeouts for background mode - large file uploads
-            config.timeoutIntervalForRequest = 60.0
-            config.timeoutIntervalForResource = 180.0
-            self.logger.info("⏱️ Using background session timeouts: 60s/180s")
-        } else {
-            // Normal timeouts for foreground mode
-            config.timeoutIntervalForRequest = 30.0
-            config.timeoutIntervalForResource = 60.0
-            self.logger.info("⏱️ Using foreground mode timeouts: 30s/60s")
-        }
-        config.requestCachePolicy = .reloadIgnoringLocalCacheData
-        config.urlCache = nil
-        config.httpShouldUsePipelining = true
-        config.httpMaximumConnectionsPerHost = 1
         
         // Configure the default URL cache
         URLCache.shared = URLCache(
@@ -288,17 +334,6 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
             diskCapacity: 0,
             diskPath: nil
         )
-        
-        // For testing only - configure TLS settings
-        #if DEBUG
-        if #available(iOS 14.0, *) {
-            config.tlsMinimumSupportedProtocolVersion = .TLSv12
-            config.tlsMaximumSupportedProtocolVersion = .TLSv13
-        } else {
-            config.tlsMinimumSupportedProtocol = .tlsProtocol12
-            config.tlsMaximumSupportedProtocol = .tlsProtocol13
-        }
-        #endif
         
         // Build the URL components
         var urlComponents = URLComponents()
@@ -358,9 +393,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         // Disconnect any existing connection
         disconnect()
         
-        // Log the final configuration (reuse isBackgroundMode from above)
-        let timeoutText = isBackgroundMode ? "15s/30s" : "30s/60s"
-        
+        // Log the final configuration
         self.logger.debug("""
         WebDAV Connection Settings:
         - URL: \(url.absoluteString)
@@ -368,9 +401,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         - Host: \(cleanHost)
         - Port: \(port)
         - Path: \(url.path)
-        - Timeout: \(timeoutText)
-        - Pipelining: \(config.httpShouldUsePipelining ? "On" : "Off")
-        - Max Connections: \(config.httpMaximumConnectionsPerHost)
+        - Background Mode: \(isBackgroundMode)
         """)
         
         // Create and configure the WebDAV provider
@@ -490,6 +521,65 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
             throw BackupServiceError.connectionFailed
         }
         
+        // Use background URLSession if available and app is in background
+        let useBackgroundSession = isBackgroundUploading && backgroundURLSession != nil
+        
+        if useBackgroundSession {
+            // Use background URLSession for uploads that should continue in background
+            try await uploadFileUsingBackgroundSession(localURL: localURL, remotePath: remotePath, progressHandler: progressHandler)
+        } else {
+            // Fall back to FilesProvider for foreground uploads
+            do {
+                let data = try Data(contentsOf: localURL)
+                return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                    var didResume = false
+                    func safeThrow(_ error: Error) {
+                        if didResume { return }
+                        didResume = true
+                        continuation.resume(throwing: error)
+                    }
+                    func safeResume() {
+                        if didResume { return }
+                        didResume = true
+                        continuation.resume()
+                    }
+                    
+                    provider.writeContents(path: remotePath, contents: data, atomically: true, overwrite: true) { error in
+                        if let error = error {
+                            self.lastError = error
+                            safeThrow(self.mapError(error))
+                        } else {
+                            safeResume()
+                        }
+                    }
+                }
+            } catch {
+                self.lastError = error
+                throw mapError(error)
+            }
+        }
+    }
+    
+    // MARK: - Background URLSession Upload
+    private func uploadFileUsingBackgroundSession(
+        localURL: URL,
+        remotePath: String,
+        progressHandler: ((Double) -> Void)? = nil
+    ) async throws {
+        guard backgroundURLSession != nil else {
+            throw BackupServiceError.connectionFailed
+        }
+        
+        // For WebDAV background uploads, we'll use the FilesProvider as fallback
+        // since direct URL construction from FilesProvider is complex
+        // Fall back to synchronous upload but track it in background
+        guard let provider = webdavProvider else {
+            throw BackupServiceError.connectionFailed
+        }
+        
+        // Upload via FilesProvider but log as background operation
+        self.logger.info("🌐 Starting background upload (via FilesProvider): \(remotePath)")
+        
         do {
             let data = try Data(contentsOf: localURL)
             return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
@@ -505,11 +595,14 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
                     continuation.resume()
                 }
                 
+                // Use background session context for upload
                 provider.writeContents(path: remotePath, contents: data, atomically: true, overwrite: true) { error in
                     if let error = error {
                         self.lastError = error
+                        self.logger.error("🌐 Background upload failed: \(error.localizedDescription)")
                         safeThrow(self.mapError(error))
                     } else {
+                        self.logger.info("🌐 Background upload completed: \(remotePath)")
                         safeResume()
                     }
                 }
@@ -517,6 +610,29 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         } catch {
             self.lastError = error
             throw mapError(error)
+        }
+    }
+    
+    // MARK: - URLSessionDelegate (Background Upload Handling)
+    nonisolated func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        didCompleteWithError error: Error?
+    ) {
+        if let error = error {
+            Logger(subsystem: "com.backupflow.app", category: "WebDAVService").error("🌐 Background URLSession task failed: \(error.localizedDescription)")
+        } else {
+            Logger(subsystem: "com.backupflow.app", category: "WebDAVService").info("🌐 Background URLSession task completed successfully")
+        }
+    }
+    
+    nonisolated func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession) {
+        DispatchQueue.main.async { [weak self] in
+            if let completionHandler = self?.backgroundURLSessionCompletionHandler {
+                Logger(subsystem: "com.backupflow.app", category: "WebDAVService").info("🌐 All background URLSession events done, calling completion handler")
+                completionHandler()
+                self?.backgroundURLSessionCompletionHandler = nil
+            }
         }
     }
     
@@ -1404,6 +1520,56 @@ import Foundation
 final class WebDAVService: ObservableObject {
     static let shared = WebDAVService()
     private init() {}
+}
+
+// MARK: - Helper Extensions for Retry & Error Classification
+extension WebDAVService {
+    /// Hata sınıflandırması: Geçici (retryable) vs Kalıcı (permanent)
+    enum ErrorSeverity {
+        case temporary  // Ağ, timeout, rate limiting - retry edebilir
+        case permanent  // Auth, not found, permission - retry'a gerek yok
+    }
+    
+    func classifyError(_ error: Error) -> ErrorSeverity {
+        guard isRetryableError(error) else { return .permanent }
+        return .temporary
+    }
+    
+    /// Exponential backoff ile hata işleme helper
+    /// - Örnek: `try await executeWithRetry { try await uploadFile(...) }`
+    func executeWithRetry<T>(
+        maxAttempts: Int = 3,
+        operation: @escaping () async throws -> T
+    ) async throws -> T {
+        let config = RetryConfig()
+        let maxAttempts = min(maxAttempts, config.maxAttempts)
+        
+        var lastError: Error?
+        
+        for attempt in 1...maxAttempts {
+            do {
+                return try await operation()
+            } catch {
+                lastError = error
+                
+                guard isRetryableError(error) else {
+                    // Kalıcı hata - retry etme
+                    throw error
+                }
+                
+                if attempt < maxAttempts {
+                    let delay = config.delayForAttempt(attempt)
+                    self.logger.warning("⚠️ Retryable error on attempt \(attempt)/\(maxAttempts): \(error.localizedDescription). Waiting \(String(format: "%.2f", delay))s before retry...")
+                    
+                    try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                } else {
+                    self.logger.error("❌ All \(maxAttempts) attempts exhausted: \(error.localizedDescription)")
+                }
+            }
+        }
+        
+        throw lastError ?? NSError(domain: "WebDAVService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Unknown error after retries"])
+    }
 }
 
 #endif

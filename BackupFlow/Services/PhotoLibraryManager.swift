@@ -164,28 +164,46 @@ class PhotoLibraryManager: NSObject, ObservableObject {
     
     func getAssetData(asset: PHAsset) async throws -> Data? {
         return await withCheckedContinuation { continuation in
+            // FIGSANDBOX uyarılarını azaltmak için opportunistic delivery kullan
+            // .highQualityFormat iCloud'dan indirme zorlayabilir - foreground/background geçişlerde sorun oluşturabilir
             let options = PHImageRequestOptions()
             options.isSynchronous = false
-            options.isNetworkAccessAllowed = true
-            options.deliveryMode = .highQualityFormat
+            // iCloud Sync Problemi: isNetworkAccessAllowed = true sadece gerekli durumlarda
+            // Yerel olmayan varlıklar için iCloud'dan indirmek performans sorunlarına neden olabilir
+            options.isNetworkAccessAllowed = false // Önce yerel varlıkları dene
+            options.deliveryMode = .fastFormat // highQualityFormat yerine fastFormat kullan
             options.resizeMode = .none
-            // Performans için: Ana thread'de çalışmayı zorla
-            options.isSynchronous = false
+            options.version = .current // Edited version yerine current version al
             
             if asset.mediaType == .image {
                 // PHImageRequestOptions'ı main thread'de kullan
-                PHImageManager.default().requestImageDataAndOrientation(for: asset, options: options) { data, _, _, _ in
-                    continuation.resume(returning: data)
+                PHImageManager.default().requestImageDataAndOrientation(for: asset, options: options) { data, uti, orientation, info in
+                    // Eğer yerel varlık bulunamazsa, iCloud'dan indir (opsiyonel)
+                    if let data = data {
+                        self.logger.debug("✓ Fotoğraf verisi yerel olarak alındı: \(asset.localIdentifier.prefix(8))")
+                        continuation.resume(returning: data)
+                    } else if let isInCloud = info?[PHImageResultIsInCloudKey] as? NSNumber, isInCloud.boolValue {
+                        self.logger.warning("⚠️ Fotoğraf iCloud'da - yerel indirme başlatılmıyor (ağ erişimi devre dışı)")
+                        continuation.resume(returning: nil)
+                    } else {
+                        continuation.resume(returning: nil)
+                    }
                 }
             } else if asset.mediaType == .video {
                 let videoOptions = PHVideoRequestOptions()
-                videoOptions.isNetworkAccessAllowed = true
-                videoOptions.deliveryMode = .highQualityFormat
+                videoOptions.isNetworkAccessAllowed = false // Video da aynı şekilde yerel varlıktan başla
+                videoOptions.deliveryMode = .fastFormat // highQualityFormat yerine
+                videoOptions.version = .current
                 
                 // PHVideoRequestOptions'ı main thread'de kullan
-                PHImageManager.default().requestAVAsset(forVideo: asset, options: videoOptions) { avAsset, _, _ in
+                PHImageManager.default().requestAVAsset(forVideo: asset, options: videoOptions) { avAsset, _, info in
                     // For videos, we would need to export the asset to data
                     // This is a simplified version - real implementation would export video
+                    if avAsset != nil {
+                        self.logger.debug("✓ Video varlığı yerel olarak alındı: \(asset.localIdentifier.prefix(8))")
+                    } else if let isInCloud = info?[PHImageResultIsInCloudKey] as? NSNumber, isInCloud.boolValue {
+                        self.logger.warning("⚠️ Video iCloud'da - yerel indirme başlatılmıyor (ağ erişimi devre dışı)")
+                    }
                     continuation.resume(returning: nil)
                 }
             } else {

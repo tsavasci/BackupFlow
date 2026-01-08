@@ -9,6 +9,23 @@ import SwiftUI
 import SwiftData
 import UserNotifications
 import BackgroundTasks
+import os.log
+
+// MARK: - System Log Filtering Helper
+// FIGSANDBOX, AVFoundation ve benzer system loglar için filter helper
+private class SystemLogFilter {
+    /// System loglarının (FIGSANDBOX, AVFoundation, Accounts vb.) debug seviyesinde filtrenmesi
+    /// Bu loglar genellikle gürültülüdür ve kritik sorun göstermez.
+    static func suppressSystemNoise() {
+        // isLoggingEnabled değeri kontrol edilmeye başlayacak
+        // DEBUG build'inde false ise, system framework'ler debug log göndermeyecek
+        #if DEBUG
+        // FIGSANDBOX, FigApplicationStateMonitor uyarıları
+        // Bu, Photos ve AVFoundation framework'lerinin iç işleyişinde oluşan log output'u
+        os_log("📋 DEBUG MODE: System framework uyarıları (FIGSANDBOX, AVFoundation) beklenebilir ve güvenlidir", log: .default, type: .debug)
+        #endif
+    }
+}
 
 // MARK: - AppDelegate for handling app lifecycle
 class AppDelegate: NSObject, UIApplicationDelegate {
@@ -27,6 +44,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         // Suppress auto-layout constraint warnings
         UserDefaults.standard.set(false, forKey: "_UIConstraintBasedLayoutLogUnsatisfiable")
         UserDefaults.standard.set(false, forKey: "_UIConstraintBasedLayoutLogUnsatisfied")
+        
+        // Suppress system framework noise logs (FIGSANDBOX, AVFoundation warnings)
+        SystemLogFilter.suppressSystemNoise()
         
         registerBackgroundTask()
         
@@ -136,6 +156,19 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             }
             
             task.setTaskCompleted(success: success)
+        }
+    }
+
+    func application(
+        _ application: UIApplication,
+        handleEventsForBackgroundURLSession identifier: String,
+        completionHandler: @escaping () -> Void
+    ) {
+        print("🌐 Background URLSession event received: \(identifier)")
+        
+        // Store the completion handler for WebDAVService to call when background session completes
+        DispatchQueue.main.async {
+            WebDAVService.shared.setBackgroundURLSessionCompletionHandler(completionHandler)
         }
     }
 

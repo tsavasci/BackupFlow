@@ -97,6 +97,32 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         super.init()
         setupNotifications()
         print("🔄 BackupFlow: BackupScheduler init tamamlandı (BGTask + Timer hibrit)")
+        
+        // Debug: Veritabanındaki tüm görevleri listele
+        if let container = Self.sharedModelContainer {
+            let context = ModelContext(container)
+            if let tasks = try? context.fetch(FetchDescriptor<BackupTask>()) {
+                print("📋 BackupFlow: Veritabanında \(tasks.count) görev bulundu:")
+                for (index, task) in tasks.enumerated() {
+                    let statusText = task.isEnabled ? (task.isPaused ? "⏸️ Duraklatılmış" : "✅ Aktif") : "❌ Devre dışı"
+                    let freqText: String = {
+                        switch task.frequency {
+                        case .manual: return "Manuel"
+                        case .daily(let time): return "Günlük (\(time.timeString))"
+                        case .weekly(let day, let time):
+                            let dayName = ["Pzr", "Pzt", "Sal", "Çrş", "Prş", "Cum", "Cts"][day - 1]
+                            return "Haftalık (\(dayName) \(time.timeString))"
+                        }
+                    }()
+                    let nextRunText = task.nextRunTime.map { userLocalDateFormatter.string(from: $0) } ?? "Belirlenmedi"
+                    print("   \(index + 1). \(task.displayName)")
+                    print("      - Tür: \(task.backupType.displayName)")
+                    print("      - Durum: \(statusText)")
+                    print("      - Sıklık: \(freqText)")
+                    print("      - Sonraki çalışma: \(nextRunText)")
+                }
+            }
+        }
     }
     
     /// Daha uzun ve ağ bağlantısı gerektiren işler için BGProcessing görevi planlar.

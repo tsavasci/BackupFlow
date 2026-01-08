@@ -296,6 +296,15 @@
 "backup.select_folder_placeholder" = "Select Folder...";
 "backup.select_time" = "Select Time";
 "backup.or_text" = "or";
+"backup.status.idle" = "Ready";
+"backup.status.preparing" = "Preparing...";
+"backup.status.scanning" = "Scanning files...";
+"backup.status.uploading" = "Uploading...";
+"backup.status.completed" = "Completed";
+"backup.status.failed" = "Failed";
+"backup.status.cancelled" = "Cancelled";
+"history.loading" = "Loading...";
+"history.error_occurred" = "Error Occurred: %@";
 "history.loading" = "Loading...";
 "history.error_occurred" = "Error Occurred: %@";
 "history.retry" = "Retry";
@@ -497,3 +506,28 @@
 "backup.cancel_backup_title" = "Cancel Backup";
 "backup.cancel_backup_confirm" = "Cancel";
 "backup.cancel_backup_message" = "Are you sure you want to cancel this backup?";
+
+// Additional localization keys to match Turkish base
+"backup.frequency" = "Frequency";
+"backup.scheduling" = "Scheduling";
+"error.network_unavailable" = "Network connection unavailable";
+"error.server_unreachable" = "Server unreachable";
+"language.english" = "English";
+"language.turkish" = "Turkish";
+"language.german" = "German";
+"language.french" = "French";
+"language.spanish" = "Spanish";
+"language.russian" = "Russian";
+"language.japanese" = "Japanese";
+"language.korean" = "Korean";
+"language.portuguese" = "Portuguese";
+"language.arabic" = "Arabic";
+"language.hindi" = "Hindi";
+"language.chinese" = "Chinese";
+
+// FTP Test Additional Keys
+"backup.server_url_example" = "Server URL (e.g: https://example.com/dav)";
+"backup.destination_folder_optional" = "Destination Folder (optional)";
+"media_type.photos_only" = "Photos Only";
+"media_type.videos_only" = "Videos Only";
+"media_type.photos_and_videos" = "Photos and Videos";
