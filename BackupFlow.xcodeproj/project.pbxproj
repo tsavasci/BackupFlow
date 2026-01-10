@@ -222,6 +222,8 @@
 				hi,
 				pt,
 				ru,
+				tr_complete,
+				"tr-complete",
 			);
 			mainGroup = A08578502E231DAC008FF3ED;
 			minimizedProjectReferenceProxies = 1;
