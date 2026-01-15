@@ -591,3 +591,16 @@
 "backup.status.completed" = "Terminé";
 "backup.status.failed" = "Échoué";
 "backup.status.cancelled" = "Annulé";
+
+// Appended new keys
+"common.close" = "Fermer";
+"task.general" = "Général";
+"task.source" = "Source";
+"task.status" = "Statut";
+"task.schedule" = "Planification";
+"task.next_run" = "Prochaine exécution";
+"task.server_section" = "Infos serveur";
+"task.server" = "Serveur";
+"task.port" = "Port";
+"task.user" = "Utilisateur";
+"task.recent_backups" = "Sauvegardes récentes";

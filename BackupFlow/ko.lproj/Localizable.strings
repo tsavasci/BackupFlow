@@ -591,3 +591,16 @@
 "backup.status.completed" = "완료됨";
 "backup.status.failed" = "실패";
 "backup.status.cancelled" = "취소됨";
+
+// Appended new keys
+"common.close" = "닫기";
+"task.general" = "일반";
+"task.source" = "소스";
+"task.status" = "상태";
+"task.schedule" = "일정";
+"task.next_run" = "다음 실행";
+"task.server_section" = "서버 정보";
+"task.server" = "서버";
+"task.port" = "포트";
+"task.user" = "사용자";
+"task.recent_backups" = "최근 백업";

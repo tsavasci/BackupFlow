@@ -466,7 +466,6 @@
 "notifications.disabled_warning_title" = "الإشعارات معطلة";
 "notifications.disabled_warning_body" = "لقد قمت بتعطيل الإشعارات لـ BackupFlow. لتلقي تذكيرات النسخ الاحتياطية وتحديثات الحالة، يرجى تفعيلها في تطبيق الإعدادات.";
 "notifications.open_settings_button" = "فتح الإعدادات";
-
 "settings.language" = "اللغة";
 "settings.language.system" = "لغة النظام";
 "settings.language.turkish" = "التركية";
@@ -589,3 +588,17 @@
 "backup.status.completed" = "مكتمل";
 "backup.status.failed" = "فشل";
 "backup.status.cancelled" = "تم الإلغاء";
+
+// Appended new keys
+"common.close" = "إغلاق";
+"task.general" = "عام";
+"task.source" = "المصدر";
+"task.status" = "الحالة";
+"task.schedule" = "الجدول الزمني";
+"task.next_run" = "التشغيل التالي";
+"task.server_section" = "معلومات الخادم";
+"task.server" = "الخادم";
+"task.port" = "المنفذ";
+"task.user" = "المستخدم";
+"task.recent_backups" = "النسخ الاحتياطية الأخيرة";
+

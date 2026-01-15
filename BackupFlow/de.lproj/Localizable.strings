@@ -588,3 +588,16 @@
 "backup.status.completed" = "Abgeschlossen";
 "backup.status.failed" = "Fehlgeschlagen";
 "backup.status.cancelled" = "Abgebrochen";"tasks.swipe_delete" = "Löschen";
+
+// Appended new keys
+"common.close" = "Schließen";
+"task.general" = "Allgemein";
+"task.source" = "Quelle";
+"task.status" = "Status";
+"task.schedule" = "Zeitplan";
+"task.next_run" = "Nächste Ausführung";
+"task.server_section" = "Serverinformationen";
+"task.server" = "Server";
+"task.port" = "Port";
+"task.user" = "Benutzer";
+"task.recent_backups" = "Letzte Backups";

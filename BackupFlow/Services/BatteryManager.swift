@@ -112,19 +112,28 @@ class BatteryManager: ObservableObject {
     }
     
     var batteryIcon: String {
-        let percentage = batteryPercentage
-        let chargingSuffix = (batteryState == .charging) ? ".bolt" : ""
+        // First, handle charging or full states with a single reliable icon
+        if batteryState == .full {
+            return "battery.100.bolt"
+        }
+        if batteryState == .charging {
+            return "battery.100.bolt"
+        }
         
+        // If not charging, show the appropriate level
+        let percentage = batteryPercentage
         if percentage >= 100 {
-            return "battery.100\(chargingSuffix)"
-        } else if percentage >= 75 {
-            return "battery.75\(chargingSuffix)"
-        } else if percentage >= 50 {
-            return "battery.50\(chargingSuffix)"
-        } else if percentage >= 25 {
-            return "battery.25\(chargingSuffix)"
+            return "battery.100"
+        } else if percentage > 75 {
+            return "battery.75"
+        } else if percentage > 50 {
+            return "battery.50"
+        } else if percentage > 25 {
+            return "battery.25"
+        } else if percentage > 5 {
+            return "battery.25" // Use 25 for the 5-25 range
         } else {
-            return "battery.0\(chargingSuffix)"
+            return "battery.0"
         }
     }
 }

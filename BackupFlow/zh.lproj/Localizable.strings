@@ -581,3 +581,16 @@
 "task.details.daily_prefix" = "每天 ";
 "task.details.weekly_prefix" = "每 ";
 "tasks.swipe_delete" = "删除";
+
+// Appended new keys
+"common.close" = "关闭";
+"task.general" = "通用";
+"task.source" = "来源";
+"task.status" = "状态";
+"task.schedule" = "计划";
+"task.next_run" = "下次运行";
+"task.server_section" = "服务器信息";
+"task.server" = "服务器";
+"task.port" = "端口";
+"task.user" = "用户";
+"task.recent_backups" = "最近的备份";

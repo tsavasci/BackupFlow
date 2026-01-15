@@ -481,3 +481,16 @@
 "wifi.settings" = "WiFi Ayarları";
 "wifi.status" = "Durum";
 "wifi.unknown_network" = "Bilinmeyen ağ";
+
+// Eksik çeviriler eklendi
+"task.general" = "Genel";
+"task.source" = "Kaynak";
+"task.status" = "Durum";
+"task.schedule" = "Zamanlama";
+"task.next_run" = "Sonraki Çalışma";
+"task.server_section" = "Sunucu Bilgileri";
+"task.server" = "Sunucu";
+"task.port" = "Port";
+"task.user" = "Kullanıcı";
+"task.recent_backups" = "Son Yedeklemeler";
+"common.close" = "Kapat";

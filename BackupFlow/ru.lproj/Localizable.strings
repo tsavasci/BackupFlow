@@ -592,3 +592,16 @@
 "task.details.daily_prefix" = "Ежедневно в ";
 "task.details.weekly_prefix" = "Каждый ";
 "tasks.swipe_delete" = "Удалить";
+
+// Appended new keys
+"common.close" = "Закрыть";
+"task.general" = "Общие";
+"task.source" = "Источник";
+"task.status" = "Статус";
+"task.schedule" = "Расписание";
+"task.next_run" = "Следующий запуск";
+"task.server_section" = "Информация о сервере";
+"task.server" = "Сервер";
+"task.port" = "Порт";
+"task.user" = "Пользователь";
+"task.recent_backups" = "Недавние резервные копии";

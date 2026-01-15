@@ -215,129 +215,34 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     // MARK: - Timer Management
     @MainActor
     private func scheduleTask(_ task: BackupTask) async {
-        // Skip if paused
+        // Skip if paused, manual, or disabled
         if task.isPaused {
             print("⏸️ BackupFlow: Görev duraklatılmış, zamanlama atlanıyor: \(task.displayName)")
             return
         }
-        
-        // Skip manual tasks
         if case .manual = task.frequency {
             print("📝 BackupFlow: Manuel görev, zamanlama atlanıyor: \(task.displayName)")
             return
         }
-        
-        // Skip disabled tasks
         if !task.isEnabled {
             print("🚫 BackupFlow: Devre dışı görev, zamanlama atlanıyor: \(task.displayName)")
             return
         }
-        
-        // Calculate next run time (prospective)
+
+        // Cancel any existing legacy timer for this task to be safe
+        cancelTimer(for: task.id)
+
+        // Calculate and set the next run time
         guard let nextRunTime = calculateNextRunTime(for: task) else {
             print("❌ BackupFlow: Sonraki çalışma zamanı hesaplanamadı: \(task.displayName)")
             return
         }
-        // Eğer aynı hedef zaman için zaten aktif bir timer varsa, tekrar planlama
-        if let last = lastScheduledTargetTime[task.id], abs(last.timeIntervalSince(nextRunTime)) < 1, scheduledTimers[task.id] != nil {
-            print("ℹ️ BackupFlow: Zaten aynı hedef zamana planlanmış, tekrar planlanmıyor: \(task.displayName)")
-            return
-        }
-
-        // Cancel existing timer for this task
-        cancelTimer(for: task.id)
-
-        // Var ise bekleyen/delivered zamanlanmış bildirimleri temizle (önceki planlamadan kalmış olabilir)
-        let pendingId = "scheduled-backup-\(task.id)"
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [pendingId])
-        UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [pendingId])
-        
-        // Update task's next run time
         task.nextRunTime = nextRunTime
-        lastScheduledTargetTime[task.id] = nextRunTime
         
-        // Schedule timer
-        let now = Date()
-        let timeInterval = nextRunTime.timeIntervalSince(now)
-        
-        // Grace period: 30 saniyeye kadar gecikme kabul et (notification delay için)
-        if timeInterval <= 30 { // 30 saniye veya daha az varsa hemen çalıştır
-            print("⚡ BackupFlow: Görev hemen çalışacak: \(task.displayName)")
-            Task {
-                try? await performBackup(task: task)
-            }
-            return
-        }
-        
-        print("⏰ BackupFlow: Görev zamanlandı: \(task.displayName)")
-        print("   📅 Şu anda: \(userLocalDateFormatter.string(from: now))")
-        let stateText: String = {
-            #if canImport(UIKit)
-            switch UIApplication.shared.applicationState {
-            case .active: return "active"
-            case .background: return "background"
-            case .inactive: return "inactive"
-            @unknown default: return "unknown"
-            }
-            #else
-            return "active"
-            #endif
-        }()
-        print("   📱 Mevcut app state: \(stateText)")
-        print("   📅 Sonraki çalışma: \(userLocalDateFormatter.string(from: nextRunTime))")
-        print("   ⏳ Kalan süre: \(formatTimeInterval(timeInterval))")
-        
-        let timer = Timer.scheduledTimer(withTimeInterval: timeInterval, repeats: false) { [weak self, taskId = task.id] _ in
-            print("⏰ BackupFlow: Timer tetiklendi! Task ID: \(taskId)")
-            Task { @MainActor in
-                print("📱 BackupFlow: Timer callback MainActor'da çalışıyor")
-                self?.scheduledTimers.removeValue(forKey: taskId)
-                
-                // Find the task by ID
-                guard let container = Self.sharedModelContainer else { 
-                    print("❌ BackupFlow: ModelContainer bulunamadı!")
-                    return 
-                }
-                let context = ModelContext(container)
-                let descriptor = FetchDescriptor<BackupTask>()
-                if let foundTask = try? context.fetch(descriptor).first(where: { $0.id == taskId }) {
-                    print("✅ BackupFlow: Timer'da görev bulundu: \(foundTask.displayName)")
-                    // App state'ini tekrar kontrol et (arka plana geçmiş olabilir)
-                    let (isActive, stateText2): (Bool, String) = {
-                        #if canImport(UIKit)
-                        let s = UIApplication.shared.applicationState
-                        let txt: String = {
-                            switch s {
-                            case .active: return "active"
-                            case .background: return "background"
-                            case .inactive: return "inactive"
-                            @unknown default: return "unknown"
-                            }
-                        }()
-                        return (s == .active, txt)
-                        #else
-                        return (true, "active")
-                        #endif
-                    }()
-                    print("📲 BackupFlow: Mevcut app state: \(stateText2)")
-                    if isActive {
-                        print("📱 BackupFlow: Uygulama aktif - Yedekleme direkt başlatılıyor")
-                        try? await self?.performBackup(task: foundTask)
-                    } else {
-                        print("🔔 BackupFlow: Uygulama arka planda (state: \(stateText2)) - Bildirim gönderiliyor")
-                        self?.sendScheduledBackupNotification(for: foundTask)
-                    }
-                } else {
-                    print("❌ BackupFlow: Timer'da görev bulunamadı! Task ID: \(taskId)")
-                }
-            }
-        }
-        
-        scheduledTimers[task.id] = timer
-        
-        // Timer'ın background'da çalışması için RunLoop'a ekle
-        RunLoop.main.add(timer, forMode: .common)
-        print("✅ BackupFlow: Timer RunLoop'a eklendi (common mode)")
+        print("✅ BackupFlow: Görev BGTaskScheduler ile planlanacak: \(task.displayName) -> \(userLocalDateFormatter.string(from: nextRunTime))")
+
+        // Schedule a background app refresh task with the OS
+        scheduleAppRefresh()
     }
     
     @MainActor

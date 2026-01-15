@@ -607,3 +607,16 @@
 "backup.status.completed" = "पूर्ण";
 "backup.status.failed" = "विफल";
 "backup.status.cancelled" = "रद्द किया गया";
+
+// Appended new keys
+"common.close" = "बंद करें";
+"task.general" = "सामान्य";
+"task.source" = "स्रोत";
+"task.status" = "स्थिति";
+"task.schedule" = "अनुसूची";
+"task.next_run" = "अगला रन";
+"task.server_section" = "सर्वर जानकारी";
+"task.server" = "सर्वर";
+"task.port" = "पोर्ट";
+"task.user" = "उपयोगकर्ता";
+"task.recent_backups" = "हाल के बैकअप";
