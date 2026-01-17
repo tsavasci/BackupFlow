@@ -91,6 +91,14 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     }()
     
     private let maxRetryAttempts = 3
+
+    private let baseRetryDelay: TimeInterval = 300
+    private func jitteredDelay(for attempt: Int) -> TimeInterval {
+        let jitter = Double.random(in: 0...0.3)
+        return baseRetryDelay * pow(2.0, Double(attempt - 1)) * (1.0 + jitter)
+    }
+    
+    private var lastBGSubmitAt: Date? = nil
     
     // MARK: - Initialization
     override init() {
@@ -149,9 +157,15 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                 }
             }
         }
+        
+        if let last = lastBGSubmitAt, Date().timeIntervalSince(last) < 30 {
+            print("ℹ️ BGTaskScheduler: Submit çok sık, atlanıyor")
+            return
+        }
 
         do {
             try BGTaskScheduler.shared.submit(request)
+            lastBGSubmitAt = Date()
             if let d = request.earliestBeginDate {
                 print("✅ BGTaskScheduler: Processing görevi planlandı -> \(userLocalDateFormatter.string(from: d))")
             } else {
@@ -333,8 +347,8 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                 retryCount[task.id] = currentRetryCount + 1
                 print("🔄 BackupFlow: Yeniden deneme \(currentRetryCount + 1)/\(maxRetryAttempts)")
                 
-                // Schedule retry after 5 minutes
-                DispatchQueue.main.asyncAfter(deadline: .now() + 300) {
+                let delay = self.jitteredDelay(for: currentRetryCount + 1)
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
                     Task {
                         try? await self.performBackup(task: task)
                     }
@@ -420,7 +434,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     /// Zamanı gelen görev için bildirim gönderir (action button ile)
     public func sendScheduledBackupNotification(for task: BackupTask) {
         // Son bildirimin üzerinden yeterli süre geçmediyse tekrarlama (debounce)
-        if let last = lastNotificationSentAt[task.id], Date().timeIntervalSince(last) < 60 {
+        if let last = lastNotificationSentAt[task.id], Date().timeIntervalSince(last) < 120 {
             print("ℹ️ BackupFlow: Yakın zamanda aynı görev için bildirim gönderilmiş, tekrar edilmiyor")
             return
         }
@@ -514,9 +528,15 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             // Hiç görev yoksa 1 saat sonrası
             request.earliestBeginDate = Date().addingTimeInterval(3600)
         }
+        
+        if let last = lastBGSubmitAt, Date().timeIntervalSince(last) < 30 {
+            print("ℹ️ BGTaskScheduler: Submit çok sık, atlanıyor")
+            return
+        }
 
         do {
             try BGTaskScheduler.shared.submit(request)
+            lastBGSubmitAt = Date()
             if let d = request.earliestBeginDate {
                 print("✅ BGTaskScheduler: App refresh görevi planlandı -> \(userLocalDateFormatter.string(from: d))")
             } else {
@@ -579,6 +599,10 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                         #endif
                     }()
                     if isActive {
+                        if let last = lastRunAt, Date().timeIntervalSince(last) < minRunInterval {
+                            print("ℹ️ checkMissedTimers: Minimum aralık dolmadı, atlanıyor")
+                            continue
+                        }
                         print("📱 checkMissedTimers: App aktif - Yedekleme başlatılıyor")
                         try? await performBackup(task: task)
                     } else {
@@ -863,7 +887,14 @@ extension BackupScheduler {
                 errorMessage: errorMessage,
                 duration: duration,
                 skippedFiles: syncResult.skippedFiles,
-                deletedFiles: syncResult.deletedFiles
+                deletedFiles: syncResult.deletedFiles,
+                taskDisplayName: task.displayName,
+                taskSourcePath: task.sourcePath,
+                taskServerHost: task.serverHost,
+                taskServerPort: task.serverPort,
+                taskUsername: task.serverUsername,
+                taskIsAnonymous: task.isAnonymous,
+                taskMediaTypeRaw: task.mediaType.rawValue
             )
 
             // Attach the task to the history record
@@ -872,6 +903,7 @@ extension BackupScheduler {
             do {
                 // In many cases, appending to a relationship is enough; insert is optional
                 try context.save()
+                HistoryRetentionManager.pruneIfNeeded(context: context)
                 print("📝 BackupFlow: Geçmiş kaydı eklendi - \(syncResult.totalProcessed) dosya, \(Int(duration))s")
             } catch {
                 print("❌ BackupFlow: Geçmiş kaydı hatası (taskContext): \(error)")
@@ -899,12 +931,20 @@ extension BackupScheduler {
                 errorMessage: errorMessage,
                 duration: duration,
                 skippedFiles: syncResult.skippedFiles,
-                deletedFiles: syncResult.deletedFiles
+                deletedFiles: syncResult.deletedFiles,
+                taskDisplayName: taskInContext.displayName,
+                taskSourcePath: taskInContext.sourcePath,
+                taskServerHost: taskInContext.serverHost,
+                taskServerPort: taskInContext.serverPort,
+                taskUsername: taskInContext.serverUsername,
+                taskIsAnonymous: taskInContext.isAnonymous,
+                taskMediaTypeRaw: taskInContext.mediaType.rawValue
             )
 
             historyRecord.task = taskInContext
 
             try context.save()
+            HistoryRetentionManager.pruneIfNeeded(context: context)
             print("📝 BackupFlow: Geçmiş kaydı eklendi (refetched) - \(syncResult.totalProcessed) dosya, \(Int(duration))s")
         } catch {
             print("❌ BackupFlow: Geçmiş kaydı hatası (refetch): \(error)")

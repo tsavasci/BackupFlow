@@ -87,7 +87,7 @@ struct TaskRow: View {
                 
                 // Pause/Resume badge
                 if task.isPaused {
-                    Text("Duraklatıldı")
+                    Text("task.status.paused".localized)
                         .font(.caption)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
@@ -115,7 +115,7 @@ struct TaskRow: View {
                     Image(systemName: "clock")
                 }
                 if let nextRun = task.nextRunTime {
-                    Text("Sonraki: \(taskDateFormatter.string(from: nextRun))")
+                    Text("\("tasks.next_run".localized): \(taskDateFormatter.string(from: nextRun))")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -135,7 +135,7 @@ struct TaskRow: View {
             if let lastBackup = task.lastBackupDate {
                 HStack(alignment: .center) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Son Yedekleme")
+                        Text("dashboard.last_backup".localized)
                             .font(.caption)
                             .foregroundColor(.secondary)
                         Text(taskDateFormatter.string(from: lastBackup))
@@ -173,7 +173,7 @@ struct TaskRow: View {
                 HStack(spacing: 4) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundColor(.red)
-                    Text("Hata: \(lastError)")
+                    Text(String(format: "history.error_occurred".localized, lastError))
                         .font(.caption)
                         .foregroundColor(.red)
                         .lineLimit(2)

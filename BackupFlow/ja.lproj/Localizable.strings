@@ -318,6 +318,17 @@
 "media_type.photos_only" = "写真のみ";
 "media_type.videos_only" = "動画のみ";
 "media_type.photos_and_videos" = "写真と動画";
+"common.close" = "閉じる";
+"task.general" = "一般";
+"task.next_run" = "次の実行";
+"task.port" = "ポート";
+"task.recent_backups" = "最近のバックアップ";
+"task.schedule" = "スケジュール";
+"task.server" = "サーバー";
+"task.server_section" = "サーバー";
+"task.source" = "ソース";
+"task.status" = "ステータス";
+"task.user" = "ユーザー";
 "history.backup_detail" = "バックアップ詳細";
 // Cellular Data Settings
 "settings.allow_cellular" = "セルラーデータの使用を許可";

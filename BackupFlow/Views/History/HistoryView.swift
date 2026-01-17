@@ -21,7 +21,6 @@ struct HistoryView: View {
                 }
         }
         .onAppear {
-            cleanUpInvalidHistory()
             loadHistory()
         }
     }
@@ -40,16 +39,16 @@ struct HistoryView: View {
     }
     
     private var loadingView: some View {
-        ProgressView("Yükleniyor...")
+        ProgressView("history.loading".localized)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     
     private func errorView(error: Error) -> some View {
         VStack(spacing: 12) {
-            Text("Hata Oluştu: \(error.localizedDescription)")
+            Text(String(format: "history.error_occurred".localized, error.localizedDescription))
                 .multilineTextAlignment(.center)
                 .foregroundColor(.red)
-            Button("Tekrar Dene") {
+            Button("history.retry".localized) {
                 loadHistory()
             }
         }
@@ -67,86 +66,82 @@ struct HistoryView: View {
         ScrollView {
             LazyVStack(spacing: 12) {
                 ForEach(history, id: \.persistentModelID) { item in
-                    if item.task == nil {
-                        EmptyView()
-                    } else {
-                        NavigationLink {
-                            historyDetailView(for: item)
-                        } label: {
-                            VStack(alignment: .leading, spacing: 10) {
-                                // Başlık ve durum
-                                HStack {
-                                    Text(item.task?.displayName ?? "Bilinmeyen Görev")
-                                        .font(.headline)
-                                        .fontWeight(.semibold)
-                                    Spacer()
-                                    Text(item.status == "completed" ? "Tamamlandı" : item.status.capitalized)
+                    NavigationLink {
+                        historyDetailView(for: item)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 10) {
+                            // Başlık ve durum
+                            HStack {
+                                Text(item.taskDisplayName ?? "history.unknown_task".localized)
+                                    .font(.headline)
+                                    .fontWeight(.semibold)
+                                Spacer()
+                                Text(localizedHistoryStatus(item.status))
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(item.status == "completed" ? Color.green.opacity(0.15) : Color.red.opacity(0.15))
+                                    .foregroundStyle(item.status == "completed" ? .green : .red)
+                                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                            }
+                            
+                            // İstatistikler - İlk satır
+                            HStack(spacing: 16) {
+                                Label("\(item.filesProcessed)/\(item.totalFiles)", systemImage: "doc.text")
+                                    .font(.caption)
+                                    .foregroundColor(item.filesProcessed > 0 ? .primary : .secondary)
+                                
+                                if item.skippedFiles > 0 {
+                                    Label("\(item.skippedFiles) \("history.files.skipped".localized)", systemImage: "doc.badge.clock")
                                         .font(.caption)
-                                        .fontWeight(.medium)
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 4)
-                                        .background(item.status == "completed" ? Color.green.opacity(0.15) : Color.red.opacity(0.15))
-                                        .foregroundStyle(item.status == "completed" ? .green : .red)
-                                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                                        .foregroundColor(.orange)
                                 }
                                 
-                                // İstatistikler - İlk satır
-                                HStack(spacing: 16) {
-                                    Label("\(item.filesProcessed)/\(item.totalFiles)", systemImage: "doc.text")
+                                if item.deletedFiles > 0 {
+                                    Label("\(item.deletedFiles) \("history.files.deleted".localized)", systemImage: "trash")
                                         .font(.caption)
-                                        .foregroundColor(item.filesProcessed > 0 ? .primary : .secondary)
-                                    
-                                    if item.skippedFiles > 0 {
-                                        Label("\(item.skippedFiles) atlandı", systemImage: "doc.badge.clock")
-                                            .font(.caption)
-                                            .foregroundColor(.orange)
-                                    }
-                                    
-                                    if item.deletedFiles > 0 {
-                                        Label("\(item.deletedFiles) silindi", systemImage: "trash")
-                                            .font(.caption)
-                                            .foregroundColor(.red)
-                                    }
-                                    
-                                    Spacer()
+                                        .foregroundColor(.red)
                                 }
                                 
-                                // İstatistikler - İkinci satır
-                                HStack(spacing: 16) {
-                                    Label(formatFileSize(item.bytesTransferred), systemImage: "arrow.up.circle")
-                                        .font(.caption)
-                                        .foregroundColor(.blue)
-                                    
-                                    Spacer()
-                                    
-                                    Text(item.timestamp.formatted(date: .abbreviated, time: .shortened))
+                                Spacer()
+                            }
+                            
+                            // İstatistikler - İkinci satır
+                            HStack(spacing: 16) {
+                                Label(formatFileSize(item.bytesTransferred), systemImage: "arrow.up.circle")
+                                    .font(.caption)
+                                    .foregroundColor(.blue)
+                                
+                                Spacer()
+                                
+                                Text(item.timestamp.formatted(date: .abbreviated, time: .shortened))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                
+                                if item.status.lowercased() == "completed" {
+                                    Text("•")
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
-                                    
-                                    if item.status.lowercased() == "completed" {
-                                        Text("•")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                        Text(formatDuration(item.duration))
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    }
+                                    Text(formatDuration(item.duration))
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
                                 }
                             }
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .background(Color(.systemBackground))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
-                        .contextMenu {
-                            Button(role: .destructive) {
-                                if let index = history.firstIndex(where: { $0.persistentModelID == item.persistentModelID }) {
-                                    deleteItems(offsets: IndexSet([index]))
-                                }
-                            } label: {
-                                Label("Sil", systemImage: "trash")
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(Color(.systemBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+                    .contextMenu {
+                        Button(role: .destructive) {
+                            if let index = history.firstIndex(where: { $0.persistentModelID == item.persistentModelID }) {
+                                deleteItems(offsets: IndexSet([index]))
                             }
+                        } label: {
+                            Label("history.delete".localized, systemImage: "trash")
                         }
                     }
                 }
@@ -159,7 +154,7 @@ struct HistoryView: View {
         Button(role: .destructive) {
             clearHistory()
         } label: {
-            Label("Tümünü Sil", systemImage: "trash")
+            Label("history.delete_all".localized, systemImage: "trash")
         }
         .disabled(history.isEmpty)
     }
@@ -191,16 +186,6 @@ struct HistoryView: View {
         loadHistory()
     }
     
-    private func cleanUpInvalidHistory() {
-        let invalidEntries = history.filter { $0.task == nil }
-        if !invalidEntries.isEmpty {
-            for entry in invalidEntries {
-                modelContext.delete(entry)
-            }
-            try? modelContext.save()
-        }
-    }
-    
     private func formatFileSize(_ bytes: Int64) -> String {
         let formatter = ByteCountFormatter()
         formatter.countStyle = .file
@@ -210,60 +195,81 @@ struct HistoryView: View {
     
     private func formatDuration(_ seconds: TimeInterval) -> String {
         if seconds < 60 {
-            return String(format: "%.1f saniye", seconds)
+            return String(format: "history.duration.seconds".localized, seconds)
         } else if seconds < 3600 {
-            return String(format: "%.1f dakika", seconds / 60)
+            return String(format: "history.duration.minutes".localized, seconds / 60)
         } else {
-            return String(format: "%.1f saat", seconds / 3600)
+            return String(format: "history.duration.hours".localized, seconds / 3600)
+        }
+    }
+
+    private func localizedHistoryStatus(_ status: String) -> String {
+        switch status.lowercased() {
+        case "completed":
+            return "backup.status.completed".localized
+        case "failed":
+            return "backup.status.failed".localized
+        case "cancelled":
+            return "backup.status.cancelled".localized
+        case "uploading":
+            return "backup.status.uploading".localized
+        case "scanning":
+            return "backup.status.scanning".localized
+        case "preparing":
+            return "backup.status.preparing".localized
+        default:
+            return status.capitalized
         }
     }
     
     private func historyDetailView(for item: BackupHistory) -> some View {
         List {
-            Section("Kaynak") {
-                Text(item.task?.sourcePath ?? "Bilinmiyor")
+            Section("history.source".localized) {
+                Text(item.taskSourcePath ?? "history.unknown".localized)
                     .font(.system(.body, design: .monospaced))
             }
             
-            Section("Hedef") {
-                if let task = item.task {
-                    Text("\(task.ftpHost):\(task.ftpPort)")
+            Section("history.destination".localized) {
+                if let host = item.taskServerHost, let port = item.taskServerPort {
+                    Text("\(host):\(port)")
                         .font(.system(.body, design: .monospaced))
-                    if task.isAnonymous {
-                        Label("Anonim FTP", systemImage: "person.crop.circle.badge.questionmark")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    } else if !task.ftpUsername.isEmpty {
-                        Label("Kullanıcı: \(task.ftpUsername)", systemImage: "person.crop.circle")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    Label("Medya Türü: \(task.mediaType.displayName)", systemImage: "photo.on.rectangle")
+                } else {
+                    Text("history.unknown".localized)
+                        .font(.system(.body, design: .monospaced))
+                }
+                if item.taskIsAnonymous == true {
+                    Label("history.anonymous_ftp".localized, systemImage: "person.crop.circle.badge.questionmark")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                } else {
-                    Text("Bilinmiyor")
-                        .font(.system(.body, design: .monospaced))
+                } else if let username = item.taskUsername, !username.isEmpty {
+                    Label(String(format: "history.user_prefix".localized, username), systemImage: "person.crop.circle")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                if let mediaType = item.taskMediaType {
+                    Label(String(format: "history.media_type_prefix".localized, mediaType.displayName), systemImage: "photo.on.rectangle")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
             
-            Section("İstatistikler") {
-                LabeledContent("Durum", value: item.status)
-                LabeledContent("Yedeklenen Dosya", value: "\(item.filesProcessed)")
-                LabeledContent("Toplam Dosya", value: "\(item.totalFiles)")
+            Section("history.stats_section".localized) {
+                LabeledContent("history.stats.status".localized, value: localizedHistoryStatus(item.status))
+                LabeledContent("history.stats.files_processed".localized, value: "\(item.filesProcessed)")
+                LabeledContent("history.stats.total_files".localized, value: "\(item.totalFiles)")
                 if item.skippedFiles > 0 {
-                    LabeledContent("Atlanan Dosya", value: "\(item.skippedFiles)")
+                    LabeledContent("history.files.skipped".localized, value: "\(item.skippedFiles)")
                 }
                 if item.deletedFiles > 0 {
-                    LabeledContent("Silinen Dosya", value: "\(item.deletedFiles)")
+                    LabeledContent("history.files.deleted".localized, value: "\(item.deletedFiles)")
                 }
-                LabeledContent("Toplam Boyut", value: formatFileSize(item.totalBytes))
-                LabeledContent("Süre", value: formatDuration(item.duration))
-                LabeledContent("Tarih", value: item.timestamp.formatted(date: .long, time: .standard))
+                LabeledContent("history.stats.total_size".localized, value: formatFileSize(item.totalBytes))
+                LabeledContent("history.stats.duration".localized, value: formatDuration(item.duration))
+                LabeledContent("history.stats.date".localized, value: item.timestamp.formatted(date: .long, time: .standard))
             }
 
             if let err = item.errorMessage, !err.isEmpty {
-                Section("Hata") {
+                Section("alert.error".localized) {
                     Text(err)
                         .font(.footnote)
                         .foregroundStyle(.red)
@@ -271,8 +277,7 @@ struct HistoryView: View {
                 }
             }
         }
-        .navigationTitle("Yedekleme Detayı")
+        .navigationTitle("history.backup_detail".localized)
         .navigationBarTitleDisplayMode(.inline)
     }
 }
-

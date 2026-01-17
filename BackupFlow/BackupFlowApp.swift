@@ -285,9 +285,6 @@ struct BackupFlowApp: App {
         UINavigationBar.appearance().standardAppearance = appearance
         UINavigationBar.appearance().scrollEdgeAppearance = appearance
         
-        // Force Turkish locale for the app
-        UserDefaults.standard.set(["tr"], forKey: "AppleLanguages")
-        UserDefaults.standard.synchronize()
     }
     
     var body: some Scene {
@@ -297,6 +294,7 @@ struct BackupFlowApp: App {
         .modelContainer(sharedModelContainer)
         .onChange(of: scenePhase) { (oldPhase: ScenePhase, newPhase: ScenePhase) in
             if newPhase == .background {
+                WebDAVService.shared.updateBackgroundMode(isBackground: true)
                 // Sadece aktif yedekleme yoksa BGTask planla
                 if !BackupScheduler.shared.isProcessing {
                     print("🔄 App moved to background. Scheduling processing task only (avoid double scheduling).")
@@ -308,10 +306,15 @@ struct BackupFlowApp: App {
                 }
             } else if newPhase == .active {
                 print("📱 BackupFlow: App foreground'a geldi")
+                WebDAVService.shared.updateBackgroundMode(isBackground: false)
                 
                 // Missed timer kontrolü
                 Task {
                     await BackupScheduler.shared.checkMissedTimers()
+                }
+
+                Task {
+                    HistoryRetentionManager.pruneIfNeeded(container: sharedModelContainer)
                 }
                 
                 // App açıldığında badge'i temizle
@@ -327,4 +330,3 @@ struct BackupFlowApp: App {
         }
     }
 }
-

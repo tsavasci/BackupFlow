@@ -171,8 +171,10 @@ struct BackupView: View {
     @State private var showingSaveAlert = false
     @State private var showingPhotoLibraryDeniedAlert = false
     @State private var saveAlertMessage = ""
+    @State private var lastAlertAt: Date? = nil
     @State private var isTestingConnection = false
     @State private var connectionStatus: ConnectionStatus = .idle
+    @State private var lastTestTapAt: Date? = nil
     
     var body: some View {
         return Form {
@@ -278,12 +280,15 @@ struct BackupView: View {
                 
                 Button {
                     Task {
+                        let now = Date()
+                        if let last = lastTestTapAt, now.timeIntervalSince(last) < 2 { return }
+                        lastTestTapAt = now
                         await testConnection()
                     }
                 } label: {
                     Text("backup.test_connection".localized)
                 }
-                .disabled(isTestingConnection || !isValidConnectionSettings())
+                .disabled(isTestingConnection || !isValidConnectionSettings() || (lastTestTapAt != nil && Date().timeIntervalSince(lastTestTapAt!) < 2))
                 
                 if isTestingConnection {
                     ProgressView()
@@ -361,6 +366,14 @@ struct BackupView: View {
                 }
             }
         }
+        .onChange(of: showingDocumentPicker) { _, newValue in
+            if newValue {
+                // prevent re-present within 1s
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    if showingDocumentPicker { showingDocumentPicker = true }
+                }
+            }
+        }
         .sheet(isPresented: $showingDocumentPicker) {
             DocumentPicker(url: $selectedURL) {
                 showingDocumentPicker = false
@@ -407,6 +420,8 @@ struct BackupView: View {
         }
         
         func testConnection() async {
+            if isTestingConnection { return }
+
             guard isValidConnectionSettings() else {
                 let errorMessage = selectedTarget == .ftp ?
                 "backup.fill_required_fields".localized :
@@ -488,6 +503,9 @@ struct BackupView: View {
             // Check if either folder or photo library is selected
             guard isPhotoLibrarySelected || selectedURL != nil else {
                 saveAlertMessage = "backup.source_required".localized
+                let now = Date()
+                if let last = lastAlertAt, now.timeIntervalSince(last) < 1 { return }
+                lastAlertAt = now
                 showingSaveAlert = true
                 return
             }
@@ -497,6 +515,9 @@ struct BackupView: View {
                 let status = PHPhotoLibrary.authorizationStatus()
                 guard status == .authorized || status == .limited else {
                     saveAlertMessage = "backup.photo_permission_required".localized
+                    let now = Date()
+                    if let last = lastAlertAt, now.timeIntervalSince(last) < 1 { return }
+                    lastAlertAt = now
                     showingSaveAlert = true
                     return
                 }
@@ -506,6 +527,9 @@ struct BackupView: View {
             if !isPhotoLibrarySelected, let sourceURL = selectedURL {
                 guard sourceURL.startAccessingSecurityScopedResource() else {
                     saveAlertMessage = "backup.invalid_folder".localized
+                    let now = Date()
+                    if let last = lastAlertAt, now.timeIntervalSince(last) < 1 { return }
+                    lastAlertAt = now
                     showingSaveAlert = true
                     return
                 }
@@ -520,6 +544,9 @@ struct BackupView: View {
                 // Check if the path exists and is a directory
                 guard exists && isDirectory.boolValue else {
                     saveAlertMessage = "backup.invalid_folder".localized
+                    let now = Date()
+                    if let last = lastAlertAt, now.timeIntervalSince(last) < 1 { return }
+                    lastAlertAt = now
                     showingSaveAlert = true
                     return
                 }
@@ -564,6 +591,9 @@ struct BackupView: View {
 
                 if hasDuplicate {
                     saveAlertMessage = "tasks.duplicate_error".localized
+                    let now = Date()
+                    if let last = lastAlertAt, now.timeIntervalSince(last) < 1 { return }
+                    lastAlertAt = now
                     showingSaveAlert = true
                     return
                 }
@@ -577,6 +607,9 @@ struct BackupView: View {
             case .ftp:
                 guard !ftpHost.isEmpty else {
                     saveAlertMessage = "backup.fill_required_fields".localized
+                    let now = Date()
+                    if let last = lastAlertAt, now.timeIntervalSince(last) < 1 { return }
+                    lastAlertAt = now
                     showingSaveAlert = true
                     return
                 }
@@ -604,6 +637,9 @@ struct BackupView: View {
             case .webdav:
                 guard !webdavURL.isEmpty else {
                     saveAlertMessage = "backup.webdav_credentials_required".localized
+                    let now = Date()
+                    if let last = lastAlertAt, now.timeIntervalSince(last) < 1 { return }
+                    lastAlertAt = now
                     showingSaveAlert = true
                     return
                 }
@@ -652,9 +688,15 @@ struct BackupView: View {
                 ftpPassword = ""
                 isAnonymous = false
                 
+                let now = Date()
+                if let last = lastAlertAt, now.timeIntervalSince(last) < 1 { return }
+                lastAlertAt = now
                 showingSaveAlert = true
             } catch {
                 saveAlertMessage = "Görev kaydedilirken hata oluştu: \(error.localizedDescription)"
+                let now = Date()
+                if let last = lastAlertAt, now.timeIntervalSince(last) < 1 { return }
+                lastAlertAt = now
                 showingSaveAlert = true
             }
         }

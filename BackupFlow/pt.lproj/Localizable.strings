@@ -592,3 +592,14 @@
 "task.details.daily_prefix" = "Diariamente às ";
 "task.details.weekly_prefix" = "Cada ";
 "tasks.swipe_delete" = "Excluir";
+"common.close" = "Fechar";
+"task.general" = "Geral";
+"task.next_run" = "Próxima execução";
+"task.port" = "Porta";
+"task.recent_backups" = "Backups recentes";
+"task.schedule" = "Cronograma";
+"task.server" = "Servidor";
+"task.server_section" = "Servidor";
+"task.source" = "Origem";
+"task.status" = "Status";
+"task.user" = "Usuário";

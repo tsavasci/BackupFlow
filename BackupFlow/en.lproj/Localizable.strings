@@ -328,6 +328,17 @@
 "media_type.photos_only" = "Photos Only";
 "media_type.videos_only" = "Videos Only";
 "media_type.photos_and_videos" = "Photos and Videos";
+"common.close" = "Close";
+"task.general" = "General";
+"task.next_run" = "Next Run";
+"task.port" = "Port";
+"task.recent_backups" = "Recent Backups";
+"task.schedule" = "Schedule";
+"task.server" = "Server";
+"task.server_section" = "Server";
+"task.source" = "Source";
+"task.status" = "Status";
+"task.user" = "User";
 "history.backup_detail" = "Backup Detail";
 // Cellular Data Settings
 "settings.allow_cellular" = "Allow cellular data usage";

@@ -35,6 +35,34 @@ enum FileProviderError: Error, Equatable {
 }
 
 @MainActor
+final class TelemetryReporter: ObservableObject {
+    static let shared = TelemetryReporter()
+    private let logger = Logger(subsystem: "com.backupflow.app", category: "Telemetry")
+
+    private var lastEventTimestamps: [String: Date] = [:]
+    private var minIntervalByKey: [String: TimeInterval] = [:]
+
+    private init() {}
+
+    func retryOccurred(error: Error, attempt: Int, delay: TimeInterval) {
+        guard shouldEmit(key: "retry") else { return }
+        #if DEBUG
+        logger.debug("Telemetry: retryOccurred attempt=\(attempt), delay=\(String(format: "%.2f", delay))s, error=\(error.localizedDescription)")
+        #endif
+    }
+
+    private func shouldEmit(key: String) -> Bool {
+        if let minInterval = minIntervalByKey[key], let last = lastEventTimestamps[key] {
+            if Date().timeIntervalSince(last) < minInterval {
+                return false
+            }
+        }
+        lastEventTimestamps[key] = Date()
+        return true
+    }
+}
+
+@MainActor
 final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate, URLSessionDelegate, URLSessionTaskDelegate {
     // MARK: - Properties
     static let shared = WebDAVService()
@@ -50,7 +78,18 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
     
     // Background session state tracking
     @Published private(set) var isBackgroundUploading = false
-    private var backgroundSessionIdentifier: String?
+
+    private var deleteOrphansEnabled: Bool {
+        if UserDefaults.standard.object(forKey: "WebDAVDeleteOrphans") == nil {
+            return true // default enabled
+        }
+        return UserDefaults.standard.bool(forKey: "WebDAVDeleteOrphans")
+    }
+    
+    func updateBackgroundMode(isBackground: Bool) {
+        self.isBackgroundUploading = isBackground
+        self.logger.info("📱 \(isBackground ? "Background" : "Foreground") upload mode enabled")
+    }
     
     @Published private(set) var isConnected = false
     @Published private(set) var progress: Double = 0.0
@@ -60,6 +99,10 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
     
     private var networkMonitor: NWPathMonitor?
     private var networkQueue = DispatchQueue(label: "NetworkMonitor")
+    
+    private var isVerboseLoggingEnabled: Bool {
+        UserDefaults.standard.bool(forKey: "WebDAVVerboseLogging")
+    }
     
     // Retry strategy: Exponential backoff for transient errors
     private struct RetryConfig {
@@ -76,35 +119,43 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         }
     }
     
-    // Determines if an error is retryable (transient) vs permanent
-    private func isRetryableError(_ error: Error) -> Bool {
-        let nsError = error as NSError
-        
-        // Network-related errors that are retryable
-        let retryableNetworkCodes = [
-            NSURLErrorNetworkConnectionLost,
-            NSURLErrorNotConnectedToInternet,
-            NSURLErrorCannotConnectToHost,
-            NSURLErrorCannotFindHost,
-            NSURLErrorTimedOut,
-            NSURLErrorResourceUnavailable
-        ]
-        
-        if nsError.domain == NSURLErrorDomain && retryableNetworkCodes.contains(nsError.code) {
-            return true
+    private func executeWithRetry<T>(maxAttempts: Int = 3, _ operation: @escaping () async throws -> T) async throws -> T {
+        let config = RetryConfig()
+        let attempts = min(maxAttempts, config.maxAttempts)
+        var lastError: Error?
+        for attempt in 1...attempts {
+            do { return try await operation() } catch {
+                lastError = error
+                let nsError = error as NSError
+                var shouldRetry = false
+                let retryableNetworkCodes = [
+                    NSURLErrorNetworkConnectionLost,
+                    NSURLErrorNotConnectedToInternet,
+                    NSURLErrorCannotConnectToHost,
+                    NSURLErrorCannotFindHost,
+                    NSURLErrorTimedOut,
+                    NSURLErrorResourceUnavailable
+                ]
+                if nsError.domain == NSURLErrorDomain && retryableNetworkCodes.contains(nsError.code) {
+                    shouldRetry = true
+                }
+                if let statusCode = (nsError.userInfo["StatusCode"] as? NSNumber)?.intValue, (statusCode == 429 || statusCode == 503 || (500...599).contains(statusCode)) {
+                    shouldRetry = true
+                }
+                if !shouldRetry {
+                    throw mapError(error)
+                }
+                if attempt < attempts {
+                    let delay = config.delayForAttempt(attempt)
+                    if isVerboseLoggingEnabled {
+                        self.logger.warning("Retryable error on attempt \(attempt)/\(attempts): \(error.localizedDescription). Waiting \(String(format: "%.2f", delay))s before retry...")
+                    }
+                    TelemetryReporter.shared.retryOccurred(error: error, attempt: attempt, delay: delay)
+                    try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                }
+            }
         }
-        
-        // HTTP 5xx errors are retryable (server-side temporary issues)
-        if let httpResponse = error as? HTTPURLResponse {
-            return (500...599).contains(httpResponse.statusCode)
-        }
-        
-        // HTTP 429 (Too Many Requests) and 503 (Service Unavailable) are retryable
-        if let statusCode = (nsError.userInfo["StatusCode"] as? NSNumber)?.intValue {
-            return statusCode == 429 || statusCode == 503
-        }
-        
-        return false
+        throw mapError(lastError ?? NSError(domain: "WebDAVService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Unknown error after retries"]))
     }
     
     // MARK: - FileProviderDelegate
@@ -124,7 +175,9 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
     
     func fileproviderProgress(_ fileProvider: FileProviderOperations, operation: FileOperationType, progress: Float) {
         let percent = Int(progress * 100)
-        self.logger.debug("Progress: \(operation.description) - \(percent)%")
+        if isVerboseLoggingEnabled {
+            self.logger.debug("Progress: \(operation.description) - \(percent)%")
+        }
     }
     
     // MARK: - Initialization
@@ -136,6 +189,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
     
     // MARK: - Background URLSession Management
     private func setupBackgroundURLSession() {
+        if isVerboseLoggingEnabled { self.logger.debug("Initializing background URLSession (WebDAV)") }
         // Create persistent background URLSession for WebDAV uploads
         let config = URLSessionConfiguration.background(withIdentifier: "com.backupflow.webdav.background")
         config.sessionSendsLaunchEvents = true
@@ -420,97 +474,99 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         // Test the connection
         self.logger.info("Testing WebDAV connection...")
         
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            var didResume = false
-            func safeThrow(_ error: Error) {
-                if didResume { return }
-                didResume = true
-                continuation.resume(throwing: error)
-            }
-            func safeResume() {
-                if didResume { return }
-                didResume = true
-                continuation.resume()
-            }
-            
-            provider.contentsOfDirectory(path: "/") { files, error in
-                if let error = error {
-                    self.logger.error("Connection test failed: \(error.localizedDescription)")
-                    
-                    var errorMessage = "Could not connect to server."
-                    var errorCode = -1
-                    
-                    if let nsError = error as NSError? {
-                        errorCode = nsError.code
-                        self.logger.error("   - Error code: \(nsError.code)")
-                        self.logger.error("   - Error domain: \(nsError.domain)")
-                        if nsError.domain == NSURLErrorDomain {
-                            switch nsError.code {
-                            case NSURLErrorCannotFindHost, NSURLErrorCannotConnectToHost:
-                                errorMessage = "Server not found or unreachable."
-                                self.logger.error("   - DNS/Host resolution failed")
-                            case NSURLErrorTimedOut:
-                                errorMessage = "Connection timed out."
-                                self.logger.error("   - Request timeout")
-                            case NSURLErrorNotConnectedToInternet, NSURLErrorNetworkConnectionLost:
-                                errorMessage = "No internet connection."
-                                self.logger.error("   - Network connection issue")
-                            case NSURLErrorSecureConnectionFailed, NSURLErrorServerCertificateUntrusted:
-                                errorMessage = "Secure connection failed. SSL certificate may be invalid."
-                                self.logger.error("   - SSL certificate issue")
-                            case NSURLErrorUserAuthenticationRequired, NSURLErrorUserCancelledAuthentication:
-                                errorMessage = "Authentication failed. Please check your username and password."
-                                self.logger.error("   - Authentication error")
-                            default:
-                                errorMessage = "Network error occurred: \(nsError.localizedDescription)"
-                                self.logger.error("   - General network error")
-                            }
-                        } else if nsError.domain.contains("WebDav") {
-                            switch nsError.code {
-                            case 1:
-                                errorMessage = "Could not connect to server. Please check server address and port."
-                                self.logger.error("   - WebDAV Error Code 1: Connection failed")
-                            case 2:
-                                errorMessage = "Authentication failed. Please check your username and password."
-                                self.logger.error("   - WebDAV Error Code 2: Authentication failed")
-                            case 4:
-                                errorMessage = "Permission denied. You do not have sufficient permissions."
-                                self.logger.error("   - WebDAV Error Code 4: Permission error")
-                            case 5:
-                                errorMessage = "Server error occurred. Please try again later."
-                                self.logger.error("   - WebDAV Error Code 5: Server error")
-                            default:
-                                if nsError.code == 405 ||
-                                   error.localizedDescription.contains("405") ||
-                                   error.localizedDescription.contains("Method Not Allowed") ||
-                                   (nsError.userInfo[NSUnderlyingErrorKey] as? NSError)?.code == 405 {
-                                    errorMessage = "WebDAV listing not supported in root directory. WebDAV may be active on a different path (e.g., /webdav, /storage). Please check the WebDAV path."
-                                    self.logger.error("   - HTTP 405: WebDAV path issue")
-                                } else {
-                                    errorMessage = "WebDAV error occurred: \(error.localizedDescription)"
-                                    self.logger.error("   - General WebDAV error")
+        try await executeWithRetry {
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                var didResume = false
+                func safeThrow(_ error: Error) {
+                    if didResume { return }
+                    didResume = true
+                    continuation.resume(throwing: error)
+                }
+                func safeResume() {
+                    if didResume { return }
+                    didResume = true
+                    continuation.resume()
+                }
+                
+                provider.contentsOfDirectory(path: "/") { files, error in
+                    if let error = error {
+                        self.logger.error("Connection test failed: \(error.localizedDescription)")
+                        
+                        var errorMessage = "Could not connect to server."
+                        var errorCode = -1
+                        
+                        if let nsError = error as NSError? {
+                            errorCode = nsError.code
+                            self.logger.error("   - Error code: \(nsError.code)")
+                            self.logger.error("   - Error domain: \(nsError.domain)")
+                            if nsError.domain == NSURLErrorDomain {
+                                switch nsError.code {
+                                case NSURLErrorCannotFindHost, NSURLErrorCannotConnectToHost:
+                                    errorMessage = "Server not found or unreachable."
+                                    self.logger.error("   - DNS/Host resolution failed")
+                                case NSURLErrorTimedOut:
+                                    errorMessage = "Connection timed out."
+                                    self.logger.error("   - Request timeout")
+                                case NSURLErrorNotConnectedToInternet, NSURLErrorNetworkConnectionLost:
+                                    errorMessage = "No internet connection."
+                                    self.logger.error("   - Network connection issue")
+                                case NSURLErrorSecureConnectionFailed, NSURLErrorServerCertificateUntrusted:
+                                    errorMessage = "Secure connection failed. SSL certificate may be invalid."
+                                    self.logger.error("   - SSL certificate issue")
+                                case NSURLErrorUserAuthenticationRequired, NSURLErrorUserCancelledAuthentication:
+                                    errorMessage = "Authentication failed. Please check your username and password."
+                                    self.logger.error("   - Authentication error")
+                                default:
+                                    errorMessage = "Network error occurred: \(nsError.localizedDescription)"
+                                    self.logger.error("   - General network error")
+                                }
+                            } else if nsError.domain.contains("WebDav") {
+                                switch nsError.code {
+                                case 1:
+                                    errorMessage = "Could not connect to server. Please check server address and port."
+                                    self.logger.error("   - WebDAV Error Code 1: Connection failed")
+                                case 2:
+                                    errorMessage = "Authentication failed. Please check your username and password."
+                                    self.logger.error("   - WebDAV Error Code 2: Authentication failed")
+                                case 4:
+                                    errorMessage = "Permission denied. You do not have sufficient permissions."
+                                    self.logger.error("   - WebDAV Error Code 4: Permission error")
+                                case 5:
+                                    errorMessage = "Server error occurred. Please try again later."
+                                    self.logger.error("   - WebDAV Error Code 5: Server error")
+                                default:
+                                    if nsError.code == 405 ||
+                                       error.localizedDescription.contains("405") ||
+                                       error.localizedDescription.contains("Method Not Allowed") ||
+                                       (nsError.userInfo[NSUnderlyingErrorKey] as? NSError)?.code == 405 {
+                                        errorMessage = "WebDAV listing not supported in root directory. WebDAV may be active on a different path (e.g., /webdav, /storage). Please check the WebDAV path."
+                                        self.logger.error("   - HTTP 405: WebDAV path issue")
+                                    } else {
+                                        errorMessage = "WebDAV error occurred: \(error.localizedDescription)"
+                                        self.logger.error("   - General WebDAV error")
+                                    }
                                 }
                             }
                         }
+                        
+                        let detailedError = NSError(
+                            domain: "WebDAVError",
+                            code: errorCode,
+                            userInfo: [
+                                NSLocalizedDescriptionKey: errorMessage,
+                                NSUnderlyingErrorKey: error
+                            ]
+                        )
+                        
+                        self.isConnected = false
+                        self.webdavProvider = nil
+                        self.lastError = detailedError
+                        safeThrow(detailedError)
+                    } else {
+                        self.logger.info("Successfully connected. Found \(files.count) items.")
+                        self.isConnected = true
+                        safeResume()
                     }
-                    
-                    let detailedError = NSError(
-                        domain: "WebDAVError",
-                        code: errorCode,
-                        userInfo: [
-                            NSLocalizedDescriptionKey: errorMessage,
-                            NSUnderlyingErrorKey: error
-                        ]
-                    )
-                    
-                    self.isConnected = false
-                    self.webdavProvider = nil
-                    self.lastError = detailedError
-                    safeThrow(detailedError)
-                } else {
-                    self.logger.info("Successfully connected. Found \(files.count) items.")
-                    self.isConnected = true
-                    safeResume()
                 }
             }
         }
@@ -531,25 +587,27 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
             // Fall back to FilesProvider for foreground uploads
             do {
                 let data = try Data(contentsOf: localURL)
-                return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                    var didResume = false
-                    func safeThrow(_ error: Error) {
-                        if didResume { return }
-                        didResume = true
-                        continuation.resume(throwing: error)
-                    }
-                    func safeResume() {
-                        if didResume { return }
-                        didResume = true
-                        continuation.resume()
-                    }
-                    
-                    provider.writeContents(path: remotePath, contents: data, atomically: true, overwrite: true) { error in
-                        if let error = error {
-                            self.lastError = error
-                            safeThrow(self.mapError(error))
-                        } else {
-                            safeResume()
+                try await executeWithRetry {
+                    try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                        var didResume = false
+                        func safeThrow(_ error: Error) {
+                            if didResume { return }
+                            didResume = true
+                            continuation.resume(throwing: error)
+                        }
+                        func safeResume() {
+                            if didResume { return }
+                            didResume = true
+                            continuation.resume()
+                        }
+                        
+                        provider.writeContents(path: remotePath, contents: data, atomically: true, overwrite: true) { error in
+                            if let error = error {
+                                self.lastError = error
+                                safeThrow(self.mapError(error))
+                            } else {
+                                safeResume()
+                            }
                         }
                     }
                 }
@@ -582,28 +640,30 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         
         do {
             let data = try Data(contentsOf: localURL)
-            return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                var didResume = false
-                func safeThrow(_ error: Error) {
-                    if didResume { return }
-                    didResume = true
-                    continuation.resume(throwing: error)
-                }
-                func safeResume() {
-                    if didResume { return }
-                    didResume = true
-                    continuation.resume()
-                }
-                
-                // Use background session context for upload
-                provider.writeContents(path: remotePath, contents: data, atomically: true, overwrite: true) { error in
-                    if let error = error {
-                        self.lastError = error
-                        self.logger.error("🌐 Background upload failed: \(error.localizedDescription)")
-                        safeThrow(self.mapError(error))
-                    } else {
-                        self.logger.info("🌐 Background upload completed: \(remotePath)")
-                        safeResume()
+            try await executeWithRetry {
+                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                    var didResume = false
+                    func safeThrow(_ error: Error) {
+                        if didResume { return }
+                        didResume = true
+                        continuation.resume(throwing: error)
+                    }
+                    func safeResume() {
+                        if didResume { return }
+                        didResume = true
+                        continuation.resume()
+                    }
+                    
+                    // Use background session context for upload
+                    provider.writeContents(path: remotePath, contents: data, atomically: true, overwrite: true) { error in
+                        if let error = error {
+                            self.lastError = error
+                            self.logger.error("🌐 Background upload failed: \(error.localizedDescription)")
+                            safeThrow(self.mapError(error))
+                        } else {
+                            self.logger.info("🌐 Background upload completed: \(remotePath)")
+                            safeResume()
+                        }
                     }
                 }
             }
@@ -793,23 +853,27 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         }
         
         // Phase 2: Delete orphaned files from remote (files that don't exist in local)
-        self.logger.info("Checking for orphaned files to delete...")
-        let localRelativePaths = Set(localFileMap.keys)
-        
-        for (remotePath, _) in remoteFileMap {
-            if !localRelativePaths.contains(remotePath) {
-                // This remote file doesn't exist in local - delete it
-                let fullRemotePath = remoteBasePath == "/" ? "/\(remotePath)" : "\(remoteBasePath)/\(remotePath)"
-                
-                do {
-                    self.logger.info("Deleting orphaned file: \(remotePath)")
-                    try await deleteFile(at: fullRemotePath)
-                    deleted += 1
-                    self.logger.debug("Successfully deleted: \(remotePath)")
-                } catch {
-                    self.logger.error("Failed to delete orphaned file \(remotePath): \(error.localizedDescription)")
+        if deleteOrphansEnabled {
+            self.logger.info("Checking for orphaned files to delete...")
+            let localRelativePaths = Set(localFileMap.keys)
+            
+            for (remotePath, _) in remoteFileMap {
+                if !localRelativePaths.contains(remotePath) {
+                    // This remote file doesn't exist in local - delete it
+                    let fullRemotePath = remoteBasePath == "/" ? "/\(remotePath)" : "\(remoteBasePath)/\(remotePath)"
+                    
+                    do {
+                        self.logger.info("Deleting orphaned file: \(remotePath)")
+                        try await deleteFile(at: fullRemotePath)
+                        deleted += 1
+                        self.logger.debug("Successfully deleted: \(remotePath)")
+                    } catch {
+                        self.logger.error("Failed to delete orphaned file \(remotePath): \(error.localizedDescription)")
+                    }
                 }
             }
+        } else {
+            self.logger.info("Skipping orphan deletion (disabled by settings)")
         }
         
         progressHandler(1.0) // 100% complete
@@ -906,30 +970,32 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         let directoryName = pathComponents.last!
         let parentPath = "/" + pathComponents.dropLast().joined(separator: "/")
         
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            var didResume = false
-            func safeThrow(_ error: Error) {
-                if didResume { return }
-                didResume = true
-                continuation.resume(throwing: error)
-            }
-            func safeResume() {
-                if didResume { return }
-                didResume = true
-                continuation.resume()
-            }
-            
-            provider.create(folder: directoryName, at: parentPath) { error in
-                if let error = error {
-                    // If the error is that the directory already exists, we can ignore it
-                    if (error as NSError).code != 516 { // 516 is the error code for file already exists
-                        self.lastError = error
-                        safeThrow(self.mapError(error))
-                        return
+        try await executeWithRetry {
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                var didResume = false
+                func safeThrow(_ error: Error) {
+                    if didResume { return }
+                    didResume = true
+                    continuation.resume(throwing: error)
+                }
+                func safeResume() {
+                    if didResume { return }
+                    didResume = true
+                    continuation.resume()
+                }
+                
+                provider.create(folder: directoryName, at: parentPath) { error in
+                    if let error = error {
+                        // If the error is that the directory already exists, we can ignore it
+                        if (error as NSError).code != 516 { // 516 is the error code for file already exists
+                            self.lastError = error
+                            safeThrow(self.mapError(error))
+                            return
+                        }
+                        safeResume()
+                    } else {
+                        safeResume()
                     }
-                    safeResume()
-                } else {
-                    safeResume()
                 }
             }
         }
@@ -939,25 +1005,27 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         guard let provider = webdavProvider else {
             throw BackupServiceError.connectionFailed
         }
-        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[FileObject], Error>) in
-            var didResume = false
-            func safeThrow(_ error: Error) {
-                if didResume { return }
-                didResume = true
-                continuation.resume(throwing: error)
-            }
-            func safeResume(_ value: [FileObject]) {
-                if didResume { return }
-                didResume = true
-                continuation.resume(returning: value)
-            }
-            
-            provider.contentsOfDirectory(path: path) { files, error in
-                if let error = error {
-                    self.lastError = error
-                    safeThrow(self.mapError(error))
-                } else {
-                    safeResume(files)
+        return try await executeWithRetry {
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[FileObject], Error>) in
+                var didResume = false
+                func safeThrow(_ error: Error) {
+                    if didResume { return }
+                    didResume = true
+                    continuation.resume(throwing: error)
+                }
+                func safeResume(_ value: [FileObject]) {
+                    if didResume { return }
+                    didResume = true
+                    continuation.resume(returning: value)
+                }
+                
+                provider.contentsOfDirectory(path: path) { files, error in
+                    if let error = error {
+                        self.lastError = error
+                        safeThrow(self.mapError(error))
+                    } else {
+                        safeResume(files)
+                    }
                 }
             }
         }
@@ -967,25 +1035,27 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         guard let provider = webdavProvider else {
             throw BackupServiceError.connectionFailed
         }
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            var didResume = false
-            func safeThrow(_ error: Error) {
-                if didResume { return }
-                didResume = true
-                continuation.resume(throwing: error)
-            }
-            func safeResume() {
-                if didResume { return }
-                didResume = true
-                continuation.resume()
-            }
-            
-            provider.removeItem(path: path) { error in
-                if let error = error {
-                    self.lastError = error
-                    safeThrow(self.mapError(error))
-                } else {
-                    safeResume()
+        try await executeWithRetry {
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                var didResume = false
+                func safeThrow(_ error: Error) {
+                    if didResume { return }
+                    didResume = true
+                    continuation.resume(throwing: error)
+                }
+                func safeResume() {
+                    if didResume { return }
+                    didResume = true
+                    continuation.resume()
+                }
+                
+                provider.removeItem(path: path) { error in
+                    if let error = error {
+                        self.lastError = error
+                        safeThrow(self.mapError(error))
+                    } else {
+                        safeResume()
+                    }
                 }
             }
         }
@@ -1456,7 +1526,11 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         
         // Establish connection
         self.logger.info("Backup - Connecting to WebDAV server...")
-        try await connect(host: cleanHost, port: port, username: username, password: password)
+        if !self.isConnected {
+            try await connect(host: cleanHost, port: port, username: username, password: password)
+        } else {
+            self.logger.info("Backup - Reusing existing WebDAV connection")
+        }
         
         guard webdavProvider != nil else {
             throw NSError(domain: "WebDAVError", code: -1, userInfo: [NSLocalizedDescriptionKey: "WebDAV provider is not available"])

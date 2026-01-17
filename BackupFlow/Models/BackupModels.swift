@@ -318,6 +318,13 @@ final class BackupHistory: Identifiable {
     var duration: TimeInterval
     var skippedFiles: Int = 0
     var deletedFiles: Int = 0
+    var taskDisplayName: String?
+    var taskSourcePath: String?
+    var taskServerHost: String?
+    var taskServerPort: Int?
+    var taskUsername: String?
+    var taskIsAnonymous: Bool?
+    var taskMediaTypeRaw: String?
     
     // Relationship to the task that created this history entry
     @Relationship var task: BackupTask?
@@ -334,6 +341,13 @@ final class BackupHistory: Identifiable {
         duration: TimeInterval = 0,
         skippedFiles: Int = 0,
         deletedFiles: Int = 0,
+        taskDisplayName: String? = nil,
+        taskSourcePath: String? = nil,
+        taskServerHost: String? = nil,
+        taskServerPort: Int? = nil,
+        taskUsername: String? = nil,
+        taskIsAnonymous: Bool? = nil,
+        taskMediaTypeRaw: String? = nil,
         task: BackupTask? = nil
     ) {
         self.id = id
@@ -347,7 +361,19 @@ final class BackupHistory: Identifiable {
         self.duration = duration
         self.skippedFiles = skippedFiles
         self.deletedFiles = deletedFiles
+        self.taskDisplayName = taskDisplayName
+        self.taskSourcePath = taskSourcePath
+        self.taskServerHost = taskServerHost
+        self.taskServerPort = taskServerPort
+        self.taskUsername = taskUsername
+        self.taskIsAnonymous = taskIsAnonymous
+        self.taskMediaTypeRaw = taskMediaTypeRaw
         self.task = task
+    }
+
+    var taskMediaType: MediaType? {
+        guard let rawValue = taskMediaTypeRaw else { return nil }
+        return MediaType(rawValue: rawValue)
     }
     
     var formattedDuration: String {

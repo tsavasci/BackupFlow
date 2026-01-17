@@ -36,26 +36,26 @@ struct TaskDetailView: View {
     var body: some View {
         List {
             // Genel Bilgiler
-            Section("task.general".localized) {
-                LabeledContent("task.source".localized, value: URL(fileURLWithPath: task.sourcePath ?? "").lastPathComponent)
-                LabeledContent("task.status".localized, value: task.backupStatus.displayName)
-                LabeledContent("task.schedule".localized, value: task.frequency.displayText)
+            Section("task.details.general".localized) {
+                LabeledContent("task.details.source".localized, value: URL(fileURLWithPath: task.sourcePath ?? "").lastPathComponent)
+                LabeledContent("task.details.status".localized, value: task.backupStatus.displayName)
+                LabeledContent("task.details.schedule".localized, value: task.frequency.displayText)
                 if let nextRun = task.nextRunTime {
-                    LabeledContent("task.next_run".localized, value: taskDateFormatter.string(from: nextRun))
+                    LabeledContent("task.details.next_backup".localized, value: taskDateFormatter.string(from: nextRun))
                 }
             }
             
             // Sunucu Bilgileri
-            Section("task.server_section".localized) {
-                LabeledContent("task.server".localized, value: task.ftpHost)
-                LabeledContent("task.port".localized, value: String(task.ftpPort))
-                LabeledContent("task.user".localized, value: task.isAnonymous ? "task.anonymous".localized : task.ftpUsername)
+            Section("task.details.server_section".localized) {
+                LabeledContent("task.details.server".localized, value: task.ftpHost)
+                LabeledContent("task.details.port".localized, value: String(task.ftpPort))
+                LabeledContent("task.details.user".localized, value: task.isAnonymous ? "task.details.anonymous".localized : task.ftpUsername)
             }
             
             // Son Yedeklemeler
-            Section("task.recent_backups".localized) {
+            Section("task.details.recent_backups".localized) {
                 if histories.isEmpty {
-                    Text("task.no_backups".localized)
+                    Text("task.details.no_backups".localized)
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(histories) { history in
@@ -70,11 +70,11 @@ struct TaskDetailView: View {
                             }
                             
                             if history.status.lowercased() == "completed" {
-                                Text("\(history.totalFiles) dosya, \(fileSizeFormatter.string(fromByteCount: history.totalBytes))")
+                                Text("\(history.totalFiles)\("task.details.files_size".localized)\(fileSizeFormatter.string(fromByteCount: history.totalBytes))")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                                 
-                                Text("Süre: \(formatDuration(history.duration))")
+                                Text("task.details.duration_prefix".localized + formatDuration(history.duration))
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
@@ -86,7 +86,7 @@ struct TaskDetailView: View {
         }
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button("common.close".localized, action: { dismiss() })
+                Button("task.details.close".localized, action: { dismiss() })
             }
         }
     }
@@ -95,9 +95,9 @@ struct TaskDetailView: View {
         let minutes = Int(duration) / 60
         let seconds = Int(duration) % 60
         if minutes > 0 {
-            return "\(minutes) dk \(seconds) sn"
+            return "\(minutes)\("task.details.minutes_short".localized)\(seconds)\("task.details.seconds_short".localized)"
         } else {
-            return "\(seconds) sn"
+            return "\(seconds)\("task.details.seconds_short".localized)"
         }
     }
 }

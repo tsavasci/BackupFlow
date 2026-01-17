@@ -10,10 +10,10 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var isTesting = false
     @State private var showingResetAlert = false
-    @AppStorage("notificationsEnabled") private var notificationsEnabled = true
-    @AppStorage("autoStartBackup") private var autoStartBackup = true
     @AppStorage("keepHistoryDays") private var keepHistoryDays = 30
     @AppStorage("selectedLanguageCode") private var selectedLanguageCode = "system"
+    private let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
+    private let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "0"
 
     private struct LanguageOption: Identifiable {
         let code: String
@@ -43,17 +43,12 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section(header: Text("settings.general".localized)) {
-                Toggle("settings.notifications_enabled".localized, isOn: $notificationsEnabled)
-                Toggle("settings.auto_start".localized, isOn: $autoStartBackup)
-                
                 Picker("settings.history_retention".localized, selection: $keepHistoryDays) {
                     Text("settings.7_days".localized).tag(7)
                     Text("settings.30_days".localized).tag(30)
                     Text("settings.90_days".localized).tag(90)
                     Text("settings.unlimited".localized).tag(0)
                 }
-                
-                // Dil seçimi kaldırıldı - Uygulama sadece Türkçe
             }
             
             Section(header: Text("settings.language".localized)) {
@@ -69,7 +64,7 @@ struct SettingsView: View {
                 HStack {
                     Text("settings.version".localized)
                     Spacer()
-                    Text("1.0.0")
+                    Text("\(appVersion) (\(buildNumber))")
                         .foregroundColor(.secondary)
                 }
                 
@@ -83,16 +78,6 @@ struct SettingsView: View {
                     openSupportEmail()
                 }) {
                     Text("settings.contact_support".localized)
-                }
-            }
-            
-            Section(header: Text("settings.developer_settings".localized)) {
-                NavigationLink(destination: BatterySettingsView()) {
-                    Label("battery.settings".localized, systemImage: "battery.75")
-                }
-                
-                NavigationLink(destination: TestFTPView()) {
-                    Label("settings.ftp_connection_test".localized, systemImage: "network")
                 }
             }
             
@@ -114,6 +99,9 @@ struct SettingsView: View {
             if !codes.contains(selectedLanguageCode) {
                 selectedLanguageCode = "system"
             }
+        }
+        .onChange(of: keepHistoryDays) { _, _ in
+            applyHistoryRetention()
         }
         .alert("settings.reset_confirm_title".localized, isPresented: $showingResetAlert) {
             Button("alert.cancel".localized, role: .cancel) { }
@@ -142,16 +130,6 @@ struct SettingsView: View {
         SKStoreReviewController.requestReview()
         #endif
 
-        // Alternatif olarak direkt App Store'a yönlendirmek için:
-        // Bu kodu yayınlandıktan sonra gerçek App ID ile kullanabilirsiniz
-        /*
-        let appID = "YOUR_APP_ID_HERE" 
-        let reviewURL = "https://apps.apple.com/app/id\(appID)?action=write-review"
-        
-        if let url = URL(string: reviewURL) {
-            UIApplication.shared.open(url)
-        }
-        */
     }
     
     private func openSupportEmail() {
@@ -223,8 +201,6 @@ struct SettingsView: View {
                 print("✅ BackupFlow: Tüm veriler başarıyla silindi")
                 
                 // Reset app storage values to defaults
-                notificationsEnabled = true
-                autoStartBackup = true
                 keepHistoryDays = 30
                 
                 // Dil sıfırlama kaldırıldı - Uygulama sadece Türkçe
@@ -233,6 +209,10 @@ struct SettingsView: View {
                 print("❌ BackupFlow: Veri silme hatası: \(error)")
             }
         }
+    }
+
+    private func applyHistoryRetention() {
+        HistoryRetentionManager.pruneIfNeeded(context: modelContext)
     }
 }
 
