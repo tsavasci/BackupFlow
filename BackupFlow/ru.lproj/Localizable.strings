@@ -5,8 +5,6 @@
 "nav.about" = "О программе";
 "settings.title" = "Настройки";
 "settings.general" = "Общие";
-"settings.notifications_enabled" = "Включить уведомления";
-"settings.auto_start" = "Автозапуск при старте";
 "settings.history_retention" = "Хранение истории (дни)";
 "settings.7_days" = "7 дней";
 "settings.30_days" = "30 дней";

@@ -1,0 +1,208 @@
+import Foundation
+import OSLog
+import FilesProvider
+
+struct WebDAVSyncEngine {
+    let provider: WebDAVFileProvider
+    let fileManager: FileManager
+    let logger: Logger
+    let deleteOrphansEnabled: Bool
+    let ensureDirectoryExists: (String) async throws -> Void
+    let deleteFile: (String) async throws -> Void
+    let setCurrentFile: (String) -> Void
+
+    func syncUploadDirectory(
+        localPath: String,
+        remoteBasePath: String,
+        progressHandler: @escaping (Double) -> Void
+    ) async throws -> (filesUploaded: Int, filesSkipped: Int, filesFailed: Int, bytesTransferred: Int64, deletedFiles: Int) {
+        logger.info("Starting mirror sync: \(localPath) -> \(remoteBasePath)")
+
+        try await ensureDirectoryExists(remoteBasePath)
+
+        let localFileMap = try collectLocalFiles(from: localPath)
+        let totalFiles = localFileMap.count
+        logger.info("Found \(totalFiles) local files to sync")
+
+        let remoteFileMap = try await listAllFiles(at: remoteBasePath)
+        logger.info("Found \(remoteFileMap.count) remote files")
+
+        var uploaded = 0, skipped = 0, failed = 0, deleted = 0
+        var transferred: Int64 = 0
+
+        for (index, (relativePath, localFileURL)) in localFileMap.enumerated() {
+            let remotePath = remoteBasePath == "/" ? "/\(relativePath)" : "\(remoteBasePath)/\(relativePath)"
+
+            let parentPath = (remotePath as NSString).deletingLastPathComponent
+            if !parentPath.isEmpty && parentPath != "/" {
+                try await ensureDirectoryExists(parentPath)
+            }
+
+            let localSize = Int64((try? localFileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
+            let fileName = localFileURL.lastPathComponent
+            setCurrentFile(fileName)
+
+            if let remoteFile = remoteFileMap[relativePath],
+               remoteFile.size == localSize,
+               remoteFile.name == fileName {
+                logger.debug("Skipping identical file: \(relativePath) (\(ByteCountFormatter.string(fromByteCount: localSize, countStyle: .file)))")
+                skipped += 1
+            } else {
+                do {
+                    logger.info("Uploading: \(relativePath) (\(ByteCountFormatter.string(fromByteCount: localSize, countStyle: .file)))")
+                    try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                        provider.copyItem(localFile: localFileURL, to: remotePath, overwrite: true) { error in
+                            if let error = error {
+                                logger.error("Failed to upload \(relativePath): \(error.localizedDescription)")
+                                failed += 1
+                                continuation.resume(throwing: WebDAVErrorMapper.mapError(error))
+                            } else {
+                                logger.debug("Successfully uploaded: \(relativePath)")
+                                uploaded += 1
+                                transferred += localSize
+                                continuation.resume()
+                            }
+                        }
+                    }
+                } catch {
+                    logger.error("Upload failed for \(relativePath): \(error.localizedDescription)")
+                    failed += 1
+                }
+            }
+
+            progressHandler(Double(index + 1) / Double(max(totalFiles, 1)) * 0.8)
+        }
+
+        if deleteOrphansEnabled {
+            logger.info("Checking for orphaned files to delete...")
+            let localRelativePaths = Set(localFileMap.keys)
+
+            for (remotePath, _) in remoteFileMap {
+                if !localRelativePaths.contains(remotePath) {
+                    let fullRemotePath = remoteBasePath == "/" ? "/\(remotePath)" : "\(remoteBasePath)/\(remotePath)"
+                    do {
+                        logger.info("Deleting orphaned file: \(remotePath)")
+                        try await deleteFile(fullRemotePath)
+                        deleted += 1
+                        logger.debug("Successfully deleted: \(remotePath)")
+                    } catch {
+                        logger.error("Failed to delete orphaned file \(remotePath): \(error.localizedDescription)")
+                    }
+                }
+            }
+        } else {
+            logger.info("Skipping orphan deletion (disabled by settings)")
+        }
+
+        progressHandler(1.0)
+        logger.info("Mirror sync completed - Uploaded: \(uploaded), Skipped: \(skipped), Failed: \(failed), Deleted: \(deleted)")
+
+        return (uploaded, skipped, failed, transferred, deleted)
+    }
+
+    private func listAllFiles(at path: String, relativeTo basePath: String = "") async throws -> [String: FileObject] {
+        var allFiles: [String: FileObject] = [:]
+
+        let files = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[FileObject], Error>) in
+            var didResume = false
+            func safeThrow(_ error: Error) {
+                if didResume { return }
+                didResume = true
+                continuation.resume(throwing: error)
+            }
+            func safeResume(_ value: [FileObject]) {
+                if didResume { return }
+                didResume = true
+                continuation.resume(returning: value)
+            }
+
+            provider.contentsOfDirectory(path: path) { files, error in
+                if let error = error {
+                    safeThrow(error)
+                } else {
+                    safeResume(files)
+                }
+            }
+        }
+
+        for file in files {
+            let relativePath = basePath.isEmpty ? file.name : "\(basePath)/\(file.name)"
+            if file.isDirectory {
+                let subdirPath = path == "/" ? "/\(file.name)" : "\(path)/\(file.name)"
+                let subFiles = try await listAllFiles(at: subdirPath, relativeTo: relativePath)
+                allFiles.merge(subFiles) { _, new in new }
+            } else {
+                allFiles[relativePath] = file
+            }
+        }
+
+        return allFiles
+    }
+
+    private func collectLocalFiles(from localPath: String) throws -> [String: URL] {
+        var fileMap: [String: URL] = [:]
+
+        logger.info("🔍 Collecting files from: \(localPath)")
+
+        do {
+            try FileAccessManager.shared.accessFileProviderFiles(at: localPath) { coordinatedURL in
+                logger.info("📂 Accessing coordinated URL: \(coordinatedURL.path)")
+
+                var isDirectory: ObjCBool = false
+                let exists = fileManager.fileExists(atPath: coordinatedURL.path, isDirectory: &isDirectory)
+                logger.info("📂 Directory exists: \(exists), isDirectory: \(isDirectory.boolValue)")
+
+                guard exists && isDirectory.boolValue else {
+                    throw NSError(domain: "WebDAVError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Directory does not exist or is not accessible"])
+                }
+
+                do {
+                    let contents = try fileManager.contentsOfDirectory(atPath: coordinatedURL.path)
+                    logger.info("📁 Directory contents count: \(contents.count)")
+                    if contents.isEmpty {
+                        logger.warning("⚠️ Directory is empty: \(coordinatedURL.path)")
+                    } else {
+                        logger.info("📄 Directory contents: \(contents.prefix(5).joined(separator: ", "))\(contents.count > 5 ? "..." : "")")
+                    }
+                } catch {
+                    logger.error("❌ Could not read directory contents: \(error.localizedDescription)")
+                    throw error
+                }
+
+                guard let enumerator = fileManager.enumerator(
+                    at: coordinatedURL,
+                    includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey],
+                    options: [.skipsHiddenFiles]
+                ) else {
+                    logger.error("❌ Could not create file enumerator for: \(coordinatedURL.path)")
+                    throw NSError(domain: "WebDAVError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Could not enumerate directory"])
+                }
+
+                var fileCount = 0
+                for case let fileURL as URL in enumerator {
+                    do {
+                        let resourceValues = try fileURL.resourceValues(forKeys: [.isDirectoryKey])
+                        if resourceValues.isDirectory != true {
+                            let relativePath = String(fileURL.path.dropFirst(coordinatedURL.path.count + 1))
+                            fileMap[relativePath] = fileURL
+                            fileCount += 1
+
+                            if fileCount <= 5 {
+                                logger.info("📄 Found file: \(relativePath)")
+                            }
+                        }
+                    } catch {
+                        logger.warning("⚠️ Could not get resource values for: \(fileURL.path) - \(error.localizedDescription)")
+                    }
+                }
+
+                logger.info("📊 Total files collected: \(fileMap.count)")
+            }
+        } catch {
+            logger.error("❌ Failed to access files: \(error.localizedDescription)")
+            throw error
+        }
+
+        return fileMap
+    }
+}

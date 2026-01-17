@@ -5,8 +5,6 @@
 "nav.about" = "Sobre";
 "settings.title" = "Configurações";
 "settings.general" = "Geral";
-"settings.notifications_enabled" = "Ativar Notificações";
-"settings.auto_start" = "Iniciar Automaticamente";
 "settings.history_retention" = "Retenção de Histórico (Dias)";
 "settings.7_days" = "7 dias";
 "settings.30_days" = "30 dias";

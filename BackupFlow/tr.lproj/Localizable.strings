@@ -5,8 +5,6 @@
 "nav.about" = "Hakkında";
 "settings.title" = "Ayarlar";
 "settings.general" = "Genel";
-"settings.notifications_enabled" = "Bildirimleri Etkinleştir";
-"settings.auto_start" = "Başlangıçta Otomatik Başlat";
 "settings.history_retention" = "Geçmiş Saklama (Gün)";
 "settings.7_days" = "7 gün";
 "settings.30_days" = "30 gün";

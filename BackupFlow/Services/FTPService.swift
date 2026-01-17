@@ -3,38 +3,11 @@
 import Foundation
 import FilesProvider
 import OSLog
-import Photos
-import Combine
 import Network
+import Combine
 #if canImport(UIKit)
 import UIKit
 #endif
-
-enum FTPError: Error, LocalizedError {
-    case invalidURL
-    case connectionFailed
-    case authenticationFailed
-    case fileOperationFailed
-    case invalidResponse
-    case unknown(Error)
-
-    var errorDescription: String? {
-        switch self {
-        case .invalidURL:
-            return "Geçersiz FTP sunucu adresi"
-        case .connectionFailed:
-            return "FTP sunucusuna bağlanılamadı"
-        case .authenticationFailed:
-            return "Kimlik doğrulama başarısız. Kullanıcı adı ve şifrenizi kontrol edin"
-        case .fileOperationFailed:
-            return "Dosya işlemi başarısız oldu"
-        case .invalidResponse:
-            return "Geçersiz sunucu yanıtı"
-        case .unknown(let error):
-            return "Beklenmeyen bir hata oluştu: \(error.localizedDescription)"
-        }
-    }
-}
 
 // Key objects for associated objects
 private struct AssociatedKeys {
@@ -58,8 +31,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     @Published private(set) var progress: Double = 0.0
     @Published private(set) var currentFile: String = ""
     
-    private var networkMonitor: NWPathMonitor?
-    private var networkQueue = DispatchQueue(label: "FTPNetworkMonitor")
+    private let networkMonitor = FTPNetworkMonitor()
 
     private let lock = NSLock()
     private var _ftpProvider: FTPFileProvider?
@@ -88,32 +60,16 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     
     // MARK: - Network Permission Management
     private func setupNetworkMonitoring() {
-        networkMonitor = NWPathMonitor()
-        networkMonitor?.pathUpdateHandler = { [weak self] path in
-            DispatchQueue.main.async {
-                self?.networkPermissionGranted = path.status == .satisfied
-                if path.status == .satisfied {
-                    self?.logger.info("FTP: Ağ bağlantısı kullanılabilir")
-                } else {
-                    let statusString = self?.networkStatusString(path.status) ?? "bilinmeyen"
-                    self?.logger.warning("FTP: Ağ bağlantısı kullanılamıyor: \(statusString)")
-                }
+        networkMonitor.onUpdate = { [weak self] status in
+            self?.networkPermissionGranted = status == .satisfied
+            if status == .satisfied {
+                self?.logger.info("FTP: Ağ bağlantısı kullanılabilir")
+            } else {
+                let statusString = FTPNetworkMonitor.statusString(status)
+                self?.logger.warning("FTP: Ağ bağlantısı kullanılamıyor: \(statusString)")
             }
         }
-        networkMonitor?.start(queue: networkQueue)
-    }
-    
-    private func networkStatusString(_ status: NWPath.Status) -> String {
-        switch status {
-        case .satisfied:
-            return "satisfied"
-        case .unsatisfied:
-            return "unsatisfied"
-        case .requiresConnection:
-            return "requiresConnection"
-        @unknown default:
-            return "unknown"
-        }
+        networkMonitor.start()
     }
     
     /// Ağ izninin verilmesini bekler ve gerekirse kullanıcıyı bilgilendirir
@@ -239,7 +195,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                         testProvider.contentsOfDirectory(path: "/") { _, error in
                             Task { @MainActor in
                                 if let error = error {
-                                    let mappedError = FTPService.mapErrorStatic(error)
+                                    let mappedError = FTPErrorMapper.map(error)
                                     continuation.resume(throwing: mappedError)
                                 } else {
                                     continuation.resume(returning: true)
@@ -295,15 +251,8 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     // MARK: - BackupServiceProtocol Methods
     
     func connect(host: String, port: Int, username: String?, password: String?) async throws {
-        let displayHostForLog: String = {
-            if let url = URL(string: host.hasPrefix("ftp://") ? host : "ftp://\(host)"),
-               let comps = URLComponents(url: url, resolvingAgainstBaseURL: false) {
-                return comps.host ?? host
-            }
-            return host
-        }()
-        
-        print("📡 BackupFlow: FTPService - Bağlantı başlatılıyor: \(displayHostForLog):\(port)")
+        let connectionInfo = try FTPConnectionBuilder.build(host: host, port: port)
+        print("📡 BackupFlow: FTPService - Bağlantı başlatılıyor: \(connectionInfo.displayHost):\(port)")
         
         // Önce ağ iznini bekle
         try await waitForNetworkPermission()
@@ -311,44 +260,16 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         // Önce mevcut bağlantıyı temizle
         disconnect()
         
-        // FTP parametrelerini kontrol et
-        guard !host.isEmpty else {
+        if connectionInfo.host.isEmpty {
             print("❌ BackupFlow: FTP sunucu adresi boş")
             logger.error("FTP sunucu adresi boş olamaz")
             throw FTPError.invalidURL
         }
         
-        // Port kontrolü
-        guard port > 0 && port < 65536 else {
-            print("❌ BackupFlow: Geçersiz port numarası: \(port)")
-            logger.error("Geçersiz port numarası: \(port)")
-            throw FTPError.invalidURL
-        }
-        
-        // Host/URL doğrulaması (hostname veya IP desteklenir)
-        let cleanHostForValidation = host.replacingOccurrences(of: "ftp://", with: "")
-            .replacingOccurrences(of: "://", with: "")
-            .replacingOccurrences(of: "@", with: "")
-        var urlValidate = URLComponents()
-        urlValidate.scheme = "ftp"
-        urlValidate.host = cleanHostForValidation
-        urlValidate.port = port
-        guard urlValidate.url != nil else {
-            print("❌ BackupFlow: Geçersiz FTP URL'i: \(host):\(port)")
-            logger.error("Geçersiz FTP URL'i")
-            throw FTPError.invalidURL
-        }
-        
         // Retry mantığı ile bağlantı kurma
         var lastError: Error?
-        let retryDelayBase: UInt64 = 2_000_000_000 // 2 saniye
-        
-        func jittered(_ base: UInt64) -> UInt64 {
-            let jitter = Double.random(in: 0...0.3)
-            return UInt64(Double(base) * (1.0 + jitter))
-        }
-        
-        let maxRetries = 3
+        let retryPolicy = FTPRetryPolicy()
+        let maxRetries = retryPolicy.maxAttempts
         
         for attempt in 1...maxRetries {
             do {
@@ -360,8 +281,9 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                 logger.warning("FTP bağlantı denemesi \(attempt)/\(maxRetries) başarısız: \(error.localizedDescription)")
                 
                 if attempt < maxRetries {
-                    logger.info("\(retryDelayBase / 1_000_000_000) saniye bekleniyor...")
-                    try await Task.sleep(nanoseconds: jittered(retryDelayBase))
+                    let delaySeconds = retryPolicy.delayForAttempt(attempt)
+                    logger.info("\(String(format: "%.1f", delaySeconds)) saniye bekleniyor...")
+                    try await Task.sleep(nanoseconds: UInt64(delaySeconds * 1_000_000_000))
                 }
             }
         }
@@ -511,23 +433,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     }
 
     private func mapError(_ error: Error) -> FTPError {
-        return FTPService.mapErrorStatic(error)
-    }
-    
-    private static func mapErrorStatic(_ error: Error) -> FTPError {
-        if let urlError = error as? URLError {
-            switch urlError.code {
-            case .cannotConnectToHost, .networkConnectionLost, .notConnectedToInternet:
-                return .connectionFailed
-            case .userAuthenticationRequired:
-                return .authenticationFailed
-            case .fileDoesNotExist:
-                return .fileOperationFailed
-            default:
-                return .fileOperationFailed
-            }
-        }
-        return .unknown(error)
+        return FTPErrorMapper.map(error)
     }
 
     private func cleanupTask(_ task: Progress) {
@@ -884,127 +790,48 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         }
     }
 
-func createDirectory(at path: String) async throws {
-        guard !isCancelled else {
-            logger.info("İşlem iptal edildiği için dizin oluşturma iptal edildi")
-            throw FTPError.fileOperationFailed
-        }
-        
+    func createDirectory(at path: String) async throws {
         guard let ftp = ftpProvider else {
             logger.error("Dizin oluşturulamadı: FTP bağlantısı yok")
             throw FTPError.connectionFailed
         }
-        
-        // Check if the directory already exists first
-        if let exists = try? await directoryExists(path), exists == true {
-            logger.info("Dizin zaten mevcut: \(path)")
-            return
-        }
-        
-        logger.info("Dizin oluşturuluyor: \(path)")
-        
-        // Split the path into components and create each directory one by one
-        let components = path.components(separatedBy: "/").filter { !$0.isEmpty }
-        var currentPath = ""
-        
-        for component in components {
-            currentPath += "/" + component
-            
-            // Check if current path exists
-            if let exists = try? await directoryExists(currentPath), exists == true {
-                logger.debug("Ara dizin zaten mevcut: \(currentPath)")
-                continue
-            }
-            
-            logger.debug("Ara dizin oluşturuluyor: \(currentPath)")
-            
-            do {
-                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                    ftp.create(folder: currentPath, at: "/") { (error: Error?) in
-                        if let error = error {
-                            // If directory creation fails, it might be because it was created by another process
-                            // or due to permission issues, but we'll still try to continue
-                            self.logger.warning("Dizin oluşturulurken hata: \(error.localizedDescription). Yine de devam ediliyor...")
-                            continuation.resume()
-                        } else {
-                            self.logger.debug("Dizin başarıyla oluşturuldu: \(currentPath)")
-                            continuation.resume()
-                        }
-                    }
-                }
-            } catch {
-                logger.error("Dizin oluşturulurken beklenmeyen hata: \(error.localizedDescription)")
-                // Continue to next component instead of throwing, to be more resilient
-            }
-        }
-        
-        // Final check to make sure the directory was actually created
-        if let exists = try? await directoryExists(path), exists == true {
-            logger.info("Dizin başarıyla oluşturuldu: \(path)")
-            return
-        } else {
-            logger.error("Dizin oluşturulamadı: \(path)")
-            throw FTPError.fileOperationFailed
-        }
+        let ops = FTPFileOperations(
+            provider: ftp,
+            logger: logger,
+            isVerboseLoggingEnabled: isVerboseLoggingEnabled,
+            isCancelled: { [weak self] in self?.isCancelled ?? false },
+            mapError: { [weak self] error in self?.mapError(error) ?? .unknown(error) }
+        )
+        try await ops.createDirectory(at: path)
     }
 
     func directoryExists(_ path: String) async throws -> Bool? {
-        guard !path.isEmpty else {
-            // Root path always exists
-            logger.debug("Kök dizin kontrol ediliyor: Her zaman mevcut kabul ediliyor")
-            return true
-        }
-        
         guard let ftp = ftpProvider else {
             logger.error("Dizin kontrolü yapılamadı: FTP bağlantısı yok")
             throw FTPError.connectionFailed
         }
-        
-        logger.debug("Dizin kontrol ediliyor: \(path)")
-        
-        return try await withCheckedThrowingContinuation { continuation in
-            ftp.attributesOfItem(path: path) { file, error in
-                if let error = error as? URLError, error.code == .fileDoesNotExist {
-                    self.logger.debug("Dizin bulunamadı: \(path)")
-                    continuation.resume(returning: false)
-                } else if let error = error {
-                    // For anonymous FTP, some servers might return permission denied instead of file not found
-                    if (error as NSError).domain == NSURLErrorDomain && (error as NSError).code == NSURLErrorNoPermissionsToReadFile {
-                        self.logger.warning("Dizin erişim izni yok, mevcut olarak kabul ediliyor: \(path) - \(error.localizedDescription)")
-                        continuation.resume(returning: true)
-                    } else {
-                        if self.isVerboseLoggingEnabled {
-                            self.logger.warning("Dizin kontrolü sırasında hata: \(error.localizedDescription)")
-                        }
-                        continuation.resume(returning: nil)
-                    }
-                } else if let file = file {
-                    self.logger.debug("Dizin kontrolü: \(path) - \(file.isDirectory == true ? "Dizin olarak mevcut" : "Dosya olarak mevcut")")
-                    continuation.resume(returning: file.isDirectory)
-                } else {
-                    if self.isVerboseLoggingEnabled {
-                        self.logger.warning("Dosya bilgisi alınamadı: \(path)")
-                    }
-                    continuation.resume(returning: nil)
-                }
-            }
-        }
+        let ops = FTPFileOperations(
+            provider: ftp,
+            logger: logger,
+            isVerboseLoggingEnabled: isVerboseLoggingEnabled,
+            isCancelled: { [weak self] in self?.isCancelled ?? false },
+            mapError: { [weak self] error in self?.mapError(error) ?? .unknown(error) }
+        )
+        return try await ops.directoryExists(path)
     }
 
-func listDirectory(at path: String) async throws -> [FileObject] {
+    func listDirectory(at path: String) async throws -> [FileObject] {
         guard let ftp = ftpProvider else {
             throw FTPError.connectionFailed
         }
-
-        return try await withCheckedThrowingContinuation { continuation in
-            ftp.contentsOfDirectory(path: path) { files, error in
-                if let error = error {
-                    continuation.resume(throwing: self.mapError(error))
-                } else {
-                    continuation.resume(returning: files)
-                }
-            }
-        }
+        let ops = FTPFileOperations(
+            provider: ftp,
+            logger: logger,
+            isVerboseLoggingEnabled: isVerboseLoggingEnabled,
+            isCancelled: { [weak self] in self?.isCancelled ?? false },
+            mapError: { [weak self] error in self?.mapError(error) ?? .unknown(error) }
+        )
+        return try await ops.listDirectory(at: path)
     }
     
     // Belirli bir klasördeki dosyaları listele (sadece dosyalar, alt klasörler değil)
@@ -1040,261 +867,7 @@ func listDirectory(at path: String) async throws -> [FileObject] {
     }
     
     // MARK: - Enhanced File Management for Mirror Sync
-    
-    /// Recursive function to list all files in a directory with their relative paths
-    private func listAllFiles(at path: String, relativeTo basePath: String = "") async throws -> [String: FileObject] {
-        guard let ftp = ftpProvider else {
-            throw FTPError.connectionFailed
-        }
-        
-        var allFiles: [String: FileObject] = [:]
-        
-        let files = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[FileObject], Error>) in
-            ftp.contentsOfDirectory(path: path) { files, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                } else {
-                    continuation.resume(returning: files)
-                }
-            }
-        }
-        
-        for file in files {
-            let relativePath = basePath.isEmpty ? file.name : "\(basePath)/\(file.name)"
-            
-            if file.isDirectory {
-                // Recursively list subdirectory
-                let subdirPath = path == "/" ? "/\(file.name)" : "\(path)/\(file.name)"
-                let subFiles = try await listAllFiles(at: subdirPath, relativeTo: relativePath)
-                allFiles.merge(subFiles) { _, new in new }
-            } else {
-                allFiles[relativePath] = file
-            }
-        }
-        
-        return allFiles
-    }
-    
-    /// Helper function to collect local files with their relative paths
-    private func collectLocalFiles(from localPath: String) throws -> [String: URL] {
-        var fileMap: [String: URL] = [:]
-        
-        self.logger.info("🔍 Collecting files from: \(localPath)")
-        
-        // Use FileAccessManager for File Provider files
-        do {
-            try FileAccessManager.shared.accessFileProviderFiles(at: localPath) { coordinatedURL in
-                self.logger.info("📂 Accessing coordinated URL: \(coordinatedURL.path)")
-                
-                var isDirectory: ObjCBool = false
-                let exists = FileManager.default.fileExists(atPath: coordinatedURL.path, isDirectory: &isDirectory)
-                
-                self.logger.info("📂 Directory exists: \(exists), isDirectory: \(isDirectory.boolValue)")
-                
-                guard exists && isDirectory.boolValue else {
-                    throw NSError(domain: "FTPError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Directory does not exist or is not accessible"])
-                }
-                
-                // Try to read directory contents
-                do {
-                    let contents = try FileManager.default.contentsOfDirectory(atPath: coordinatedURL.path)
-                    if self.isVerboseLoggingEnabled {
-                        self.logger.info("📁 Directory contents count: \(contents.count)")
-                        if contents.isEmpty {
-                            self.logger.warning("⚠️ Directory is empty: \(coordinatedURL.path)")
-                        } else {
-                            self.logger.info("📄 Directory contents: \(contents.prefix(5).joined(separator: ", "))\(contents.count > 5 ? "..." : "")")
-                        }
-                    }
-                } catch {
-                    self.logger.error("❌ Could not read directory contents: \(error.localizedDescription)")
-                    throw error
-                }
-                
-                guard let enumerator = FileManager.default.enumerator(
-                    at: coordinatedURL,
-                    includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey],
-                    options: [.skipsHiddenFiles]
-                ) else {
-                    self.logger.error("❌ Could not create file enumerator for: \(coordinatedURL.path)")
-                    throw NSError(domain: "FTPError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Could not enumerate directory"])
-                }
-                
-                var fileCount = 0
-                for case let fileURL as URL in enumerator {
-                    do {
-                        let resourceValues = try fileURL.resourceValues(forKeys: [.isDirectoryKey])
-                        if resourceValues.isDirectory != true {
-                            // This is a file, not a directory
-                            let relativePath = String(fileURL.path.dropFirst(coordinatedURL.path.count + 1))
-                            fileMap[relativePath] = fileURL
-                            fileCount += 1
-                            
-                            if self.isVerboseLoggingEnabled && fileCount <= 5 {
-                                self.logger.info("📄 Found file: \(relativePath)")
-                            }
-                        }
-                    } catch {
-                        self.logger.warning("⚠️ Could not get resource values for: \(fileURL.path) - \(error.localizedDescription)")
-                    }
-                }
-                
-                self.logger.info("📊 Total files collected: \(fileMap.count)")
-            }
-        } catch {
-            self.logger.error("❌ Failed to access files: \(error.localizedDescription)")
-            throw error
-        }
-        
-        return fileMap
-    }
-    
-    /// Enhanced file comparison with relative path and size matching
-    private func compareFileEnhanced(relativePath: String, localSize: Int64, existingFiles: [String: FileObject]) -> FileComparisonResult {
-        guard let remoteFile = existingFiles[relativePath] else {
-            return .new
-        }
-        // Compare by size; relativePath already includes the filename
-        return (localSize == remoteFile.size) ? .unchanged : .updated
-    }
-    
-    /// Senkronizasyon sonuç raporu
-    struct SyncResult {
-        var newFiles: Int = 0          // Yeni kopyalanan
-        var updatedFiles: Int = 0      // Güncellenen 
-        var skippedFiles: Int = 0      // Pas geçilen (aynı)
-        var deletedFiles: Int = 0      // Silinen
-        var totalBytes: Int64 = 0      // Toplam işlenen byte
-        
-        var totalProcessed: Int {
-            return newFiles + updatedFiles + skippedFiles
-        }
-    }
-    
-    /// Dosya karşılaştırma sonucu
-    private enum FileComparisonResult {
-        case new           // Hedefte yok, kopyalanacak
-        case updated       // Hedefte var ama farklı boyut, güncellenecek
-        case unchanged     // Hedefte var ve aynı boyut, pas geçilecek
-    }
-    
-    /// Photo library için senkronize yedekleme
-    private func syncBackupPhotoLibrary(mediaType: MediaType, progressHandler: ((Double) -> Void)? = nil) async throws -> SyncResult {
-        let photoManager = PhotoLibraryManager.shared
-        var result = SyncResult()
-        
-        // Get photos based on media type
-        let assets = try await photoManager.getAllAssets(mediaType: mediaType)
-        let totalCount = assets.count
-        
-        print("📸 BackupFlow: \(totalCount) medya dosyası bulundu")
-        
-        // Create photos directory if it doesn't exist
-        let photosDir = "photos"
-        do {
-            try await createDirectory(at: photosDir)
-            print("📁 BackupFlow: Photos klasörü hazır: \(photosDir)")
-        } catch {
-            print("⚠️ BackupFlow: Photos klasörü oluşturma hatası (devam edilecek): \(error)")
-        }
-        
-        // Get all existing files on FTP using enhanced listing
-        let existingFileMap = try await listAllFiles(at: photosDir)
-        logger.info("Found \(existingFileMap.count) existing photo files on FTP")
-        
-        // Process local assets
-        for (index, asset) in assets.enumerated() {
-            guard !isCancelled else { break }
-            
-            // Generate simple filename without special characters
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
-            let date = asset.creationDate ?? Date()
-            let dateString = dateFormatter.string(from: date)
-            
-            let fileExtension = asset.mediaType == .image ? "jpg" : "mp4"
-            let safeFileName = "\(dateString)_\(String(index + 1).padding(toLength: 3, withPad: "0", startingAt: 0)).\(fileExtension)"
-            
-            // Get photo data to check size
-            guard let data = try await photoManager.getAssetData(asset: asset) else {
-                print("⚠️ BackupFlow: Asset verisi alınamadı: \(asset.localIdentifier)")
-                continue
-            }
-            
-            let localSize = Int64(data.count)
-            let remotePath = "\(photosDir)/\(safeFileName)"
-            
-            // Enhanced comparison with relative path and size matching
-            let comparisonResult = compareFileEnhanced(
-                relativePath: safeFileName,
-                localSize: localSize,
-                existingFiles: existingFileMap
-            )
-            
-            switch comparisonResult {
-            case .unchanged:
-                result.skippedFiles += 1
-                result.totalBytes += localSize
-                // Update current file status
-                Task { @MainActor in
-                    self.currentFile = "Atlandı: \(safeFileName)"
-                }
-                print("⏭ BackupFlow: Aynı dosya pas geçildi: \(safeFileName) (\(formatBytes(localSize)))")
-                
-            case .new:
-                // Update current file status
-                Task { @MainActor in
-                    self.currentFile = "Yükleniyor: \(safeFileName)"
-                }
-                try await uploadPhotoData(data: data, remotePath: remotePath, fileName: safeFileName)
-                result.newFiles += 1
-                result.totalBytes += localSize
-                print("📤 BackupFlow: Yeni dosya yüklendi: \(safeFileName) (\(formatBytes(localSize)))")
-                
-            case .updated:
-                // Update current file status
-                Task { @MainActor in
-                    self.currentFile = "Güncelleniyor: \(safeFileName)"
-                }
-                try await uploadPhotoData(data: data, remotePath: remotePath, fileName: safeFileName)
-                result.updatedFiles += 1
-                result.totalBytes += localSize
-                print("🔄 BackupFlow: Güncellenmiş dosya yüklendi: \(safeFileName) (\(formatBytes(localSize)))")
-            }
-            
-            // Update progress
-            let progress = Double(index + 1) / Double(totalCount)
-            progressHandler?(progress)
-        }
-        
-        // Delete orphaned files (files on FTP that don't exist locally)
-        logger.info("Checking for orphaned photo files to delete...")
-        let processedFiles = Set(assets.enumerated().map { index, asset in
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
-            let date = asset.creationDate ?? Date()
-            let dateString = dateFormatter.string(from: date)
-            let fileExtension = asset.mediaType == .image ? "jpg" : "mp4"
-            return "\(dateString)_\(String(index + 1).padding(toLength: 3, withPad: "0", startingAt: 0)).\(fileExtension)"
-        })
-        
-        for (remotePath, remoteFile) in existingFileMap {
-            if !processedFiles.contains(remoteFile.name) {
-                do {
-                    let fullRemotePath = "\(photosDir)/\(remotePath)"
-                    try await deleteFile(at: fullRemotePath)
-                    result.deletedFiles += 1
-                    print("🗑 BackupFlow: Silinmiş fotoğraf FTP'den kaldırıldı: \(remoteFile.name)")
-                    logger.debug("Successfully deleted orphaned photo: \(remoteFile.name)")
-                } catch {
-                    print("⚠️ BackupFlow: Fotoğraf silinemedi: \(remoteFile.name), hata: \(error)")
-                    logger.error("Failed to delete orphaned photo \(remoteFile.name): \(error.localizedDescription)")
-                }
-            }
-        }
-        
-        return result
-    }
+    typealias SyncResult = FTPSyncResult
     
     /// Helper function to upload photo data
     private func uploadPhotoData(data: Data, remotePath: String, fileName: String, progressHandler: ((Double) -> Void)? = nil) async throws {
@@ -1310,158 +883,53 @@ func listDirectory(at path: String) async throws -> [FileObject] {
         try? FileManager.default.removeItem(at: tempURL)
     }
     
-    /// Dosya karşılaştırma fonksiyonu
-    private func compareFile(fileName: String, localSize: Int64, existingFiles: [String: Int64]) -> FileComparisonResult {
-        guard let remoteSize = existingFiles[fileName] else {
-            return .new
-        }
-        
-        return localSize == remoteSize ? .unchanged : .updated
-    }
-    
     /// Enhanced directory sync with full mirror functionality (upload new, skip identical, delete orphans)
     private func syncUploadDirectory(localURL: URL, remotePath: String = "", progressHandler: ((Double) -> Void)? = nil) async throws -> SyncResult {
-        guard !isCancelled else {
-            throw FTPError.fileOperationFailed
-        }
-        
-        guard ftpProvider != nil else {
+        let engine = try makeSyncEngine()
+        return try await engine.syncUploadDirectory(
+            localURL: localURL,
+            remotePath: remotePath,
+            progressHandler: progressHandler
+        )
+    }
+
+    private func makeSyncEngine() throws -> FTPSyncEngine {
+        guard let ftp = ftpProvider else {
             throw FTPError.connectionFailed
         }
-        
-        var result = SyncResult()
-        let localPath = localURL.path
-        
-        logger.info("Starting enhanced mirror sync: \(localPath) -> \(remotePath)")
-        
-        // Create remote directory if needed
-        if !remotePath.isEmpty {
-            try await createDirectory(at: remotePath)
-        }
-        
-        // Collect local files recursively with their relative paths
-        let localFileMap = try collectLocalFiles(from: localPath)
-        let totalFiles = localFileMap.count
-        
-        logger.info("Found \(totalFiles) local files to sync")
-        
-        // Get all remote files with their relative paths
-        let remoteBasePath = remotePath.isEmpty ? "/" : remotePath
-        let remoteFileMap = try await listAllFiles(at: remoteBasePath)
-        
-        logger.info("Found \(remoteFileMap.count) remote files")
-        
-        var uploadedCount = 0, skippedCount = 0, failedCount = 0, deletedCount = 0
-        var transferredBytes: Int64 = 0
-        
-        // Phase 1: Upload/update files from local to remote (80% of progress)
-        for (index, (relativePath, localFileURL)) in localFileMap.enumerated() {
-            guard !isCancelled else { break }
-            
-            let targetPath = remotePath.isEmpty ? relativePath : "\(remotePath)/\(relativePath)"
-            
-            // Ensure parent directories exist
-            let parentPath = (targetPath as NSString).deletingLastPathComponent
-            if !parentPath.isEmpty && parentPath != "/" {
-                try await createDirectory(at: parentPath)
-            }
-            
-            let resourceValues = try localFileURL.resourceValues(forKeys: [.fileSizeKey])
-            let localSize = Int64(resourceValues.fileSize ?? 0)
-            let fileName = localFileURL.lastPathComponent
-            
-            // Check if remote file exists and compare size and relative path
-            let comparisonResult = compareFileEnhanced(
-                relativePath: relativePath,
-                localSize: localSize,
-                existingFiles: remoteFileMap
-            )
-            
-            switch comparisonResult {
-            case .unchanged:
-                result.skippedFiles += 1
-                result.totalBytes += localSize
-                skippedCount += 1
-                // Update current file status
+        return FTPSyncEngine(
+            provider: ftp,
+            logger: logger,
+            isVerboseLoggingEnabled: isVerboseLoggingEnabled,
+            isCancelled: { [weak self] in self?.isCancelled ?? false },
+            createDirectory: { [weak self] path in
+                guard let self else { throw FTPError.connectionFailed }
+                try await self.createDirectory(at: path)
+            },
+            deleteFile: { [weak self] path in
+                guard let self else { throw FTPError.connectionFailed }
+                try await self.deleteFile(at: path)
+            },
+            uploadFile: { [weak self] localURL, remotePath in
+                guard let self else { throw FTPError.connectionFailed }
+                try await self.uploadFile(localURL: localURL, remotePath: remotePath, progressHandler: nil)
+            },
+            setCurrentFile: { [weak self] name in
                 Task { @MainActor in
-                    self.currentFile = "Atlandı: \(fileName)"
+                    self?.currentFile = name
                 }
-                if isVerboseLoggingEnabled {
-                    logger.debug("Skipping identical file: \(relativePath) (\(ByteCountFormatter.string(fromByteCount: localSize, countStyle: .file)))")
-                }
-                
-            case .new:
-                // Update current file status
-                Task { @MainActor in
-                    self.currentFile = "Yükleniyor: \(fileName)"
-                }
-                try await uploadFile(localURL: localFileURL, remotePath: targetPath, progressHandler: nil)
-                result.newFiles += 1
-                result.totalBytes += localSize
-                transferredBytes += localSize
-                uploadedCount += 1
-                if isVerboseLoggingEnabled {
-                    logger.debug("Successfully uploaded new file: \(relativePath)")
-                }
-                
-            case .updated:
-                // Update current file status
-                Task { @MainActor in
-                    self.currentFile = "Güncelleniyor: \(fileName)"
-                }
-                try await uploadFile(localURL: localFileURL, remotePath: targetPath, progressHandler: nil)
-                result.updatedFiles += 1
-                result.totalBytes += localSize
-                transferredBytes += localSize
-                uploadedCount += 1
-                if isVerboseLoggingEnabled {
-                    logger.debug("Successfully updated file: \(relativePath)")
-                }
+            },
+            formatBytes: { [weak self] bytes in
+                return self?.formatBytes(bytes) ?? "\(bytes)"
+            },
+            mapError: { [weak self] error in
+                return self?.mapError(error) ?? .unknown(error)
+            },
+            uploadPhotoData: { [weak self] data, remotePath, fileName in
+                guard let self else { throw FTPError.connectionFailed }
+                try await self.uploadPhotoData(data: data, remotePath: remotePath, fileName: fileName)
             }
-            
-            // Update progress
-            let progress = Double(index + 1) / Double(max(totalFiles, 1)) * 0.8
-            progressHandler?(progress)
-        }
-        
-        // Phase 2: Delete orphaned files from remote (80-100% of progress)
-        logger.info("Checking for orphaned files to delete...")
-        let localRelativePaths = Set(localFileMap.keys)
-        
-        for (remotePath, _) in remoteFileMap {
-            if !localRelativePaths.contains(remotePath) {
-                // This remote file doesn't exist in local - delete it
-                let fullRemotePath = remoteBasePath == "/" ? "/\(remotePath)" : "\(remoteBasePath)/\(remotePath)"
-                
-                do {
-                    logger.info("Deleting orphaned file: \(remotePath)")
-                    try await deleteFile(at: fullRemotePath)
-                    result.deletedFiles += 1
-                    deletedCount += 1
-                    logger.debug("Successfully deleted orphaned file: \(remotePath)")
-                } catch {
-                    logger.error("Failed to delete orphaned file \(remotePath): \(error.localizedDescription)")
-                }
-            }
-        }
-        
-        progressHandler?(1.0) // 100% complete
-        
-        // Print detailed sync report
-        print("✅ BackupFlow: FTP enhanced mirror sync completed")
-        print("   📊 Sync Report:")
-        print("   📤 New files uploaded: \(result.newFiles)")
-        print("   🔄 Files updated: \(result.updatedFiles)")
-        print("   ⏭ Files skipped (identical): \(result.skippedFiles)")
-        print("   🗑 Orphaned files deleted: \(result.deletedFiles)")
-        print("   ❌ Failed operations: \(failedCount)")
-        print("   💾 Total data transferred: \(formatBytes(transferredBytes))")
-        
-        if isVerboseLoggingEnabled {
-            logger.info("Enhanced mirror sync completed - Uploaded: \(uploadedCount), Skipped: \(skippedCount), Failed: \(failedCount), Deleted: \(deletedCount)")
-        }
-        
-        return result
+        )
     }
     
     // FTP sunucusundan dosya sil
@@ -1531,7 +999,11 @@ func deleteFile(at path: String) async throws {
         
         if sourcePath == "PHOTOS_LIBRARY" {
             // Photo library sync backup
-            syncResult = try await syncBackupPhotoLibrary(mediaType: mediaType, progressHandler: progressHandler)
+            let engine = try makeSyncEngine()
+            syncResult = try await engine.syncBackupPhotoLibrary(
+                mediaType: mediaType,
+                progressHandler: progressHandler
+            )
         } else {
             // Directory sync backup - preserve source folder name
             let sourceURL = URL(fileURLWithPath: sourcePath)
@@ -1550,61 +1022,6 @@ func deleteFile(at path: String) async throws {
         print("   💾 Toplam boyut: \(formatBytes(syncResult.totalBytes))")
         
         return syncResult
-    }
-    
-    private func backupPhotoLibrary(mediaType: MediaType, progressHandler: ((Double) -> Void)? = nil) async throws {
-        let photoManager = PhotoLibraryManager.shared
-        
-        // Get photos based on media type
-        let assets = try await photoManager.getAllAssets(mediaType: mediaType)
-        let totalCount = assets.count
-        
-        print("📸 BackupFlow: \(totalCount) medya dosyası bulundu")
-        
-        // Create photos directory if it doesn't exist
-        let photosDir = "photos"
-        do {
-            try await createDirectory(at: photosDir)
-            print("📁 BackupFlow: Photos klasörü hazır: \(photosDir)")
-        } catch {
-            print("⚠️ BackupFlow: Photos klasörü oluşturma hatası (devam edilecek): \(error)")
-        }
-        
-        for (index, asset) in assets.enumerated() {
-            // Get photo data
-            guard let data = try await photoManager.getAssetData(asset: asset) else {
-                print("⚠️ BackupFlow: Asset verisi alınamadı: \(asset.localIdentifier)")
-                continue
-            }
-            
-            // Generate simple filename without special characters
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
-            let date = asset.creationDate ?? Date()
-            let dateString = dateFormatter.string(from: date)
-            
-            let fileExtension = asset.mediaType == .image ? "jpg" : "mp4"
-            let safeFileName = "\(dateString)_\(String(index + 1).padding(toLength: 3, withPad: "0", startingAt: 0)).\(fileExtension)"
-            let remotePath = "\(photosDir)/\(safeFileName)"
-            
-            // Upload to FTP
-            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(safeFileName)
-            try data.write(to: tempURL)
-            
-            try await uploadFile(localURL: tempURL, remotePath: remotePath) { fileProgress in
-                let overallProgress = (Double(index) + fileProgress) / Double(totalCount)
-                progressHandler?(overallProgress)
-            }
-            
-            // Clean up temp file
-            try? FileManager.default.removeItem(at: tempURL)
-            
-            // Update progress
-            let progress = Double(index + 1) / Double(totalCount)
-            progressHandler?(progress)
-            
-            print("✅ BackupFlow: Yüklendi: \(safeFileName) (\(index + 1)/\(totalCount))")
-        }
     }
     
     /// Byte sayısını okunabilir formata çevirir
@@ -1627,8 +1044,3 @@ final class FTPService: ObservableObject {
 }
 
 #endif
-
-
-
-
-

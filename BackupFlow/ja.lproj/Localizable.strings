@@ -5,8 +5,6 @@
 "nav.about" = "概要";
 "settings.title" = "設定";
 "settings.general" = "一般";
-"settings.notifications_enabled" = "通知を有効にする";
-"settings.auto_start" = "起動時に自動開始";
 "settings.history_retention" = "履歴保持期間（日）";
 "settings.7_days" = "7日";
 "settings.30_days" = "30日";

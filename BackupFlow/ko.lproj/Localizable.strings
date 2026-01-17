@@ -5,8 +5,6 @@
 "nav.about" = "정보";
 "settings.title" = "설정";
 "settings.general" = "일반";
-"settings.notifications_enabled" = "알림 활성화";
-"settings.auto_start" = "시작 시 자동 시작";
 "settings.history_retention" = "기록 보관 기간 (일)";
 "settings.7_days" = "7일";
 "settings.30_days" = "30일";

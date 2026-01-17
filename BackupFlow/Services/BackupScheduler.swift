@@ -269,13 +269,16 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     }
     
     // MARK: - Backup Execution
-    public func performBackup(task: BackupTask) async throws {
+    public func performBackup(task: BackupTask, bypassThrottle: Bool = false) async throws {
+        let runStart = Date()
         // Re-entrancy guard: Çok sık tetiklemeyi engelle
-        if let last = lastRunAt, Date().timeIntervalSince(last) < minRunInterval {
+        if !bypassThrottle, let last = lastRunAt, Date().timeIntervalSince(last) < minRunInterval {
             print("ℹ️ BackupFlow: Son çalıştırmadan bu yana minimum süre dolmadı, tetikleme atlandı")
             return
         }
-        lastRunAt = Date()
+        if !bypassThrottle {
+            lastRunAt = runStart
+        }
         
         guard !task.isPaused else {
             print("⏸️ BackupFlow: Görev duraklatılmış, yedekleme atlanıyor: \(task.displayName)")
@@ -321,7 +324,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             task.nextRunTime = calculateNextRunTime(for: task)
             
             // Create backup history record
-            let duration = Date().timeIntervalSince(lastRunAt ?? Date())
+            let duration = Date().timeIntervalSince(runStart)
             await createBackupHistoryRecord(
                 task: task,
                 syncResult: syncResult,
@@ -359,7 +362,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             }
             
             // Create backup history record for failure
-            let duration = Date().timeIntervalSince(lastRunAt ?? Date())
+            let duration = Date().timeIntervalSince(runStart)
             await createBackupHistoryRecord(
                 task: task,
                 syncResult: FTPService.SyncResult(newFiles: 0, skippedFiles: 0, totalBytes: 0),
@@ -660,17 +663,16 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         
         print("🚀 BGTaskScheduler: \(dueTasks.count) görev arka planda yürütülecek")
         
-        // Arka plan modunda hızlı işlem için sadece ilk görevi çalıştır
-        let taskToRun = dueTasks.first!
-        print("📱 BGTaskScheduler: Arka plan optimizasyonu - sadece 1 görev: \(taskToRun.displayName)")
-        
         var anySuccess = false
-        do {
-            try await performBackup(task: taskToRun)
-            anySuccess = true
-            print("✅ BGTaskScheduler: Arka plan görevi başarıyla tamamlandı: \(taskToRun.displayName)")
-        } catch {
-            print("⚠️ BGTaskScheduler: Arka plan görevi başarısız -> \(taskToRun.displayName) - \(error)")
+        for taskToRun in dueTasks {
+            print("📱 BGTaskScheduler: Arka plan görevi başlatılıyor: \(taskToRun.displayName)")
+            do {
+                try await performBackup(task: taskToRun, bypassThrottle: true)
+                anySuccess = true
+                print("✅ BGTaskScheduler: Arka plan görevi başarıyla tamamlandı: \(taskToRun.displayName)")
+            } catch {
+                print("⚠️ BGTaskScheduler: Arka plan görevi başarısız -> \(taskToRun.displayName) - \(error)")
+            }
         }
         
         scheduleAppRefresh()
