@@ -99,6 +99,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     }
     
     private var lastBGSubmitAt: Date? = nil
+    private var lastSubmitByIdentifier: [String: Date] = [:]
     
     // MARK: - Initialization
     override init() {
@@ -158,14 +159,16 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             }
         }
         
-        if let last = lastBGSubmitAt, Date().timeIntervalSince(last) < 30 {
-            print("ℹ️ BGTaskScheduler: Submit çok sık, atlanıyor")
+        let id = identifier
+        if let last = lastSubmitByIdentifier[id], Date().timeIntervalSince(last) < 900 { // 15 minutes
+            print("ℹ️ BGTaskScheduler: Submit çok sık (\(id)), atlanıyor")
             return
         }
 
         do {
             try BGTaskScheduler.shared.submit(request)
             lastBGSubmitAt = Date()
+            lastSubmitByIdentifier[id] = Date()
             if let d = request.earliestBeginDate {
                 print("✅ BGTaskScheduler: Processing görevi planlandı -> \(userLocalDateFormatter.string(from: d))")
             } else {
@@ -488,6 +491,29 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         lastNotificationSentAt[task.id] = Date()
     }
     
+    /// FTP'nin arka planda çalışmasının limitleri hakkında uyarı bildirimi gönderir.
+    private func sendBackgroundFTPWarningNotification() {
+        let content = UNMutableNotificationContent()
+        content.title = "FTP Yedekleme Başladı"
+        content.body = "Büyük dosyaların sorunsuz yedeklenmesi için uygulamanın ön planda tutulması önerilir."
+        content.sound = .default
+        
+        // identifier'ı sabit tutarak aynı anda birden fazla uyarının birikmesini önle
+        let request = UNNotificationRequest(
+            identifier: "ftp-background-warning",
+            content: content,
+            trigger: nil // Immediately
+        )
+        
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("❌ BackupFlow: FTP uyarı bildirimi gönderilemedi: \(error.localizedDescription)")
+            } else {
+                print("🔔 BackupFlow: FTP arka plan uyarı bildirimi gönderildi.")
+            }
+        }
+    }
+    
     // MARK: - Background Task Management (Compatibility)
     public func cancelAllBackgroundTasks() {
         // Cancel all active timers (replacement for background tasks)
@@ -532,14 +558,16 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             request.earliestBeginDate = Date().addingTimeInterval(3600)
         }
         
-        if let last = lastBGSubmitAt, Date().timeIntervalSince(last) < 30 {
-            print("ℹ️ BGTaskScheduler: Submit çok sık, atlanıyor")
+        let id = identifier
+        if let last = lastSubmitByIdentifier[id], Date().timeIntervalSince(last) < 900 { // 15 minutes
+            print("ℹ️ BGTaskScheduler: Submit çok sık (\(id)), atlanıyor")
             return
         }
 
         do {
             try BGTaskScheduler.shared.submit(request)
             lastBGSubmitAt = Date()
+            lastSubmitByIdentifier[id] = Date()
             if let d = request.earliestBeginDate {
                 print("✅ BGTaskScheduler: App refresh görevi planlandı -> \(userLocalDateFormatter.string(from: d))")
             } else {
@@ -665,6 +693,16 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         
         var anySuccess = false
         for taskToRun in dueTasks {
+            
+            // Check if it's an FTP task in the background and send a warning notification
+            if taskToRun.backupType == .ftp {
+                #if canImport(UIKit)
+                if UIApplication.shared.applicationState == .background {
+                    sendBackgroundFTPWarningNotification()
+                }
+                #endif
+            }
+            
             print("📱 BGTaskScheduler: Arka plan görevi başlatılıyor: \(taskToRun.displayName)")
             do {
                 try await performBackup(task: taskToRun, bypassThrottle: true)
@@ -1074,3 +1112,5 @@ final class BackupScheduler: NSObject, ObservableObject {
 }
 
 #endif
+
+

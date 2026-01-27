@@ -49,14 +49,35 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
     private let backgroundUploader = WebDAVBackgroundUploader(logger: Logger(subsystem: "com.backupflow.app", category: "WebDAVService"))
     
     private var webdavProvider: WebDAVFileProvider?
+    private var currentBaseURL: URL?
+    private var currentCredential: URLCredential?
     private var backgroundURLSession: URLSession?
     private var backgroundURLSessionCompletionHandler: (() -> Void)?
-    private lazy var backgroundSessionDelegate = WebDAVBackgroundSessionDelegate(logger: logger) { [weak self] in
-        if let completionHandler = self?.backgroundURLSessionCompletionHandler {
-            completionHandler()
-            self?.backgroundURLSessionCompletionHandler = nil
+    private lazy var backgroundSessionDelegate = WebDAVBackgroundSessionDelegate(
+        logger: logger,
+        allowSelfSigned: self.allowSelfSignedCertificates,
+        onTaskProgress: { [weak self] task, totalBytesSent, totalBytesExpected in
+            guard totalBytesExpected > 0 else { return }
+            let progress = Double(totalBytesSent) / Double(totalBytesExpected)
+            Task { @MainActor in
+                self?.progress = progress
+            }
+        },
+        onTaskComplete: { [weak self] task, error in
+            if let error = error {
+                self?.lastError = error
+                self?.logger.error("🌐 Background upload failed: \(error.localizedDescription)")
+            } else {
+                self?.logger.info("🌐 Background upload completed: \(task.taskDescription ?? "")")
+            }
+        },
+        onFinishEvents: { [weak self] in
+            if let completionHandler = self?.backgroundURLSessionCompletionHandler {
+                completionHandler()
+                self?.backgroundURLSessionCompletionHandler = nil
+            }
         }
-    }
+    )
     private var cancellables = Set<AnyCancellable>()
     private let lock = NSLock()
     
@@ -85,6 +106,10 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
     
     private var isVerboseLoggingEnabled: Bool {
         UserDefaults.standard.bool(forKey: "WebDAVVerboseLogging")
+    }
+    
+    private var allowSelfSignedCertificates: Bool {
+        UserDefaults.standard.bool(forKey: "WebDAVAllowSelfSigned")
     }
     
     private func executeWithRetry<T>(maxAttempts: Int = 3, _ operation: @escaping () async throws -> T) async throws -> T {
@@ -153,7 +178,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         // Resume desteği: Kısmi yüklemeler için HTTP 1.1 range requests
         config.allowsCellularAccess = true
         config.waitsForConnectivity = true  // WiFi bağlantısının gelmesini bekle
-        config.shouldUseExtendedBackgroundIdleMode = true  // Arka plan modda daha uzun süre bekle
+        // Removed line: config.shouldUseExtendedBackgroundIdleMode = true  // Arka plan modda daha uzun süre bekle
         
         self.backgroundURLSession = URLSession(configuration: config, delegate: backgroundSessionDelegate, delegateQueue: nil)
         self.logger.info("🌐 WebDAV background URLSession initialized")
@@ -281,6 +306,11 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         
         // Store the provider before testing connection
         self.webdavProvider = provider
+        
+        // Store base URL and credentials for background URLSession requests
+        self.currentBaseURL = url
+        self.currentCredential = credential
+        
         self.isConnected = false
         
         // Test the connection
@@ -396,9 +426,8 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
             // Use background URLSession for uploads that should continue in background
             try await uploadFileUsingBackgroundSession(localURL: localURL, remotePath: remotePath, progressHandler: progressHandler)
         } else {
-            // Fall back to FilesProvider for foreground uploads
+            // Foreground uploads: stream from file to avoid memory pressure
             do {
-                let data = try Data(contentsOf: localURL)
                 try await executeWithRetry {
                     try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
                         var didResume = false
@@ -412,8 +441,8 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
                             didResume = true
                             continuation.resume()
                         }
-                        
-                        provider.writeContents(path: remotePath, contents: data, atomically: true, overwrite: true) { error in
+
+                        provider.copyItem(localFile: localURL, to: remotePath, overwrite: true) { error in
                             if let error = error {
                                 self.lastError = error
                                 safeThrow(WebDAVErrorMapper.mapError(error))
@@ -436,27 +465,52 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         remotePath: String,
         progressHandler: ((Double) -> Void)? = nil
     ) async throws {
-        guard backgroundURLSession != nil else {
+        guard let session = backgroundURLSession else {
             throw BackupServiceError.connectionFailed
+        }
+        guard let baseURL = currentBaseURL else {
+            throw BackupServiceError.connectionFailed
+        }
+
+        // Build absolute URL by appending the remote path to base URL
+        let relativePath = remotePath.hasPrefix("/") ? String(remotePath.dropFirst()) : remotePath
+        let targetURL = baseURL.appendingPathComponent(relativePath)
+
+        var request = URLRequest(url: targetURL)
+        request.httpMethod = "PUT"
+        // Add Authorization header if we have credentials (Basic auth)
+        if let cred = currentCredential, let user = cred.user {
+            let pwd = cred.password ?? ""
+            let userPass = "\(user):\(pwd)"
+            if let authData = userPass.data(using: .utf8) {
+                let token = authData.base64EncodedString()
+                request.setValue("Basic \(token)", forHTTPHeaderField: "Authorization")
+            }
+        }
+
+        // Set current file for UI feedback
+        self.currentFile = localURL.lastPathComponent
+        self.logger.info("🌐 Enqueuing background PUT upload: \(targetURL.absoluteString)")
+
+        // Enqueue background upload task from file (no in-memory buffering)
+        let task = session.uploadTask(with: request, fromFile: localURL)
+        
+        if let activeIdString = UserDefaults.standard.string(forKey: "ActiveBackupTaskId") {
+            struct _Meta: Codable { let taskId: String; let remotePath: String; let localFileName: String; let enqueuedAt: Date }
+            let meta = _Meta(taskId: activeIdString, remotePath: remotePath, localFileName: localURL.lastPathComponent, enqueuedAt: Date())
+            if let data = try? JSONEncoder().encode(meta), let json = String(data: data, encoding: .utf8) {
+                task.taskDescription = json
+            } else {
+                task.taskDescription = "WebDAVUpload:\(remotePath)"
+            }
+        } else {
+            task.taskDescription = "WebDAVUpload:\(remotePath)"
         }
         
-        // For WebDAV background uploads, we'll use the FilesProvider as fallback
-        // since direct URL construction from FilesProvider is complex
-        // Fall back to synchronous upload but track it in background
-        guard let provider = webdavProvider else {
-            throw BackupServiceError.connectionFailed
-        }
-        try await backgroundUploader.upload(
-            provider: provider,
-            localURL: localURL,
-            remotePath: remotePath,
-            executeWithRetry: { operation in
-                try await self.executeWithRetry(operation)
-            },
-            onError: { [weak self] error in
-                self?.lastError = error
-            }
-        )
+        task.resume()
+
+        // Best-effort initial progress callback
+        progressHandler?(0.0)
     }
     
     // Returns file info (size, name) of remote item if exists, nil if not exists
@@ -551,8 +605,11 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
     
     func disconnect() {
         webdavProvider = nil
+        currentBaseURL = nil
+        currentCredential = nil
         isConnected = false
         lastError = nil
+        isBackgroundUploading = false
     }
     
     /// Tests different common WebDAV paths to find the correct endpoint
@@ -770,6 +827,10 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
             setCurrentFile: { [weak self] name in
                 self?.currentFile = name
             }
+            , uploadFile: { [weak self] localURL, remotePath in
+                guard let self else { throw BackupServiceError.connectionFailed }
+                try await self.uploadFile(localURL: localURL, remotePath: remotePath, progressHandler: nil)
+            }
         )
     }
     
@@ -923,24 +984,27 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
                 try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
                     let options = PHVideoRequestOptions()
                     options.isNetworkAccessAllowed = true
-                    
-                    // options'ı main thread'de kullan
-                    imageManager.requestExportSession(forVideo: asset, options: options, exportPreset: AVAssetExportPresetHighestQuality) { exportSession, _ in
-                        guard let exportSession = exportSession else { 
+
+                    imageManager.requestAVAsset(forVideo: asset, options: options) { avAsset, _, _ in
+                        guard let avAsset = avAsset else {
                             continuation.resume()
-                            return 
+                            return
                         }
-                        
-                        exportSession.outputURL = fileURL
-                        exportSession.outputFileType = .mp4
-                        
-                        exportSession.exportAsynchronously {
-                            if exportSession.status == .completed { 
-                                saved += 1 
-                            } else if let error = exportSession.error {
+
+                        Task {
+                            do {
+                                guard let exportSession = AVAssetExportSession(asset: avAsset, presetName: AVAssetExportPresetHighestQuality) else {
+                                    continuation.resume()
+                                    return
+                                }
+                                // Use modern async export API on AVAssetExportSession
+                                try await exportSession.export(to: fileURL, as: AVFileType.mp4)
+                                saved += 1
+                                continuation.resume()
+                            } catch {
                                 self.logger.error("Failed to export video: \(error.localizedDescription)")
+                                continuation.resume(throwing: error)
                             }
-                            continuation.resume()
                         }
                     }
                 }
@@ -1046,3 +1110,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
 }
 
 #endif
+
+
+
+

@@ -37,7 +37,10 @@ struct FTPFileOperations {
 
             do {
                 try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                    provider.create(folder: currentPath, at: "/") { (error: Error?) in
+                    let parentPath = (currentPath as NSString).deletingLastPathComponent
+                    let folderName = (currentPath as NSString).lastPathComponent
+                    let parent = parentPath.isEmpty ? "/" : parentPath
+                    provider.create(folder: folderName, at: parent) { (error: Error?) in
                         if let error = error {
                             logger.warning("Dizin oluşturulurken hata: \(error.localizedDescription). Yine de devam ediliyor...")
                             continuation.resume()
@@ -109,3 +112,4 @@ struct FTPFileOperations {
         }
     }
 }
+

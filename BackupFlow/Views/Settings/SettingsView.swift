@@ -8,6 +8,7 @@ import UIKit
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.requestReview) private var requestReview
     @State private var isTesting = false
     @State private var showingResetAlert = false
     @AppStorage("keepHistoryDays") private var keepHistoryDays = 30
@@ -115,21 +116,26 @@ struct SettingsView: View {
     
     private func openAppStoreReview() {
         #if canImport(UIKit)
-        // iOS 14+ için SKStoreReviewController kullan (daha iyi UX)
         if #available(iOS 14.0, *) {
-            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-                SKStoreReviewController.requestReview(in: windowScene)
-                print("📱 BackupFlow: Native review dialog açılıyor")
-            }
+            // This uses the modern SwiftUI approach which is preferred.
+            // It automatically finds the correct scene.
+            requestReview()
+            print("📱 BackupFlow: requestReview() çağrıldı (iOS 14+)")
         } else {
-            // iOS 13 için fallback
+            // Fallback for iOS 13.
             SKStoreReviewController.requestReview()
-            print("📱 BackupFlow: Review request gönderildi")
+            print("📱 BackupFlow: SKStoreReviewController.requestReview() çağrıldı (iOS 13)")
         }
-        #else
-        SKStoreReviewController.requestReview()
+        #elseif os(macOS)
+        if #available(macOS 11.0, *) {
+            requestReview()
+            print("🖥️ BackupFlow: requestReview() çağrıldı (macOS 11+)")
+        } else {
+            // Fallback for macOS 10.14, 10.15.
+            SKStoreReviewController.requestReview()
+            print("🖥️ BackupFlow: SKStoreReviewController.requestReview() çağrıldı (eski macOS)")
+        }
         #endif
-
     }
     
     private func openSupportEmail() {
@@ -221,3 +227,4 @@ struct SettingsView: View {
         SettingsView()
     }
 }
+

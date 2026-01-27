@@ -241,6 +241,14 @@ struct BackupFlowApp: App {
         
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         
+        // Ensure Application Support directory exists before opening the store
+        do {
+            let appSupportURL = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+            try FileManager.default.createDirectory(at: appSupportURL, withIntermediateDirectories: true)
+        } catch {
+            print("⚠️ BackupFlow: Application Support dizini oluşturulamadı: \(error)")
+        }
+        
         do {
             let container = try ModelContainer(for: schema, configurations: [modelConfiguration])
             
@@ -330,3 +338,4 @@ struct BackupFlowApp: App {
         }
     }
 }
+

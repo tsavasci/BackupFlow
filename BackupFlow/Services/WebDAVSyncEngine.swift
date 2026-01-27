@@ -10,6 +10,7 @@ struct WebDAVSyncEngine {
     let ensureDirectoryExists: (String) async throws -> Void
     let deleteFile: (String) async throws -> Void
     let setCurrentFile: (String) -> Void
+    let uploadFile: (URL, String) async throws -> Void
 
     func syncUploadDirectory(
         localPath: String,
@@ -50,20 +51,10 @@ struct WebDAVSyncEngine {
             } else {
                 do {
                     logger.info("Uploading: \(relativePath) (\(ByteCountFormatter.string(fromByteCount: localSize, countStyle: .file)))")
-                    try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                        provider.copyItem(localFile: localFileURL, to: remotePath, overwrite: true) { error in
-                            if let error = error {
-                                logger.error("Failed to upload \(relativePath): \(error.localizedDescription)")
-                                failed += 1
-                                continuation.resume(throwing: WebDAVErrorMapper.mapError(error))
-                            } else {
-                                logger.debug("Successfully uploaded: \(relativePath)")
-                                uploaded += 1
-                                transferred += localSize
-                                continuation.resume()
-                            }
-                        }
-                    }
+                    try await uploadFile(localFileURL, remotePath)
+                    logger.debug("Successfully uploaded: \(relativePath)")
+                    uploaded += 1
+                    transferred += localSize
                 } catch {
                     logger.error("Upload failed for \(relativePath): \(error.localizedDescription)")
                     failed += 1

@@ -52,6 +52,13 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     }
     
     private var isCancelled = false
+    
+    private func maskedURLString(_ url: URL) -> String {
+        guard var comps = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return url.absoluteString }
+        if comps.user != nil { comps.user = "***" }
+        if comps.password != nil { comps.password = "***" }
+        return comps.string ?? url.absoluteString
+    }
 
     override private init() {
         super.init()
@@ -316,7 +323,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                 throw FTPError.invalidURL
             }
             
-            logger.info("Anonim FTP bağlantısı başlatılıyor (Deneme \(attempt)): \(serverURL.absoluteString)")
+            logger.info("Anonim FTP bağlantısı başlatılıyor (Deneme \(attempt)): \(self.maskedURLString(serverURL))")
             
             let credential = URLCredential(user: anonymousUsername,
                                          password: anonymousPassword,
@@ -378,7 +385,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             throw FTPError.invalidURL
         }
         
-        logger.info("FTP bağlantısı başlatılıyor: \(serverURL.absoluteString)")
+        logger.info("FTP bağlantısı başlatılıyor: \(self.maskedURLString(serverURL))")
         
         // Kimlik bilgilerini hazırla
         let credential: URLCredential? = {
@@ -1044,3 +1051,4 @@ final class FTPService: ObservableObject {
 }
 
 #endif
+

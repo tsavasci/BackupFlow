@@ -4,6 +4,7 @@ import SwiftUI
 import Combine
 import OSLog
 import UniformTypeIdentifiers
+import AVFoundation
 
 class PhotoLibraryManager: NSObject, ObservableObject {
     static let shared = PhotoLibraryManager()
@@ -168,12 +169,10 @@ class PhotoLibraryManager: NSObject, ObservableObject {
             // .highQualityFormat iCloud'dan indirme zorlayabilir - foreground/background geçişlerde sorun oluşturabilir
             let options = PHImageRequestOptions()
             options.isSynchronous = false
-            // iCloud Sync Problemi: isNetworkAccessAllowed = true sadece gerekli durumlarda
-            // Yerel olmayan varlıklar için iCloud'dan indirmek performans sorunlarına neden olabilir
-            options.isNetworkAccessAllowed = false // Önce yerel varlıkları dene
-            options.deliveryMode = .fastFormat // highQualityFormat yerine fastFormat kullan
+            options.isNetworkAccessAllowed = true // Enable iCloud download
+            options.deliveryMode = .highQualityFormat // Prefer highest quality
             options.resizeMode = .none
-            options.version = .current // Edited version yerine current version al
+            options.version = .current
             
             if asset.mediaType == .image {
                 // PHImageRequestOptions'ı main thread'de kullan
@@ -191,20 +190,37 @@ class PhotoLibraryManager: NSObject, ObservableObject {
                 }
             } else if asset.mediaType == .video {
                 let videoOptions = PHVideoRequestOptions()
-                videoOptions.isNetworkAccessAllowed = false // Video da aynı şekilde yerel varlıktan başla
-                videoOptions.deliveryMode = .fastFormat // highQualityFormat yerine
+                videoOptions.isNetworkAccessAllowed = true // Enable iCloud download for videos
+                videoOptions.deliveryMode = .highQualityFormat
                 videoOptions.version = .current
-                
-                // PHVideoRequestOptions'ı main thread'de kullan
+
                 PHImageManager.default().requestAVAsset(forVideo: asset, options: videoOptions) { avAsset, _, info in
-                    // For videos, we would need to export the asset to data
-                    // This is a simplified version - real implementation would export video
-                    if avAsset != nil {
-                        self.logger.debug("✓ Video varlığı yerel olarak alındı: \(asset.localIdentifier.prefix(8))")
-                    } else if let isInCloud = info?[PHImageResultIsInCloudKey] as? NSNumber, isInCloud.boolValue {
-                        self.logger.warning("⚠️ Video iCloud'da - yerel indirme başlatılmıyor (ağ erişimi devre dışı)")
+                    guard let avAsset = avAsset else {
+                        if let isInCloud = info?[PHImageResultIsInCloudKey] as? NSNumber, isInCloud.boolValue {
+                            self.logger.warning("⚠️ Video iCloud'da - AVAsset alınamadı")
+                        }
+                        continuation.resume(returning: nil)
+                        return
                     }
-                    continuation.resume(returning: nil)
+
+                    Task {
+                        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("backupflow_video_\(UUID().uuidString).mp4")
+                        do {
+                            guard let exportSession = AVAssetExportSession(asset: avAsset, presetName: AVAssetExportPresetHighestQuality) else {
+                                continuation.resume(returning: nil)
+                                return
+                            }
+                            try await exportSession.export(to: tempURL, as: AVFileType.mp4)
+                            let data = try Data(contentsOf: tempURL)
+                            try? FileManager.default.removeItem(at: tempURL)
+                            self.logger.debug("✓ Video export tamamlandı: \(asset.localIdentifier.prefix(8))")
+                            continuation.resume(returning: data)
+                        } catch {
+                            self.logger.error("❌ Video export hata: \(error.localizedDescription)")
+                            try? FileManager.default.removeItem(at: tempURL)
+                            continuation.resume(returning: nil)
+                        }
+                    }
                 }
             } else {
                 continuation.resume(returning: nil)
@@ -321,3 +337,4 @@ struct PhotoPicker: UIViewControllerRepresentable {
         }
     }
 }
+
