@@ -415,47 +415,61 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
     }
     
     func uploadFile(localURL: URL, remotePath: String, progressHandler: ((Double) -> Void)? = nil) async throws {
+        try await uploadFile(localURL: localURL, remotePath: remotePath, progressHandler: progressHandler, allowBackgroundSession: true)
+    }
+    
+    /// Sync engine gibi "başarılı" sayılmadan önce gerçek tamamlanma bekleyen akışlar için.
+    func uploadFileAwaitingCompletion(localURL: URL, remotePath: String, progressHandler: ((Double) -> Void)? = nil) async throws {
+        try await uploadFile(localURL: localURL, remotePath: remotePath, progressHandler: progressHandler, allowBackgroundSession: false)
+    }
+    
+    private func uploadFile(
+        localURL: URL,
+        remotePath: String,
+        progressHandler: ((Double) -> Void)?,
+        allowBackgroundSession: Bool
+    ) async throws {
         guard let provider = webdavProvider else {
             throw BackupServiceError.connectionFailed
         }
         
-        // Use background URLSession if available and app is in background
-        let useBackgroundSession = isBackgroundUploading && backgroundURLSession != nil
+        // Sync sırasında enqueue edip "başarılı" saymamak için background opsiyonel.
+        let useBackgroundSession = allowBackgroundSession && isBackgroundUploading && backgroundURLSession != nil
         
         if useBackgroundSession {
-            // Use background URLSession for uploads that should continue in background
             try await uploadFileUsingBackgroundSession(localURL: localURL, remotePath: remotePath, progressHandler: progressHandler)
-        } else {
-            // Foreground uploads: stream from file to avoid memory pressure
-            do {
-                try await executeWithRetry {
-                    try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                        var didResume = false
-                        func safeThrow(_ error: Error) {
-                            if didResume { return }
-                            didResume = true
-                            continuation.resume(throwing: error)
-                        }
-                        func safeResume() {
-                            if didResume { return }
-                            didResume = true
-                            continuation.resume()
-                        }
+            return
+        }
+        
+        // Foreground uploads: stream from file to avoid memory pressure
+        do {
+            try await executeWithRetry {
+                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                    var didResume = false
+                    func safeThrow(_ error: Error) {
+                        if didResume { return }
+                        didResume = true
+                        continuation.resume(throwing: error)
+                    }
+                    func safeResume() {
+                        if didResume { return }
+                        didResume = true
+                        continuation.resume()
+                    }
 
-                        provider.copyItem(localFile: localURL, to: remotePath, overwrite: true) { error in
-                            if let error = error {
-                                self.lastError = error
-                                safeThrow(WebDAVErrorMapper.mapError(error))
-                            } else {
-                                safeResume()
-                            }
+                    provider.copyItem(localFile: localURL, to: remotePath, overwrite: true) { error in
+                        if let error = error {
+                            self.lastError = error
+                            safeThrow(WebDAVErrorMapper.mapError(error))
+                        } else {
+                            safeResume()
                         }
                     }
                 }
-            } catch {
-                self.lastError = error
-                throw WebDAVErrorMapper.mapError(error)
             }
+        } catch {
+            self.lastError = error
+            throw WebDAVErrorMapper.mapError(error)
         }
     }
     
@@ -826,10 +840,10 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
             },
             setCurrentFile: { [weak self] name in
                 self?.currentFile = name
-            }
-            , uploadFile: { [weak self] localURL, remotePath in
+            },
+            uploadFile: { [weak self] localURL, remotePath in
                 guard let self else { throw BackupServiceError.connectionFailed }
-                try await self.uploadFile(localURL: localURL, remotePath: remotePath, progressHandler: nil)
+                try await self.uploadFileAwaitingCompletion(localURL: localURL, remotePath: remotePath, progressHandler: nil)
             }
         )
     }
@@ -1110,7 +1124,5 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
 }
 
 #endif
-
-
 
 
