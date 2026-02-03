@@ -2,6 +2,9 @@ import SwiftUI
 import SwiftData
 import UniformTypeIdentifiers
 import Photos
+#if canImport(UIKit)
+import UIKit
+#endif
 
 enum PhotoLibraryPermission {
     case notDetermined
@@ -175,6 +178,8 @@ struct BackupView: View {
     @State private var isTestingConnection = false
     @State private var connectionStatus: ConnectionStatus = .idle
     @State private var lastTestTapAt: Date? = nil
+    @State private var showingFirstBackupPrompt = false
+    @State private var firstBackupTaskToStart: BackupTask? = nil
     
     var body: some View {
         return Form {
@@ -384,6 +389,23 @@ struct BackupView: View {
         } message: {
             Text(saveAlertMessage)
         }
+        .alert(
+            "backup.first_start_prompt_title".localized,
+            isPresented: $showingFirstBackupPrompt
+        ) {
+            Button("backup.notification.action.start".localized) {
+                guard let taskToStart = firstBackupTaskToStart else { return }
+                Task {
+                    try? await BackupScheduler.shared.performBackup(task: taskToStart)
+                }
+                firstBackupTaskToStart = nil
+            }
+            Button("backup.first_start_prompt_later".localized, role: .cancel) {
+                firstBackupTaskToStart = nil
+            }
+        } message: {
+            Text("backup.first_start_prompt_message".localized)
+        }
         
         func isLocalServer() -> Bool {
             let host = selectedTarget == .ftp ? ftpHost : webdavURL
@@ -573,9 +595,11 @@ struct BackupView: View {
             // Check for existing tasks with the same configuration
             let hostToCheck = selectedTarget == .ftp ? ftpHost.lowercased() : webdavURL.lowercased()
             let destPathToCheck = selectedTarget == .ftp ? destinationPath : webdavPath
+            var isFirstTask = false
             
             do {
                 let allTasks = try modelContext.fetch(FetchDescriptor<BackupTask>())
+                isFirstTask = allTasks.isEmpty
                 let backupType: BackupType = selectedTarget == .ftp ? .ftp : .webdav
                 let portToCheck = selectedTarget == .ftp ? (Int(ftpPort) ?? 21) : 443
 
@@ -678,6 +702,9 @@ struct BackupView: View {
                     } catch {
                         saveAlertMessage += ", ancak planlama sırasında hata oluştu: \(error.localizedDescription)"
                     }
+                } else {
+                    // Manual task: still schedule processing to allow future background checks
+                    BackupScheduler.shared.scheduleProcessingTask()
                 }
                 
                 // Reset form
@@ -688,10 +715,15 @@ struct BackupView: View {
                 ftpPassword = ""
                 isAnonymous = false
                 
-                let now = Date()
-                if let last = lastAlertAt, now.timeIntervalSince(last) < 1 { return }
-                lastAlertAt = now
-                showingSaveAlert = true
+                if isFirstTask {
+                    firstBackupTaskToStart = task
+                    showingFirstBackupPrompt = true
+                } else {
+                    let now = Date()
+                    if let last = lastAlertAt, now.timeIntervalSince(last) < 1 { return }
+                    lastAlertAt = now
+                    showingSaveAlert = true
+                }
             } catch {
                 saveAlertMessage = "Görev kaydedilirken hata oluştu: \(error.localizedDescription)"
                 let now = Date()

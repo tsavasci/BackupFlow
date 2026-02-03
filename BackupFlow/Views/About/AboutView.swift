@@ -39,7 +39,7 @@ struct AboutView: View {
                 Spacer(minLength: 60) // Tab bar için minimum boşluk
                 
                 VStack(spacing: 8) {
-                    Text("© \(Calendar.current.component(.year, from: Date())) BackupFlow")
+                    Text(verbatim: "© \(Calendar.current.component(.year, from: Date())) BackupFlow")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
@@ -120,3 +120,4 @@ struct InfoRow: View {
         AboutView()
     }
 }
+

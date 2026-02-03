@@ -13,6 +13,7 @@ struct SettingsView: View {
     @State private var showingResetAlert = false
     @AppStorage("keepHistoryDays") private var keepHistoryDays = 30
     @AppStorage("selectedLanguageCode") private var selectedLanguageCode = "system"
+    @AppStorage("RequireExternalPower") private var requireExternalPower = false
     private let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
     private let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "0"
 
@@ -50,6 +51,10 @@ struct SettingsView: View {
                     Text("settings.90_days".localized).tag(90)
                     Text("settings.unlimited".localized).tag(0)
                 }
+                Toggle("settings.require_external_power".localized, isOn: $requireExternalPower)
+                Text("settings.require_external_power_note".localized)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
             
             Section(header: Text("settings.language".localized)) {

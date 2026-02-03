@@ -93,6 +93,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
     
     func updateBackgroundMode(isBackground: Bool) {
         self.isBackgroundUploading = isBackground
+        // Not resetting progress/currentFile here to preserve UI continuity across foreground/background
         self.logger.info("📱 \(isBackground ? "Background" : "Foreground") upload mode enabled")
     }
     
@@ -437,6 +438,8 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         let useBackgroundSession = allowBackgroundSession && isBackgroundUploading && backgroundURLSession != nil
         
         if useBackgroundSession {
+            // Set current file for UI feedback only if empty to reduce UI flicker/resets
+            if self.currentFile.isEmpty { self.currentFile = localURL.lastPathComponent }
             try await uploadFileUsingBackgroundSession(localURL: localURL, remotePath: remotePath, progressHandler: progressHandler)
             return
         }
@@ -624,6 +627,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         isConnected = false
         lastError = nil
         isBackgroundUploading = false
+        // Do not reset progress/currentFile here to avoid UI resets during transient reconnects
     }
     
     /// Tests different common WebDAV paths to find the correct endpoint
@@ -1124,5 +1128,6 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
 }
 
 #endif
+
 
 

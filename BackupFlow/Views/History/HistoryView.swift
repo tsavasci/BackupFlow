@@ -237,20 +237,6 @@ struct HistoryView: View {
                     Text("history.unknown".localized)
                         .font(.system(.body, design: .monospaced))
                 }
-                if item.taskIsAnonymous == true {
-                    Label("history.anonymous_ftp".localized, systemImage: "person.crop.circle.badge.questionmark")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } else if let username = item.taskUsername, !username.isEmpty {
-                    Label(String(format: "history.user_prefix".localized, username), systemImage: "person.crop.circle")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                if let mediaType = item.taskMediaType {
-                    Label(String(format: "history.media_type_prefix".localized, mediaType.displayName), systemImage: "photo.on.rectangle")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
             }
             
             Section("history.stats_section".localized) {
@@ -281,3 +267,4 @@ struct HistoryView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 }
+

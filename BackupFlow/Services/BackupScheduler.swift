@@ -58,7 +58,6 @@ private final class ResumptionManager: @unchecked Sendable {
     }
 }
 
-
 @MainActor
 final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCenterDelegate {
 
@@ -139,8 +138,23 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         let identifier = (Bundle.main.bundleIdentifier ?? "tamersavasci.BackupFlow") + ".processing"
 
         let request = BGProcessingTaskRequest(identifier: identifier)
+        
+        // Only schedule if there is at least one active (enabled and not paused) task
+        if let container = Self.sharedModelContainer {
+            let context = ModelContext(container)
+            if let tasks = try? context.fetch(FetchDescriptor<BackupTask>()) {
+                let hasAnyActive = tasks.contains { $0.isEnabled && !$0.isPaused }
+                if !hasAnyActive {
+                    print("ℹ️ BGTaskScheduler: Etkin görev yok, processing planlanmadı")
+                    return
+                }
+            }
+        }
+
         request.requiresNetworkConnectivity = true
-        request.requiresExternalPower = true // Şarja takılıyken daha güvenilir (uzun işlemler için tercih)
+        // Respect user preference for external power requirement (default false)
+        let requireExternal = UserDefaults.standard.bool(forKey: "RequireExternalPower")
+        request.requiresExternalPower = requireExternal
 
         // earliestBeginDate'i, en yakın nextRunTime'a göre ayarla (en az 15 dk kuralına uyarak)
         if let container = Self.sharedModelContainer {
@@ -161,7 +175,6 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         
         let id = identifier
         if let last = lastSubmitByIdentifier[id], Date().timeIntervalSince(last) < 900 { // 15 minutes
-            print("ℹ️ BGTaskScheduler: Submit çok sık (\(id)), atlanıyor")
             return
         }
 
@@ -255,11 +268,35 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             return
         }
         task.nextRunTime = nextRunTime
+        if let context = task.modelContext {
+            do {
+                try context.save()
+            } catch {
+                print("❌ BackupFlow: nextRunTime kaydedilemedi: \(error)")
+            }
+        }
         
-        print("✅ BackupFlow: Görev BGTaskScheduler ile planlanacak: \(task.displayName) -> \(userLocalDateFormatter.string(from: nextRunTime))")
-
-        // Schedule a background app refresh task with the OS
+        let timeUntilNextRun = nextRunTime.timeIntervalSinceNow
+        
+        // Zamanlayıcıyı sadece 10 saniyeden daha uzun bir süre varsa kur
+        // Bu, anlık veya çok yakın görevler için gereksiz timer oluşturmayı önler
+        if timeUntilNextRun > 10 {
+            let newTimer = Timer(fireAt: nextRunTime, interval: 0, target: self, selector: #selector(timerFired), userInfo: ["taskId": task.id], repeats: false)
+            RunLoop.main.add(newTimer, forMode: .common)
+            scheduledTimers[task.id] = newTimer
+            
+            print("✅ BackupFlow: Görev zamanlayıcı ile planlandı: \(task.displayName) -> \(userLocalDateFormatter.string(from: nextRunTime))")
+        } else {
+            // Eğer görev çok yakında ise, doğrudan tetikle
+            print("ℹ️ BackupFlow: Görev çok yakında, doğrudan tetikleniyor: \(task.displayName)")
+            Task {
+                try? await performBackup(task: task)
+            }
+        }
+        
+        // Also schedule with BGTaskScheduler as a fallback
         scheduleAppRefresh()
+        scheduleProcessingTask()
     }
     
     @MainActor
@@ -268,6 +305,36 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             timer.invalidate()
             scheduledTimers.removeValue(forKey: taskId)
             print("🚫 BackupFlow: Timer iptal edildi: \(taskId)")
+        }
+    }
+    
+    @objc private func timerFired(timer: Timer) {
+        guard let userInfo = timer.userInfo as? [String: Any],
+              let taskId = userInfo["taskId"] as? UUID else {
+            print("❌ BackupFlow: Timer tetiklendi ancak görev ID'si bulunamadı")
+            return
+        }
+        
+        print("⏰ BackupFlow: Timer tetiklendi: \(taskId)")
+        
+        // Find the task and perform the backup
+        Task {
+            guard let container = Self.sharedModelContainer else {
+                print("❌ BackupFlow: ModelContainer bulunamadı (timerFired)")
+                return
+            }
+            let context = ModelContext(container)
+            var descriptor = FetchDescriptor<BackupTask>(
+                predicate: #Predicate { $0.id == taskId }
+            )
+            descriptor.fetchLimit = 1
+            
+            if let taskToRun = try? context.fetch(descriptor).first {
+                print("▶️ BackupFlow: Timer'dan yedekleme başlatılıyor: \(taskToRun.displayName)")
+                try? await performBackup(task: taskToRun)
+            } else {
+                print("❌ BackupFlow: Timer tetiklendi ancak görev veritabanında bulunamadı: \(taskId)")
+            }
         }
     }
     
@@ -288,6 +355,15 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             return
         }
         
+        // Fail-safe: if no internet at start, handle staged retries and return
+        let currentType = await getCurrentNetworkType()
+        let online = (currentType == .wifi || currentType == .cellular || currentType == .ethernet)
+        if !online {
+            print("⚠️ BackupFlow: Ağ bağlantısı yok - failsafe devrede")
+            await handleNoNetworkFor(task: task)
+            return
+        }
+        
         // Set processing flag to prevent interruption
         await MainActor.run {
             isProcessing = true
@@ -302,9 +378,13 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         
         print("🚀 BackupFlow: Yedekleme başlatılıyor: \(task.displayName)")
         
-        // Update task status with safe initial progress
-        task.backupStatus = .preparing
-        task.progress = 0.0  // Start at 0.0, safe value
+        // Update task status with safe initial progress, but avoid resetting during an ongoing run
+        if task.backupStatus != .uploading {
+            task.backupStatus = .preparing
+        }
+        if task.progress <= 0.0 || task.progress.isNaN || task.progress.isInfinite {
+            task.progress = 0.0
+        }
         task.lastError = nil
         
         do {
@@ -341,6 +421,13 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             print("✅ BackupFlow: Yedekleme tamamlandı: \(task.displayName)")
             
         } catch {
+            // If currently offline, use the no-network staged retry flow
+            let currentType = await getCurrentNetworkType()
+            if !(currentType == .wifi || currentType == .cellular || currentType == .ethernet) {
+                await handleNoNetworkFor(task: task)
+                return
+            }
+            
             // Update task on failure
             task.backupStatus = .failed
             task.lastError = error.localizedDescription
@@ -354,6 +441,12 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                 print("🔄 BackupFlow: Yeniden deneme \(currentRetryCount + 1)/\(maxRetryAttempts)")
                 
                 let delay = self.jitteredDelay(for: currentRetryCount + 1)
+                // Advance nextRunTime to avoid foreground re-trigger via missed timers
+                task.nextRunTime = Date().addingTimeInterval(delay)
+                if let context = task.modelContext {
+                    do { try context.save() }
+                    catch { print("❌ BackupFlow: nextRunTime kaydedilemedi (retry): \\ (error)") }
+                }
                 DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
                     Task {
                         try? await self.performBackup(task: task)
@@ -362,6 +455,12 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             } else {
                 retryCount.removeValue(forKey: task.id)
                 print("💥 BackupFlow: Maksimum yeniden deneme sayısına ulaşıldı")
+                // Move to the next scheduled time to prevent immediate re-run on foreground
+                task.nextRunTime = calculateNextRunTime(for: task)
+                if let context = task.modelContext {
+                    do { try context.save() }
+                    catch { print("❌ BackupFlow: nextRunTime kaydedilemedi (max retry): \\ (error)") }
+                }
             }
             
             // Create backup history record for failure
@@ -514,6 +613,108 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         }
     }
     
+    /// Sends a no-network retry notification like: "Ağ bağlantısı yok. Tekrar denenecek 1/3"
+    private func sendNoNetworkRetryNotification(task: BackupTask, attempt: Int, maxAttempts: Int, delaySeconds: TimeInterval) {
+        let content = UNMutableNotificationContent()
+        content.title = "Ağ Bağlantısı Yok"
+        let minutes = Int(delaySeconds / 60)
+        if minutes >= 1 {
+            content.body = "Ağ bağlantısı yok. Tekrar denenecek \(attempt)/\(maxAttempts) (\(minutes) dk sonra)."
+        } else {
+            content.body = "Ağ bağlantısı yok. Tekrar denenecek \(attempt)/\(maxAttempts)."
+        }
+        content.sound = .default
+        let request = UNNotificationRequest(identifier: "no-network-retry-\(task.id)", content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error { print("❌ BackupFlow: No-network retry bildirimi hatası: \(error)") }
+        }
+    }
+    
+    /// Sends a final postponement notification
+    private func sendPostponedDueToNoNetworkNotification(task: BackupTask) {
+        let content = UNMutableNotificationContent()
+        content.title = "Yedekleme Ertelendi"
+        content.body = "Ağ bağlantısı olmadığı için yedekleme ertelendi. Yarın aynı saatte tekrar denenecek."
+        content.sound = .default
+        let request = UNNotificationRequest(identifier: "no-network-postponed-\(task.id)", content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error { print("❌ BackupFlow: Erteleme bildirimi hatası: \(error)") }
+        }
+    }
+    
+    /// Handles no-network scenario with 3 attempts: 1 min, then 5 min, then postpone by 24h.
+    private func handleNoNetworkFor(task: BackupTask) async {
+        let maxAttempts = 3
+        let current = retryCount[task.id] ?? 0
+
+        if current >= maxAttempts {
+            // Already exceeded, ensure reset and postpone
+            retryCount.removeValue(forKey: task.id)
+            await finalizePostponeDueToNoNetwork(task: task)
+            return
+        }
+
+        let nextAttempt = current + 1
+        retryCount[task.id] = nextAttempt
+
+        // Determine delay: attempt 1 -> 60s, attempt 2 -> 300s, attempt 3 -> finalize
+        if nextAttempt == 1 {
+            sendNoNetworkRetryNotification(task: task, attempt: nextAttempt, maxAttempts: maxAttempts, delaySeconds: 60)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 60) {
+                Task { try? await self.performBackup(task: task) }
+            }
+            return
+        } else if nextAttempt == 2 {
+            sendNoNetworkRetryNotification(task: task, attempt: nextAttempt, maxAttempts: maxAttempts, delaySeconds: 300)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 300) {
+                Task { try? await self.performBackup(task: task) }
+            }
+            return
+        } else {
+            // Third failure -> postpone 24 hours
+            retryCount.removeValue(forKey: task.id)
+            await finalizePostponeDueToNoNetwork(task: task)
+        }
+    }
+    
+    /// Finalize postponement: notify user, mark as failed, push nextRunTime by 24h and create a history record.
+    private func finalizePostponeDueToNoNetwork(task: BackupTask) async {
+        sendPostponedDueToNoNetworkNotification(task: task)
+
+        // Mark task failed state
+        task.backupStatus = .failed
+        task.lastError = "Ağ bağlantısı olmadığı için yedekleme ertelendi."
+        task.progress = 0.0
+        task.currentFile = nil
+        task.lastBackupDate = Date()
+
+        // Shift next run time by +24h from scheduled time if exists; otherwise from now
+        let day: TimeInterval = 24 * 60 * 60
+        if let existing = task.nextRunTime {
+            task.nextRunTime = existing.addingTimeInterval(day)
+        } else {
+            task.nextRunTime = Date().addingTimeInterval(day)
+        }
+
+        // Persist changes
+        if let context = task.modelContext {
+            do { try context.save() } catch { print("❌ BackupFlow: Erteleme kaydı sırasında hata: \(error)") }
+        }
+
+        // Create a failed history record
+        await createBackupHistoryRecord(
+            task: task,
+            syncResult: FTPService.SyncResult(newFiles: 0, skippedFiles: 0, totalBytes: 0),
+            duration: 0,
+            status: "failed",
+            errorMessage: "Ağ bağlantısı olmadığı için yedekleme ertelendi."
+        )
+
+        // Re-schedule background tasks
+        scheduleAppRefresh()
+        scheduleProcessingTask()
+    }
+    
     // MARK: - Background Task Management (Compatibility)
     public func cancelAllBackgroundTasks() {
         // Cancel all active timers (replacement for background tasks)
@@ -560,7 +761,6 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         
         let id = identifier
         if let last = lastSubmitByIdentifier[id], Date().timeIntervalSince(last) < 900 { // 15 minutes
-            print("ℹ️ BGTaskScheduler: Submit çok sık (\(id)), atlanıyor")
             return
         }
 
@@ -632,6 +832,10 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                     if isActive {
                         if let last = lastRunAt, Date().timeIntervalSince(last) < minRunInterval {
                             print("ℹ️ checkMissedTimers: Minimum aralık dolmadı, atlanıyor")
+                            continue
+                        }
+                        if isProcessing {
+                            print("ℹ️ checkMissedTimers: Aktif işlem var, tetikleme atlandı")
                             continue
                         }
                         print("📱 checkMissedTimers: App aktif - Yedekleme başlatılıyor")
@@ -1112,5 +1316,9 @@ final class BackupScheduler: NSObject, ObservableObject {
 }
 
 #endif
+
+
+
+
 
 

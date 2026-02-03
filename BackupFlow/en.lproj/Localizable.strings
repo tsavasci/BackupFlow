@@ -177,17 +177,12 @@
 "tasks.scheduled" = "and scheduled";
 "tasks.schedule_error" = "but scheduling failed";
 "tasks.save_error" = "Error saving task";
-"settings.allow_cellular" = "Allow cellular data usage";
-"settings.cellular_warning" = "⚠️ Cellular data usage for local server may incur extra costs.";
-"settings.wifi_only" = "ℹ️ Local server access will only be possible via WiFi.";
 "backup.source_selection" = "Source Selection";
 "backup.select_folder" = "Select a folder to backup";
 "backup.photo_library" = "Backup Photo Library";
 "backup.media_type" = "Media Type Selection";
 "backup.folder_selection" = "Folder Selection";
 "backup.or" = "or";
-"backup.scheduling" = "Scheduling";
-"backup.frequency" = "Frequency";
 "backup.manual" = "Manual";
 "backup.daily" = "Daily";
 "backup.weekly" = "Weekly";
@@ -225,8 +220,6 @@
 "backup.username" = "Username";
 "backup.password" = "Password";
 "backup.destination_folder" = "Destination Folder";
-"backup.server_url_example" = "Server URL (e.g: https://example.com/dav)";
-"backup.destination_folder_optional" = "Destination Folder (optional)";
 "backup.start_confirmation" = "Start Backup?";
 "backup.start" = "Start";
 "backup.pending_message" = "'%@' task is waiting to be started from notification.";
@@ -294,15 +287,6 @@
 "backup.select_folder_placeholder" = "Select Folder...";
 "backup.select_time" = "Select Time";
 "backup.or_text" = "or";
-"backup.status.idle" = "Ready";
-"backup.status.preparing" = "Preparing...";
-"backup.status.scanning" = "Scanning files...";
-"backup.status.uploading" = "Uploading...";
-"backup.status.completed" = "Completed";
-"backup.status.failed" = "Failed";
-"backup.status.cancelled" = "Cancelled";
-"history.loading" = "Loading...";
-"history.error_occurred" = "Error Occurred: %@";
 "history.loading" = "Loading...";
 "history.error_occurred" = "Error Occurred: %@";
 "history.retry" = "Retry";
@@ -323,9 +307,6 @@
 "error.directory_creation" = "Unexpected error while creating directory: %@";
 "error.server_not_found" = "Server not found or inaccessible";
 "history.media_type_prefix" = "Media Type: %@";
-"media_type.photos_only" = "Photos Only";
-"media_type.videos_only" = "Videos Only";
-"media_type.photos_and_videos" = "Photos and Videos";
 "common.close" = "Close";
 "task.general" = "General";
 "task.next_run" = "Next Run";
@@ -377,12 +358,6 @@
 "background_task_monitor.app_state.unknown" = "Unknown";
 
 // New Notification Actions (v1.1)
-"backup.notification.action.start" = "Start Now";
-"backup.notification.action.postpone_10" = "Postpone 10 Minutes";
-"backup.notification.action.postpone_60" = "Postpone 1 Hour";
-"backup.notification.wifi_required.title" = "⚠️ WiFi Connection Required";
-"backup.notification.wifi_required.body" = "\"%@\" backup requires WiFi connection.\n\nCurrently: %@\n\nOptions:\n• Connect to WiFi\n• Enable cellular data usage in Settings";
-"backup.notification.action.open_settings" = "Open Settings";
 
 // About View
 "about.license" = "License";
@@ -422,10 +397,6 @@
 "backup.frequency_text.daily" = "daily";
 "backup.frequency_text.weekly" = "weekly";
 "backup.frequency_text.manual" = "manual";
-"backup.frequency_text.scheduled" = "scheduled";
-"backup.auto_backup_how_title" = "How does Automatic Backup work?";
-"backup.guarantee_title" = "To guarantee";
-"backup.start_from_notification_desc" = "Tap the Start Now button in the notification or open the app";
 
 "task.scheduled_task_note" = "Note: When you receive a notification for scheduled tasks, you need to tap the notification to open the app and start the backup.";
 "task.bgtime_required" = "At least 16 minutes must be selected for background tasks";
@@ -491,6 +462,18 @@
 "settings.language.system" = "System Language";
 "settings.language.turkish" = "Turkish";
 "settings.language.english" = "English";
+"settings.language.arabic" = "Arabic";
+"settings.language.chinese" = "Chinese";
+"settings.language.french" = "French";
+"settings.language.german" = "German";
+"settings.language.hindi" = "Hindi";
+"settings.language.japanese" = "Japanese";
+"settings.language.korean" = "Korean";
+"settings.language.portuguese" = "Portuguese";
+"settings.language.russian" = "Russian";
+"settings.language.spanish" = "Spanish";
+"settings.require_external_power" = "Require External Power";
+"settings.require_external_power_note" = "This feature requires external power.";
 
 "backup.source_section" = "Source";
 "backup.photos_option" = "Photo Library";
@@ -501,6 +484,9 @@
 "backup.allow_cellular_warning" = "Backups over cellular data may incur additional charges.";
 "backup.wifi_only_info" = "Backups run over Wi‑Fi only.";
 "backup.save_task" = "Save Task";
+"backup.first_start_prompt_title" = "Start first backup now?";
+"backup.first_start_prompt_message" = "Your first task was saved. Would you like to start the backup now?";
+"backup.first_start_prompt_later" = "Not now";
 "backup.info_title" = "Info";
 "backup.ok" = "OK";
 "backup.testing_network" = "Checking network…";

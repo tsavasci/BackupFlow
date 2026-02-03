@@ -138,7 +138,8 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             
             // Log available background time
             let remainingTime = UIApplication.shared.backgroundTimeRemaining
-            print("   ⏳ Kalan arka plan süresi: \(String(format: "%.1f", remainingTime)) saniye")
+            let remainingText: String = remainingTime.isFinite ? String(format: "%.1f", remainingTime) : "∞"
+            print("   ⏳ Kalan arka plan süresi: \(remainingText) saniye")
             
             // Also check if any timers should have fired but didn't
             print("🔍 BGTaskScheduler: Timer durumları kontrol ediliyor...")
@@ -205,7 +206,8 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             
             // Log available background time
             let remainingTime = UIApplication.shared.backgroundTimeRemaining
-            print("   ⏳ Kalan arka plan süresi: \(String(format: "%.1f", remainingTime)) saniye")
+            let remainingText: String = remainingTime.isFinite ? String(format: "%.1f", remainingTime) : "∞"
+            print("   ⏳ Kalan arka plan süresi: \(remainingText) saniye")
             
             let success = await BackupScheduler.shared.executeBackgroundTask()
             

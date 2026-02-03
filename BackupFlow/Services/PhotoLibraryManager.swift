@@ -178,11 +178,11 @@ class PhotoLibraryManager: NSObject, ObservableObject {
                 // PHImageRequestOptions'ı main thread'de kullan
                 PHImageManager.default().requestImageDataAndOrientation(for: asset, options: options) { data, uti, orientation, info in
                     // Eğer yerel varlık bulunamazsa, iCloud'dan indir (opsiyonel)
-                    if let data = data {
+                    if let data = data, !data.isEmpty {
                         self.logger.debug("✓ Fotoğraf verisi yerel olarak alındı: \(asset.localIdentifier.prefix(8))")
                         continuation.resume(returning: data)
                     } else if let isInCloud = info?[PHImageResultIsInCloudKey] as? NSNumber, isInCloud.boolValue {
-                        self.logger.warning("⚠️ Fotoğraf iCloud'da - yerel indirme başlatılmıyor (ağ erişimi devre dışı)")
+                        self.logger.warning("⚠️ Fotoğraf iCloud'da - yerel indirme başlatılmıyor (ağ erişimi açık)")
                         continuation.resume(returning: nil)
                     } else {
                         continuation.resume(returning: nil)
@@ -203,14 +203,30 @@ class PhotoLibraryManager: NSObject, ObservableObject {
                         return
                     }
 
+                    // Prepare temp location outside do/catch so it's visible in catch
+                    let tempRoot = FileManager.default.temporaryDirectory.appendingPathComponent("backupflow_exports", isDirectory: true)
+                    try? FileManager.default.createDirectory(at: tempRoot, withIntermediateDirectories: true)
+                    let tempURL = tempRoot.appendingPathComponent("video_\(UUID().uuidString).mp4")
+
                     Task {
-                        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("backupflow_video_\(UUID().uuidString).mp4")
+                        var exportSession: AVAssetExportSession?
                         do {
-                            guard let exportSession = AVAssetExportSession(asset: avAsset, presetName: AVAssetExportPresetHighestQuality) else {
+                            exportSession = AVAssetExportSession(asset: avAsset, presetName: AVAssetExportPresetHighestQuality)
+                            guard let session = exportSession else {
                                 continuation.resume(returning: nil)
                                 return
                             }
-                            try await exportSession.export(to: tempURL, as: AVFileType.mp4)
+                            // Prefer mp4 if supported, otherwise fallback to first supported type
+                            if session.supportedFileTypes.contains(.mp4) {
+                                session.outputFileType = .mp4
+                            } else if let first = session.supportedFileTypes.first {
+                                session.outputFileType = first
+                            }
+                            // Clean existing file if any
+                            if FileManager.default.fileExists(atPath: tempURL.path) {
+                                try? FileManager.default.removeItem(at: tempURL)
+                            }
+                            try await session.export(to: tempURL, as: session.outputFileType ?? .mp4)
                             let data = try Data(contentsOf: tempURL)
                             try? FileManager.default.removeItem(at: tempURL)
                             self.logger.debug("✓ Video export tamamlandı: \(asset.localIdentifier.prefix(8))")

@@ -20,6 +20,14 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     private let logger = Logger(subsystem: "com.backupflow.app", category: "FTPService")
     private let isVerboseLoggingEnabled = false
     
+    private func normalizedRemotePath(_ path: String) -> String {
+        var p = path.replacingOccurrences(of: "\\", with: "/")
+        if !p.hasPrefix("/") { p = "/" + p }
+        // Collapse duplicate slashes
+        while p.contains("//") { p = p.replacingOccurrences(of: "//", with: "/") }
+        return p
+    }
+    
     // MARK: - BackupServiceProtocol Properties
     @Published private(set) var isConnected = false
     @Published private(set) var networkPermissionGranted = false
@@ -181,6 +189,17 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                 throw FTPError.connectionFailed
             }
             
+            // Try to force passive mode if supported by FilesProvider
+            if testProvider.responds(to: Selector(("setPassiveMode:"))) {
+                testProvider.setValue(true, forKey: "passiveMode")
+                logger.info("FTP: PASV modu etkinleştirildi")
+            }
+            // Prefer EPSV if supported
+            if testProvider.responds(to: Selector(("setUseEPSV:"))) {
+                testProvider.setValue(true, forKey: "useEPSV")
+                logger.info("FTP: EPSV kullanımı etkinleştirildi")
+            }
+            
             // Configure test provider based on app state
             let isBackgroundMode: Bool = {
                 #if canImport(UIKit)
@@ -334,6 +353,17 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                 throw FTPError.connectionFailed
             }
             
+            // Try to force passive mode if supported by FilesProvider
+            if provider.responds(to: Selector(("setPassiveMode:"))) {
+                provider.setValue(true, forKey: "passiveMode")
+                logger.info("FTP: PASV modu etkinleştirildi")
+            }
+            // Prefer EPSV if supported
+            if provider.responds(to: Selector(("setUseEPSV:"))) {
+                provider.setValue(true, forKey: "useEPSV")
+                logger.info("FTP: EPSV kullanımı etkinleştirildi")
+            }
+            
             // Configure provider based on app state
             let isBackgroundMode: Bool = {
                 #if canImport(UIKit)
@@ -405,6 +435,17 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         guard let provider = FTPFileProvider(baseURL: serverURL, credential: credential) else {
             logger.error("FTP sağlayıcısı oluşturulamadı")
             throw FTPError.connectionFailed
+        }
+        
+        // Try to force passive mode if supported by FilesProvider
+        if provider.responds(to: Selector(("setPassiveMode:"))) {
+            provider.setValue(true, forKey: "passiveMode")
+            logger.info("FTP: PASV modu etkinleştirildi")
+        }
+        // Prefer EPSV if supported
+        if provider.responds(to: Selector(("setUseEPSV:"))) {
+            provider.setValue(true, forKey: "useEPSV")
+            logger.info("FTP: EPSV kullanımı etkinleştirildi")
         }
         
         // Configure provider based on app state
@@ -575,7 +616,9 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                 // Dosyanın FTP'deki hedef yolunu oluştur
                 // Kaynak URL'den baz klasörü çıkar
                 let relativePath = fileURL.path.replacingOccurrences(of: localURL.path, with: "")
-                let targetPath = remotePath + relativePath
+                let base = normalizedRemotePath(remotePath)
+                let rel = relativePath.hasPrefix("/") ? String(relativePath.dropFirst()) : relativePath
+                let targetPath = base == "/" ? "/" + rel : base + "/" + rel
                 
                 let parentPath = (targetPath as NSString).deletingLastPathComponent
                 if !parentPath.isEmpty && parentPath != "/" {
@@ -636,6 +679,8 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             throw FTPError.fileOperationFailed
         }
         
+        let remotePath = normalizedRemotePath(remotePath)
+        
         // Log timeout configuration for background/foreground mode
         let isBackgroundMode: Bool = {
             #if canImport(UIKit)
@@ -650,8 +695,10 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             logger.info("⏱️ FTP using foreground mode (normal timeouts)")
         }
         
-        // Mevcut görevi iptal et
-        currentTask?.cancel()
+        // Mevcut görevi gereksiz yere iptal etme: sadece aktif ve devam eden bir görev varsa iptal et
+        if let existing = currentTask, !existing.isCancelled && !existing.isFinished {
+            existing.cancel()
+        }
         
         // Bu fonksiyon artık sadece yükleme yapar, dizin kontrolü veya oluşturma yapmaz.
         // logger.info("Dosya yükleniyor: \(localURL.lastPathComponent) -> \(remotePath)")
@@ -802,6 +849,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             logger.error("Dizin oluşturulamadı: FTP bağlantısı yok")
             throw FTPError.connectionFailed
         }
+        let path = normalizedRemotePath(path)
         let ops = FTPFileOperations(
             provider: ftp,
             logger: logger,
@@ -817,6 +865,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             logger.error("Dizin kontrolü yapılamadı: FTP bağlantısı yok")
             throw FTPError.connectionFailed
         }
+        let path = normalizedRemotePath(path)
         let ops = FTPFileOperations(
             provider: ftp,
             logger: logger,
@@ -831,6 +880,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         guard let ftp = ftpProvider else {
             throw FTPError.connectionFailed
         }
+        let path = normalizedRemotePath(path)
         let ops = FTPFileOperations(
             provider: ftp,
             logger: logger,
@@ -878,7 +928,9 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     
     /// Helper function to upload photo data
     private func uploadPhotoData(data: Data, remotePath: String, fileName: String, progressHandler: ((Double) -> Void)? = nil) async throws {
-        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+        let tempRoot = FileManager.default.temporaryDirectory.appendingPathComponent("backupflow_exports", isDirectory: true)
+        try? FileManager.default.createDirectory(at: tempRoot, withIntermediateDirectories: true)
+        let tempURL = tempRoot.appendingPathComponent(fileName)
         try data.write(to: tempURL)
         
         // Update current file being processed
@@ -940,10 +992,12 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     }
     
     // FTP sunucusundan dosya sil
-func deleteFile(at path: String) async throws {
+    func deleteFile(at path: String) async throws {
         guard let ftp = ftpProvider else {
             throw FTPError.connectionFailed
         }
+        
+        let path = normalizedRemotePath(path)
         
         logger.info("FTP dosyası siliniyor: \(path)")
         
@@ -1015,7 +1069,8 @@ func deleteFile(at path: String) async throws {
             // Directory sync backup - preserve source folder name
             let sourceURL = URL(fileURLWithPath: sourcePath)
             let sourceFolderName = sourceURL.lastPathComponent
-            syncResult = try await syncUploadDirectory(localURL: sourceURL, remotePath: sourceFolderName, progressHandler: progressHandler)
+            let safeRemoteBase = normalizedRemotePath("/" + sourceFolderName)
+            syncResult = try await syncUploadDirectory(localURL: sourceURL, remotePath: safeRemoteBase, progressHandler: progressHandler)
         }
         
         // Print detailed report
