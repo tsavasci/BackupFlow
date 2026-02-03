@@ -598,6 +598,8 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             
             // İlerleme için progress nesnesi oluştur
             let overallProgress = Progress(totalUnitCount: totalSize)
+            let skipStart = CFAbsoluteTimeGetCurrent()
+            var remoteDirCache: [String: [String: Int64]] = [:]
             self.currentTask = overallProgress
             var processedSize: Int64 = 0
             
@@ -621,21 +623,70 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                 let targetPath = base == "/" ? "/" + rel : base + "/" + rel
                 
                 let parentPath = (targetPath as NSString).deletingLastPathComponent
-                if !parentPath.isEmpty && parentPath != "/" {
-                    try await createDirectory(at: parentPath)
-                }
                 
                 if skipExisting {
-                    if let remoteSize = try? await getRemoteFileInfo(at: targetPath),
-                       remoteSize == fileSize {
-                        logger.info("Dosya zaten var ve aynı boyutta (\(fileSize) bytes), atlanıyor: \(targetPath)")
-                        processedSize += fileSize
-                        overallProgress.completedUnitCount = processedSize
-                        skippedCount += 1
-                        if let handler = progressHandler {
-                            await MainActor.run { handler(Double(processedSize) / Double(totalSize)) }
+                    // Fast skip using cached remote directory listing
+                    self.logger.debug("FTP LIST check for parent: \(parentPath)")
+                    if remoteDirCache[parentPath] == nil {
+                        self.logger.info("FTP LIST cache miss: \(parentPath)")
+                        do {
+                            let list = try await listFiles(in: parentPath)
+                            var dict: [String: Int64] = [:]
+                            for (name, size) in list {
+                                dict[name] = size
+                            }
+                            self.logger.info("FTP LIST loaded \(dict.count) files for \(parentPath)")
+                            remoteDirCache[parentPath] = dict
+                        } catch {
+                            self.logger.warning("FTP LIST failed for \(parentPath); proceeding without size hints")
+                            remoteDirCache[parentPath] = [:]
                         }
-                        continue
+                    } else {
+                        self.logger.debug("FTP LIST cache hit: \(parentPath) (\(remoteDirCache[parentPath]?.count ?? 0) files)")
+                    }
+                    if let cachedFiles = remoteDirCache[parentPath] {
+                        let fileName = (targetPath as NSString).lastPathComponent
+                        let tenMB: Int64 = 10 * 1024 * 1024
+
+                        if fileSize > tenMB {
+                            // For files >10MB: skip if a file with the same name exists (ignore size)
+                            if cachedFiles[fileName] != nil {
+                                logger.info("Dosya adı zaten mevcut (>10MB, isim bazlı skip), atlanıyor: \(targetPath)")
+                                processedSize += fileSize
+                                overallProgress.completedUnitCount = processedSize
+                                skippedCount += 1
+                                if let handler = progressHandler {
+                                    await MainActor.run { handler(Double(processedSize) / Double(totalSize)) }
+                                }
+                                continue
+                            }
+                        } else {
+                            // For files <=10MB: require both name and size to match
+                            if let cachedSize = cachedFiles[fileName], cachedSize == fileSize {
+                                logger.info("Dosya zaten var ve aynı boyutta (<=10MB, isim+boyut), atlanıyor: \(targetPath)")
+                                processedSize += fileSize
+                                overallProgress.completedUnitCount = processedSize
+                                skippedCount += 1
+                                if let handler = progressHandler {
+                                    await MainActor.run { handler(Double(processedSize) / Double(totalSize)) }
+                                }
+                                continue
+                            }
+                        }
+                    }
+                }
+                
+                // Only ensure remote directory exists if we actually need to upload
+                if !parentPath.isEmpty && parentPath != "/" {
+                    do {
+                        try await createDirectory(at: parentPath)
+                    } catch {
+                        let nsError = error as NSError
+                        if (nsError.domain == NSURLErrorDomain && nsError.code == -3000) || (nsError.domain == NSCocoaErrorDomain && nsError.code == NSFileWriteFileExistsError) {
+                            self.logger.info("FTP: Directory already exists or not creatable (non-fatal): \(parentPath)")
+                        } else {
+                            throw error
+                        }
                     }
                 }
                 
@@ -652,7 +703,8 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                     await MainActor.run { handler(Double(processedSize) / Double(totalSize)) }
                 }
             }
-            
+            let skipElapsed = CFAbsoluteTimeGetCurrent() - skipStart
+            self.logger.info("FTP: Skip decision pass completed in \(String(format: "%.3f", skipElapsed))s for \(files.count) files")
         } catch {
             logger.error("Yükleme hatası: \(error.localizedDescription)")
             throw error
@@ -1106,4 +1158,7 @@ final class FTPService: ObservableObject {
 }
 
 #endif
+
+
+
 
