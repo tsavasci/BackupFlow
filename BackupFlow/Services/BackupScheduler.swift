@@ -482,6 +482,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                         try? await self.performBackup(task: task)
                     }
                 }
+                return
             } else {
                 retryCount.removeValue(forKey: task.id)
                 print("💥 BackupFlow: Maksimum yeniden deneme sayısına ulaşıldı")
@@ -1379,4 +1380,3 @@ final class BackupScheduler: NSObject, ObservableObject {
 }
 
 #endif
-
