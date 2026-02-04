@@ -5,6 +5,22 @@ struct DocumentPicker: UIViewControllerRepresentable {
     @Binding var url: URL?
     var onDismiss: () -> Void = {}
     
+    private var bookmarkCreationOptions: URL.BookmarkCreationOptions {
+        #if os(iOS)
+        return [.minimalBookmark]
+        #else
+        return [.withSecurityScope]
+        #endif
+    }
+    
+    private var bookmarkResolutionOptions: URL.BookmarkResolutionOptions {
+        #if os(iOS)
+        return []
+        #else
+        return [.withSecurityScope]
+        #endif
+    }
+    
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
         let documentPicker = UIDocumentPickerViewController(
             forOpeningContentTypes: [.folder],
@@ -47,9 +63,9 @@ struct DocumentPicker: UIViewControllerRepresentable {
             
             // Save bookmark before updating the URL
             do {
-                // For iOS, use minimal bookmark for File Provider access
+                // For iOS, use minimal bookmark; macOS uses security-scoped bookmark
                 let bookmark = try selectedURL.bookmarkData(
-                    options: [.minimalBookmark],
+                    options: parent.bookmarkCreationOptions,
                     includingResourceValuesForKeys: [.isDirectoryKey, .nameKey],
                     relativeTo: nil
                 )
@@ -72,7 +88,7 @@ struct DocumentPicker: UIViewControllerRepresentable {
                     var isStale = false
                     let resolvedURL = try URL(
                         resolvingBookmarkData: bookmark,
-                        options: [],
+                        options: parent.bookmarkResolutionOptions,
                         relativeTo: nil,
                         bookmarkDataIsStale: &isStale
                     )

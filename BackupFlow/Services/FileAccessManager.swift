@@ -7,12 +7,28 @@ class FileAccessManager {
     private let logger = Logger(subsystem: "com.example.BackupFlow", category: "FileAccessManager")
     private let userDefaults = UserDefaults.standard
     
+    private var bookmarkCreationOptions: URL.BookmarkCreationOptions {
+        #if os(iOS)
+        return [.minimalBookmark]
+        #else
+        return [.withSecurityScope]
+        #endif
+    }
+    
+    private var bookmarkResolutionOptions: URL.BookmarkResolutionOptions {
+        #if os(iOS)
+        return []
+        #else
+        return [.withSecurityScope]
+        #endif
+    }
+    
     private init() {}
     
     /// Save a security scoped bookmark for a URL
     func saveBookmark(for url: URL, key: String) throws {
         let bookmarkData = try url.bookmarkData(
-            options: [.minimalBookmark],
+            options: bookmarkCreationOptions,
             includingResourceValuesForKeys: [.isDirectoryKey],
             relativeTo: nil
         )
@@ -32,7 +48,7 @@ class FileAccessManager {
             var isStale = false
             let url = try URL(
                 resolvingBookmarkData: bookmarkData,
-                options: [],
+                options: bookmarkResolutionOptions,
                 relativeTo: nil,
                 bookmarkDataIsStale: &isStale
             )
@@ -63,7 +79,8 @@ class FileAccessManager {
                 logger.info("🔐 Found bookmark for path: \(bookmarkURL.path)")
                 // In iOS, File Provider access is handled through Document Picker permissions
                 // We don't need to explicitly start security scoped access for bookmarked URLs
-                return (bookmarkURL, true)
+                let started = bookmarkURL.startAccessingSecurityScopedResource()
+                return (bookmarkURL, started)
             } else {
                 logger.warning("🔐 No bookmark found for File Provider path: \(path)")
                 // Fallback to direct URL - but this likely won't work for File Provider
@@ -81,6 +98,7 @@ class FileAccessManager {
     func stopSecurityScopedAccess(for url: URL) {
         // In iOS File Provider context, we don't need to explicitly stop security scoped access
         // The access is managed through the Document Picker permissions
+        url.stopAccessingSecurityScopedResource()
         logger.info("🔐 File access cleanup for: \(url.lastPathComponent)")
     }
     
@@ -92,6 +110,12 @@ class FileAccessManager {
         if let bookmarkURL = loadBookmark(for: path) {
             logger.info("🔐 Using bookmark URL for file operation")
             // In iOS, bookmark URLs don't need explicit security scoped access management
+            let started = bookmarkURL.startAccessingSecurityScopedResource()
+            defer {
+                if started {
+                    bookmarkURL.stopAccessingSecurityScopedResource()
+                }
+            }
             try operation(bookmarkURL)
             return
         }

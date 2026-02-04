@@ -19,7 +19,6 @@ final class WebDAVBackgroundUploader {
         logger.info("🌐 Starting background upload (via FilesProvider): \(remotePath)")
 
         do {
-            let data = try Data(contentsOf: localURL)
             try await executeWithRetry {
                 try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
                     var didResume = false
@@ -34,7 +33,7 @@ final class WebDAVBackgroundUploader {
                         continuation.resume()
                     }
 
-                    provider.writeContents(path: remotePath, contents: data, atomically: true, overwrite: true) { error in
+                    provider.copyItem(localFile: localURL, to: remotePath, overwrite: true) { error in
                         if let error = error {
                             onError(error)
                             self.logger.error("🌐 Background upload failed: \(error.localizedDescription)")

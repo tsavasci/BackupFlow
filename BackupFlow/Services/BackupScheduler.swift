@@ -1,7 +1,7 @@
 #if os(iOS)
 
 import AVFoundation
-import BackgroundTasks
+@preconcurrency import BackgroundTasks
 import Combine
 import Foundation
 import Network
@@ -72,6 +72,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     
     private var lastNotificationSentAt: [UUID: Date] = [:]
     private var lastScheduledTargetTime: [UUID: Date] = [:]
+    private var lastBGTaskNotificationAt: Date? = nil
     
     private var lastRunAt: Date? = nil
     private let minRunInterval: TimeInterval = 60 // en az 60 sn arayla çalıştır
@@ -136,8 +137,6 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     /// Daha uzun ve ağ bağlantısı gerektiren işler için BGProcessing görevi planlar.
     public func scheduleProcessingTask() {
         let identifier = (Bundle.main.bundleIdentifier ?? "tamersavasci.BackupFlow") + ".processing"
-
-        let request = BGProcessingTaskRequest(identifier: identifier)
         
         // Only schedule if there is at least one active (enabled and not paused) task
         if let container = Self.sharedModelContainer {
@@ -151,10 +150,9 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             }
         }
 
-        request.requiresNetworkConnectivity = true
         // Respect user preference for external power requirement (default false)
         let requireExternal = UserDefaults.standard.bool(forKey: "RequireExternalPower")
-        request.requiresExternalPower = requireExternal
+        var earliestBeginDate: Date? = nil
 
         // earliestBeginDate'i, en yakın nextRunTime'a göre ayarla (en az 15 dk kuralına uyarak)
         if let container = Self.sharedModelContainer {
@@ -168,20 +166,50 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                         candidate = now.addingTimeInterval(minimumLead)
                         print("ℹ️ BGTaskScheduler: Processing earliest çok yakın, 15 dk'ya yuvarlandı -> \(userLocalDateFormatter.string(from: candidate))")
                     }
-                    request.earliestBeginDate = candidate
+                    earliestBeginDate = candidate
                 }
             }
         }
         
         let id = identifier
-        if let last = lastSubmitByIdentifier[id], Date().timeIntervalSince(last) < 900 { // 15 minutes
+        BGTaskScheduler.shared.getPendingTaskRequests { requests in
+            let hasPending = requests.contains { $0.identifier == id }
+            Task { @MainActor in
+                BackupScheduler.shared.handleProcessingPendingCheck(
+                    hasPending: hasPending,
+                    identifier: id,
+                    earliestBeginDate: earliestBeginDate,
+                    requireExternal: requireExternal
+                )
+            }
+        }
+    }
+
+    @MainActor
+    private func handleProcessingPendingCheck(
+        hasPending: Bool,
+        identifier: String,
+        earliestBeginDate: Date?,
+        requireExternal: Bool
+    ) {
+        if hasPending {
+            print("ℹ️ BGTaskScheduler: Processing görevi zaten pending, yeniden planlama atlandı")
             return
         }
-
+        
+        if let last = lastSubmitByIdentifier[identifier], Date().timeIntervalSince(last) < 900 {
+            print("ℹ️ BGTaskScheduler: Son 15 dk içinde submit edilmiş ama pending yok; yeniden planlanıyor")
+        }
+        
+        let request = BGProcessingTaskRequest(identifier: identifier)
+        request.requiresNetworkConnectivity = true
+        request.requiresExternalPower = requireExternal
+        request.earliestBeginDate = earliestBeginDate
+        
         do {
             try BGTaskScheduler.shared.submit(request)
             lastBGSubmitAt = Date()
-            lastSubmitByIdentifier[id] = Date()
+            lastSubmitByIdentifier[identifier] = Date()
             if let d = request.earliestBeginDate {
                 print("✅ BGTaskScheduler: Processing görevi planlandı -> \(userLocalDateFormatter.string(from: d))")
             } else {
@@ -373,6 +401,8 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             // Clear processing flag when done
             Task { @MainActor in
                 isProcessing = false
+                // Ensure a pending BGProcessing task exists for upcoming schedules
+                scheduleProcessingTask()
             }
         }
         
@@ -890,9 +920,12 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         if dueTasks.isEmpty {
             print("⏱️ BGTaskScheduler: Zamanı gelen görev yok, yeniden planlanıyor")
             scheduleAppRefresh()
+            scheduleProcessingTask()
             return true
         }
         
+        await sendBackgroundTaskStartedNotification(taskCount: dueTasks.count)
+
         print("🚀 BGTaskScheduler: \(dueTasks.count) görev arka planda yürütülecek")
         
         var anySuccess = false
@@ -918,6 +951,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         }
         
         scheduleAppRefresh()
+        scheduleProcessingTask()
         return anySuccess
     }
 }
@@ -1194,6 +1228,35 @@ extension BackupScheduler {
             print("❌ BackupFlow: Geçmiş kaydı hatası (refetch): \(error)")
         }
     }
+
+    /// BGTask tetiklendiğinde kullanıcıya bildirim gönderir (debounced).
+    private func sendBackgroundTaskStartedNotification(taskCount: Int) async {
+        guard await UNUserNotificationCenter.current().notificationSettings().authorizationStatus == .authorized else {
+            return
+        }
+        if let last = lastBGTaskNotificationAt, Date().timeIntervalSince(last) < 300 {
+            return
+        }
+        
+        let content = UNMutableNotificationContent()
+        content.title = "Arka Plan Görevi Başladı"
+        content.body = "Yedekleme arka planda başlatıldı (\(taskCount) görev)."
+        content.sound = .default
+        
+        let request = UNNotificationRequest(
+            identifier: "bg_task_started",
+            content: content,
+            trigger: nil
+        )
+        
+        do {
+            try await UNUserNotificationCenter.current().add(request)
+            lastBGTaskNotificationAt = Date()
+            print("🔔 BackupFlow: BGTask başlangıç bildirimi gönderildi")
+        } catch {
+            print("❌ BackupFlow: BGTask başlangıç bildirimi hatası: \(error)")
+        }
+    }
 }
 
 // MARK: - UNUserNotificationCenterDelegate
@@ -1316,9 +1379,4 @@ final class BackupScheduler: NSObject, ObservableObject {
 }
 
 #endif
-
-
-
-
-
 

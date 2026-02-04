@@ -260,7 +260,13 @@ class PhotoLibraryManager: NSObject, ObservableObject {
             fileExtension = "unknown"
         }
         
-        return "\(dateString)_\(asset.localIdentifier.prefix(8)).\(fileExtension)"
+        let rawIdentifier = asset.localIdentifier
+        let sanitizedIdentifier = rawIdentifier
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: ":", with: "_")
+        let idFragment = String(sanitizedIdentifier.prefix(12))
+        
+        return "\(dateString)_\(idFragment).\(fileExtension)"
     }
 }
 
@@ -353,4 +359,3 @@ struct PhotoPicker: UIViewControllerRepresentable {
         }
     }
 }
-

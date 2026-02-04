@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Foundation
 import SwiftData
 import UserNotifications
 import BackgroundTasks
@@ -123,12 +124,22 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         print("   - ID: \(task.identifier)")
         print("   - Başlangıç: \(Date())")
         
+        let completionLock = NSLock()
+        var didComplete = false
+        func complete(_ success: Bool) {
+            completionLock.lock()
+            defer { completionLock.unlock() }
+            guard !didComplete else { return }
+            didComplete = true
+            task.setTaskCompleted(success: success)
+        }
+        
         task.expirationHandler = {
             // Clean up any unfinished work
             print("⚠️ BGTaskScheduler: Görev süresi doluyor...")
             print("ℹ️ BGTaskScheduler: Upload işlemi devam ediyor, sistem iptal etse de network aktif kalacak")
-            // NOT: Burada task.setTaskCompleted çağırmıyoruz
-            // Upload işlemi foreground/background modunda devam etsin
+            // Görevi tamamlandı olarak işaretle; upload devam edebilir ama BGTask kapanmalı
+            complete(false)
         }
 
         // Perform the backup in a background-safe way
@@ -156,7 +167,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                 print("⚠️ BGTaskScheduler: Görev tamamlandı ancak yedekleme yapılamadı.")
             }
             
-            task.setTaskCompleted(success: success)
+            complete(success)
         }
     }
 
@@ -184,20 +195,37 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         print("   - ID: \(task.identifier)")
         print("   - Başlangıç: \(Date())")
         
+        let completionLock = NSLock()
+        var didComplete = false
+        func complete(_ success: Bool) {
+            completionLock.lock()
+            defer { completionLock.unlock() }
+            guard !didComplete else { return }
+            didComplete = true
+            task.setTaskCompleted(success: success)
+        }
+        
+        // Start a background task to ensure we have enough time
+        var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
+        
         task.expirationHandler = {
             print("⚠️ BGTaskScheduler: İşlem süresi doluyor...")
             print("ℹ️ BGTaskScheduler: Upload devam ediyor, network bağlantısı korunuyor")
-            // Upload işlemi devam etsin, sadece BGTask tamamlanmış sayılsın
+            // Upload işlemi devam etsin, BGTask tamamlanmış sayılsın
+            if backgroundTaskID != .invalid {
+                UIApplication.shared.endBackgroundTask(backgroundTaskID)
+                backgroundTaskID = .invalid
+            }
+            complete(false)
         }
 
-        // Start a background task to ensure we have enough time
-        var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
         backgroundTaskID = UIApplication.shared.beginBackgroundTask {
             print("⚠️ Arka plan süresi doluyor, işlem sonlandırılıyor...")
             if backgroundTaskID != .invalid {
                 UIApplication.shared.endBackgroundTask(backgroundTaskID)
                 backgroundTaskID = .invalid
             }
+            complete(false)
         }
         
         let startTime = Date()
@@ -226,7 +254,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                 backgroundTaskID = .invalid
             }
             
-            task.setTaskCompleted(success: success)
+            complete(success)
         }
     }
 }
@@ -305,15 +333,14 @@ struct BackupFlowApp: App {
         .onChange(of: scenePhase) { (oldPhase: ScenePhase, newPhase: ScenePhase) in
             if newPhase == .background {
                 WebDAVService.shared.updateBackgroundMode(isBackground: true)
-                // Sadece aktif yedekleme yoksa BGTask planla
-                if !BackupScheduler.shared.isProcessing {
-                    print("🔄 App moved to background. Scheduling processing task only (avoid double scheduling).")
-                    // Processing görevi ağ ve uzun işlem için daha uygun
-                    BackupScheduler.shared.scheduleProcessingTask()
-                } else {
+                if BackupScheduler.shared.isProcessing {
                     print("⚠️ App moved to background. Active backup detected - keeping current process running.")
                     print("📱 Background URLSession will continue the upload process.")
+                } else {
+                    print("🔄 App moved to background. Scheduling processing task.")
                 }
+                // Processing görevi ağ ve uzun işlem için daha uygun
+                BackupScheduler.shared.scheduleProcessingTask()
             } else if newPhase == .active {
                 print("📱 BackupFlow: App foreground'a geldi")
                 WebDAVService.shared.updateBackgroundMode(isBackground: false)
@@ -340,4 +367,3 @@ struct BackupFlowApp: App {
         }
     }
 }
-

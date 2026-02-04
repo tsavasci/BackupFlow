@@ -281,17 +281,19 @@ struct FTPSyncEngine {
 
         let existingFileMap = try await listAllFiles(at: photosDir)
         logger.info("Found \(existingFileMap.count) existing photo files on FTP")
+        
+        let legacyNamePattern = #"^\d{8}_\d{6}_\d{3}\.(jpg|mp4)$"#
+        let hasLegacyNames = existingFileMap.values.contains { file in
+            file.name.range(of: legacyNamePattern, options: .regularExpression) != nil
+        }
+        if hasLegacyNames {
+            logger.warning("⚠️ Legacy photo filenames detected on FTP. Orphan deletion will be skipped to avoid data loss.")
+        }
 
         for (index, asset) in assets.enumerated() {
             guard !isCancelled() else { break }
-
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
-            let date = asset.creationDate ?? Date()
-            let dateString = dateFormatter.string(from: date)
-
-            let fileExtension = asset.mediaType == .image ? "jpg" : "mp4"
-            let safeFileName = "\(dateString)_\(String(index + 1).padding(toLength: 3, withPad: "0", startingAt: 0)).\(fileExtension)"
+            
+            let stableFileName = photoManager.generateFileName(for: asset)
 
             guard let data = try await photoManager.getAssetData(asset: asset) else {
                 print("⚠️ BackupFlow: Asset verisi alınamadı: \(asset.localIdentifier)")
@@ -299,10 +301,10 @@ struct FTPSyncEngine {
             }
 
             let localSize = Int64(data.count)
-            let remotePath = "\(photosDir)/\(safeFileName)"
+            let remotePath = "\(photosDir)/\(stableFileName)"
 
             let comparisonResult = compareFileEnhanced(
-                relativePath: safeFileName,
+                relativePath: stableFileName,
                 localSize: localSize,
                 existingFiles: existingFileMap
             )
@@ -311,35 +313,33 @@ struct FTPSyncEngine {
             case .unchanged:
                 result.skippedFiles += 1
                 result.totalBytes += localSize
-                setCurrentFile("Atlandı: \(safeFileName)")
-                print("⏭ BackupFlow: Aynı dosya pas geçildi: \(safeFileName) (\(formatBytes(localSize)))")
+                setCurrentFile("Atlandı: \(stableFileName)")
+                print("⏭ BackupFlow: Aynı dosya pas geçildi: \(stableFileName) (\(formatBytes(localSize)))")
             case .new:
-                setCurrentFile("Yükleniyor: \(safeFileName)")
-                try await uploadPhotoData(data, remotePath, safeFileName)
+                setCurrentFile("Yükleniyor: \(stableFileName)")
+                try await uploadPhotoData(data, remotePath, stableFileName)
                 result.newFiles += 1
                 result.totalBytes += localSize
-                print("📤 BackupFlow: Yeni dosya yüklendi: \(safeFileName) (\(formatBytes(localSize)))")
+                print("📤 BackupFlow: Yeni dosya yüklendi: \(stableFileName) (\(formatBytes(localSize)))")
             case .updated:
-                setCurrentFile("Güncelleniyor: \(safeFileName)")
-                try await uploadPhotoData(data, remotePath, safeFileName)
+                setCurrentFile("Güncelleniyor: \(stableFileName)")
+                try await uploadPhotoData(data, remotePath, stableFileName)
                 result.updatedFiles += 1
                 result.totalBytes += localSize
-                print("🔄 BackupFlow: Güncellenmiş dosya yüklendi: \(safeFileName) (\(formatBytes(localSize)))")
+                print("🔄 BackupFlow: Güncellenmiş dosya yüklendi: \(stableFileName) (\(formatBytes(localSize)))")
             }
 
             let progress = Double(index + 1) / Double(totalCount)
             progressHandler?(progress)
         }
-
+        
+        if hasLegacyNames {
+            logger.warning("Skipping orphan deletion while legacy filenames exist to prevent accidental data loss.")
+            return result
+        }
+        
         logger.info("Checking for orphaned photo files to delete...")
-        let processedFiles = Set(assets.enumerated().map { index, asset in
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
-            let date = asset.creationDate ?? Date()
-            let dateString = dateFormatter.string(from: date)
-            let fileExtension = asset.mediaType == .image ? "jpg" : "mp4"
-            return "\(dateString)_\(String(index + 1).padding(toLength: 3, withPad: "0", startingAt: 0)).\(fileExtension)"
-        })
+        let processedFiles = Set(assets.map { photoManager.generateFileName(for: $0) })
 
         for (remotePath, remoteFile) in existingFileMap {
             if !processedFiles.contains(remoteFile.name) {

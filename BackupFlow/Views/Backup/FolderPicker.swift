@@ -7,6 +7,22 @@ struct FolderPicker: UIViewControllerRepresentable {
     @Environment(\.presentationMode) private var presentationMode
     private let logger = Logger(subsystem: "com.example.BackupFlow", category: "FolderPicker")
     
+    private var bookmarkCreationOptions: URL.BookmarkCreationOptions {
+        #if os(iOS)
+        return [.minimalBookmark]
+        #else
+        return [.withSecurityScope]
+        #endif
+    }
+    
+    private var bookmarkResolutionOptions: URL.BookmarkResolutionOptions {
+        #if os(iOS)
+        return []
+        #else
+        return [.withSecurityScope]
+        #endif
+    }
+    
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
         let documentPicker = UIDocumentPickerViewController(
             forOpeningContentTypes: [.folder],
@@ -51,7 +67,7 @@ struct FolderPicker: UIViewControllerRepresentable {
                 // Create a bookmark for the selected URL
                 // iOS uyumlu bookmark seçenekleri
                 let bookmarkData = try url.bookmarkData(
-                    options: [.minimalBookmark],
+                    options: parent.bookmarkCreationOptions,
                     includingResourceValuesForKeys: [.isDirectoryKey, .fileSizeKey],
                     relativeTo: nil
                 )
@@ -60,7 +76,7 @@ struct FolderPicker: UIViewControllerRepresentable {
                 var isStale = false
                 let resolvedURL = try URL(
                     resolvingBookmarkData: bookmarkData,
-                    options: [],
+                    options: parent.bookmarkResolutionOptions,
                     relativeTo: nil,
                     bookmarkDataIsStale: &isStale
                 )
@@ -102,7 +118,13 @@ extension URL {
         do {
             let url = try URL(
                 resolvingBookmarkData: bookmarkData,
-                options: [],
+                options: {
+                    #if os(iOS)
+                    return []
+                    #else
+                    return [.withSecurityScope]
+                    #endif
+                }(),
                 relativeTo: nil,
                 bookmarkDataIsStale: &isStale
             )
