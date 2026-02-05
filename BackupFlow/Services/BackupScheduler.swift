@@ -385,6 +385,14 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         
         // Fail-safe: if no internet at start, handle staged retries and return
         let currentType = await getCurrentNetworkType()
+        if shouldDeferForNumericHost(task: task, networkType: currentType) {
+            print("⚠️ BackupFlow: WiFi yok (numerik adres) -> bir sonraki plana erteleniyor: \(task.displayName)")
+            await postponeToNextScheduledTime(
+                task: task,
+                reason: "WiFi yok: numerik adres için bir sonraki plana ertelendi."
+            )
+            return
+        }
         let online = (currentType == .wifi || currentType == .cellular || currentType == .ethernet)
         if !online {
             print("⚠️ BackupFlow: Ağ bağlantısı yok - failsafe devrede")
@@ -475,6 +483,14 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
 
             // If currently offline, use the no-network staged retry flow
             let currentType = await getCurrentNetworkType()
+            if shouldDeferForNumericHost(task: task, networkType: currentType) {
+                print("⚠️ BackupFlow: WiFi yok (numerik adres) -> bir sonraki plana erteleniyor: \(task.displayName)")
+                await postponeToNextScheduledTime(
+                    task: task,
+                    reason: "WiFi yok: numerik adres için bir sonraki plana ertelendi."
+                )
+                return
+            }
             if !(currentType == .wifi || currentType == .cellular || currentType == .ethernet) {
                 await handleNoNetworkFor(task: task)
                 return
@@ -728,6 +744,34 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             retryCount.removeValue(forKey: task.id)
             await finalizePostponeDueToNoNetwork(task: task)
         }
+    }
+
+    /// Postpone to the next scheduled run when WiFi is required for numeric hosts.
+    private func postponeToNextScheduledTime(task: BackupTask, reason: String) async {
+        retryCount.removeValue(forKey: task.id)
+
+        task.backupStatus = .failed
+        task.lastError = reason
+        task.progress = 0.0
+        task.currentFile = nil
+        task.lastBackupDate = Date()
+
+        task.nextRunTime = calculateNextRunTime(for: task)
+
+        if let context = task.modelContext {
+            do { try context.save() }
+            catch { print("❌ BackupFlow: Erteleme kaydı sırasında hata: \(error)") }
+        }
+
+        await createBackupHistoryRecord(
+            task: task,
+            syncResult: FTPService.SyncResult(newFiles: 0, skippedFiles: 0, totalBytes: 0),
+            duration: 0,
+            status: "failed",
+            errorMessage: reason
+        )
+
+        await scheduleTask(task)
     }
     
     /// Finalize postponement: notify user, mark as failed, push nextRunTime by 24h and create a history record.
@@ -1067,25 +1111,36 @@ extension BackupScheduler {
             let password = task.serverPassword.isEmpty ? nil : task.serverPassword
             
             // Convert host to proper format if needed
-            var host = task.serverHost
-            if !host.hasPrefix("http://") && !host.hasPrefix("https://") {
-                host = "https://" + host
-            }
+            let rawHost = task.serverHost.trimmingCharacters(in: .whitespacesAndNewlines)
+            let lowerRawHost = rawHost.lowercased()
+            let hasScheme = lowerRawHost.hasPrefix("http://") || lowerRawHost.hasPrefix("https://")
+            let schemeFromPort: String = {
+                if task.serverPort == 5005 || task.serverPort == 80 { return "http" }
+                if task.serverPort == 5006 || task.serverPort == 443 { return "https" }
+                return "https"
+            }()
+            let hostWithScheme = hasScheme ? rawHost : "\(schemeFromPort)://\(rawHost)"
             
             // Extract host and port from URL
-            guard let url = URL(string: host) else {
+            guard let url = URL(string: hostWithScheme) else {
                 throw NSError(domain: "WebDAV Error", code: -1, userInfo: [NSLocalizedDescriptionKey: "backup.error.invalid_webdav_host".localized])
             }
             
-            let hostName = url.host ?? task.serverHost
-            let port = url.port ?? (url.scheme?.lowercased() == "https" ? 443 : 80)
+            let hostName = url.host ?? rawHost
+            let port = url.port ?? (task.serverPort > 0 ? task.serverPort : ((url.scheme?.lowercased() == "https") ? 443 : 80))
+            let path = url.path
+            let hostForConnect: String = {
+                guard let scheme = url.scheme, let host = url.host else { return hostWithScheme }
+                let normalizedPath = (path.isEmpty || path == "/") ? "" : path
+                return "\(scheme)://\(host)\(normalizedPath)"
+            }()
             
             // Update UI with connection status
             task.currentFile = "backup.current_file.connecting_webdav_host".localized(with: hostName)
             
             // Connect to WebDAV server
             try await webDAVService.connect(
-                host: hostName,
+                host: hostForConnect,
                 port: port,
                 username: username,
                 password: password
@@ -1100,7 +1155,7 @@ extension BackupScheduler {
             
             // Start backup
             let syncResult = try await webDAVService.performBackup(
-                host: hostName,
+                host: hostForConnect,
                 port: port,
                 username: username,
                 password: password,
@@ -1372,6 +1427,50 @@ extension BackupScheduler {
         return localPatterns.contains { pattern in
             host.range(of: pattern, options: .regularExpression) != nil
         }
+    }
+
+    /// Extract a host from raw input (supports URLs and host:port forms).
+    private func normalizedHost(from raw: String) -> String {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return "" }
+
+        if let url = URL(string: trimmed), let host = url.host {
+            return host
+        }
+
+        if trimmed.contains("/") {
+            if let url = URL(string: "http://" + trimmed), let host = url.host {
+                return host
+            }
+        }
+
+        let firstSegment = trimmed.split(separator: "/").first.map(String.init) ?? trimmed
+        if let colonIndex = firstSegment.lastIndex(of: ":"), !firstSegment[..<colonIndex].contains(":") {
+            return String(firstSegment[..<colonIndex])
+        }
+        return firstSegment
+    }
+
+    /// Numeric IPv4 host detection (e.g., 192.168.1.10 or 213.234.1.5).
+    private func isNumericIPv4Address(_ host: String) -> Bool {
+        let pattern = #"^\d{1,3}(\.\d{1,3}){3}$"#
+        guard host.range(of: pattern, options: .regularExpression) != nil else { return false }
+        let parts = host.split(separator: ".")
+        guard parts.count == 4 else { return false }
+        return parts.allSatisfy { part in
+            guard let value = Int(part) else { return false }
+            return value >= 0 && value <= 255
+        }
+    }
+
+    /// If the host is numeric and WiFi (or wired) is not available, defer to next schedule.
+    private func shouldDeferForNumericHost(task: BackupTask, networkType: NetworkType) -> Bool {
+        if case .manual = task.frequency { return false }
+
+        let host = normalizedHost(from: task.serverHost).lowercased()
+        guard isNumericIPv4Address(host) else { return false }
+
+        return networkType != .wifi && networkType != .ethernet
     }
     
     /// Network türünü tespit eder

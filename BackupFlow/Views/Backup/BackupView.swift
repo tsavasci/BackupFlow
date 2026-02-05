@@ -847,31 +847,31 @@ struct BackupView: View {
             let overridePort = Int(portOverride)
             guard !trimmed.isEmpty else { return ("", overridePort ?? 443) }
             
-            let withScheme: String
-            if trimmed.contains("://") {
-                withScheme = trimmed
-            } else {
-                withScheme = "https://" + trimmed
-            }
+            let lowerTrimmed = trimmed.lowercased()
+            let hasScheme = lowerTrimmed.hasPrefix("http://") || lowerTrimmed.hasPrefix("https://")
+            let schemeFromPort: String = {
+                if let p = overridePort, p == 5005 || p == 80 { return "http" }
+                if let p = overridePort, p == 5006 || p == 443 { return "https" }
+                return "https"
+            }()
+            
+            let withScheme = hasScheme ? trimmed : "\(schemeFromPort)://\(trimmed)"
             
             if let components = URLComponents(string: withScheme) {
+                let scheme = components.scheme?.lowercased() ?? schemeFromPort
                 let host = components.host ?? trimmed
-                let port: Int
-                if let customPort = components.port {
-                    port = customPort
-                } else if let overridePort {
-                    port = overridePort
-                } else if components.scheme?.lowercased() == "http" {
-                    port = 80
-                } else {
-                    port = 443
-                }
-                return (host, port)
+                let port: Int = components.port ?? overridePort ?? (scheme == "http" ? 80 : 443)
+                let path = components.path
+                let normalizedPath = (path.isEmpty || path == "/") ? "" : path
+                let hostForConnect = "\(scheme)://\(host)\(normalizedPath)"
+                return (hostForConnect, port)
             }
             
             // Fallback: strip path then parse host:port
             var host = trimmed
+            var path = ""
             if let slashIndex = host.firstIndex(of: "/") {
+                path = String(host[slashIndex...])
                 host = String(host[..<slashIndex])
             }
             var port = overridePort ?? 443
@@ -882,7 +882,10 @@ struct BackupView: View {
                     host = String(host[..<portRange.lowerBound])
                 }
             }
-            return (host, port)
+            let scheme = (port == 5005 || port == 80) ? "http" : "https"
+            let normalizedPath = (path.isEmpty || path == "/") ? "" : path
+            let hostForConnect = "\(scheme)://\(host)\(normalizedPath)"
+            return (hostForConnect, port)
         }
         
         // MARK: - Helper Methods

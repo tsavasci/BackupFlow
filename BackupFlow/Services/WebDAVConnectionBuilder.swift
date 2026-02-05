@@ -11,7 +11,7 @@ struct WebDAVConnectionInfo {
 enum WebDAVConnectionBuilder {
     static func build(host: String, port: Int) throws -> WebDAVConnectionInfo {
         var cleanHost = host.trimmingCharacters(in: .whitespacesAndNewlines)
-        var webdavPath = "/webdav"
+        var webdavPath = "/"
 
         cleanHost = cleanHost.replacingOccurrences(of: "http:/", with: "http://")
         cleanHost = cleanHost.replacingOccurrences(of: "https:/", with: "https://")
@@ -39,7 +39,7 @@ enum WebDAVConnectionBuilder {
             )
         }
 
-        let useHTTPS = (port == 443 || port == 8443 || port == 4433 || port == 4430)
+        let useHTTPS = (port == 443 || port == 8443 || port == 4433 || port == 4430 || port == 5006)
         let scheme = schemeFromInput ?? (useHTTPS ? "https" : "http")
 
         var urlComponents = URLComponents()
