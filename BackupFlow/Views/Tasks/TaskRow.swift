@@ -62,7 +62,7 @@ struct TaskRow: View {
                 }
             }
             
-            // 2. Satır: Durum ve WebDAV rozeti
+            // 2. Satır: Durum ve protokol rozeti
             HStack(spacing: 8) {
                 if task.backupStatus != .idle {
                     Text(task.backupStatus.displayName)
@@ -74,14 +74,31 @@ struct TaskRow: View {
                         .foregroundColor(task.backupStatus.color)
                 }
                 
-                // WebDAV rozeti
-                if task.backupType == .webdav {
+                // Protokol rozeti
+                switch task.backupType {
+                case .webdav:
                     Text("WebDAV")
                         .font(.caption)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(Color.green.opacity(0.2))
                         .foregroundColor(.green)
+                        .cornerRadius(4)
+                case .ftp:
+                    Text("FTP")
+                        .font(.caption)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.yellow.opacity(0.25))
+                        .foregroundColor(.orange)
+                        .cornerRadius(4)
+                case .sftp:
+                    Text("SFTP")
+                        .font(.caption)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.orange.opacity(0.2))
+                        .foregroundColor(.orange)
                         .cornerRadius(4)
                 }
                 

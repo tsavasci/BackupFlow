@@ -203,6 +203,7 @@
 "day.saturday" = "Суббота";
 "backup.connection_testing" = "Проверка соединения...";
 "backup.connection_success_ftp" = "FTP соединение успешно!";
+"backup.connection_success_sftp" = "SFTP соединение успешно!";
 "backup.connection_success_webdav" = "✅ WebDAV соединение успешно!";
 "backup.connection_error" = "Ошибка соединения";
 "backup.fill_required_fields" = "Пожалуйста, заполните обязательные поля (адрес сервера и имя пользователя/пароль)";
@@ -529,3 +530,40 @@
 "media_type.photos_only" = "Только фотографии";
 "media_type.videos_only" = "Только видео";
 "media_type.photos_and_videos" = "Фотографии и видео";
+
+"sftp.tofu_notice" = "SFTP host key will be trusted on first connection (TOFU).";
+"sftp.hostkey_title" = "SFTP Security Warning";
+"sftp.hostkey_message" = "New host key trusted (TOFU). Fingerprint: %@";
+
+
+"backup.status.interrupted" = "Interrupted";
+
+"tasks.schedule_error_detail" = "но планирование не удалось: %@";
+"tasks.save_error_detail" = "Ошибка при сохранении задачи: %@";
+
+"backup.ftp_background_warning.title" = "Резервное копирование FTP начато";
+"backup.ftp_background_warning.body" = "Чтобы надежно сохранять большие файлы, держите приложение на переднем плане.";
+"backup.network_unavailable.title" = "Нет сетевого подключения";
+"backup.network_unavailable.body" = "Нет сетевого подключения. Повтор %d/%d.";
+"backup.network_unavailable.body_with_delay" = "Нет сетевого подключения. Повтор %d/%d (через %d мин).";
+"backup.network_postponed.title" = "Резервное копирование отложено";
+"backup.network_postponed.body" = "Резервное копирование отложено из‑за отсутствия сети. Повтор будет в то же время завтра.";
+"backup.background_task.started.title" = "Фоновая задача запущена";
+"backup.background_task.started.body" = "Резервное копирование запущено в фоне (%d задача(и)).";
+
+"backup.current_file.uploading" = "Загрузка...";
+"backup.current_file.uploading_file" = "Загрузка: %@";
+"backup.current_file.completed_file" = "Завершено: %@";
+"backup.current_file.error" = "Ошибка: %@";
+"backup.current_file.connecting_webdav" = "Подключение к серверу WebDAV...";
+"backup.current_file.connecting_webdav_host" = "Подключение к серверу WebDAV: %@";
+"backup.current_file.preparing" = "Подготовка резервной копии...";
+"backup.current_file.connecting_sftp" = "Подключение к серверу SFTP...";
+"backup.error.invalid_webdav_host" = "Недействительный адрес сервера WebDAV";
+
+"backup.error.connection_failed" = "Не удалось подключиться к серверу";
+"backup.error.authentication_failed" = "Ошибка аутентификации";
+"backup.error.file_operation_failed" = "Ошибка операции с файлом";
+"backup.error.invalid_response" = "Недействительный ответ сервера";
+"backup.error.cancelled" = "Операция была прервана";
+"backup.error.unexpected" = "Неожиданная ошибка: %@";

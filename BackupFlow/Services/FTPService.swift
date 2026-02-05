@@ -165,7 +165,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         currentTask?.cancel()
         currentTask = nil
         Task { @MainActor in
-            self.currentFile = "İptal edildi"
+            self.currentFile = "backup.status.cancelled".localized
             self.progress = 0.0
         }
     }
@@ -806,7 +806,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                     print("❌ BackupFlow: Dosya yükleme hatası: \(error.localizedDescription)")
                     // Clear progress state on error
                     Task { @MainActor in
-                        self.currentFile = "Hata: \(error.localizedDescription)"
+                        self.currentFile = "backup.current_file.error".localized(with: error.localizedDescription)
                         self.progress = 0.0
                     }
                     continuation.resume(throwing: self.mapError(error))
@@ -816,7 +816,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                     print("✅ BackupFlow: Dosya başarıyla yüklendi: \(remotePath)")
                     // Update progress state on success
                     Task { @MainActor in
-                        self.currentFile = "Tamamlandı: \(localURL.lastPathComponent)"
+                        self.currentFile = "backup.current_file.completed_file".localized(with: localURL.lastPathComponent)
                         self.progress = 1.0
                     }
                     if let task = self.currentTask {
@@ -987,7 +987,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         
         // Update current file being processed
         Task { @MainActor in
-            self.currentFile = "Yükleniyor: \(fileName)"
+            self.currentFile = "backup.current_file.uploading_file".localized(with: fileName)
         }
         
         try await uploadFile(localURL: tempURL, remotePath: remotePath, progressHandler: progressHandler)
@@ -1158,7 +1158,4 @@ final class FTPService: ObservableObject {
 }
 
 #endif
-
-
-
 

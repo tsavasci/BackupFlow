@@ -204,6 +204,7 @@
 "day.saturday" = "星期六";
 "backup.connection_testing" = "正在测试连接...";
 "backup.connection_success_ftp" = "FTP连接成功！";
+"backup.connection_success_sftp" = "SFTP连接成功！";
 "backup.connection_success_webdav" = "✅ WebDAV连接成功！";
 "backup.connection_error" = "连接错误";
 "backup.fill_required_fields" = "请填写必需字段（服务器地址和用户名/密码）";
@@ -528,3 +529,40 @@
 "media_type.photos_only" = "仅照片";
 "media_type.videos_only" = "仅视频";
 "media_type.photos_and_videos" = "照片和视频";
+
+"sftp.tofu_notice" = "SFTP host key will be trusted on first connection (TOFU).";
+"sftp.hostkey_title" = "SFTP Security Warning";
+"sftp.hostkey_message" = "New host key trusted (TOFU). Fingerprint: %@";
+
+
+"backup.status.interrupted" = "Interrupted";
+
+"tasks.schedule_error_detail" = "但计划失败：%@";
+"tasks.save_error_detail" = "保存任务出错：%@";
+
+"backup.ftp_background_warning.title" = "FTP 备份已开始";
+"backup.ftp_background_warning.body" = "为确保大文件可靠备份，请保持应用在前台。";
+"backup.network_unavailable.title" = "无网络连接";
+"backup.network_unavailable.body" = "无网络连接。将重试 %d/%d。";
+"backup.network_unavailable.body_with_delay" = "无网络连接。将重试 %d/%d（%d 分钟后）。";
+"backup.network_postponed.title" = "备份已延期";
+"backup.network_postponed.body" = "由于无网络，备份已延期。将于明天同一时间重试。";
+"backup.background_task.started.title" = "后台任务已开始";
+"backup.background_task.started.body" = "后台已开始备份（%d 个任务）。";
+
+"backup.current_file.uploading" = "正在上传...";
+"backup.current_file.uploading_file" = "正在上传：%@";
+"backup.current_file.completed_file" = "已完成：%@";
+"backup.current_file.error" = "错误：%@";
+"backup.current_file.connecting_webdav" = "正在连接 WebDAV 服务器...";
+"backup.current_file.connecting_webdav_host" = "正在连接 WebDAV 服务器：%@";
+"backup.current_file.preparing" = "正在准备备份...";
+"backup.current_file.connecting_sftp" = "正在连接 SFTP 服务器...";
+"backup.error.invalid_webdav_host" = "WebDAV 服务器地址无效";
+
+"backup.error.connection_failed" = "无法连接到服务器";
+"backup.error.authentication_failed" = "认证失败";
+"backup.error.file_operation_failed" = "文件操作失败";
+"backup.error.invalid_response" = "服务器响应无效";
+"backup.error.cancelled" = "操作已中断";
+"backup.error.unexpected" = "发生意外错误：%@";

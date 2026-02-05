@@ -10,6 +10,8 @@ enum BackupServiceFactory {
         switch type {
         case .ftp:
             return FTPService.shared
+        case .sftp:
+            return SFTPService.shared
         case .webdav:
             return WebDAVService.shared
         }

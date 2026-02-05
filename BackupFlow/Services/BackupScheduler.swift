@@ -423,6 +423,8 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             switch task.backupType {
             case .ftp:
                 syncResult = try await executeFTPBackup(task: task, startTime: Date())
+            case .sftp:
+                syncResult = try await executeSFTPBackup(task: task, startTime: Date())
             case .webdav:
                 syncResult = try await executeWebDAVBackup(task: task, startTime: Date())
             }
@@ -451,6 +453,26 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             print("✅ BackupFlow: Yedekleme tamamlandı: \(task.displayName)")
             
         } catch {
+            if let backupError = error as? BackupServiceError, case .cancelled = backupError {
+                task.backupStatus = .cancelled
+                task.lastError = backupError.localizedDescription
+                task.progress = 0.0
+                task.currentFile = nil
+                task.nextRunTime = calculateNextRunTime(for: task)
+                
+                let duration = Date().timeIntervalSince(runStart)
+                await createBackupHistoryRecord(
+                    task: task,
+                    syncResult: FTPService.SyncResult(newFiles: 0, skippedFiles: 0, totalBytes: 0),
+                    duration: duration,
+                    status: "interrupted",
+                    errorMessage: backupError.localizedDescription
+                )
+                
+                print("⏸️ BackupFlow: Yedekleme yarıda kesildi: \(task.displayName)")
+                return
+            }
+
             // If currently offline, use the no-network staged retry flow
             let currentType = await getCurrentNetworkType()
             if !(currentType == .wifi || currentType == .cellular || currentType == .ethernet) {
@@ -624,8 +646,8 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     /// FTP'nin arka planda çalışmasının limitleri hakkında uyarı bildirimi gönderir.
     private func sendBackgroundFTPWarningNotification() {
         let content = UNMutableNotificationContent()
-        content.title = "FTP Yedekleme Başladı"
-        content.body = "Büyük dosyaların sorunsuz yedeklenmesi için uygulamanın ön planda tutulması önerilir."
+        content.title = "backup.ftp_background_warning.title".localized
+        content.body = "backup.ftp_background_warning.body".localized
         content.sound = .default
         
         // identifier'ı sabit tutarak aynı anda birden fazla uyarının birikmesini önle
@@ -647,12 +669,12 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     /// Sends a no-network retry notification like: "Ağ bağlantısı yok. Tekrar denenecek 1/3"
     private func sendNoNetworkRetryNotification(task: BackupTask, attempt: Int, maxAttempts: Int, delaySeconds: TimeInterval) {
         let content = UNMutableNotificationContent()
-        content.title = "Ağ Bağlantısı Yok"
+        content.title = "backup.network_unavailable.title".localized
         let minutes = Int(delaySeconds / 60)
         if minutes >= 1 {
-            content.body = "Ağ bağlantısı yok. Tekrar denenecek \(attempt)/\(maxAttempts) (\(minutes) dk sonra)."
+            content.body = "backup.network_unavailable.body_with_delay".localized(with: attempt, maxAttempts, minutes)
         } else {
-            content.body = "Ağ bağlantısı yok. Tekrar denenecek \(attempt)/\(maxAttempts)."
+            content.body = "backup.network_unavailable.body".localized(with: attempt, maxAttempts)
         }
         content.sound = .default
         let request = UNNotificationRequest(identifier: "no-network-retry-\(task.id)", content: content, trigger: nil)
@@ -664,8 +686,8 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     /// Sends a final postponement notification
     private func sendPostponedDueToNoNetworkNotification(task: BackupTask) {
         let content = UNMutableNotificationContent()
-        content.title = "Yedekleme Ertelendi"
-        content.body = "Ağ bağlantısı olmadığı için yedekleme ertelendi. Yarın aynı saatte tekrar denenecek."
+        content.title = "backup.network_postponed.title".localized
+        content.body = "backup.network_postponed.body".localized
         content.sound = .default
         let request = UNNotificationRequest(identifier: "no-network-postponed-\(task.id)", content: content, trigger: nil)
         UNUserNotificationCenter.current().add(request) { error in
@@ -986,6 +1008,8 @@ extension BackupScheduler {
             switch task.backupType {
             case .ftp:
                 syncResult = try await executeFTPBackup(task: task, startTime: startTime)
+            case .sftp:
+                syncResult = try await executeSFTPBackup(task: task, startTime: startTime)
             case .webdav:
                 syncResult = try await executeWebDAVBackup(task: task, startTime: startTime)
             }
@@ -1006,23 +1030,23 @@ extension BackupScheduler {
         let ftpService = FTPService.shared
         
         // Perform the actual backup using FTPService
-        let syncResult = try await ftpService.performBackup(
-            host: task.serverHost,
-            port: task.serverPort,
-            username: task.isAnonymous ? "" : task.serverUsername,
-            password: task.isAnonymous ? "" : task.serverPassword,
-            sourcePath: task.sourcePath ?? "",
-            isAnonymous: task.isAnonymous,
-            mediaType: task.mediaType,
-            progressHandler: { progress in
-                Task { @MainActor in
-                    // NaN kontrolü ile güvenli progress update
-                    let safeProgress = progress.isNaN || progress.isInfinite ? 0.0 : max(0.0, min(1.0, progress))
-                    task.progress = safeProgress
-                    task.currentFile = "Uploading..."
+            let syncResult = try await ftpService.performBackup(
+                host: task.serverHost,
+                port: task.serverPort,
+                username: task.isAnonymous ? "" : task.serverUsername,
+                password: task.isAnonymous ? "" : task.serverPassword,
+                sourcePath: task.sourcePath ?? "",
+                isAnonymous: task.isAnonymous,
+                mediaType: task.mediaType,
+                progressHandler: { progress in
+                    Task { @MainActor in
+                        // NaN kontrolü ile güvenli progress update
+                        let safeProgress = progress.isNaN || progress.isInfinite ? 0.0 : max(0.0, min(1.0, progress))
+                        task.progress = safeProgress
+                        task.currentFile = "backup.current_file.uploading".localized
+                    }
                 }
-            }
-        )
+            )
         
         return syncResult
     }
@@ -1036,7 +1060,7 @@ extension BackupScheduler {
             let webDAVService = WebDAVService.shared
             
             // Update UI with connection status
-            task.currentFile = "WebDAV sunucusuna bağlanılıyor..."
+            task.currentFile = "backup.current_file.connecting_webdav".localized
             
             // Configure WebDAV connection parameters
             let username = task.serverUsername.isEmpty ? nil : task.serverUsername
@@ -1050,14 +1074,14 @@ extension BackupScheduler {
             
             // Extract host and port from URL
             guard let url = URL(string: host) else {
-                throw NSError(domain: "WebDAV Error", code: -1, userInfo: [NSLocalizedDescriptionKey: "Geçersiz WebDAV sunucu adresi"])
+                throw NSError(domain: "WebDAV Error", code: -1, userInfo: [NSLocalizedDescriptionKey: "backup.error.invalid_webdav_host".localized])
             }
             
             let hostName = url.host ?? task.serverHost
             let port = url.port ?? (url.scheme?.lowercased() == "https" ? 443 : 80)
             
             // Update UI with connection status
-            task.currentFile = "WebDAV sunucusuna bağlanılıyor: \(hostName)"
+            task.currentFile = "backup.current_file.connecting_webdav_host".localized(with: hostName)
             
             // Connect to WebDAV server
             try await webDAVService.connect(
@@ -1068,7 +1092,7 @@ extension BackupScheduler {
             )
             
             // Update UI with backup status
-            task.currentFile = "Yedekleme hazırlanıyor..."
+            task.currentFile = "backup.current_file.preparing".localized
             
             // Determine source path
             let sourcePathValue = task.sourcePath ?? ""
@@ -1098,9 +1122,46 @@ extension BackupScheduler {
         } catch {
             task.backupStatus = .failed
             task.progress = 0.0  // Reset to 0.0 on failure, safe value
-            task.currentFile = "Hata: \(error.localizedDescription)"
+            task.currentFile = "backup.current_file.error".localized(with: error.localizedDescription)
             
             print("❌ BackupFlow: WebDAV yedekleme hatası: \(error.localizedDescription)")
+            throw error
+        }
+    }
+
+    private func executeSFTPBackup(task: BackupTask, startTime: Date) async throws -> FTPService.SyncResult {
+        print("🔐 BackupFlow: SFTP yedekleme başlatılıyor...")
+        print("🔐 BackupFlow: SFTP hedef dizin: \(task.destinationPath)")
+        print("🔐 BackupFlow: SFTP kaynak: \(task.sourcePath ?? "")")
+        task.backupStatus = .uploading
+        
+        do {
+            let sftpService = SFTPService.shared
+            task.currentFile = "backup.current_file.connecting_sftp".localized
+            
+            let syncResult = try await sftpService.performBackup(
+                host: task.serverHost,
+                port: task.serverPort,
+                username: task.serverUsername,
+                password: task.serverPassword,
+                sourcePath: task.sourcePath ?? "",
+                destinationPath: task.destinationPath,
+                mediaType: task.mediaType,
+                progressHandler: { progress in
+                    Task { @MainActor in
+                        let safeProgress = progress.isNaN || progress.isInfinite ? 0.0 : max(0.0, min(1.0, progress))
+                        task.progress = safeProgress
+                        task.currentFile = "backup.current_file.uploading".localized
+                    }
+                }
+            )
+            
+            return syncResult
+        } catch {
+            task.backupStatus = .failed
+            task.progress = 0.0
+            task.currentFile = "backup.current_file.error".localized(with: error.localizedDescription)
+            print("❌ BackupFlow: SFTP yedekleme hatası: \(error.localizedDescription)")
             throw error
         }
     }
@@ -1112,18 +1173,8 @@ extension BackupScheduler {
         }
         
         let content = UNMutableNotificationContent()
-        content.title = "✅ Yedekleme Tamamlandı"
-        content.body = """
-        \(task.displayName) yedekleme işlemi tamamlandı!
-        
-        📊 Yedekleme Raporu:
-        📤 \(syncResult.newFiles) yeni dosya kopyalandı
-        🔄 \(syncResult.updatedFiles) dosya güncellendi  
-        ⏭ \(syncResult.skippedFiles) aynı dosya pas geçildi
-        🗑 \(syncResult.deletedFiles) dosya silindi
-        
-        Toplam işlenen: \(syncResult.totalProcessed) dosya
-        """
+        content.title = "backup.completed.notification.title".localized
+        content.body = "backup.completed.notification.body".localized(with: task.displayName, syncResult.newFiles, syncResult.updatedFiles, syncResult.skippedFiles, syncResult.deletedFiles, syncResult.totalProcessed)
         content.sound = .default
         
         let request = UNNotificationRequest(
@@ -1240,8 +1291,8 @@ extension BackupScheduler {
         }
         
         let content = UNMutableNotificationContent()
-        content.title = "Arka Plan Görevi Başladı"
-        content.body = "Yedekleme arka planda başlatıldı (\(taskCount) görev)."
+        content.title = "backup.background_task.started.title".localized
+        content.body = "backup.background_task.started.body".localized(with: taskCount)
         content.sound = .default
         
         let request = UNNotificationRequest(

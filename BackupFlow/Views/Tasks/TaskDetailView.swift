@@ -64,7 +64,7 @@ struct TaskDetailView: View {
                                 Text(taskDateFormatter.string(from: history.timestamp))
                                     .font(.subheadline)
                                 Spacer()
-                                Text(history.status)
+                                Text(localizedHistoryStatus(history.status))
                                     .font(.caption)
                                     .foregroundStyle(history.status.lowercased() == "completed" ? .green : .red)
                             }
@@ -98,6 +98,27 @@ struct TaskDetailView: View {
             return "\(minutes)\("task.details.minutes_short".localized)\(seconds)\("task.details.seconds_short".localized)"
         } else {
             return "\(seconds)\("task.details.seconds_short".localized)"
+        }
+    }
+
+    private func localizedHistoryStatus(_ status: String) -> String {
+        switch status.lowercased() {
+        case "completed":
+            return "backup.status.completed".localized
+        case "failed":
+            return "backup.status.failed".localized
+        case "cancelled":
+            return "backup.status.cancelled".localized
+        case "interrupted":
+            return "backup.status.interrupted".localized
+        case "uploading":
+            return "backup.status.uploading".localized
+        case "scanning":
+            return "backup.status.scanning".localized
+        case "preparing":
+            return "backup.status.preparing".localized
+        default:
+            return status.capitalized
         }
     }
 }

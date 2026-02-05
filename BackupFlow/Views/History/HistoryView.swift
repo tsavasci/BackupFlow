@@ -211,6 +211,8 @@ struct HistoryView: View {
             return "backup.status.failed".localized
         case "cancelled":
             return "backup.status.cancelled".localized
+        case "interrupted":
+            return "backup.status.interrupted".localized
         case "uploading":
             return "backup.status.uploading".localized
         case "scanning":
@@ -267,4 +269,3 @@ struct HistoryView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 }
-

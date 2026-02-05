@@ -5,6 +5,7 @@ import SwiftUI
 /// Backup connection types
 enum BackupType: String, Codable, CaseIterable, Identifiable {
     case ftp
+    case sftp
     case webdav
     
     var id: String { self.rawValue }
@@ -12,6 +13,7 @@ enum BackupType: String, Codable, CaseIterable, Identifiable {
     var displayName: String {
         switch self {
         case .ftp: return "FTP"
+        case .sftp: return "SFTP"
         case .webdav: return "WebDAV"
         }
     }
@@ -19,6 +21,7 @@ enum BackupType: String, Codable, CaseIterable, Identifiable {
     var defaultPort: Int {
         switch self {
         case .ftp: return 21
+        case .sftp: return 22
         case .webdav: return 443
         }
     }
@@ -246,6 +249,7 @@ final class BackupTask: Identifiable, Hashable {
     var isAnonymous: Bool {
         return serverUsername.isEmpty && serverPassword.isEmpty
     }
+
     
     // MARK: - Initialization
     
@@ -277,7 +281,7 @@ final class BackupTask: Identifiable, Hashable {
         self.serverUsername = serverUsername
         self.serverPassword = serverPassword
         self.destinationPath = destinationPath
-        self.displayName = displayName.isEmpty ? "Yeni Yedekleme" : displayName
+        self.displayName = displayName.isEmpty ? "backup.default_task_name".localized : displayName
         self.isEnabled = isEnabled
         self.isPaused = isPaused
         self.frequency = frequency

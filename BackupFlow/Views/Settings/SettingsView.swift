@@ -65,6 +65,7 @@ struct SettingsView: View {
                     }
                 }
             }
+
             
             Section(header: Text("settings.about_section".localized)) {
                 HStack {
@@ -188,6 +189,7 @@ struct SettingsView: View {
         #endif
     }
     
+    
     private func resetAllData() {
         Task {
             // Cancel all background tasks
@@ -232,4 +234,3 @@ struct SettingsView: View {
         SettingsView()
     }
 }
-

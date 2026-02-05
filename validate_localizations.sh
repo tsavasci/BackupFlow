@@ -4,8 +4,9 @@
 echo "🌍 Validation des fichiers de localisation BackupFlow"
 echo "================================================="
 
-RESOURCES_PATH="/Users/tamersavasci/Documents/BackupFlow/BackupFlow/Resources"
-LANGUAGES=("en" "de" "fr" "zh" "ja")
+BASE_DIR="$(cd "$(dirname "$0")" && pwd)"
+RESOURCES_PATH="${BASE_DIR}/BackupFlow"
+LANGUAGES=("en" "de" "fr" "zh" "ja" "es" "pt" "ru" "tr" "ko" "ar" "hi")
 REFERENCE_LANG="en"
 
 # Extraire toutes les clés du fichier de référence (anglais)

@@ -159,8 +159,16 @@ struct BackupView: View {
     @State private var isAnonymous = false
     @State private var destinationPath = "/"
     
+    // SFTP ayarları
+    @State private var sftpHost = ""
+    @State private var sftpPort = "22"
+    @State private var sftpUsername = ""
+    @State private var sftpPassword = ""
+    @State private var sftpPath = ""
+    
     // WebDAV ayarları
     @State private var webdavURL = ""
+    @State private var webdavPort = "443"
     @State private var webdavUsername = ""
     @State private var webdavPassword = ""
     @State private var webdavPath = defaultWebDAVPath
@@ -180,6 +188,8 @@ struct BackupView: View {
     @State private var lastTestTapAt: Date? = nil
     @State private var showingFirstBackupPrompt = false
     @State private var firstBackupTaskToStart: BackupTask? = nil
+    @State private var showingSFTPHostKeyAlert = false
+    @State private var sftpHostKeyAlertMessage = ""
     
     var body: some View {
         return Form {
@@ -277,7 +287,13 @@ struct BackupView: View {
                     ftpPassword: $ftpPassword,
                     destinationPath: $destinationPath,
                     isAnonymous: $isAnonymous,
+                    sftpHost: $sftpHost,
+                    sftpPort: $sftpPort,
+                    sftpUsername: $sftpUsername,
+                    sftpPassword: $sftpPassword,
+                    sftpPath: $sftpPath,
                     webdavURL: $webdavURL,
+                    webdavPort: $webdavPort,
                     webdavUsername: $webdavUsername,
                     webdavPassword: $webdavPassword,
                     webdavPath: $webdavPath
@@ -406,9 +422,22 @@ struct BackupView: View {
         } message: {
             Text("backup.first_start_prompt_message".localized)
         }
+        .alert("sftp.hostkey_title".localized, isPresented: $showingSFTPHostKeyAlert) {
+            Button("backup.ok".localized, role: .cancel) {}
+        } message: {
+            Text(sftpHostKeyAlertMessage)
+        }
         
         func isLocalServer() -> Bool {
-            let host = selectedTarget == .ftp ? ftpHost : webdavURL
+            let host: String
+            switch selectedTarget {
+            case .ftp:
+                host = ftpHost
+            case .sftp:
+                host = sftpHost
+            case .webdav:
+                host = webdavURL
+            }
             
             // Extract hostname from URL if it's a full URL
             let hostname: String
@@ -436,6 +465,8 @@ struct BackupView: View {
             switch selectedTarget {
             case .ftp:
                 return !ftpHost.isEmpty && (isAnonymous || (!ftpUsername.isEmpty && !ftpPassword.isEmpty))
+            case .sftp:
+                return !sftpHost.isEmpty && !sftpUsername.isEmpty && !sftpPassword.isEmpty
             case .webdav:
                 return !webdavURL.isEmpty && !webdavUsername.isEmpty
             }
@@ -447,7 +478,7 @@ struct BackupView: View {
             guard isValidConnectionSettings() else {
                 let errorMessage = selectedTarget == .ftp ?
                 "backup.fill_required_fields".localized :
-                "backup.webdav_credentials_required".localized
+                (selectedTarget == .sftp ? "backup.fill_required_fields".localized : "backup.webdav_credentials_required".localized)
                 connectionStatus = .failure(errorMessage)
                 return
             }
@@ -473,9 +504,28 @@ struct BackupView: View {
                     
                     connectionStatus = .success("backup.connection_success_ftp".localized)
                     
+                case .sftp:
+                    let sftpService = SFTPService.shared
+                    let port = Int(sftpPort) ?? 22
+                    
+                    connectionStatus = .testing("backup.connection_testing".localized)
+                    
+                    let result = try await sftpService.testConnection(
+                        host: sftpHost,
+                        port: port,
+                        username: sftpUsername,
+                        password: sftpPassword
+                    )
+                    
+                    connectionStatus = .success("backup.connection_success_sftp".localized)
+                    if result.isNewHostKey, let fingerprint = result.fingerprint {
+                        sftpHostKeyAlertMessage = String(format: "sftp.hostkey_message".localized, fingerprint)
+                        showingSFTPHostKeyAlert = true
+                    }
+                    
                 case .webdav:
                     // Extract host and port from webdavURL
-                    let (host, port) = parseWebDAVURL(webdavURL)
+                    let (host, port) = parseWebDAVURL(webdavURL, portOverride: webdavPort)
                     
                     // İlk kurulumda ağ izni bildirimi göster
                     connectionStatus = .testing("backup.connection_testing".localized)
@@ -590,18 +640,40 @@ struct BackupView: View {
             
             // Determine source path and display name based on selection
             let sourcePath = isPhotoLibrarySelected ? "PHOTOS_LIBRARY" : (selectedURL?.path ?? "")
-            let displayNameValue = isPhotoLibrarySelected ? selectedMediaType.displayName : (selectedURL?.lastPathComponent ?? "Yeni Yedekleme")
+            let displayNameValue = isPhotoLibrarySelected ? selectedMediaType.displayName : (selectedURL?.lastPathComponent ?? "backup.default_task_name".localized)
             
             // Check for existing tasks with the same configuration
-            let hostToCheck = selectedTarget == .ftp ? ftpHost.lowercased() : webdavURL.lowercased()
-            let destPathToCheck = selectedTarget == .ftp ? destinationPath : webdavPath
+            let hostToCheck: String
+            let destPathToCheck: String
+            switch selectedTarget {
+            case .ftp:
+                hostToCheck = ftpHost.lowercased()
+                destPathToCheck = destinationPath
+            case .sftp:
+                hostToCheck = sftpHost.lowercased()
+                destPathToCheck = sftpPath
+            case .webdav:
+                hostToCheck = webdavURL.lowercased()
+                destPathToCheck = webdavPath
+            }
             var isFirstTask = false
             
             do {
                 let allTasks = try modelContext.fetch(FetchDescriptor<BackupTask>())
                 isFirstTask = allTasks.isEmpty
-                let backupType: BackupType = selectedTarget == .ftp ? .ftp : .webdav
-                let portToCheck = selectedTarget == .ftp ? (Int(ftpPort) ?? 21) : 443
+                let backupType: BackupType
+                let portToCheck: Int
+                switch selectedTarget {
+                case .ftp:
+                    backupType = .ftp
+                    portToCheck = Int(ftpPort) ?? 21
+                case .sftp:
+                    backupType = .sftp
+                    portToCheck = Int(sftpPort) ?? 22
+                case .webdav:
+                    backupType = .webdav
+                    portToCheck = 443
+                }
 
                 let hasDuplicate = allTasks.contains { task in
                     let isSameSource = (task.sourcePath ?? "") == sourcePath
@@ -658,6 +730,36 @@ struct BackupView: View {
                     allowCellularForLocalServer: allowCellularForLocalServer
                 )
                 
+            case .sftp:
+                guard !sftpHost.isEmpty else {
+                    saveAlertMessage = "backup.fill_required_fields".localized
+                    let now = Date()
+                    if let last = lastAlertAt, now.timeIntervalSince(last) < 1 { return }
+                    lastAlertAt = now
+                    showingSaveAlert = true
+                    return
+                }
+                
+                let port = Int(sftpPort) ?? 22
+                
+                task = BackupTask(
+                    sourcePath: sourcePath,
+                    backupType: .sftp,
+                    serverHost: sftpHost,
+                    serverPort: port,
+                    serverUsername: sftpUsername,
+                    serverPassword: sftpPassword,
+                    destinationPath: sftpPath,
+                    displayName: displayNameValue,
+                    isEnabled: true,
+                    isPaused: false,
+                    frequency: frequency,
+                    scheduledTime: (frequencyType == .daily || frequencyType == .weekly) ? selectedTime : nil,
+                    scheduledWeekday: (frequencyType == .weekly) ? selectedDay : nil,
+                    mediaType: isPhotoLibrarySelected ? selectedMediaType : .photosOnly,
+                    allowCellularForLocalServer: allowCellularForLocalServer
+                )
+                
             case .webdav:
                 guard !webdavURL.isEmpty else {
                     saveAlertMessage = "backup.webdav_credentials_required".localized
@@ -672,7 +774,7 @@ struct BackupView: View {
                     sourcePath: sourcePath,
                     backupType: .webdav,
                     serverHost: webdavURL,
-                    serverPort: 443, // Default HTTPS port for WebDAV
+                    serverPort: Int(webdavPort) ?? 443,
                     serverUsername: webdavUsername,
                     serverPassword: webdavPassword,
                     destinationPath: webdavPath,
@@ -692,15 +794,15 @@ struct BackupView: View {
             do {
                 try modelContext.save()
                 print("✅ BackupFlow: Görev başarıyla kaydedildi - \(displayNameValue)")
-                saveAlertMessage = "Görev başarıyla kaydedildi"
+                saveAlertMessage = "tasks.save_success".localized
                 
                 // Schedule the backup if frequency is set
                 if task.frequency != .manual {
                     do {
                         try await BackupScheduler.shared.scheduleBackup(task: task)
-                        saveAlertMessage += " ve planlandı"
+                        saveAlertMessage += " " + "tasks.scheduled".localized
                     } catch {
-                        saveAlertMessage += ", ancak planlama sırasında hata oluştu: \(error.localizedDescription)"
+                        saveAlertMessage += " " + "tasks.schedule_error_detail".localized(with: error.localizedDescription)
                     }
                 } else {
                     // Manual task: still schedule processing to allow future background checks
@@ -714,6 +816,11 @@ struct BackupView: View {
                 ftpUsername = ""
                 ftpPassword = ""
                 isAnonymous = false
+                sftpHost = ""
+                sftpPort = "22"
+                sftpUsername = ""
+                sftpPassword = ""
+                sftpPath = ""
                 
                 if isFirstTask {
                     firstBackupTaskToStart = task
@@ -725,7 +832,7 @@ struct BackupView: View {
                     showingSaveAlert = true
                 }
             } catch {
-                saveAlertMessage = "Görev kaydedilirken hata oluştu: \(error.localizedDescription)"
+                saveAlertMessage = "tasks.save_error_detail".localized(with: error.localizedDescription)
                 let now = Date()
                 if let last = lastAlertAt, now.timeIntervalSince(last) < 1 { return }
                 lastAlertAt = now
@@ -735,19 +842,39 @@ struct BackupView: View {
         
         // MARK: - WebDAV Helper
         
-        func parseWebDAVURL(_ urlString: String) -> (host: String, port: Int) {
-            var host = urlString
-            var port = 443 // Default HTTPS port
+        func parseWebDAVURL(_ urlString: String, portOverride: String) -> (host: String, port: Int) {
+            let trimmed = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
+            let overridePort = Int(portOverride)
+            guard !trimmed.isEmpty else { return ("", overridePort ?? 443) }
             
-            // Remove http:// or https:// prefix if exists
-            if let range = host.range(of: "https://") {
-                host.removeSubrange(range)
-            } else if let range = host.range(of: "http://") {
-                host.removeSubrange(range)
-                port = 80 // Default HTTP port
+            let withScheme: String
+            if trimmed.contains("://") {
+                withScheme = trimmed
+            } else {
+                withScheme = "https://" + trimmed
             }
             
-            // Check for custom port
+            if let components = URLComponents(string: withScheme) {
+                let host = components.host ?? trimmed
+                let port: Int
+                if let customPort = components.port {
+                    port = customPort
+                } else if let overridePort {
+                    port = overridePort
+                } else if components.scheme?.lowercased() == "http" {
+                    port = 80
+                } else {
+                    port = 443
+                }
+                return (host, port)
+            }
+            
+            // Fallback: strip path then parse host:port
+            var host = trimmed
+            if let slashIndex = host.firstIndex(of: "/") {
+                host = String(host[..<slashIndex])
+            }
+            var port = overridePort ?? 443
             if let portRange = host.range(of: ":") {
                 let portString = String(host[portRange.upperBound...])
                 if let customPort = Int(portString) {
@@ -755,10 +882,6 @@ struct BackupView: View {
                     host = String(host[..<portRange.lowerBound])
                 }
             }
-            
-            // Remove trailing slashes
-            host = host.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-            
             return (host, port)
         }
         
@@ -774,6 +897,16 @@ struct BackupView: View {
             ftpPassword = ""
             isAnonymous = false
             destinationPath = "/"
+            sftpHost = ""
+            sftpPort = "22"
+            sftpUsername = ""
+            sftpPassword = ""
+            sftpPath = ""
+            webdavURL = ""
+            webdavPort = "443"
+            webdavUsername = ""
+            webdavPassword = ""
+            webdavPath = Self.defaultWebDAVPath
             frequencyType = .manual
             selectedTime = ScheduleTime(hour: 0, minute: 0)
             selectedDay = 1

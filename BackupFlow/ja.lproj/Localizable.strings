@@ -204,6 +204,7 @@
 "day.saturday" = "土曜日";
 "backup.connection_testing" = "接続をテスト中...";
 "backup.connection_success_ftp" = "FTP接続成功！";
+"backup.connection_success_sftp" = "SFTP接続成功！";
 "backup.connection_success_webdav" = "✅ WebDAV接続成功！";
 "backup.connection_error" = "接続エラー";
 "backup.fill_required_fields" = "必須フィールドを入力してください（サーバーアドレスとユーザー名/パスワード）";
@@ -529,3 +530,40 @@
 "media_type.photos_only" = "写真のみ";
 "media_type.videos_only" = "ビデオのみ";
 "media_type.photos_and_videos" = "写真とビデオ";
+
+"sftp.tofu_notice" = "SFTP host key will be trusted on first connection (TOFU).";
+"sftp.hostkey_title" = "SFTP Security Warning";
+"sftp.hostkey_message" = "New host key trusted (TOFU). Fingerprint: %@";
+
+
+"backup.status.interrupted" = "Interrupted";
+
+"tasks.schedule_error_detail" = "しかしスケジュールに失敗しました: %@";
+"tasks.save_error_detail" = "タスクの保存中にエラー: %@";
+
+"backup.ftp_background_warning.title" = "FTPバックアップを開始しました";
+"backup.ftp_background_warning.body" = "大きなファイルを確実にバックアップするため、アプリを前面に保ってください。";
+"backup.network_unavailable.title" = "ネットワーク接続なし";
+"backup.network_unavailable.body" = "ネットワーク接続がありません。再試行 %d/%d。";
+"backup.network_unavailable.body_with_delay" = "ネットワーク接続がありません。再試行 %d/%d（%d分後）。";
+"backup.network_postponed.title" = "バックアップが延期されました";
+"backup.network_postponed.body" = "ネットワークがないためバックアップを延期しました。明日同じ時刻に再試行します。";
+"backup.background_task.started.title" = "バックグラウンドタスク開始";
+"backup.background_task.started.body" = "バックグラウンドでバックアップを開始しました（%d件）。";
+
+"backup.current_file.uploading" = "アップロード中...";
+"backup.current_file.uploading_file" = "アップロード中: %@";
+"backup.current_file.completed_file" = "完了: %@";
+"backup.current_file.error" = "エラー: %@";
+"backup.current_file.connecting_webdav" = "WebDAVサーバーに接続中...";
+"backup.current_file.connecting_webdav_host" = "WebDAVサーバーに接続中: %@";
+"backup.current_file.preparing" = "バックアップを準備中...";
+"backup.current_file.connecting_sftp" = "SFTPサーバーに接続中...";
+"backup.error.invalid_webdav_host" = "WebDAVサーバーのアドレスが無効です";
+
+"backup.error.connection_failed" = "サーバーに接続できませんでした";
+"backup.error.authentication_failed" = "認証に失敗しました";
+"backup.error.file_operation_failed" = "ファイル操作に失敗しました";
+"backup.error.invalid_response" = "無効なサーバー応答";
+"backup.error.cancelled" = "操作が中断されました";
+"backup.error.unexpected" = "予期しないエラー: %@";

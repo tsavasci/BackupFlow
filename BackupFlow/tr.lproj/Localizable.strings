@@ -203,6 +203,7 @@
 
 "backup.connection_testing" = "Bağlantı test ediliyor…";
 "backup.connection_success_ftp" = "FTP bağlantısı başarılı!";
+"backup.connection_success_sftp" = "SFTP bağlantısı başarılı!";
 "backup.connection_success_webdav" = "WebDAV bağlantısı başarılı";
 "backup.connection_error" = "Bağlantı hatası";
 "backup.fill_required_fields" = "Lütfen tüm gerekli alanları doldurun";
@@ -506,3 +507,40 @@
 "media_type.photos_only" = "Yalnızca Fotoğraflar";
 "media_type.videos_only" = "Yalnızca Videolar";
 "media_type.photos_and_videos" = "Fotoğraflar ve Videolar";
+
+"sftp.tofu_notice" = "SFTP host key will be trusted on first connection (TOFU).";
+"sftp.hostkey_title" = "SFTP Security Warning";
+"sftp.hostkey_message" = "New host key trusted (TOFU). Fingerprint: %@";
+
+
+"backup.status.interrupted" = "Yarıda Kaldı";
+
+"tasks.schedule_error_detail" = "ancak planlama sırasında hata oluştu: %@";
+"tasks.save_error_detail" = "Görev kaydedilirken hata oluştu: %@";
+
+"backup.ftp_background_warning.title" = "FTP Yedekleme Başladı";
+"backup.ftp_background_warning.body" = "Büyük dosyaların sorunsuz yedeklenmesi için uygulamanın ön planda tutulması önerilir.";
+"backup.network_unavailable.title" = "Ağ Bağlantısı Yok";
+"backup.network_unavailable.body" = "Ağ bağlantısı yok. Tekrar denenecek %d/%d.";
+"backup.network_unavailable.body_with_delay" = "Ağ bağlantısı yok. Tekrar denenecek %d/%d (%d dk sonra).";
+"backup.network_postponed.title" = "Yedekleme Ertelendi";
+"backup.network_postponed.body" = "Ağ bağlantısı olmadığı için yedekleme ertelendi. Yarın aynı saatte tekrar denenecek.";
+"backup.background_task.started.title" = "Arka Plan Görevi Başladı";
+"backup.background_task.started.body" = "Yedekleme arka planda başlatıldı (%d görev).";
+
+"backup.current_file.uploading" = "Yükleniyor...";
+"backup.current_file.uploading_file" = "Yükleniyor: %@";
+"backup.current_file.completed_file" = "Tamamlandı: %@";
+"backup.current_file.error" = "Hata: %@";
+"backup.current_file.connecting_webdav" = "WebDAV sunucusuna bağlanılıyor...";
+"backup.current_file.connecting_webdav_host" = "WebDAV sunucusuna bağlanılıyor: %@";
+"backup.current_file.preparing" = "Yedekleme hazırlanıyor...";
+"backup.current_file.connecting_sftp" = "SFTP sunucusuna bağlanılıyor...";
+"backup.error.invalid_webdav_host" = "Geçersiz WebDAV sunucu adresi";
+
+"backup.error.connection_failed" = "Sunucuya bağlanılamadı";
+"backup.error.authentication_failed" = "Kimlik doğrulama başarısız";
+"backup.error.file_operation_failed" = "Dosya işlemi başarısız oldu";
+"backup.error.invalid_response" = "Geçersiz sunucu yanıtı";
+"backup.error.cancelled" = "İşlem yarıda kesildi";
+"backup.error.unexpected" = "Beklenmeyen bir hata oluştu: %@";

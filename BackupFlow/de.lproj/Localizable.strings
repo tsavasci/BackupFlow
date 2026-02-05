@@ -204,6 +204,7 @@
 "day.saturday" = "Samstag";
 "backup.connection_testing" = "Verbindung wird getestet...";
 "backup.connection_success_ftp" = "FTP-Verbindung erfolgreich!";
+"backup.connection_success_sftp" = "SFTP-Verbindung erfolgreich!";
 "backup.connection_success_webdav" = "✅ WebDAV-Verbindung erfolgreich!";
 "backup.connection_error" = "Verbindungsfehler";
 "backup.fill_required_fields" = "Bitte füllen Sie die erforderlichen Felder aus (Serveradresse und Benutzername/Passwort)";
@@ -529,3 +530,40 @@
 "media_type.photos_only" = "Nur Fotos";
 "media_type.videos_only" = "Nur Videos";
 "media_type.photos_and_videos" = "Fotos und Videos";
+
+"sftp.tofu_notice" = "SFTP host key will be trusted on first connection (TOFU).";
+"sftp.hostkey_title" = "SFTP Security Warning";
+"sftp.hostkey_message" = "New host key trusted (TOFU). Fingerprint: %@";
+
+
+"backup.status.interrupted" = "Interrupted";
+
+"tasks.schedule_error_detail" = "aber die Planung ist fehlgeschlagen: %@";
+"tasks.save_error_detail" = "Fehler beim Speichern der Aufgabe: %@";
+
+"backup.ftp_background_warning.title" = "FTP-Backup gestartet";
+"backup.ftp_background_warning.body" = "Damit große Dateien zuverlässig gesichert werden, bleibt die App im Vordergrund.";
+"backup.network_unavailable.title" = "Keine Netzwerkverbindung";
+"backup.network_unavailable.body" = "Keine Netzwerkverbindung. Neuer Versuch %d/%d.";
+"backup.network_unavailable.body_with_delay" = "Keine Netzwerkverbindung. Neuer Versuch %d/%d (in %d Min.).";
+"backup.network_postponed.title" = "Backup verschoben";
+"backup.network_postponed.body" = "Backup wegen fehlender Netzwerkverbindung verschoben. Es wird morgen zur gleichen Zeit erneut versucht.";
+"backup.background_task.started.title" = "Hintergrundaufgabe gestartet";
+"backup.background_task.started.body" = "Backup im Hintergrund gestartet (%d Aufgabe(n)).";
+
+"backup.current_file.uploading" = "Wird hochgeladen...";
+"backup.current_file.uploading_file" = "Wird hochgeladen: %@";
+"backup.current_file.completed_file" = "Abgeschlossen: %@";
+"backup.current_file.error" = "Fehler: %@";
+"backup.current_file.connecting_webdav" = "Verbindung zum WebDAV-Server wird hergestellt...";
+"backup.current_file.connecting_webdav_host" = "Verbindung zum WebDAV-Server wird hergestellt: %@";
+"backup.current_file.preparing" = "Backup wird vorbereitet...";
+"backup.current_file.connecting_sftp" = "Verbindung zum SFTP-Server wird hergestellt...";
+"backup.error.invalid_webdav_host" = "Ungültige WebDAV-Serveradresse";
+
+"backup.error.connection_failed" = "Verbindung zum Server fehlgeschlagen";
+"backup.error.authentication_failed" = "Authentifizierung fehlgeschlagen";
+"backup.error.file_operation_failed" = "Dateioperation fehlgeschlagen";
+"backup.error.invalid_response" = "Ungültige Serverantwort";
+"backup.error.cancelled" = "Vorgang wurde unterbrochen";
+"backup.error.unexpected" = "Unerwarteter Fehler: %@";

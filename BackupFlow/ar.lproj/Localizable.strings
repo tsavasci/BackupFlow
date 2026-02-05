@@ -203,6 +203,7 @@
 "day.saturday" = "السبت";
 "backup.connection_testing" = "جاري اختبار الاتصال...";
 "backup.connection_success_ftp" = "نجح اتصال FTP!";
+"backup.connection_success_sftp" = "نجح اتصال SFTP!";
 "backup.connection_success_webdav" = "✅ نجح اتصال WebDAV!";
 "backup.connection_error" = "خطأ في الاتصال";
 "backup.fill_required_fields" = "يرجى ملء الحقول المطلوبة (عنوان الخادم واسم المستخدم/كلمة المرور)";
@@ -529,3 +530,40 @@
 "media_type.videos_only" = "مقاطع الفيديو فقط";
 "media_type.photos_and_videos" = "الصور ومقاطع الفيديو";
 
+
+"sftp.tofu_notice" = "SFTP host key will be trusted on first connection (TOFU).";
+"sftp.hostkey_title" = "SFTP Security Warning";
+"sftp.hostkey_message" = "New host key trusted (TOFU). Fingerprint: %@";
+
+
+"backup.status.interrupted" = "Interrupted";
+
+"tasks.schedule_error_detail" = "لكن جدولة المهمة فشلت: %@";
+"tasks.save_error_detail" = "خطأ في حفظ المهمة: %@";
+
+"backup.ftp_background_warning.title" = "بدأت النسخة الاحتياطية عبر FTP";
+"backup.ftp_background_warning.body" = "لضمان نسخ الملفات الكبيرة بشكل موثوق، أبقِ التطبيق في المقدمة.";
+"backup.network_unavailable.title" = "لا يوجد اتصال بالشبكة";
+"backup.network_unavailable.body" = "لا يوجد اتصال بالشبكة. ستتم إعادة المحاولة %d/%d.";
+"backup.network_unavailable.body_with_delay" = "لا يوجد اتصال بالشبكة. ستتم إعادة المحاولة %d/%d (بعد %d دقيقة).";
+"backup.network_postponed.title" = "تم تأجيل النسخ الاحتياطي";
+"backup.network_postponed.body" = "تم تأجيل النسخ الاحتياطي بسبب عدم وجود شبكة. ستتم إعادة المحاولة في نفس الوقت غدًا.";
+"backup.background_task.started.title" = "بدأت مهمة في الخلفية";
+"backup.background_task.started.body" = "تم بدء النسخ الاحتياطي في الخلفية (%d مهمة).";
+
+"backup.current_file.uploading" = "جارٍ الرفع...";
+"backup.current_file.uploading_file" = "جارٍ الرفع: %@";
+"backup.current_file.completed_file" = "اكتمل: %@";
+"backup.current_file.error" = "خطأ: %@";
+"backup.current_file.connecting_webdav" = "جارٍ الاتصال بخادم WebDAV...";
+"backup.current_file.connecting_webdav_host" = "جارٍ الاتصال بخادم WebDAV: %@";
+"backup.current_file.preparing" = "جارٍ تجهيز النسخ الاحتياطي...";
+"backup.current_file.connecting_sftp" = "جارٍ الاتصال بخادم SFTP...";
+"backup.error.invalid_webdav_host" = "عنوان خادم WebDAV غير صالح";
+
+"backup.error.connection_failed" = "تعذر الاتصال بالخادم";
+"backup.error.authentication_failed" = "فشل المصادقة";
+"backup.error.file_operation_failed" = "فشلت عملية الملف";
+"backup.error.invalid_response" = "استجابة خادم غير صالحة";
+"backup.error.cancelled" = "تمت مقاطعة العملية";
+"backup.error.unexpected" = "خطأ غير متوقع: %@";

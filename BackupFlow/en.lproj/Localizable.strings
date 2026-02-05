@@ -203,6 +203,7 @@
 "day.saturday" = "Saturday";
 "backup.connection_testing" = "Testing connection...";
 "backup.connection_success_ftp" = "FTP connection successful!";
+"backup.connection_success_sftp" = "SFTP connection successful!";
 "backup.connection_success_webdav" = "✅ WebDAV connection successful!";
 "backup.connection_error" = "Connection error";
 "backup.fill_required_fields" = "Please fill in the required fields (Server address and username/password)";
@@ -526,3 +527,40 @@
 "media_type.photos_only" = "Photos Only";
 "media_type.videos_only" = "Videos Only";
 "media_type.photos_and_videos" = "Photos and Videos";
+
+"sftp.tofu_notice" = "SFTP host key will be trusted on first connection (TOFU).";
+"sftp.hostkey_title" = "SFTP Security Warning";
+"sftp.hostkey_message" = "New host key trusted (TOFU). Fingerprint: %@";
+
+
+"backup.status.interrupted" = "Interrupted";
+
+"tasks.schedule_error_detail" = "but scheduling failed: %@";
+"tasks.save_error_detail" = "Error saving task: %@";
+
+"backup.ftp_background_warning.title" = "FTP Backup Started";
+"backup.ftp_background_warning.body" = "To ensure large files back up reliably, keep the app in the foreground.";
+"backup.network_unavailable.title" = "No Network Connection";
+"backup.network_unavailable.body" = "No network connection. Will retry %d/%d.";
+"backup.network_unavailable.body_with_delay" = "No network connection. Will retry %d/%d (%d min later).";
+"backup.network_postponed.title" = "Backup Postponed";
+"backup.network_postponed.body" = "Backup postponed due to no network. It will retry at the same time tomorrow.";
+"backup.background_task.started.title" = "Background Task Started";
+"backup.background_task.started.body" = "Backup started in the background (%d task(s)).";
+
+"backup.current_file.uploading" = "Uploading...";
+"backup.current_file.uploading_file" = "Uploading: %@";
+"backup.current_file.completed_file" = "Completed: %@";
+"backup.current_file.error" = "Error: %@";
+"backup.current_file.connecting_webdav" = "Connecting to WebDAV server...";
+"backup.current_file.connecting_webdav_host" = "Connecting to WebDAV server: %@";
+"backup.current_file.preparing" = "Preparing backup...";
+"backup.current_file.connecting_sftp" = "Connecting to SFTP server...";
+"backup.error.invalid_webdav_host" = "Invalid WebDAV server address";
+
+"backup.error.connection_failed" = "Unable to connect to server";
+"backup.error.authentication_failed" = "Authentication failed";
+"backup.error.file_operation_failed" = "File operation failed";
+"backup.error.invalid_response" = "Invalid server response";
+"backup.error.cancelled" = "Operation was interrupted";
+"backup.error.unexpected" = "Unexpected error: %@";

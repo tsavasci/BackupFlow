@@ -47,20 +47,23 @@ enum BackupServiceError: Error, LocalizedError {
     case authenticationFailed
     case fileOperationFailed
     case invalidResponse
+    case cancelled
     case unknown(Error)
     
     var errorDescription: String? {
         switch self {
         case .connectionFailed:
-            return "Sunucuya bağlanılamadı"
+            return "backup.error.connection_failed".localized
         case .authenticationFailed:
-            return "Kimlik doğrulama başarısız"
+            return "backup.error.authentication_failed".localized
         case .fileOperationFailed:
-            return "Dosya işlemi başarısız oldu"
+            return "backup.error.file_operation_failed".localized
         case .invalidResponse:
-            return "Geçersiz sunucu yanıtı"
+            return "backup.error.invalid_response".localized
+        case .cancelled:
+            return "backup.error.cancelled".localized
         case .unknown(let error):
-            return "Beklenmeyen bir hata oluştu: \(error.localizedDescription)"
+            return String(format: "backup.error.unexpected".localized, error.localizedDescription)
         }
     }
 }
