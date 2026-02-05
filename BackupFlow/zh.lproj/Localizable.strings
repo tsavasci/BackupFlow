@@ -530,7 +530,7 @@
 "media_type.videos_only" = "仅视频";
 "media_type.photos_and_videos" = "照片和视频";
 
-"sftp.tofu_notice" = "SFTP host key will be trusted on first connection (TOFU).";
+"sftp.tofu_notice" = "SFTP 主机密钥将在首次连接时被信任（TOFU）。";
 "sftp.hostkey_title" = "SFTP Security Warning";
 "sftp.hostkey_message" = "New host key trusted (TOFU). Fingerprint: %@";
 

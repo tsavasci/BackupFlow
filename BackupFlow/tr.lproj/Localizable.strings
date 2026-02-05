@@ -508,7 +508,7 @@
 "media_type.videos_only" = "Yalnızca Videolar";
 "media_type.photos_and_videos" = "Fotoğraflar ve Videolar";
 
-"sftp.tofu_notice" = "SFTP host key will be trusted on first connection (TOFU).";
+"sftp.tofu_notice" = "SFTP sunucu anahtarı ilk bağlantıda güvenilecek (TOFU).";
 "sftp.hostkey_title" = "SFTP Security Warning";
 "sftp.hostkey_message" = "New host key trusted (TOFU). Fingerprint: %@";
 

@@ -531,7 +531,7 @@
 "media_type.videos_only" = "केवल वीडियो";
 "media_type.photos_and_videos" = "फ़ोटो और वीडियो";
 
-"sftp.tofu_notice" = "SFTP host key will be trusted on first connection (TOFU).";
+"sftp.tofu_notice" = "SFTP होस्ट कुंजी पर पहले कनेक्शन पर भरोसा किया जाएगा (TOFU).";
 "sftp.hostkey_title" = "SFTP Security Warning";
 "sftp.hostkey_message" = "New host key trusted (TOFU). Fingerprint: %@";
 

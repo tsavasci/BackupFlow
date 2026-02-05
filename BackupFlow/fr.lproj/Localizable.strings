@@ -533,7 +533,7 @@
 "media_type.videos_only" = "Vidéos uniquement";
 "media_type.photos_and_videos" = "Photos et vidéos";
 
-"sftp.tofu_notice" = "SFTP host key will be trusted on first connection (TOFU).";
+"sftp.tofu_notice" = "La clé d’hôte SFTP sera approuvée lors de la première connexion (TOFU).";
 "sftp.hostkey_title" = "SFTP Security Warning";
 "sftp.hostkey_message" = "New host key trusted (TOFU). Fingerprint: %@";
 
