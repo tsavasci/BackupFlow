@@ -13,8 +13,12 @@ enum WebDAVConnectionBuilder {
         var cleanHost = host.trimmingCharacters(in: .whitespacesAndNewlines)
         var webdavPath = "/"
 
-        cleanHost = cleanHost.replacingOccurrences(of: "http:/", with: "http://")
-        cleanHost = cleanHost.replacingOccurrences(of: "https:/", with: "https://")
+        if cleanHost.hasPrefix("http:/") && !cleanHost.hasPrefix("http://") {
+            cleanHost = cleanHost.replacingOccurrences(of: "http:/", with: "http://")
+        }
+        if cleanHost.hasPrefix("https:/") && !cleanHost.hasPrefix("https://") {
+            cleanHost = cleanHost.replacingOccurrences(of: "https:/", with: "https://")
+        }
         cleanHost = cleanHost.replacingOccurrences(of: "://http://", with: "://")
         cleanHost = cleanHost.replacingOccurrences(of: "://https://", with: "://")
 
