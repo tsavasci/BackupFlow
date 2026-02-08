@@ -8,6 +8,7 @@ struct TaskRow: View {
     
     @State private var showCancelAlert = false
     @State private var showDetailsSheet = false
+    @State private var showErrorSheet = false
     
     private var taskDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -202,11 +203,47 @@ struct TaskRow: View {
         .cornerRadius(10)
         .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
         .padding(.vertical, 4)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if let lastError = task.lastError, !lastError.isEmpty, task.backupStatus == .failed {
+                showErrorSheet = true
+            }
+        }
         .sheet(isPresented: $showDetailsSheet) {
             NavigationView {
                 TaskDetailView(task: task)
                     .navigationTitle("task.details.title".localized)
                     .navigationBarTitleDisplayMode(.inline)
+            }
+        }
+        .sheet(isPresented: $showErrorSheet) {
+            NavigationView {
+                ScrollView {
+                    if let lastError = task.lastError, !lastError.isEmpty {
+                        Text(lastError)
+                            .font(.body)
+                            .foregroundColor(.primary)
+                            .multilineTextAlignment(.leading)
+                            .textSelection(.enabled)
+                            .padding()
+                    } else {
+                        Text("error.unexpected".localized(with: ""))
+                            .font(.body)
+                            .foregroundColor(.primary)
+                            .multilineTextAlignment(.leading)
+                            .textSelection(.enabled)
+                            .padding()
+                    }
+                }
+                .navigationTitle("alert.error".localized)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("common.close".localized) {
+                            showErrorSheet = false
+                        }
+                    }
+                }
             }
         }
         .contextMenu {
