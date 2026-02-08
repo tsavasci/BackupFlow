@@ -25,6 +25,7 @@ struct FTPSyncEngine {
     let provider: FTPFileProvider
     let logger: Logger
     let isVerboseLoggingEnabled: Bool
+    let fastPhotoNameSkipEnabled: Bool
     let isCancelled: () -> Bool
     let createDirectory: (String) async throws -> Void
     let deleteFile: (String) async throws -> Void
@@ -281,6 +282,9 @@ struct FTPSyncEngine {
 
         let existingFileMap = try await listAllFiles(at: photosDir)
         logger.info("Found \(existingFileMap.count) existing photo files on FTP")
+        if fastPhotoNameSkipEnabled {
+            logger.info("Fast photo skip mode enabled (name-based)")
+        }
         
         let legacyNamePattern = #"^\d{8}_\d{6}_\d{3}\.(jpg|mp4)$"#
         let hasLegacyNames = existingFileMap.values.contains { file in
@@ -294,6 +298,18 @@ struct FTPSyncEngine {
             guard !isCancelled() else { break }
             
             let stableFileName = photoManager.generateFileName(for: asset)
+
+            if fastPhotoNameSkipEnabled, let remoteFile = existingFileMap[stableFileName] {
+                result.skippedFiles += 1
+                result.totalBytes += max(remoteFile.size, 0)
+                setCurrentFile("Atlandı: \(stableFileName)")
+                if isVerboseLoggingEnabled {
+                    logger.debug("Fast-skip by name: \(stableFileName)")
+                }
+                let progress = Double(index + 1) / Double(totalCount)
+                progressHandler?(progress)
+                continue
+            }
 
             guard let data = try await photoManager.getAssetData(asset: asset) else {
                 print("⚠️ BackupFlow: Asset verisi alınamadı: \(asset.localIdentifier)")

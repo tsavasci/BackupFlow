@@ -19,6 +19,9 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     static let shared = FTPService()
     private let logger = Logger(subsystem: "com.backupflow.app", category: "FTPService")
     private let isVerboseLoggingEnabled = false
+#if canImport(UIKit)
+    private let backgroundTaskCoordinator = FTPBackgroundTaskCoordinator()
+#endif
     
     private func normalizedRemotePath(_ path: String) -> String {
         var p = path.replacingOccurrences(of: "\\", with: "/")
@@ -40,6 +43,12 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     @Published private(set) var currentFile: String = ""
     
     private let networkMonitor = FTPNetworkMonitor()
+    private var fastPhotoNameSkipEnabled: Bool {
+        if UserDefaults.standard.object(forKey: "FTPFastPhotoNameSkipEnabled") == nil {
+            return true
+        }
+        return UserDefaults.standard.bool(forKey: "FTPFastPhotoNameSkipEnabled")
+    }
 
     private let lock = NSLock()
     private var _ftpProvider: FTPFileProvider?
@@ -984,6 +993,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         try? FileManager.default.createDirectory(at: tempRoot, withIntermediateDirectories: true)
         let tempURL = tempRoot.appendingPathComponent(fileName)
         try data.write(to: tempURL)
+        defer { try? FileManager.default.removeItem(at: tempURL) }
         
         // Update current file being processed
         Task { @MainActor in
@@ -991,7 +1001,6 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         }
         
         try await uploadFile(localURL: tempURL, remotePath: remotePath, progressHandler: progressHandler)
-        try? FileManager.default.removeItem(at: tempURL)
     }
     
     /// Enhanced directory sync with full mirror functionality (upload new, skip identical, delete orphans)
@@ -1012,6 +1021,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             provider: ftp,
             logger: logger,
             isVerboseLoggingEnabled: isVerboseLoggingEnabled,
+            fastPhotoNameSkipEnabled: fastPhotoNameSkipEnabled,
             isCancelled: { [weak self] in self?.isCancelled ?? false },
             createDirectory: { [weak self] path in
                 guard let self else { throw FTPError.connectionFailed }
@@ -1088,6 +1098,18 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             return false
             #endif
         }()
+#if canImport(UIKit)
+        backgroundTaskCoordinator.onExpiration = { [weak self] in
+            self?.logger.warning("FTP background time expired, cancelling transfer")
+            self?.cancelCurrentTask()
+        }
+        if isBackgroundMode {
+            backgroundTaskCoordinator.begin()
+        }
+        defer {
+            backgroundTaskCoordinator.end()
+        }
+#endif
         if isBackgroundMode {
             // Background mode: Set up for background session
             let backgroundId = "BackupFlow.FTP.Background.\(UUID().uuidString)"
@@ -1159,3 +1181,73 @@ final class FTPService: ObservableObject {
 
 #endif
 
+#if canImport(UIKit)
+private final class FTPBackgroundTaskCoordinator {
+    private let lock = NSLock()
+    private var taskID: UIBackgroundTaskIdentifier = .invalid
+    private var renewTimer: DispatchSourceTimer?
+    var onExpiration: (() -> Void)?
+    private let renewInterval: TimeInterval = 25
+
+    func begin() {
+        lock.lock()
+        endLocked()
+        startTaskLocked()
+        startRenewTimerLocked()
+        lock.unlock()
+    }
+
+    func end() {
+        lock.lock()
+        endLocked()
+        stopRenewTimerLocked()
+        lock.unlock()
+    }
+
+    private func handleExpiration() {
+        onExpiration?()
+        end()
+    }
+
+    private func startTaskLocked() {
+        let newID = UIApplication.shared.beginBackgroundTask(withName: "FTPFileTransfer") { [weak self] in
+            self?.handleExpiration()
+        }
+        taskID = newID
+    }
+
+    private func endLocked() {
+        if taskID != .invalid {
+            UIApplication.shared.endBackgroundTask(taskID)
+            taskID = .invalid
+        }
+    }
+
+    private func startRenewTimerLocked() {
+        stopRenewTimerLocked()
+        let timer = DispatchSource.makeTimerSource(queue: DispatchQueue.global(qos: .utility))
+        timer.schedule(deadline: .now() + renewInterval, repeating: renewInterval)
+        timer.setEventHandler { [weak self] in
+            self?.renew()
+        }
+        timer.resume()
+        renewTimer = timer
+    }
+
+    private func stopRenewTimerLocked() {
+        renewTimer?.cancel()
+        renewTimer = nil
+    }
+
+    private func renew() {
+        lock.lock()
+        guard taskID != .invalid else {
+            lock.unlock()
+            return
+        }
+        endLocked()
+        startTaskLocked()
+        lock.unlock()
+    }
+}
+#endif

@@ -45,6 +45,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
     static let shared = WebDAVService()
     private let logger = Logger(subsystem: "com.backupflow.app", category: "WebDAVService")
     private let fileManager = FileManager.default
+    private let temporaryExportRootName = "backupflow_exports"
     private let photoLibraryManager = PhotoLibraryManager.shared
     private let backgroundUploader = WebDAVBackgroundUploader(logger: Logger(subsystem: "com.backupflow.app", category: "WebDAVService"))
     
@@ -575,6 +576,111 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         )
     }
 
+    private func listAllRemoteFiles(at path: String, relativeTo basePath: String = "") async throws -> [String: FileObject] {
+        var allFiles: [String: FileObject] = [:]
+        let files = try await listDirectory(at: path)
+
+        for file in files {
+            let relativePath = basePath.isEmpty ? file.name : "\(basePath)/\(file.name)"
+            if file.isDirectory {
+                let subdirPath = path == "/" ? "/\(file.name)" : "\(path)/\(file.name)"
+                let subFiles = try await listAllRemoteFiles(at: subdirPath, relativeTo: relativePath)
+                allFiles.merge(subFiles) { _, new in new }
+            } else {
+                allFiles[relativePath] = file
+            }
+        }
+
+        return allFiles
+    }
+
+    private func exportRootURL() -> URL {
+        fileManager.temporaryDirectory.appendingPathComponent(temporaryExportRootName, isDirectory: true)
+    }
+
+    private func syncBackupPhotoLibraryDirect(
+        remoteBasePath: String,
+        mediaType: MediaType,
+        progressHandler: @escaping (Double) -> Void
+    ) async throws -> FTPService.SyncResult {
+        try await ensureDirectoryExists(at: remoteBasePath)
+
+        let assets = try await photoLibraryManager.getAllAssets(mediaType: mediaType)
+        var result = FTPService.SyncResult()
+
+        guard !assets.isEmpty else {
+            progressHandler(1.0)
+            return result
+        }
+
+        let existingFileMap = try await listAllRemoteFiles(at: remoteBasePath)
+        let processedRelativePaths = Set(assets.map { photoLibraryManager.generateFileName(for: $0) })
+
+        try fileManager.createDirectory(at: exportRootURL(), withIntermediateDirectories: true)
+
+        for (index, asset) in assets.enumerated() {
+            let fileName = photoLibraryManager.generateFileName(for: asset)
+            guard let data = try await photoLibraryManager.getAssetData(asset: asset) else {
+                progressHandler(Double(index + 1) / Double(assets.count))
+                continue
+            }
+
+            let localSize = Int64(data.count)
+            let remotePath = remoteBasePath == "/" ? "/\(fileName)" : "\(remoteBasePath)/\(fileName)"
+
+            if let remoteFile = existingFileMap[fileName], remoteFile.size == localSize {
+                result.skippedFiles += 1
+                result.totalBytes += localSize
+                progressHandler(Double(index + 1) / Double(assets.count))
+                continue
+            }
+
+            let tempURL = exportRootURL().appendingPathComponent(fileName)
+            if fileManager.fileExists(atPath: tempURL.path) {
+                try? fileManager.removeItem(at: tempURL)
+            }
+            do {
+                try data.write(to: tempURL, options: .atomic)
+                defer { try? fileManager.removeItem(at: tempURL) }
+                try await uploadFileAwaitingCompletion(localURL: tempURL, remotePath: remotePath, progressHandler: nil)
+            } catch {
+                try? fileManager.removeItem(at: tempURL)
+                throw error
+            }
+
+            if existingFileMap[fileName] != nil {
+                result.updatedFiles += 1
+            } else {
+                result.newFiles += 1
+            }
+            result.totalBytes += localSize
+            progressHandler(Double(index + 1) / Double(assets.count))
+        }
+
+        if deleteOrphansEnabled {
+            for (relativePath, _) in existingFileMap where !processedRelativePaths.contains(relativePath) {
+                let fullRemotePath = remoteBasePath == "/" ? "/\(relativePath)" : "\(remoteBasePath)/\(relativePath)"
+                do {
+                    try await deleteFile(at: fullRemotePath)
+                    result.deletedFiles += 1
+                } catch {
+                    logger.error("Failed to delete orphaned photo \(relativePath): \(error.localizedDescription)")
+                }
+            }
+        }
+
+        if let remaining = try? fileManager.contentsOfDirectory(
+            at: exportRootURL(),
+            includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        ), remaining.isEmpty {
+            try? fileManager.removeItem(at: exportRootURL())
+        }
+
+        progressHandler(1.0)
+        return result
+    }
+
     func createDirectory(at path: String) async throws {
         guard let provider = webdavProvider else {
             throw BackupServiceError.connectionFailed
@@ -1047,8 +1153,12 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         self.logger.debug("Backup - Initial host: '\(host)'")
         
         // Handle malformed URLs like "http:/192.168.2.106" (missing second slash)
-        cleanHost = cleanHost.replacingOccurrences(of: "http:/", with: "http://")
-        cleanHost = cleanHost.replacingOccurrences(of: "https:/", with: "https://")
+        if cleanHost.hasPrefix("http:/") && !cleanHost.hasPrefix("http://") {
+            cleanHost = cleanHost.replacingOccurrences(of: "http:/", with: "http://")
+        }
+        if cleanHost.hasPrefix("https:/") && !cleanHost.hasPrefix("https://") {
+            cleanHost = cleanHost.replacingOccurrences(of: "https:/", with: "https://")
+        }
         cleanHost = cleanHost.replacingOccurrences(of: "://http://", with: "://") // Fix double protocol
         cleanHost = cleanHost.replacingOccurrences(of: "://https://", with: "://") // Fix double protocol
         
@@ -1077,39 +1187,27 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
             throw NSError(domain: "WebDAVError", code: -1, userInfo: [NSLocalizedDescriptionKey: "WebDAV provider is not available"])
         }
         
-        // Create a temporary directory for the backup
-        let tempDir = fileManager.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        try fileManager.createDirectory(at: tempDir, withIntermediateDirectories: true)
-        defer { try? fileManager.removeItem(at: tempDir) }
-        
         var result = FTPService.SyncResult()
         
         if sourcePath == "PHOTOS_LIBRARY" {
             self.logger.info("Backing up photo library...")
-            let photoCount = try await backupPhotoLibrary(to: tempDir, mediaType: mediaType) { p in
-                progressHandler(p * 0.5)
-            }
-            self.logger.info("Backed up \(photoCount) photos to temporary directory")
-
             // Mirror to a fixed 'photos' directory (no timestamp), with skip/update + orphan delete
-            let remotePhotosBase = webdavPath + "photos"
-            try await ensureDirectoryExists(at: remotePhotosBase)
-            let sync = try await syncUploadDirectory(
-                localPath: tempDir.path,
+            // Use base URL's root ("/") to avoid duplicating the WebDAV path segment.
+            let remoteRoot = "/"
+            let remotePhotosBase = remoteRoot.hasSuffix("/") ? remoteRoot + "photos" : remoteRoot + "/photos"
+            result = try await syncBackupPhotoLibraryDirect(
                 remoteBasePath: remotePhotosBase,
-                progressHandler: { p in progressHandler(0.5 + p * 0.5) }
+                mediaType: mediaType,
+                progressHandler: progressHandler
             )
-            result.newFiles = sync.filesUploaded
-            result.skippedFiles = sync.filesSkipped
-            result.deletedFiles = sync.deletedFiles
-            result.totalBytes = sync.bytesTransferred
-            self.logger.info("Successfully synced photos to WebDAV (uploaded: \(sync.filesUploaded), skipped: \(sync.filesSkipped), deleted: \(sync.deletedFiles))")
+            self.logger.info("Successfully synced photos to WebDAV (uploaded: \(result.newFiles), updated: \(result.updatedFiles), skipped: \(result.skippedFiles), deleted: \(result.deletedFiles))")
         } else {
             // Directory mirror - preserve source folder name
             self.logger.info("Backing up directory (mirror): \(sourcePath)")
             let sourceURL = URL(fileURLWithPath: sourcePath)
             let sourceFolderName = sourceURL.lastPathComponent
-            let remoteDocumentsBase = webdavPath.hasSuffix("/") ? webdavPath + sourceFolderName : webdavPath + "/" + sourceFolderName
+            let remoteRoot = "/"
+            let remoteDocumentsBase = remoteRoot == "/" ? "/\(sourceFolderName)" : "\(remoteRoot)/\(sourceFolderName)"
             try await ensureDirectoryExists(at: remoteDocumentsBase)
             let sync = try await syncUploadDirectory(
                 localPath: sourcePath,
@@ -1128,6 +1226,3 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
 }
 
 #endif
-
-
-

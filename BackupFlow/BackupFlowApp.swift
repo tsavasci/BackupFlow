@@ -48,6 +48,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         
         // Suppress system framework noise logs (FIGSANDBOX, AVFoundation warnings)
         SystemLogFilter.suppressSystemNoise()
+        TemporaryStorageMaintenance.cleanupStaleFiles()
         
         registerBackgroundTask()
         
