@@ -2,7 +2,7 @@ platform :ios, '17.0'
 use_frameworks!
 
 target 'BackupFlow' do
-  pod 'NMSSH'
+  pod 'NMSSH', '= 2.3.1'
 end
 
 post_install do |installer|

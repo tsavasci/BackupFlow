@@ -17,6 +17,105 @@ struct SFTPHostKeyResult {
 import NMSSH
 import UserNotifications
 
+private enum SFTPFailureKind {
+    case authentication
+    case timeout
+    case hostKeyMismatch
+    case connection
+    case fileOperation
+    case unavailable
+}
+
+private enum SFTPFailureCode: Int {
+    case authentication = 1001
+    case timeout = 1002
+    case hostKeyMismatch = 1003
+    case connection = 1004
+    case fileOperation = 1005
+    case unavailable = 1006
+}
+
+private func makeSFTPError(
+    _ kind: SFTPFailureKind,
+    details: String? = nil,
+    underlying: Error? = nil
+) -> NSError {
+    let message: String
+    let code: Int
+    switch kind {
+    case .authentication:
+        code = SFTPFailureCode.authentication.rawValue
+        message = "SFTP kimlik doğrulama başarısız. Kullanıcı adı/şifreyi ve sunucu izinlerini kontrol edin."
+    case .timeout:
+        code = SFTPFailureCode.timeout.rawValue
+        message = "SFTP bağlantısı zaman aşımına uğradı. Ağ erişimini ve sunucu yanıt süresini kontrol edin."
+    case .hostKeyMismatch:
+        code = SFTPFailureCode.hostKeyMismatch.rawValue
+        message = "SFTP host key doğrulaması başarısız. Sunucu anahtarı değişmiş olabilir."
+    case .connection:
+        code = SFTPFailureCode.connection.rawValue
+        message = "SFTP sunucusuna bağlantı kurulamadı."
+    case .fileOperation:
+        code = SFTPFailureCode.fileOperation.rawValue
+        message = "SFTP dosya işlemi başarısız."
+    case .unavailable:
+        code = SFTPFailureCode.unavailable.rawValue
+        message = "SFTP desteği etkin değil. NMSSH kütüphanesi eklenmeli."
+    }
+
+    var userInfo: [String: Any] = [NSLocalizedDescriptionKey: message]
+    if let details, !details.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        userInfo[NSLocalizedDescriptionKey] = "\(message) Detay: \(details)"
+    }
+    if let underlying {
+        userInfo[NSUnderlyingErrorKey] = underlying
+    }
+    return NSError(domain: "SFTPError", code: code, userInfo: userInfo)
+}
+
+private func classifySFTPError(_ error: Error, defaultKind: SFTPFailureKind) -> Error {
+    if let backupError = error as? BackupServiceError, case .cancelled = backupError {
+        return backupError
+    }
+
+    let nsError = error as NSError
+    if nsError.domain == "SFTPError" {
+        return error
+    }
+
+    if let urlError = error as? URLError {
+        switch urlError.code {
+        case .timedOut:
+            return makeSFTPError(.timeout, details: urlError.localizedDescription, underlying: error)
+        case .userAuthenticationRequired, .userCancelledAuthentication:
+            return makeSFTPError(.authentication, details: urlError.localizedDescription, underlying: error)
+        case .cannotConnectToHost, .cannotFindHost, .networkConnectionLost, .notConnectedToInternet:
+            return makeSFTPError(.connection, details: urlError.localizedDescription, underlying: error)
+        default:
+            return makeSFTPError(defaultKind, details: urlError.localizedDescription, underlying: error)
+        }
+    }
+
+    let message = nsError.localizedDescription.lowercased()
+    if message.contains("host key") || message.contains("fingerprint") || message.contains("known host") || message.contains("mismatch") {
+        return makeSFTPError(.hostKeyMismatch, details: nsError.localizedDescription, underlying: error)
+    }
+    if message.contains("timed out") || message.contains("timeout") {
+        return makeSFTPError(.timeout, details: nsError.localizedDescription, underlying: error)
+    }
+    if message.contains("auth") || message.contains("password") || message.contains("permission denied") || message.contains("userauth") || message.contains("access denied") {
+        return makeSFTPError(.authentication, details: nsError.localizedDescription, underlying: error)
+    }
+    if message.contains("socket") || message.contains("connect") || message.contains("handshake") || message.contains("network") || message.contains("active session") {
+        return makeSFTPError(.connection, details: nsError.localizedDescription, underlying: error)
+    }
+    if message.contains("file") || message.contains("directory") || message.contains("stat") || message.contains("read") || message.contains("write") || message.contains("sftp") {
+        return makeSFTPError(.fileOperation, details: nsError.localizedDescription, underlying: error)
+    }
+
+    return makeSFTPError(defaultKind, details: nsError.localizedDescription, underlying: error)
+}
+
 final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     static let shared = SFTPService()
     private let logger = Logger(subsystem: "com.backupflow.app", category: "SFTPService")
@@ -300,7 +399,7 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         }
         logger.info("SFTP session not alive, reconnecting...")
         guard let conn = fetchConnection() else {
-            throw BackupServiceError.connectionFailed
+            throw makeSFTPError(.connection)
         }
         _ = try await connectInternal(
             host: conn.host,
@@ -314,7 +413,7 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     private func remoteFileSize(at path: String) async throws -> Int64? {
         try await runOnQueue {
             guard let sftp = self.sftp else {
-                throw BackupServiceError.connectionFailed
+                throw makeSFTPError(.connection)
             }
             if !sftp.fileExists(atPath: path) {
                 return nil
@@ -365,7 +464,7 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                 logger.warning("SFTP upload attempt \(attempt + 1) failed: \(error.localizedDescription)")
                 disconnect()
                 if attempt == retryDelays.count - 1 {
-                    throw error
+                    throw classifySFTPError(error, defaultKind: .fileOperation)
                 }
                 logger.info("SFTP retrying after \(retryDelays[attempt])s")
                 await waitForReachable(timeout: retryDelays[attempt])
@@ -373,7 +472,7 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             }
         }
         
-        throw BackupServiceError.fileOperationFailed
+        throw makeSFTPError(.fileOperation)
     }
 
     private func waitForReachable(timeout: TimeInterval) async {
@@ -417,7 +516,7 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         notifyOnNewHostKey: Bool
     ) async throws -> SFTPHostKeyResult? {
         guard let username else {
-            throw BackupServiceError.authenticationFailed
+            throw makeSFTPError(.authentication)
         }
         
         let hostKeyResult = try await runOnQueue { () -> SFTPHostKeyResult? in
@@ -426,13 +525,9 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             
             guard session.isConnected else {
                 if let lastError = session.lastError {
-                    let message = lastError.localizedDescription.lowercased()
-                    if message.contains("absence of an active session") {
-                        throw BackupServiceError.connectionFailed
-                    }
-                    throw BackupServiceError.unknown(lastError)
+                    throw classifySFTPError(lastError, defaultKind: .connection)
                 }
-                throw BackupServiceError.connectionFailed
+                throw makeSFTPError(.connection)
             }
             
             if let password {
@@ -449,20 +544,19 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             
             guard session.isAuthorized else {
                 if let lastError = session.lastError {
-                    let message = lastError.localizedDescription.lowercased()
-                    if message.contains("absence of an active session") {
-                        throw BackupServiceError.authenticationFailed
-                    }
-                    throw BackupServiceError.unknown(lastError)
+                    throw classifySFTPError(lastError, defaultKind: .authentication)
                 }
-                throw BackupServiceError.authenticationFailed
+                throw makeSFTPError(.authentication)
             }
             
             try self.hostKeyStore.verifyOrTrust(session: session, host: host, port: port)
             
             let sftp = session.sftp
             if !sftp.connect() {
-                throw BackupServiceError.connectionFailed
+                if let lastError = session.lastError {
+                    throw classifySFTPError(lastError, defaultKind: .connection)
+                }
+                throw makeSFTPError(.connection)
             }
             sftp.bufferSize = 256 * 1024
             self.sftp = sftp
@@ -653,7 +747,10 @@ private final class SFTPHostKeyStore {
         
         if let saved = userDefaults.string(forKey: key) {
             if saved != fingerprint {
-                throw BackupServiceError.authenticationFailed
+                throw makeSFTPError(
+                    .hostKeyMismatch,
+                    details: "Host: \(host):\(port), beklenen: \(saved), gelen: \(fingerprint)"
+                )
             }
             lastResult = SFTPHostKeyResult(isNewHostKey: false, fingerprint: fingerprint)
             return
