@@ -4,18 +4,12 @@ import SwiftData
 struct TaskDetailView: View {
     let task: BackupTask
     @Environment(\.dismiss) private var dismiss
-    @Query private var histories: [BackupHistory]
+    @Environment(\.modelContext) private var modelContext
+    @State private var histories: [BackupHistory] = []
+    @State private var isLoading = true
     
     init(task: BackupTask) {
         self.task = task
-        let taskId = task.id
-        let descriptor = FetchDescriptor<BackupHistory>(
-            predicate: #Predicate<BackupHistory> { history in
-                history.task?.id == taskId
-            },
-            sortBy: [SortDescriptor(\BackupHistory.timestamp, order: .reverse)]
-        )
-        _histories = Query(descriptor, animation: .default)
     }
     
     private var taskDateFormatter: DateFormatter = {
@@ -54,7 +48,9 @@ struct TaskDetailView: View {
             
             // Son Yedeklemeler
             Section("task.details.recent_backups".localized) {
-                if histories.isEmpty {
+                if isLoading {
+                    ProgressView()
+                } else if histories.isEmpty {
                     Text("task.details.no_backups".localized)
                         .foregroundStyle(.secondary)
                 } else {
@@ -89,6 +85,26 @@ struct TaskDetailView: View {
                 Button("task.details.close".localized, action: { dismiss() })
             }
         }
+        .onAppear {
+            loadHistories()
+        }
+    }
+    
+    private func loadHistories() {
+        let taskId = task.id
+        let descriptor = FetchDescriptor<BackupHistory>(
+            predicate: #Predicate<BackupHistory> { history in
+                history.task?.id == taskId
+            },
+            sortBy: [SortDescriptor(\BackupHistory.timestamp, order: .reverse)]
+        )
+        
+        do {
+            histories = try modelContext.fetch(descriptor)
+        } catch {
+            print("Histories yükleme hatası: \(error)")
+        }
+        isLoading = false
     }
     
     private func formatDuration(_ duration: TimeInterval) -> String {

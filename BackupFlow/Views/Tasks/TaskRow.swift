@@ -196,6 +196,10 @@ struct TaskRow: View {
                         .foregroundColor(.red)
                         .lineLimit(2)
                 }
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    showErrorSheet = true
+                }
             }
         }
         .padding()
@@ -203,12 +207,6 @@ struct TaskRow: View {
         .cornerRadius(10)
         .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
         .padding(.vertical, 4)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            if let lastError = task.lastError, !lastError.isEmpty, task.backupStatus == .failed {
-                showErrorSheet = true
-            }
-        }
         .sheet(isPresented: $showDetailsSheet) {
             NavigationView {
                 TaskDetailView(task: task)
