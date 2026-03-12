@@ -566,3 +566,5 @@
 "backup.error.invalid_response" = "服务器响应无效";
 "backup.error.cancelled" = "操作已中断";
 "backup.error.unexpected" = "发生意外错误：%@";
+
+"whats_new" = "What's New";

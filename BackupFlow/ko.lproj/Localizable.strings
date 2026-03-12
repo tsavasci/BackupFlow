@@ -569,3 +569,5 @@
 "backup.error.invalid_response" = "유효하지 않은 서버 응답";
 "backup.error.cancelled" = "작업이 중단되었습니다";
 "backup.error.unexpected" = "예기치 않은 오류: %@";
+
+"whats_new" = "What's New";

@@ -56,6 +56,7 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
+            .liquidListRow()
             
             Section(header: Text("settings.language".localized)) {
                 Picker("settings.language".localized, selection: $selectedLanguageCode) {
@@ -65,6 +66,7 @@ struct SettingsView: View {
                     }
                 }
             }
+            .liquidListRow()
 
             
             Section(header: Text("settings.about_section".localized)) {
@@ -87,6 +89,7 @@ struct SettingsView: View {
                     Text("settings.contact_support".localized)
                 }
             }
+            .liquidListRow()
             
             Section {
                 Button(role: .destructive) {
@@ -99,6 +102,7 @@ struct SettingsView: View {
                     }
                 }
             }
+            .liquidListRow()
         }
         .navigationTitle("settings.title".localized)
         .scrollContentBackground(.hidden)

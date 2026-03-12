@@ -326,6 +326,7 @@ struct BackupView: View {
                     .transition(.opacity)
                 }
             }
+            .liquidListRow()
             
             Section(header: Text("backup.scheduling".localized)) {
                 Picker("backup.frequency".localized, selection: $frequencyType) {
@@ -343,6 +344,7 @@ struct BackupView: View {
                     DayPicker(selectedDay: $selectedDay)
                 }
             }
+            .liquidListRow()
             
             // Network ayarları (sadece local server için)
             if isLocalServer() {
@@ -359,6 +361,7 @@ struct BackupView: View {
                             .foregroundColor(.secondary)
                     }
                 }
+                .liquidListRow()
             }
             
             Section {

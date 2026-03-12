@@ -229,6 +229,7 @@ struct HistoryView: View {
                 Text(item.taskSourcePath ?? "history.unknown".localized)
                     .font(.system(.body, design: .monospaced))
             }
+            .liquidListRow()
             
             Section("history.destination".localized) {
                 if let host = item.taskServerHost, let port = item.taskServerPort {
@@ -239,6 +240,7 @@ struct HistoryView: View {
                         .font(.system(.body, design: .monospaced))
                 }
             }
+            .liquidListRow()
             
             Section("history.stats_section".localized) {
                 LabeledContent("history.stats.status".localized, value: localizedHistoryStatus(item.status))
@@ -254,6 +256,7 @@ struct HistoryView: View {
                 LabeledContent("history.stats.duration".localized, value: formatDuration(item.duration))
                 LabeledContent("history.stats.date".localized, value: item.timestamp.formatted(date: .long, time: .standard))
             }
+            .liquidListRow()
 
             if let err = item.errorMessage, !err.isEmpty {
                 Section("alert.error".localized) {
@@ -262,6 +265,7 @@ struct HistoryView: View {
                         .foregroundStyle(.red)
                         .textSelection(.enabled)
                 }
+                .liquidListRow()
             }
         }
         .navigationTitle("history.backup_detail".localized)

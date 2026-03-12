@@ -567,3 +567,5 @@
 "backup.error.invalid_response" = "無効なサーバー応答";
 "backup.error.cancelled" = "操作が中断されました";
 "backup.error.unexpected" = "予期しないエラー: %@";
+
+"whats_new" = "What's New";

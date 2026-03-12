@@ -567,3 +567,5 @@
 "backup.error.invalid_response" = "Respuesta del servidor no válida";
 "backup.error.cancelled" = "La operación fue interrumpida";
 "backup.error.unexpected" = "Error inesperado: %@";
+
+"whats_new" = "What's New";

@@ -38,6 +38,7 @@ struct TaskDetailView: View {
                     LabeledContent("task.details.next_backup".localized, value: taskDateFormatter.string(from: nextRun))
                 }
             }
+            .liquidListRow()
             
             // Sunucu Bilgileri
             Section("task.details.server_section".localized) {
@@ -45,6 +46,7 @@ struct TaskDetailView: View {
                 LabeledContent("task.details.port".localized, value: String(task.ftpPort))
                 LabeledContent("task.details.user".localized, value: task.isAnonymous ? "task.details.anonymous".localized : task.ftpUsername)
             }
+            .liquidListRow()
             
             // Son Yedeklemeler
             Section("task.details.recent_backups".localized) {
@@ -79,6 +81,7 @@ struct TaskDetailView: View {
                     }
                 }
             }
+            .liquidListRow()
         }
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {

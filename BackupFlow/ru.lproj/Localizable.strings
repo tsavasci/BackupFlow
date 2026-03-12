@@ -567,3 +567,5 @@
 "backup.error.invalid_response" = "Недействительный ответ сервера";
 "backup.error.cancelled" = "Операция была прервана";
 "backup.error.unexpected" = "Неожиданная ошибка: %@";
+
+"whats_new" = "What's New";

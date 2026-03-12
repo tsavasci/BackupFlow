@@ -564,3 +564,5 @@
 "backup.error.invalid_response" = "Invalid server response";
 "backup.error.cancelled" = "Operation was interrupted";
 "backup.error.unexpected" = "Unexpected error: %@";
+
+"whats_new" = "What's New";

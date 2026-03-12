@@ -567,3 +567,5 @@
 "backup.error.invalid_response" = "Ungültige Serverantwort";
 "backup.error.cancelled" = "Vorgang wurde unterbrochen";
 "backup.error.unexpected" = "Unerwarteter Fehler: %@";
+
+"whats_new" = "What's New";

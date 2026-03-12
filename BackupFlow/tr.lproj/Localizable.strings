@@ -544,3 +544,5 @@
 "backup.error.invalid_response" = "Geçersiz sunucu yanıtı";
 "backup.error.cancelled" = "İşlem yarıda kesildi";
 "backup.error.unexpected" = "Beklenmeyen bir hata oluştu: %@";
+
+"whats_new" = "What's New";

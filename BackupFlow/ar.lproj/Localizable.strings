@@ -567,3 +567,5 @@
 "backup.error.invalid_response" = "استجابة خادم غير صالحة";
 "backup.error.cancelled" = "تمت مقاطعة العملية";
 "backup.error.unexpected" = "خطأ غير متوقع: %@";
+
+"whats_new" = "What's New";

@@ -567,3 +567,5 @@
 "backup.error.invalid_response" = "सर्वर प्रतिक्रिया अमान्य";
 "backup.error.cancelled" = "कार्य बाधित हो गया";
 "backup.error.unexpected" = "अप्रत्याशित त्रुटि: %@";
+
+"whats_new" = "What's New";
