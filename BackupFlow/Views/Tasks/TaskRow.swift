@@ -203,9 +203,7 @@ struct TaskRow: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
-        .cornerRadius(10)
-        .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+        .liquidCard(cornerRadius: 14)
         .padding(.vertical, 4)
         .sheet(isPresented: $showDetailsSheet) {
             NavigationView {

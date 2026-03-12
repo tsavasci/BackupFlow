@@ -378,6 +378,8 @@ struct BackupView: View {
                 .listRowBackground(Color.clear)
             }
         }
+        .scrollContentBackground(.hidden)
+        .liquidBackground()
         .navigationTitle("backup.new_backup".localized)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {

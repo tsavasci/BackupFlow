@@ -101,6 +101,8 @@ struct SettingsView: View {
             }
         }
         .navigationTitle("settings.title".localized)
+        .scrollContentBackground(.hidden)
+        .liquidBackground()
         .onAppear {
             let codes = Set(supportedLanguages.map { $0.code })
             if !codes.contains(selectedLanguageCode) {

@@ -28,6 +28,7 @@ struct TasksView: View {
             } message: {
                 Text("tasks.delete_message_full".localized)
             }
+            .liquidBackground()
     }
     
     // MARK: - Subviews
@@ -61,10 +62,12 @@ struct TasksView: View {
                 ForEach(tasks) { task in
                     TaskRow(task: task, onDelete: { self.taskToDelete = $0 })
                         .swipeActions(edge: .trailing) { deleteButton(for: task) }
+                        .listRowBackground(Color.clear)
                 }
             }
         }
         .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
     }
     
     private func deleteButton(for task: BackupTask) -> some View {

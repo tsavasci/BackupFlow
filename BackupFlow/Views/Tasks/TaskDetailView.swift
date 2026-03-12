@@ -85,6 +85,8 @@ struct TaskDetailView: View {
                 Button("task.details.close".localized, action: { dismiss() })
             }
         }
+        .scrollContentBackground(.hidden)
+        .liquidBackground()
         .onAppear {
             loadHistories()
         }

@@ -23,6 +23,7 @@ struct HistoryView: View {
         .onAppear {
             loadHistory()
         }
+        .liquidBackground()
     }
     
     @ViewBuilder
@@ -132,9 +133,7 @@ struct HistoryView: View {
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
-                    .background(Color(.systemBackground))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+                    .liquidCard(cornerRadius: 14)
                     .contextMenu {
                         Button(role: .destructive) {
                             if let index = history.firstIndex(where: { $0.persistentModelID == item.persistentModelID }) {
@@ -267,5 +266,7 @@ struct HistoryView: View {
         }
         .navigationTitle("history.backup_detail".localized)
         .navigationBarTitleDisplayMode(.inline)
+        .scrollContentBackground(.hidden)
+        .liquidBackground()
     }
 }

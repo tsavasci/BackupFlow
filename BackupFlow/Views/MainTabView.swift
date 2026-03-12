@@ -44,7 +44,7 @@ struct MainTabView: View {
                 Label("nav.about".localized, systemImage: "info.circle.fill")
             }
         }
-        .accentColor(.blue)
+        .tint(LiquidTheme.accent)
         .onAppear {
             checkForPendingBackup()
         }

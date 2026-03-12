@@ -63,7 +63,7 @@ struct DashboardWidget: View {
             }
             
             // Next Scheduled Task
-            if let nextTask = nextScheduledTask, let nextRun = nextTask.nextRunTime {
+        if let nextTask = nextScheduledTask, let nextRun = nextTask.nextRunTime {
                 HStack {
                     Image(systemName: "clock.arrow.circlepath")
                         .foregroundColor(.orange)
@@ -84,7 +84,7 @@ struct DashboardWidget: View {
             }
         }
         .padding()
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .liquidCard(cornerRadius: 14)
         .onReceive(timer) { time in
             currentTime = time
         }
@@ -170,7 +170,7 @@ struct DashboardCard: View {
         }
         .frame(maxWidth: .infinity)
         .padding()
-        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8))
+        .liquidCard(cornerRadius: 12)
     }
 }
 

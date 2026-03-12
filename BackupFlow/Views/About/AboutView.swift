@@ -24,8 +24,12 @@ struct AboutView: View {
                 
                 VStack(alignment: .leading, spacing: 16) {
                     InfoRow(icon: "info.circle", title: "about.title".localized, description: "about.description".localized)
+                        .padding()
+                        .liquidCard(cornerRadius: 14)
                     
                     InfoRow(icon: "doc.text", title: "about.license".localized, description: "about.license_description".localized)
+                        .padding()
+                        .liquidCard(cornerRadius: 14)
                     
                     Button(action: {
                         openSupportEmail()
@@ -33,6 +37,8 @@ struct AboutView: View {
                         InfoRow(icon: "envelope", title: "about.contact".localized, description: "tamersavasci@icloud.com")
                     }
                     .buttonStyle(PlainButtonStyle())
+                    .padding()
+                    .liquidCard(cornerRadius: 14)
                 }
                 .padding()
                 
@@ -52,6 +58,7 @@ struct AboutView: View {
             .padding()
         }
         .navigationTitle("about.title".localized)
+        .liquidBackground()
     }
     
     private func openSupportEmail() {
@@ -120,4 +127,3 @@ struct InfoRow: View {
         AboutView()
     }
 }
-
