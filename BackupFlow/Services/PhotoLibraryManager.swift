@@ -4,7 +4,6 @@ import SwiftUI
 import Combine
 import OSLog
 import UniformTypeIdentifiers
-import AVFoundation
 
 class PhotoLibraryManager: NSObject, ObservableObject {
     static let shared = PhotoLibraryManager()
@@ -175,67 +174,90 @@ class PhotoLibraryManager: NSObject, ObservableObject {
             options.version = .current
             
             if asset.mediaType == .image {
+                let resumeLock = NSLock()
+                var didResume = false
+                func tryResume(_ data: Data?) -> Bool {
+                    resumeLock.lock()
+                    defer { resumeLock.unlock() }
+                    if didResume { return false }
+                    didResume = true
+                    continuation.resume(returning: data)
+                    return true
+                }
+
+                Task {
+                    try? await Task.sleep(nanoseconds: 45_000_000_000)
+                    if tryResume(nil) {
+                        self.logger.warning("⚠️ Fotoğraf okuma zaman aşımı: \(asset.localIdentifier.prefix(8))")
+                    }
+                }
+
                 // PHImageRequestOptions'ı main thread'de kullan
                 PHImageManager.default().requestImageDataAndOrientation(for: asset, options: options) { data, uti, orientation, info in
                     // Eğer yerel varlık bulunamazsa, iCloud'dan indir (opsiyonel)
                     if let data = data, !data.isEmpty {
                         self.logger.debug("✓ Fotoğraf verisi yerel olarak alındı: \(asset.localIdentifier.prefix(8))")
-                        continuation.resume(returning: data)
+                        _ = tryResume(data)
                     } else if let isInCloud = info?[PHImageResultIsInCloudKey] as? NSNumber, isInCloud.boolValue {
                         self.logger.warning("⚠️ Fotoğraf iCloud'da - yerel indirme başlatılmıyor (ağ erişimi açık)")
-                        continuation.resume(returning: nil)
+                        _ = tryResume(nil)
                     } else {
-                        continuation.resume(returning: nil)
+                        _ = tryResume(nil)
                     }
                 }
             } else if asset.mediaType == .video {
-                let videoOptions = PHVideoRequestOptions()
-                videoOptions.isNetworkAccessAllowed = true // Enable iCloud download for videos
-                videoOptions.deliveryMode = .highQualityFormat
-                videoOptions.version = .current
+                let resumeLock = NSLock()
+                var didResume = false
+                func tryResume(_ data: Data?) -> Bool {
+                    resumeLock.lock()
+                    defer { resumeLock.unlock() }
+                    if didResume { return false }
+                    didResume = true
+                    continuation.resume(returning: data)
+                    return true
+                }
 
-                PHImageManager.default().requestAVAsset(forVideo: asset, options: videoOptions) { avAsset, _, info in
-                    guard let avAsset = avAsset else {
-                        if let isInCloud = info?[PHImageResultIsInCloudKey] as? NSNumber, isInCloud.boolValue {
-                            self.logger.warning("⚠️ Video iCloud'da - AVAsset alınamadı")
-                        }
-                        continuation.resume(returning: nil)
+                let resources = PHAssetResource.assetResources(for: asset)
+                guard let videoResource = resources.first(where: { $0.type == .video || $0.type == .fullSizeVideo }) ?? resources.first else {
+                    _ = tryResume(nil)
+                    return
+                }
+
+                let tempRoot = FileManager.default.temporaryDirectory.appendingPathComponent("backupflow_exports", isDirectory: true)
+                try? FileManager.default.createDirectory(at: tempRoot, withIntermediateDirectories: true)
+                let ext = (videoResource.originalFilename as NSString).pathExtension
+                let finalExt = ext.isEmpty ? "mov" : ext
+                let tempURL = tempRoot.appendingPathComponent("video_\(UUID().uuidString).\(finalExt)")
+                if FileManager.default.fileExists(atPath: tempURL.path) {
+                    try? FileManager.default.removeItem(at: tempURL)
+                }
+
+                let requestOptions = PHAssetResourceRequestOptions()
+                requestOptions.isNetworkAccessAllowed = true
+
+                Task {
+                    try? await Task.sleep(nanoseconds: 90_000_000_000)
+                    if tryResume(nil) {
+                        self.logger.warning("⚠️ Video okuma zaman aşımı: \(asset.localIdentifier.prefix(8))")
+                    }
+                }
+
+                PHAssetResourceManager.default().writeData(for: videoResource, toFile: tempURL, options: requestOptions) { error in
+                    defer { try? FileManager.default.removeItem(at: tempURL) }
+
+                    if let error = error {
+                        self.logger.error("❌ Video resource okuma hatası: \(error.localizedDescription)")
+                        _ = tryResume(nil)
                         return
                     }
 
-                    // Prepare temp location outside do/catch so it's visible in catch
-                    let tempRoot = FileManager.default.temporaryDirectory.appendingPathComponent("backupflow_exports", isDirectory: true)
-                    try? FileManager.default.createDirectory(at: tempRoot, withIntermediateDirectories: true)
-                    let tempURL = tempRoot.appendingPathComponent("video_\(UUID().uuidString).mp4")
-
-                    Task {
-                        var exportSession: AVAssetExportSession?
-                        do {
-                            exportSession = AVAssetExportSession(asset: avAsset, presetName: AVAssetExportPresetHighestQuality)
-                            guard let session = exportSession else {
-                                continuation.resume(returning: nil)
-                                return
-                            }
-                            // Prefer mp4 if supported, otherwise fallback to first supported type
-                            if session.supportedFileTypes.contains(.mp4) {
-                                session.outputFileType = .mp4
-                            } else if let first = session.supportedFileTypes.first {
-                                session.outputFileType = first
-                            }
-                            // Clean existing file if any
-                            if FileManager.default.fileExists(atPath: tempURL.path) {
-                                try? FileManager.default.removeItem(at: tempURL)
-                            }
-                            try await session.export(to: tempURL, as: session.outputFileType ?? .mp4)
-                            let data = try Data(contentsOf: tempURL)
-                            try? FileManager.default.removeItem(at: tempURL)
-                            self.logger.debug("✓ Video export tamamlandı: \(asset.localIdentifier.prefix(8))")
-                            continuation.resume(returning: data)
-                        } catch {
-                            self.logger.error("❌ Video export hata: \(error.localizedDescription)")
-                            try? FileManager.default.removeItem(at: tempURL)
-                            continuation.resume(returning: nil)
-                        }
+                    do {
+                        let data = try Data(contentsOf: tempURL)
+                        self.logger.debug("✓ Video verisi alındı: \(asset.localIdentifier.prefix(8))")
+                        _ = tryResume(data)
+                    } catch {
+                        self.logger.error("❌ Video verisi okunamadı: \(error.localizedDescription)")
+                        _ = tryResume(nil)
                     }
                 }
             } else {

@@ -5,7 +5,6 @@ import FilesProvider
 import OSLog
 import Combine
 @preconcurrency import Photos
-import AVFoundation
 import Network
 #if canImport(UIKit)
 import UIKit
@@ -422,14 +421,15 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
     
     /// Sync engine gibi "başarılı" sayılmadan önce gerçek tamamlanma bekleyen akışlar için.
     func uploadFileAwaitingCompletion(localURL: URL, remotePath: String, progressHandler: ((Double) -> Void)? = nil) async throws {
-        try await uploadFile(localURL: localURL, remotePath: remotePath, progressHandler: progressHandler, allowBackgroundSession: false)
+        try await uploadFile(localURL: localURL, remotePath: remotePath, progressHandler: progressHandler, allowBackgroundSession: false, timeoutMultiplier: 1.0)
     }
     
     private func uploadFile(
         localURL: URL,
         remotePath: String,
         progressHandler: ((Double) -> Void)?,
-        allowBackgroundSession: Bool
+        allowBackgroundSession: Bool,
+        timeoutMultiplier: Double = 1.0
     ) async throws {
         guard let provider = webdavProvider else {
             throw BackupServiceError.connectionFailed
@@ -447,18 +447,34 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         
         // Foreground uploads: stream from file to avoid memory pressure
         do {
+            let timeoutSeconds = uploadTimeoutSeconds(for: localURL) * max(1.0, timeoutMultiplier)
             try await executeWithRetry {
                 try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                    let resumeLock = NSLock()
                     var didResume = false
                     func safeThrow(_ error: Error) {
+                        resumeLock.lock()
+                        defer { resumeLock.unlock() }
                         if didResume { return }
                         didResume = true
                         continuation.resume(throwing: error)
                     }
                     func safeResume() {
+                        resumeLock.lock()
+                        defer { resumeLock.unlock() }
                         if didResume { return }
                         didResume = true
                         continuation.resume()
+                    }
+
+                    DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + timeoutSeconds) {
+                        let timeoutError = NSError(
+                            domain: NSURLErrorDomain,
+                            code: NSURLErrorTimedOut,
+                            userInfo: [NSLocalizedDescriptionKey: "WebDAV upload timeout (\(Int(timeoutSeconds))s): \(localURL.lastPathComponent)"]
+                        )
+                        self.logger.warning("⏱️ WebDAV upload timeout: \(localURL.lastPathComponent) after \(Int(timeoutSeconds))s")
+                        safeThrow(timeoutError)
                     }
 
                     provider.copyItem(localFile: localURL, to: remotePath, overwrite: true) { error in
@@ -473,8 +489,34 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
             }
         } catch {
             self.lastError = error
+            if isUploadTimeoutError(error) {
+                throw error
+            }
             throw WebDAVErrorMapper.mapError(error)
         }
+    }
+
+    private func uploadTimeoutSeconds(for localURL: URL) -> TimeInterval {
+        let fileSizeBytes = Int64((try? localURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
+        let fileSizeMB = Double(max(fileSizeBytes, 0)) / (1024.0 * 1024.0)
+        let ext = localURL.pathExtension.lowercased()
+        let isLikelyVideo = ["mp4", "mov", "m4v", "avi", "mkv", "hevc"].contains(ext)
+        let base = isLikelyVideo ? 240.0 : 120.0
+        let perMB = isLikelyVideo ? 14.0 : 8.0
+        // Video-heavy uploads on slow links need wider timeout budget.
+        return min(3600, max(120, base + (fileSizeMB * perMB)))
+    }
+
+    private func isUploadTimeoutError(_ error: Error) -> Bool {
+        let nsError = error as NSError
+        if nsError.domain == NSURLErrorDomain && nsError.code == NSURLErrorTimedOut {
+            return true
+        }
+        if case let BackupServiceError.unknown(underlying) = error {
+            let underlyingNSError = underlying as NSError
+            return underlyingNSError.domain == NSURLErrorDomain && underlyingNSError.code == NSURLErrorTimedOut
+        }
+        return false
     }
     
     // MARK: - Background URLSession Upload
@@ -615,6 +657,8 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
 
         let existingFileMap = try await listAllRemoteFiles(at: remoteBasePath)
         let processedRelativePaths = Set(assets.map { photoLibraryManager.generateFileName(for: $0) })
+        var timedOutUploads: [(asset: PHAsset, fileName: String, remotePath: String, localSize: Int64)] = []
+        var failedUploads = 0
 
         try fileManager.createDirectory(at: exportRootURL(), withIntermediateDirectories: true)
 
@@ -645,7 +689,15 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
                 try await uploadFileAwaitingCompletion(localURL: tempURL, remotePath: remotePath, progressHandler: nil)
             } catch {
                 try? fileManager.removeItem(at: tempURL)
-                throw error
+                if isUploadTimeoutError(error) {
+                    timedOutUploads.append((asset: asset, fileName: fileName, remotePath: remotePath, localSize: localSize))
+                    logger.warning("⏱️ Upload timeout queued for retry: \(fileName)")
+                } else {
+                    failedUploads += 1
+                    logger.error("Upload failed (continuing): \(fileName) - \(error.localizedDescription)")
+                }
+                progressHandler(Double(index + 1) / Double(assets.count))
+                continue
             }
 
             if existingFileMap[fileName] != nil {
@@ -655,6 +707,44 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
             }
             result.totalBytes += localSize
             progressHandler(Double(index + 1) / Double(assets.count))
+        }
+
+        if !timedOutUploads.isEmpty {
+            logger.info("🔁 Retrying timed out uploads: \(timedOutUploads.count)")
+            for item in timedOutUploads {
+                guard let retryData = try await photoLibraryManager.getAssetData(asset: item.asset) else {
+                    failedUploads += 1
+                    logger.warning("Retry skipped (asset data unavailable): \(item.fileName)")
+                    continue
+                }
+
+                let retryTempURL = exportRootURL().appendingPathComponent(item.fileName)
+                if fileManager.fileExists(atPath: retryTempURL.path) {
+                    try? fileManager.removeItem(at: retryTempURL)
+                }
+
+                do {
+                    try retryData.write(to: retryTempURL, options: .atomic)
+                    defer { try? fileManager.removeItem(at: retryTempURL) }
+                    // Relax timeout budget for second-chance uploads on slow/unstable links.
+                    try await uploadFile(
+                        localURL: retryTempURL,
+                        remotePath: item.remotePath,
+                        progressHandler: nil,
+                        allowBackgroundSession: false,
+                        timeoutMultiplier: 2.5
+                    )
+                    if existingFileMap[item.fileName] != nil {
+                        result.updatedFiles += 1
+                    } else {
+                        result.newFiles += 1
+                    }
+                    result.totalBytes += item.localSize
+                } catch {
+                    failedUploads += 1
+                    logger.error("Retry failed: \(item.fileName) - \(error.localizedDescription)")
+                }
+            }
         }
 
         if deleteOrphansEnabled {
@@ -675,6 +765,10 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
             options: [.skipsHiddenFiles]
         ), remaining.isEmpty {
             try? fileManager.removeItem(at: exportRootURL())
+        }
+
+        if failedUploads > 0 {
+            logger.warning("⚠️ Photo sync completed with \(failedUploads) failed/timeouted uploads")
         }
 
         progressHandler(1.0)
@@ -1106,30 +1200,23 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
                 }
             } else if asset.mediaType == .video {
                 try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                    let options = PHVideoRequestOptions()
-                    options.isNetworkAccessAllowed = true
+                    let resources = PHAssetResource.assetResources(for: asset)
+                    guard let videoResource = resources.first(where: { $0.type == .video || $0.type == .fullSizeVideo }) ?? resources.first else {
+                        continuation.resume()
+                        return
+                    }
 
-                    imageManager.requestAVAsset(forVideo: asset, options: options) { avAsset, _, _ in
-                        guard let avAsset = avAsset else {
-                            continuation.resume()
+                    let requestOptions = PHAssetResourceRequestOptions()
+                    requestOptions.isNetworkAccessAllowed = true
+
+                    PHAssetResourceManager.default().writeData(for: videoResource, toFile: fileURL, options: requestOptions) { error in
+                        if let error = error {
+                            self.logger.error("Failed to write video resource: \(error.localizedDescription)")
+                            continuation.resume(throwing: error)
                             return
                         }
-
-                        Task {
-                            do {
-                                guard let exportSession = AVAssetExportSession(asset: avAsset, presetName: AVAssetExportPresetHighestQuality) else {
-                                    continuation.resume()
-                                    return
-                                }
-                                // Use modern async export API on AVAssetExportSession
-                                try await exportSession.export(to: fileURL, as: AVFileType.mp4)
-                                saved += 1
-                                continuation.resume()
-                            } catch {
-                                self.logger.error("Failed to export video: \(error.localizedDescription)")
-                                continuation.resume(throwing: error)
-                            }
-                        }
+                        saved += 1
+                        continuation.resume()
                     }
                 }
             }

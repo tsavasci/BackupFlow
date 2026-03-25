@@ -906,8 +906,9 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     public func executeBackgroundTask() async -> Bool {
         // Re-entrancy guard: allow only one background execution at a time
         if isProcessing {
-            print("ℹ️ BGTaskScheduler: Zaten bir işlem sürüyor, yeni görev atlandı")
-            return false
+            // Another backup is already running (foreground/background). Treat as handled.
+            print("ℹ️ BGTaskScheduler: Zaten bir işlem sürüyor, yeni görev başarılı kabul edilerek atlandı")
+            return true
         }
         
         // İşlem başladığını işaretle
