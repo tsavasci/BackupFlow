@@ -1179,7 +1179,8 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
                     // Performans için background thread'de çalıştır
                     DispatchQueue.global(qos: .userInitiated).async {
                         let options = PHImageRequestOptions()
-                        options.isNetworkAccessAllowed = true
+                        // Local-only mode: do not fetch image from iCloud.
+                        options.isNetworkAccessAllowed = false
                         options.deliveryMode = .highQualityFormat
                         options.resizeMode = .none
                         options.isSynchronous = false
@@ -1207,7 +1208,8 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
                     }
 
                     let requestOptions = PHAssetResourceRequestOptions()
-                    requestOptions.isNetworkAccessAllowed = true
+                    // Local-only mode: do not fetch video from iCloud.
+                    requestOptions.isNetworkAccessAllowed = false
 
                     PHAssetResourceManager.default().writeData(for: videoResource, toFile: fileURL, options: requestOptions) { error in
                         if let error = error {

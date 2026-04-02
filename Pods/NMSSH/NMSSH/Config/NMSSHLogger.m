@@ -51,7 +51,7 @@ typedef NS_OPTIONS(NSUInteger, NMSSHLogFlag) {
 // -----------------------------------------------------------------------------
 
 - (void)log:(NSString *)format level:(NMSSHLogLevel)level flag:(NMSSHLogFlag)flag {
-    if (flag & self.logLevel && self.enabled && self.logBlock) {
+    if ((flag & (NMSSHLogFlag)self.logLevel) && self.enabled && self.logBlock) {
         dispatch_async(self.loggerQueue, ^{
             self.logBlock(level, [NSString stringWithFormat:@"NMSSH: %@", format]);
         });

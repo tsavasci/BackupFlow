@@ -894,8 +894,17 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                         print("📱 checkMissedTimers: App aktif - Yedekleme başlatılıyor")
                         try? await performBackup(task: task)
                     } else {
-                        print("🔔 checkMissedTimers: App arka planda - Bildirim gönderiliyor")
-                        sendScheduledBackupNotification(for: task)
+                        if isProcessing {
+                            print("ℹ️ checkMissedTimers: App arka planda ama aktif işlem var, tetikleme atlandı")
+                            continue
+                        }
+                        print("🌙 checkMissedTimers: App arka planda - otomatik yedekleme deneniyor")
+                        do {
+                            try await performBackup(task: task, bypassThrottle: true)
+                        } catch {
+                            print("⚠️ checkMissedTimers: Arka plan otomatik yedekleme başarısız, bildirim fallback: \(error)")
+                            sendScheduledBackupNotification(for: task)
+                        }
                     }
                 }
             }

@@ -168,7 +168,8 @@ class PhotoLibraryManager: NSObject, ObservableObject {
             // .highQualityFormat iCloud'dan indirme zorlayabilir - foreground/background geçişlerde sorun oluşturabilir
             let options = PHImageRequestOptions()
             options.isSynchronous = false
-            options.isNetworkAccessAllowed = true // Enable iCloud download
+            // Local-only mode: do not fetch originals from iCloud during backup.
+            options.isNetworkAccessAllowed = false
             options.deliveryMode = .highQualityFormat // Prefer highest quality
             options.resizeMode = .none
             options.version = .current
@@ -199,7 +200,7 @@ class PhotoLibraryManager: NSObject, ObservableObject {
                         self.logger.debug("✓ Fotoğraf verisi yerel olarak alındı: \(asset.localIdentifier.prefix(8))")
                         _ = tryResume(data)
                     } else if let isInCloud = info?[PHImageResultIsInCloudKey] as? NSNumber, isInCloud.boolValue {
-                        self.logger.warning("⚠️ Fotoğraf iCloud'da - yerel indirme başlatılmıyor (ağ erişimi açık)")
+                        self.logger.warning("⚠️ Fotoğraf iCloud-only (local değil) - yedeklemede atlandı")
                         _ = tryResume(nil)
                     } else {
                         _ = tryResume(nil)
@@ -217,47 +218,56 @@ class PhotoLibraryManager: NSObject, ObservableObject {
                     return true
                 }
 
-                let resources = PHAssetResource.assetResources(for: asset)
-                guard let videoResource = resources.first(where: { $0.type == .video || $0.type == .fullSizeVideo }) ?? resources.first else {
-                    _ = tryResume(nil)
-                    return
-                }
-
                 let tempRoot = FileManager.default.temporaryDirectory.appendingPathComponent("backupflow_exports", isDirectory: true)
                 try? FileManager.default.createDirectory(at: tempRoot, withIntermediateDirectories: true)
-                let ext = (videoResource.originalFilename as NSString).pathExtension
-                let finalExt = ext.isEmpty ? "mov" : ext
-                let tempURL = tempRoot.appendingPathComponent("video_\(UUID().uuidString).\(finalExt)")
-                if FileManager.default.fileExists(atPath: tempURL.path) {
-                    try? FileManager.default.removeItem(at: tempURL)
-                }
-
-                let requestOptions = PHAssetResourceRequestOptions()
-                requestOptions.isNetworkAccessAllowed = true
-
                 Task {
                     try? await Task.sleep(nanoseconds: 90_000_000_000)
                     if tryResume(nil) {
                         self.logger.warning("⚠️ Video okuma zaman aşımı: \(asset.localIdentifier.prefix(8))")
                     }
                 }
-
-                PHAssetResourceManager.default().writeData(for: videoResource, toFile: tempURL, options: requestOptions) { error in
-                    defer { try? FileManager.default.removeItem(at: tempURL) }
-
-                    if let error = error {
-                        self.logger.error("❌ Video resource okuma hatası: \(error.localizedDescription)")
+                
+                // Avoid metadata fetch on main queue for video resources.
+                DispatchQueue.global(qos: .utility).async {
+                    let resources = PHAssetResource.assetResources(for: asset)
+                    guard let videoResource = resources.first(where: { $0.type == .video || $0.type == .fullSizeVideo }) ?? resources.first else {
                         _ = tryResume(nil)
                         return
                     }
 
-                    do {
-                        let data = try Data(contentsOf: tempURL)
-                        self.logger.debug("✓ Video verisi alındı: \(asset.localIdentifier.prefix(8))")
-                        _ = tryResume(data)
-                    } catch {
-                        self.logger.error("❌ Video verisi okunamadı: \(error.localizedDescription)")
-                        _ = tryResume(nil)
+                    let ext = (videoResource.originalFilename as NSString).pathExtension
+                    let finalExt = ext.isEmpty ? "mov" : ext
+                    let tempURL = tempRoot.appendingPathComponent("video_\(UUID().uuidString).\(finalExt)")
+                    if FileManager.default.fileExists(atPath: tempURL.path) {
+                        try? FileManager.default.removeItem(at: tempURL)
+                    }
+
+                    let requestOptions = PHAssetResourceRequestOptions()
+                    // Local-only mode: do not fetch video from iCloud.
+                    requestOptions.isNetworkAccessAllowed = false
+
+                    PHAssetResourceManager.default().writeData(for: videoResource, toFile: tempURL, options: requestOptions) { error in
+                        defer { try? FileManager.default.removeItem(at: tempURL) }
+
+                        if let error = error {
+                            let nsError = error as NSError
+                            if nsError.domain == "PHPhotosErrorDomain", nsError.code == 3164 || nsError.code == 3169 {
+                                self.logger.warning("⚠️ Video iCloud-only (local değil) - yedeklemede atlandı")
+                            } else {
+                                self.logger.warning("⚠️ Video verisi alınamadı, atlandı: \(error.localizedDescription)")
+                            }
+                            _ = tryResume(nil)
+                            return
+                        }
+
+                        do {
+                            let data = try Data(contentsOf: tempURL)
+                            self.logger.debug("✓ Video verisi alındı: \(asset.localIdentifier.prefix(8))")
+                            _ = tryResume(data)
+                        } catch {
+                            self.logger.warning("⚠️ Video verisi okunamadı, atlandı: \(error.localizedDescription)")
+                            _ = tryResume(nil)
+                        }
                     }
                 }
             } else {
