@@ -78,7 +78,7 @@ struct TaskRow: View {
                 // Protokol rozeti
                 switch task.backupType {
                 case .webdav:
-                    Text("WebDAV")
+                    Text(task.backupType.displayName)
                         .font(.caption)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
@@ -86,7 +86,7 @@ struct TaskRow: View {
                         .foregroundColor(.green)
                         .cornerRadius(4)
                 case .ftp:
-                    Text("FTP")
+                    Text(task.backupType.displayName)
                         .font(.caption)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
@@ -94,7 +94,7 @@ struct TaskRow: View {
                         .foregroundColor(.orange)
                         .cornerRadius(4)
                 case .sftp:
-                    Text("SFTP")
+                    Text(task.backupType.displayName)
                         .font(.caption)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)

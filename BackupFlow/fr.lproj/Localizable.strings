@@ -571,3 +571,13 @@
 "backup.error.unexpected" = "Erreur inattendue : %@";
 
 "whats_new" = "What's New";
+
+"backup.protocol.ftp" = "FTP";
+
+"backup.protocol.sftp" = "SFTP";
+
+"backup.protocol.webdav" = "WebDAV";
+
+"backup.current_file.skipped_file" = "Ignoré : %@";
+
+"backup.current_file.updating_file" = "Mise à jour en cours : %@";

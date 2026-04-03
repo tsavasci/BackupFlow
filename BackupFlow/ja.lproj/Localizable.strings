@@ -569,3 +569,13 @@
 "backup.error.unexpected" = "予期しないエラー: %@";
 
 "whats_new" = "What's New";
+
+"backup.protocol.ftp" = "FTP";
+
+"backup.protocol.sftp" = "SFTP";
+
+"backup.protocol.webdav" = "WebDAV";
+
+"backup.current_file.skipped_file" = "スキップ: %@";
+
+"backup.current_file.updating_file" = "更新中: %@";

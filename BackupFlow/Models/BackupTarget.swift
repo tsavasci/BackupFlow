@@ -17,6 +17,10 @@ enum BackupTarget: String, CaseIterable, Identifiable {
     }
     
     var displayName: String {
-        return self.rawValue
+        switch self {
+        case .ftp: return "backup.protocol.ftp".localized
+        case .sftp: return "backup.protocol.sftp".localized
+        case .webdav: return "backup.protocol.webdav".localized
+        }
     }
 }

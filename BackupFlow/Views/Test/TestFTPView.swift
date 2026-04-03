@@ -30,7 +30,7 @@ struct TestFTPView: View {
                 
                 HStack {
                     Text("ftp.test.username".localized)
-                    TextField("anonymous", text: $username)
+                    TextField("task.details.anonymous".localized, text: $username)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .autocapitalization(.none)
                         .disableAutocorrection(true)

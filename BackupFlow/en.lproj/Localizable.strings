@@ -566,3 +566,13 @@
 "backup.error.unexpected" = "Unexpected error: %@";
 
 "whats_new" = "What's New";
+
+"backup.protocol.ftp" = "FTP";
+
+"backup.protocol.sftp" = "SFTP";
+
+"backup.protocol.webdav" = "WebDAV";
+
+"backup.current_file.skipped_file" = "Skipped: %@";
+
+"backup.current_file.updating_file" = "Updating: %@";

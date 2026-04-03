@@ -31,7 +31,7 @@ struct BackupTargetView: View {
             // Target Type Picker (Tabs)
             Picker("backup.target_type".localized, selection: $selectedTarget) {
                 ForEach(BackupTarget.allCases) { target in
-                    Label(target.rawValue, systemImage: target.iconName)
+                    Label(target.displayName, systemImage: target.iconName)
                         .tag(target)
                 }
             }

@@ -733,10 +733,11 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     /// Finalize postponement: notify user, mark as failed, push nextRunTime by 24h and create a history record.
     private func finalizePostponeDueToNoNetwork(task: BackupTask) async {
         sendPostponedDueToNoNetworkNotification(task: task)
+        let postponedMessage = "backup.network_postponed.body".localized
 
         // Mark task failed state
         task.backupStatus = .failed
-        task.lastError = "Ağ bağlantısı olmadığı için yedekleme ertelendi."
+        task.lastError = postponedMessage
         task.progress = 0.0
         task.currentFile = nil
         task.lastBackupDate = Date()
@@ -760,7 +761,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             syncResult: FTPService.SyncResult(newFiles: 0, skippedFiles: 0, totalBytes: 0),
             duration: 0,
             status: "failed",
-            errorMessage: "Ağ bağlantısı olmadığı için yedekleme ertelendi."
+            errorMessage: postponedMessage
         )
 
         // Re-schedule background tasks

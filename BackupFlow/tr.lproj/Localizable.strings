@@ -546,3 +546,13 @@
 "backup.error.unexpected" = "Beklenmeyen bir hata oluştu: %@";
 
 "whats_new" = "What's New";
+
+"backup.protocol.ftp" = "FTP";
+
+"backup.protocol.sftp" = "SFTP";
+
+"backup.protocol.webdav" = "WebDAV";
+
+"backup.current_file.skipped_file" = "Atlandı: %@";
+
+"backup.current_file.updating_file" = "Güncelleniyor: %@";

@@ -88,12 +88,12 @@ struct FTPSyncEngine {
                 result.skippedFiles += 1
                 result.totalBytes += localSize
                 skippedCount += 1
-                setCurrentFile("Atlandı: \(fileName)")
+                setCurrentFile("backup.current_file.skipped_file".localized(with: fileName))
                 if isVerboseLoggingEnabled {
                     logger.debug("Skipping identical file: \(relativePath) (\(ByteCountFormatter.string(fromByteCount: localSize, countStyle: .file)))")
                 }
             case .new:
-                setCurrentFile("Yükleniyor: \(fileName)")
+                setCurrentFile("backup.current_file.uploading_file".localized(with: fileName))
                 try await uploadFile(localFileURL, targetPath)
                 result.newFiles += 1
                 result.totalBytes += localSize
@@ -103,7 +103,7 @@ struct FTPSyncEngine {
                     logger.debug("Successfully uploaded new file: \(relativePath)")
                 }
             case .updated:
-                setCurrentFile("Güncelleniyor: \(fileName)")
+                setCurrentFile("backup.current_file.updating_file".localized(with: fileName))
                 try await uploadFile(localFileURL, targetPath)
                 result.updatedFiles += 1
                 result.totalBytes += localSize
@@ -302,7 +302,7 @@ struct FTPSyncEngine {
             if fastPhotoNameSkipEnabled, let remoteFile = existingFileMap[stableFileName] {
                 result.skippedFiles += 1
                 result.totalBytes += max(remoteFile.size, 0)
-                setCurrentFile("Atlandı: \(stableFileName)")
+                setCurrentFile("backup.current_file.skipped_file".localized(with: stableFileName))
                 if isVerboseLoggingEnabled {
                     logger.debug("Fast-skip by name: \(stableFileName)")
                 }
@@ -329,16 +329,16 @@ struct FTPSyncEngine {
             case .unchanged:
                 result.skippedFiles += 1
                 result.totalBytes += localSize
-                setCurrentFile("Atlandı: \(stableFileName)")
+                setCurrentFile("backup.current_file.skipped_file".localized(with: stableFileName))
                 print("⏭ BackupFlow: Aynı dosya pas geçildi: \(stableFileName) (\(formatBytes(localSize)))")
             case .new:
-                setCurrentFile("Yükleniyor: \(stableFileName)")
+                setCurrentFile("backup.current_file.uploading_file".localized(with: stableFileName))
                 try await uploadPhotoData(data, remotePath, stableFileName)
                 result.newFiles += 1
                 result.totalBytes += localSize
                 print("📤 BackupFlow: Yeni dosya yüklendi: \(stableFileName) (\(formatBytes(localSize)))")
             case .updated:
-                setCurrentFile("Güncelleniyor: \(stableFileName)")
+                setCurrentFile("backup.current_file.updating_file".localized(with: stableFileName))
                 try await uploadPhotoData(data, remotePath, stableFileName)
                 result.updatedFiles += 1
                 result.totalBytes += localSize

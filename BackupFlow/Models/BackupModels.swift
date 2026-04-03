@@ -12,9 +12,9 @@ enum BackupType: String, Codable, CaseIterable, Identifiable {
     
     var displayName: String {
         switch self {
-        case .ftp: return "FTP"
-        case .sftp: return "SFTP"
-        case .webdav: return "WebDAV"
+        case .ftp: return "backup.protocol.ftp".localized
+        case .sftp: return "backup.protocol.sftp".localized
+        case .webdav: return "backup.protocol.webdav".localized
         }
     }
     

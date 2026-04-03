@@ -568,3 +568,13 @@
 "backup.error.unexpected" = "发生意外错误：%@";
 
 "whats_new" = "What's New";
+
+"backup.protocol.ftp" = "FTP";
+
+"backup.protocol.sftp" = "SFTP";
+
+"backup.protocol.webdav" = "WebDAV";
+
+"backup.current_file.skipped_file" = "已跳过：%@";
+
+"backup.current_file.updating_file" = "正在更新：%@";
