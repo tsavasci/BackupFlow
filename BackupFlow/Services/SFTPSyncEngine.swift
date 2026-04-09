@@ -11,6 +11,9 @@ struct SFTPSyncEngine {
     let beginTransferBackgroundTask: (() -> Void)?
     let endTransferBackgroundTask: (() -> Void)?
     let isCancelled: (() -> Bool)?
+    let loadCheckpoint: (() async -> Set<String>)?
+    let markCheckpoint: ((String) async -> Void)?
+    let clearCheckpoint: (() async -> Void)?
     
     private let logger = Logger(subsystem: "com.backupflow.app", category: "SFTPSyncEngine")
     
@@ -21,11 +24,17 @@ struct SFTPSyncEngine {
     ) async throws -> FTPService.SyncResult {
         var result = FTPService.SyncResult()
         let remoteBase = remotePath
+        beginTransferBackgroundTask?()
+        defer { endTransferBackgroundTask?() }
 
         let localFileMap = try collectLocalFiles(from: localURL.path)
         let totalFiles = localFileMap.count
 
         let remoteFileMap = try await prefetchRemoteFiles(remotePath)
+        var checkpoint = await loadCheckpoint?() ?? []
+        if !checkpoint.isEmpty {
+            logger.info("SFTP resume checkpoint loaded (\(checkpoint.count) files)")
+        }
         
         var transferred: Int64 = 0
         
@@ -41,29 +50,39 @@ struct SFTPSyncEngine {
             
             let resourceValues = try localFileURL.resourceValues(forKeys: [.fileSizeKey])
             let localSize = Int64(resourceValues.fileSize ?? 0)
+
+            if checkpoint.contains(relativePath), remoteFileMap[relativePath] != nil {
+                result.skippedFiles += 1
+                result.totalBytes += localSize
+                progressHandler?(Double(index + 1) / Double(max(totalFiles, 1)) * 0.8)
+                continue
+            }
             
             if let remoteSize = remoteFileMap[relativePath], remoteSize == localSize {
                 result.skippedFiles += 1
+                result.totalBytes += localSize
+                checkpoint.insert(relativePath)
+                await markCheckpoint?(relativePath)
             } else if remoteFileMap[relativePath] != nil {
-                beginTransferBackgroundTask?()
-                defer { endTransferBackgroundTask?() }
-                let didUpload = try await uploadFile(localFileURL, targetPath, localSize, true)
+                let didUpload = try await uploadFile(localFileURL, targetPath, localSize, false)
                 if didUpload {
                     result.updatedFiles += 1
                     result.totalBytes += localSize
                     transferred += localSize
+                    checkpoint.insert(relativePath)
+                    await markCheckpoint?(relativePath)
                 } else {
                     result.skippedFiles += 1
                     result.totalBytes += localSize
                 }
             } else {
-                beginTransferBackgroundTask?()
-                defer { endTransferBackgroundTask?() }
-                let didUpload = try await uploadFile(localFileURL, targetPath, localSize, true)
+                let didUpload = try await uploadFile(localFileURL, targetPath, localSize, false)
                 if didUpload {
                     result.newFiles += 1
                     result.totalBytes += localSize
                     transferred += localSize
+                    checkpoint.insert(relativePath)
+                    await markCheckpoint?(relativePath)
                 } else {
                     result.skippedFiles += 1
                     result.totalBytes += localSize
@@ -91,6 +110,7 @@ struct SFTPSyncEngine {
         }
         
         progressHandler?(1.0)
+        await clearCheckpoint?()
         logger.info("SFTP mirror sync completed - Uploaded: \(result.newFiles), Updated: \(result.updatedFiles), Skipped: \(result.skippedFiles), Deleted: \(result.deletedFiles)")
         
         return result
@@ -103,6 +123,8 @@ struct SFTPSyncEngine {
     ) async throws -> FTPService.SyncResult {
         let photoManager = PhotoLibraryManager.shared
         var result = FTPService.SyncResult()
+        beginTransferBackgroundTask?()
+        defer { endTransferBackgroundTask?() }
         
         let assets = try await photoManager.getAllAssets(mediaType: mediaType)
         let totalCount = assets.count
@@ -112,12 +134,24 @@ struct SFTPSyncEngine {
         try? await createDirectory(photosDir)
         
         let existingFileMap = try await prefetchRemoteFiles(photosDir)
+        var checkpoint = await loadCheckpoint?() ?? []
+        if !checkpoint.isEmpty {
+            logger.info("SFTP resume checkpoint loaded (\(checkpoint.count) files)")
+        }
         
         for (index, asset) in assets.enumerated() {
             if isCancelled?() == true {
                 throw BackupServiceError.cancelled
             }
             let fileName = photoManager.generateFileName(for: asset)
+
+            if checkpoint.contains(fileName), existingFileMap[fileName] != nil {
+                result.skippedFiles += 1
+                let progress = Double(index + 1) / Double(max(totalCount, 1))
+                progressHandler?(progress)
+                continue
+            }
+
             guard let data = try await photoManager.getAssetData(asset: asset) else { continue }
             let localSize = Int64(data.count)
             
@@ -130,24 +164,26 @@ struct SFTPSyncEngine {
             if let remoteSize = existingFileMap[fileName], remoteSize == localSize {
                 result.skippedFiles += 1
                 result.totalBytes += localSize
+                checkpoint.insert(fileName)
+                await markCheckpoint?(fileName)
             } else if existingFileMap[fileName] != nil {
-                beginTransferBackgroundTask?()
-                defer { endTransferBackgroundTask?() }
-                let didUpload = try await uploadFile(tempURL, remotePath, localSize, true)
+                let didUpload = try await uploadFile(tempURL, remotePath, localSize, false)
                 if didUpload {
                     result.updatedFiles += 1
                     result.totalBytes += localSize
+                    checkpoint.insert(fileName)
+                    await markCheckpoint?(fileName)
                 } else {
                     result.skippedFiles += 1
                     result.totalBytes += localSize
                 }
             } else {
-                beginTransferBackgroundTask?()
-                defer { endTransferBackgroundTask?() }
-                let didUpload = try await uploadFile(tempURL, remotePath, localSize, true)
+                let didUpload = try await uploadFile(tempURL, remotePath, localSize, false)
                 if didUpload {
                     result.newFiles += 1
                     result.totalBytes += localSize
+                    checkpoint.insert(fileName)
+                    await markCheckpoint?(fileName)
                 } else {
                     result.skippedFiles += 1
                     result.totalBytes += localSize
@@ -173,6 +209,8 @@ struct SFTPSyncEngine {
                 }
             }
         }
+
+        await clearCheckpoint?()
         
         return result
     }

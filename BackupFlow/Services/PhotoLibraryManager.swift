@@ -17,6 +17,13 @@ class PhotoLibraryManager: NSObject, ObservableObject {
         checkAuthorizationStatus()
     }
     
+    enum AssetDataFetchResult {
+        case success(Data)
+        case iCloudOnly
+        case timedOut
+        case unavailable
+    }
+    
     func requestAuthorization(completion: ((Bool) -> Void)? = nil) {
         if #available(iOS 14, *) {
             PHPhotoLibrary.requestAuthorization(for: .readWrite) { status in
@@ -162,14 +169,23 @@ class PhotoLibraryManager: NSObject, ObservableObject {
         return assets
     }
     
-    func getAssetData(asset: PHAsset) async throws -> Data? {
+    func getAssetData(asset: PHAsset, allowNetworkAccess: Bool = false) async throws -> Data? {
+        let result = await getAssetDataWithStatus(asset: asset, allowNetworkAccess: allowNetworkAccess)
+        switch result {
+        case .success(let data):
+            return data
+        case .iCloudOnly, .timedOut, .unavailable:
+            return nil
+        }
+    }
+    
+    func getAssetDataWithStatus(asset: PHAsset, allowNetworkAccess: Bool = false) async -> AssetDataFetchResult {
         return await withCheckedContinuation { continuation in
             // FIGSANDBOX uyarılarını azaltmak için opportunistic delivery kullan
             // .highQualityFormat iCloud'dan indirme zorlayabilir - foreground/background geçişlerde sorun oluşturabilir
             let options = PHImageRequestOptions()
             options.isSynchronous = false
-            // Local-only mode: do not fetch originals from iCloud during backup.
-            options.isNetworkAccessAllowed = false
+            options.isNetworkAccessAllowed = allowNetworkAccess
             options.deliveryMode = .highQualityFormat // Prefer highest quality
             options.resizeMode = .none
             options.version = .current
@@ -177,18 +193,18 @@ class PhotoLibraryManager: NSObject, ObservableObject {
             if asset.mediaType == .image {
                 let resumeLock = NSLock()
                 var didResume = false
-                func tryResume(_ data: Data?) -> Bool {
+                func tryResume(_ result: AssetDataFetchResult) -> Bool {
                     resumeLock.lock()
                     defer { resumeLock.unlock() }
                     if didResume { return false }
                     didResume = true
-                    continuation.resume(returning: data)
+                    continuation.resume(returning: result)
                     return true
                 }
 
                 Task {
                     try? await Task.sleep(nanoseconds: 45_000_000_000)
-                    if tryResume(nil) {
+                    if tryResume(.timedOut) {
                         self.logger.warning("⚠️ Fotoğraf okuma zaman aşımı: \(asset.localIdentifier.prefix(8))")
                     }
                 }
@@ -198,23 +214,28 @@ class PhotoLibraryManager: NSObject, ObservableObject {
                     // Eğer yerel varlık bulunamazsa, iCloud'dan indir (opsiyonel)
                     if let data = data, !data.isEmpty {
                         self.logger.debug("✓ Fotoğraf verisi yerel olarak alındı: \(asset.localIdentifier.prefix(8))")
-                        _ = tryResume(data)
+                        _ = tryResume(.success(data))
                     } else if let isInCloud = info?[PHImageResultIsInCloudKey] as? NSNumber, isInCloud.boolValue {
-                        self.logger.warning("⚠️ Fotoğraf iCloud-only (local değil) - yedeklemede atlandı")
-                        _ = tryResume(nil)
+                        if allowNetworkAccess {
+                            self.logger.warning("⚠️ Fotoğraf iCloud'dan alınamadı, atlandı")
+                            _ = tryResume(.unavailable)
+                        } else {
+                            self.logger.warning("⚠️ Fotoğraf iCloud-only (local değil) - yedeklemede atlandı")
+                            _ = tryResume(.iCloudOnly)
+                        }
                     } else {
-                        _ = tryResume(nil)
+                        _ = tryResume(.unavailable)
                     }
                 }
             } else if asset.mediaType == .video {
                 let resumeLock = NSLock()
                 var didResume = false
-                func tryResume(_ data: Data?) -> Bool {
+                func tryResume(_ result: AssetDataFetchResult) -> Bool {
                     resumeLock.lock()
                     defer { resumeLock.unlock() }
                     if didResume { return false }
                     didResume = true
-                    continuation.resume(returning: data)
+                    continuation.resume(returning: result)
                     return true
                 }
 
@@ -222,7 +243,7 @@ class PhotoLibraryManager: NSObject, ObservableObject {
                 try? FileManager.default.createDirectory(at: tempRoot, withIntermediateDirectories: true)
                 Task {
                     try? await Task.sleep(nanoseconds: 90_000_000_000)
-                    if tryResume(nil) {
+                    if tryResume(.timedOut) {
                         self.logger.warning("⚠️ Video okuma zaman aşımı: \(asset.localIdentifier.prefix(8))")
                     }
                 }
@@ -230,8 +251,11 @@ class PhotoLibraryManager: NSObject, ObservableObject {
                 // Avoid metadata fetch on main queue for video resources.
                 DispatchQueue.global(qos: .utility).async {
                     let resources = PHAssetResource.assetResources(for: asset)
-                    guard let videoResource = resources.first(where: { $0.type == .video || $0.type == .fullSizeVideo }) ?? resources.first else {
-                        _ = tryResume(nil)
+                    let preferredVideoResource = resources.first(where: { resource in
+                        resource.type == .video || resource.type == .fullSizeVideo
+                    })
+                    guard let videoResource = preferredVideoResource ?? resources.first else {
+                        _ = tryResume(.unavailable)
                         return
                     }
 
@@ -243,35 +267,35 @@ class PhotoLibraryManager: NSObject, ObservableObject {
                     }
 
                     let requestOptions = PHAssetResourceRequestOptions()
-                    // Local-only mode: do not fetch video from iCloud.
-                    requestOptions.isNetworkAccessAllowed = false
+                    requestOptions.isNetworkAccessAllowed = allowNetworkAccess
 
                     PHAssetResourceManager.default().writeData(for: videoResource, toFile: tempURL, options: requestOptions) { error in
                         defer { try? FileManager.default.removeItem(at: tempURL) }
 
                         if let error = error {
                             let nsError = error as NSError
-                            if nsError.domain == "PHPhotosErrorDomain", nsError.code == 3164 || nsError.code == 3169 {
+                            if !allowNetworkAccess, nsError.domain == "PHPhotosErrorDomain", nsError.code == 3164 || nsError.code == 3169 {
                                 self.logger.warning("⚠️ Video iCloud-only (local değil) - yedeklemede atlandı")
+                                _ = tryResume(.iCloudOnly)
                             } else {
                                 self.logger.warning("⚠️ Video verisi alınamadı, atlandı: \(error.localizedDescription)")
+                                _ = tryResume(.unavailable)
                             }
-                            _ = tryResume(nil)
                             return
                         }
 
                         do {
                             let data = try Data(contentsOf: tempURL)
                             self.logger.debug("✓ Video verisi alındı: \(asset.localIdentifier.prefix(8))")
-                            _ = tryResume(data)
+                            _ = tryResume(.success(data))
                         } catch {
                             self.logger.warning("⚠️ Video verisi okunamadı, atlandı: \(error.localizedDescription)")
-                            _ = tryResume(nil)
+                            _ = tryResume(.unavailable)
                         }
                     }
                 }
             } else {
-                continuation.resume(returning: nil)
+                continuation.resume(returning: .unavailable)
             }
         }
     }

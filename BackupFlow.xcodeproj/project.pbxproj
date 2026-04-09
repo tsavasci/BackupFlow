@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		25421F5C86223378B7ED634C /* Pods_BackupFlow.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 45D604C0F8FAE7FC2C3FA655 /* Pods_BackupFlow.framework */; };
+		A1B2C3D4E5F60718293A4B5C /* Citadel in Frameworks */ = {isa = PBXBuildFile; productRef = B1C2D3E4F5061728394A5B6C /* Citadel */; };
 		F2D9B6992E7D6480005A07FE /* FilesProvider in Frameworks */ = {isa = PBXBuildFile; productRef = F2DA23882E7D6B0000B2727D /* FilesProvider */; };
 /* End PBXBuildFile section */
 
@@ -29,12 +29,9 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		0312358033D125C9796EEA65 /* Pods-BackupFlow.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BackupFlow.debug.xcconfig"; path = "Target Support Files/Pods-BackupFlow/Pods-BackupFlow.debug.xcconfig"; sourceTree = "<group>"; };
-		45D604C0F8FAE7FC2C3FA655 /* Pods_BackupFlow.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_BackupFlow.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		F2DA234A2E7D5FD900B2727D /* BackupFlow.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BackupFlow.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F2DA23582E7D5FDA00B2727D /* BackupFlowTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BackupFlowTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F2DA23622E7D5FDA00B2727D /* BackupFlowUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BackupFlowUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		FEE77478BBE4F4CC0E9D334C /* Pods-BackupFlow.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BackupFlow.release.xcconfig"; path = "Target Support Files/Pods-BackupFlow/Pods-BackupFlow.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -58,11 +55,15 @@
 		};
 		F2DA235B2E7D5FDA00B2727D /* BackupFlowTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = BackupFlowTests;
 			sourceTree = "<group>";
 		};
 		F2DA23652E7D5FDA00B2727D /* BackupFlowUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = BackupFlowUITests;
 			sourceTree = "<group>";
 		};
@@ -73,8 +74,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A1B2C3D4E5F60718293A4B5C /* Citadel in Frameworks */,
 				F2D9B6992E7D6480005A07FE /* FilesProvider in Frameworks */,
-				25421F5C86223378B7ED634C /* Pods_BackupFlow.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -98,7 +99,6 @@
 		26E5B1AE2B5EDB1C255EB615 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				45D604C0F8FAE7FC2C3FA655 /* Pods_BackupFlow.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -106,8 +106,6 @@
 		630E66A8D79B89DDDD3DEE29 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				0312358033D125C9796EEA65 /* Pods-BackupFlow.debug.xcconfig */,
-				FEE77478BBE4F4CC0E9D334C /* Pods-BackupFlow.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -141,11 +139,9 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = F2DA23702E7D5FDA00B2727D /* Build configuration list for PBXNativeTarget "BackupFlow" */;
 			buildPhases = (
-				7224722C8CEE81C166D56E53 /* [CP] Check Pods Manifest.lock */,
 				F2DA23462E7D5FD900B2727D /* Sources */,
 				F2DA23472E7D5FD900B2727D /* Frameworks */,
 				F2DA23482E7D5FD900B2727D /* Resources */,
-				5A833418061B5E3854FA50B6 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -156,6 +152,7 @@
 			);
 			name = BackupFlow;
 			packageProductDependencies = (
+				B1C2D3E4F5061728394A5B6C /* Citadel */,
 				F2DA23882E7D6B0000B2727D /* FilesProvider */,
 			);
 			productName = BackupFlow;
@@ -250,6 +247,7 @@
 			mainGroup = A08578502E231DAC008FF3ED;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				C1D2E3F40516273849A5B6C7 /* XCRemoteSwiftPackageReference "Citadel" */,
 				F2CF30272E606B8C005EF26F /* XCRemoteSwiftPackageReference "FileProvider" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -287,52 +285,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		5A833418061B5E3854FA50B6 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-BackupFlow/Pods-BackupFlow-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			inputPaths = (
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-BackupFlow/Pods-BackupFlow-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-BackupFlow/Pods-BackupFlow-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		7224722C8CEE81C166D56E53 /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-BackupFlow-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		F2DA23462E7D5FD900B2727D /* Sources */ = {
@@ -498,7 +450,6 @@
 		};
 		F2DA236A2E7D5FDA00B2727D /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 0312358033D125C9796EEA65 /* Pods-BackupFlow.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -535,7 +486,7 @@
 					"@executable_path/Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 2.8;
+				MARKETING_VERSION = 3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = tamersavasci.BackupFlow;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -555,7 +506,6 @@
 		};
 		F2DA236B2E7D5FDA00B2727D /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = FEE77478BBE4F4CC0E9D334C /* Pods-BackupFlow.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -589,7 +539,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.8;
+				MARKETING_VERSION = 3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = tamersavasci.BackupFlow;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -758,6 +708,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		C1D2E3F40516273849A5B6C7 /* XCRemoteSwiftPackageReference "Citadel" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/orlandos-nl/Citadel";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.12.1;
+			};
+		};
 		F2CF30272E606B8C005EF26F /* XCRemoteSwiftPackageReference "FileProvider" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/amosavian/FileProvider";
@@ -769,6 +727,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		B1C2D3E4F5061728394A5B6C /* Citadel */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C1D2E3F40516273849A5B6C7 /* XCRemoteSwiftPackageReference "Citadel" */;
+			productName = Citadel;
+		};
 		F2DA23882E7D6B0000B2727D /* FilesProvider */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = F2CF30272E606B8C005EF26F /* XCRemoteSwiftPackageReference "FileProvider" */;

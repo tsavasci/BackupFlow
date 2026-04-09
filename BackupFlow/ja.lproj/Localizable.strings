@@ -579,3 +579,5 @@
 "backup.current_file.skipped_file" = "スキップ: %@";
 
 "backup.current_file.updating_file" = "更新中: %@";
+"backup.photo_backup_include_icloud" = "必要に応じてiCloud項目をダウンロード";
+"backup.photo_backup_include_icloud_hint" = "完全バックアップに推奨。オフにすると、端末に保存済みのメディアのみコピーされます。";

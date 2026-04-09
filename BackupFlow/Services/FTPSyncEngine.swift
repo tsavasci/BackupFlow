@@ -7,6 +7,9 @@ struct FTPSyncResult {
     var newFiles: Int = 0
     var updatedFiles: Int = 0
     var skippedFiles: Int = 0
+    var iCloudSkippedFiles: Int = 0
+    var timedOutAssetReads: Int = 0
+    var failedAssetReads: Int = 0
     var deletedFiles: Int = 0
     var totalBytes: Int64 = 0
 
@@ -262,6 +265,7 @@ struct FTPSyncEngine {
 
     func syncBackupPhotoLibrary(
         mediaType: MediaType,
+        includeICloudAssets: Bool,
         progressHandler: ((Double) -> Void)? = nil
     ) async throws -> FTPSyncResult {
         let photoManager = PhotoLibraryManager.shared
@@ -311,7 +315,21 @@ struct FTPSyncEngine {
                 continue
             }
 
-            guard let data = try await photoManager.getAssetData(asset: asset) else {
+            let assetDataResult = await photoManager.getAssetDataWithStatus(asset: asset, allowNetworkAccess: includeICloudAssets)
+            let data: Data
+            switch assetDataResult {
+            case .success(let fetchedData):
+                data = fetchedData
+            case .iCloudOnly:
+                result.iCloudSkippedFiles += 1
+                print("☁️ BackupFlow: iCloud-only medya atlandı (ayar: sadece lokal): \(asset.localIdentifier)")
+                continue
+            case .timedOut:
+                result.timedOutAssetReads += 1
+                print("⏱️ BackupFlow: Asset okuma zaman aşımı: \(asset.localIdentifier)")
+                continue
+            case .unavailable:
+                result.failedAssetReads += 1
                 print("⚠️ BackupFlow: Asset verisi alınamadı: \(asset.localIdentifier)")
                 continue
             }

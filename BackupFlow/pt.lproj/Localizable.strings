@@ -577,3 +577,5 @@
 "backup.current_file.skipped_file" = "Ignorado: %@";
 
 "backup.current_file.updating_file" = "Atualizando: %@";
+"backup.photo_backup_include_icloud" = "Baixar itens do iCloud se necessário";
+"backup.photo_backup_include_icloud_hint" = "Recomendado para backup completo. Ao desativar, apenas mídias já armazenadas no dispositivo serão copiadas.";

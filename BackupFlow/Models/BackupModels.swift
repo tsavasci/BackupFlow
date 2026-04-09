@@ -200,6 +200,7 @@ final class BackupTask: Identifiable, Hashable {
     
     // Network policy
     var allowCellularForLocalServer: Bool = false // Yeni özellik
+    var includeICloudAssets: Bool = true
     
     // Backup type (FTP or WebDAV)
     var backupType: BackupType
@@ -270,6 +271,7 @@ final class BackupTask: Identifiable, Hashable {
         scheduledWeekday: Int? = nil,
         mediaType: MediaType = .photosOnly,
         allowCellularForLocalServer: Bool = false,
+        includeICloudAssets: Bool = true,
         lastBackupDate: Date? = nil,
         nextRunTime: Date? = nil
     ) {
@@ -289,6 +291,7 @@ final class BackupTask: Identifiable, Hashable {
         self.scheduledWeekday = scheduledWeekday
         self.mediaType = mediaType
         self.allowCellularForLocalServer = allowCellularForLocalServer
+        self.includeICloudAssets = includeICloudAssets
         self.createdAt = Date()
         self.lastBackupDate = lastBackupDate
         self.nextRunTime = nextRunTime

@@ -1049,6 +1049,7 @@ extension BackupScheduler {
                 sourcePath: task.sourcePath ?? "",
                 isAnonymous: task.isAnonymous,
                 mediaType: task.mediaType,
+                includeICloudAssets: task.includeICloudAssets,
                 progressHandler: { progress in
                     Task { @MainActor in
                         // NaN kontrolü ile güvenli progress update
@@ -1129,6 +1130,7 @@ extension BackupScheduler {
                 sourcePath: sourcePath,
                 isAnonymous: username == nil,
                 mediaType: task.mediaType,
+                includeICloudAssets: task.includeICloudAssets,
                 progressHandler: { progress in
                     Task { @MainActor in
                         // NaN kontrolü ile güvenli progress update
@@ -1153,7 +1155,19 @@ extension BackupScheduler {
 
     private func executeSFTPBackup(task: BackupTask, startTime: Date) async throws -> FTPService.SyncResult {
         print("🔐 BackupFlow: SFTP yedekleme başlatılıyor...")
-        print("🔐 BackupFlow: SFTP hedef dizin: \(task.destinationPath)")
+        let effectiveDestination: String = {
+            let trimmed = task.destinationPath.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty && trimmed != "/" {
+                return trimmed
+            }
+            if (task.sourcePath ?? "") == "PHOTOS_LIBRARY" {
+                return "photos"
+            }
+            let sourceFolder = URL(fileURLWithPath: task.sourcePath ?? "").lastPathComponent
+            let safeSourceFolder = sourceFolder.trimmingCharacters(in: .whitespacesAndNewlines)
+            return safeSourceFolder.isEmpty ? "backup" : safeSourceFolder
+        }()
+        print("🔐 BackupFlow: SFTP hedef dizin (effective): \(effectiveDestination)")
         print("🔐 BackupFlow: SFTP kaynak: \(task.sourcePath ?? "")")
         task.backupStatus = .uploading
         
@@ -1382,6 +1396,15 @@ extension BackupScheduler {
     
     /// Local server IP adresini kontrol eder
     private func isLocalServer(host: String) -> Bool {
+        let trimmed = host.trimmingCharacters(in: .whitespacesAndNewlines)
+        let hostToCheck: String = {
+            guard !trimmed.isEmpty else { return trimmed }
+            if let parsedHost = URL(string: trimmed)?.host {
+                return parsedHost.lowercased()
+            }
+            return trimmed.lowercased()
+        }()
+
         // Local IP ranges: 192.168.x.x, 10.x.x.x, 172.16-31.x.x, localhost
         let localPatterns = [
             "^192\\.168\\.",
@@ -1392,7 +1415,7 @@ extension BackupScheduler {
         ]
         
         return localPatterns.contains { pattern in
-            host.range(of: pattern, options: .regularExpression) != nil
+            hostToCheck.range(of: pattern, options: .regularExpression) != nil
         }
     }
 

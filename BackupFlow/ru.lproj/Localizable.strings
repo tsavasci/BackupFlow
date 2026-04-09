@@ -579,3 +579,5 @@
 "backup.current_file.skipped_file" = "Пропущено: %@";
 
 "backup.current_file.updating_file" = "Обновляется: %@";
+"backup.photo_backup_include_icloud" = "Загружать элементы iCloud при необходимости";
+"backup.photo_backup_include_icloud_hint" = "Рекомендуется для полного резервного копирования. Если выключить, будут копироваться только медиафайлы, уже сохранённые на устройстве.";

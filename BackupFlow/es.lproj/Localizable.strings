@@ -579,3 +579,5 @@
 "backup.current_file.skipped_file" = "Omitido: %@";
 
 "backup.current_file.updating_file" = "Actualizando: %@";
+"backup.photo_backup_include_icloud" = "Descargar elementos de iCloud si es necesario";
+"backup.photo_backup_include_icloud_hint" = "Recomendado para una copia de seguridad completa. Si lo desactivas, solo se copiarán los archivos multimedia ya almacenados en el dispositivo.";

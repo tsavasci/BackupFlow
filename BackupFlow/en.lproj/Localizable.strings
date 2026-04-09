@@ -576,3 +576,5 @@
 "backup.current_file.skipped_file" = "Skipped: %@";
 
 "backup.current_file.updating_file" = "Updating: %@";
+"backup.photo_backup_include_icloud" = "Download iCloud items if needed";
+"backup.photo_backup_include_icloud_hint" = "Recommended for full backup. Turning this off copies only media already stored on device.";

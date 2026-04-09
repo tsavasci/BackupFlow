@@ -579,3 +579,5 @@
 "backup.current_file.skipped_file" = "تم التخطي: %@";
 
 "backup.current_file.updating_file" = "جارٍ التحديث: %@";
+"backup.photo_backup_include_icloud" = "تنزيل عناصر iCloud عند الحاجة";
+"backup.photo_backup_include_icloud_hint" = "موصى به للنسخ الاحتياطي الكامل. عند إيقافه، سيتم نسخ الوسائط المخزنة على الجهاز فقط.";

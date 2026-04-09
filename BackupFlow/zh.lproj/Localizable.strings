@@ -578,3 +578,5 @@
 "backup.current_file.skipped_file" = "已跳过：%@";
 
 "backup.current_file.updating_file" = "正在更新：%@";
+"backup.photo_backup_include_icloud" = "需要时下载 iCloud 项目";
+"backup.photo_backup_include_icloud_hint" = "建议用于完整备份。关闭后仅会复制已存储在设备上的媒体。";

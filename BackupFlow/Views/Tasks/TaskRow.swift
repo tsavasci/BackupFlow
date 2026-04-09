@@ -287,13 +287,6 @@ struct TaskRow: View {
         } message: {
             Text("backup.cancel_backup_message".localized)
         }
-        .onChange(of: showCancelAlert) { oldValue, newValue in
-            if !newValue {
-                if task.backupStatus == .cancelled {
-                    BackupScheduler.shared.cancelCurrentTask(for: task)
-                }
-            }
-        }
     }
     
     // MARK: - Pause/Resume Functions

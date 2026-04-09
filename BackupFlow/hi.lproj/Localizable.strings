@@ -579,3 +579,5 @@
 "backup.current_file.skipped_file" = "छोड़ा गया: %@";
 
 "backup.current_file.updating_file" = "अपडेट हो रहा है: %@";
+"backup.photo_backup_include_icloud" = "आवश्यक होने पर iCloud आइटम डाउनलोड करें";
+"backup.photo_backup_include_icloud_hint" = "पूर्ण बैकअप के लिए अनुशंसित। इसे बंद करने पर केवल डिवाइस में पहले से संग्रहीत मीडिया कॉपी होगा।";

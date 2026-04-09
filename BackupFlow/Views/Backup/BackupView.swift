@@ -147,6 +147,7 @@ struct BackupView: View {
     @State private var selectedURL: URL?
     @State private var isPhotoLibrarySelected = false
     @State private var selectedMediaType: MediaType = .photosOnly
+    @State private var includeICloudAssets = true
     
     // Hedef seçimi
     @State private var selectedTarget: BackupTarget = .ftp
@@ -234,6 +235,13 @@ struct BackupView: View {
                                 }
                                 .buttonStyle(PlainButtonStyle())
                             }
+
+                            Toggle("backup.photo_backup_include_icloud".localized, isOn: $includeICloudAssets)
+                                .padding(.top, 4)
+
+                            Text("backup.photo_backup_include_icloud_hint".localized)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
                         }
                         .padding(.leading, 24)
                         .padding(.top, 8)
@@ -732,7 +740,8 @@ struct BackupView: View {
                     scheduledTime: (frequencyType == .daily || frequencyType == .weekly) ? selectedTime : nil,
                     scheduledWeekday: (frequencyType == .weekly) ? selectedDay : nil,
                     mediaType: isPhotoLibrarySelected ? selectedMediaType : .photosOnly,
-                    allowCellularForLocalServer: allowCellularForLocalServer
+                    allowCellularForLocalServer: allowCellularForLocalServer,
+                    includeICloudAssets: isPhotoLibrarySelected ? includeICloudAssets : false
                 )
                 
             case .sftp:
@@ -762,7 +771,8 @@ struct BackupView: View {
                     scheduledTime: (frequencyType == .daily || frequencyType == .weekly) ? selectedTime : nil,
                     scheduledWeekday: (frequencyType == .weekly) ? selectedDay : nil,
                     mediaType: isPhotoLibrarySelected ? selectedMediaType : .photosOnly,
-                    allowCellularForLocalServer: allowCellularForLocalServer
+                    allowCellularForLocalServer: allowCellularForLocalServer,
+                    includeICloudAssets: isPhotoLibrarySelected ? includeICloudAssets : false
                 )
                 
             case .webdav:
@@ -790,7 +800,8 @@ struct BackupView: View {
                     scheduledTime: (frequencyType == .daily || frequencyType == .weekly) ? selectedTime : nil,
                     scheduledWeekday: (frequencyType == .weekly) ? selectedDay : nil,
                     mediaType: isPhotoLibrarySelected ? selectedMediaType : .photosOnly,
-                    allowCellularForLocalServer: allowCellularForLocalServer
+                    allowCellularForLocalServer: allowCellularForLocalServer,
+                    includeICloudAssets: isPhotoLibrarySelected ? includeICloudAssets : false
                 )
             }
             
@@ -899,6 +910,7 @@ struct BackupView: View {
             selectedURL = nil
             isPhotoLibrarySelected = false
             selectedMediaType = .photosOnly
+            includeICloudAssets = true
             ftpHost = Self.defaultFTPHost
             ftpPort = "21"
             ftpUsername = ""

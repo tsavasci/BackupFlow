@@ -579,3 +579,5 @@
 "backup.current_file.skipped_file" = "Übersprungen: %@";
 
 "backup.current_file.updating_file" = "Wird aktualisiert: %@";
+"backup.photo_backup_include_icloud" = "iCloud-Objekte bei Bedarf laden";
+"backup.photo_backup_include_icloud_hint" = "Für eine vollständige Sicherung empfohlen. Wenn deaktiviert, werden nur Medien kopiert, die bereits auf dem Gerät gespeichert sind.";

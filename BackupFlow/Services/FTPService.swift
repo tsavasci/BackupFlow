@@ -43,6 +43,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     @Published private(set) var currentFile: String = ""
     
     private let networkMonitor = FTPNetworkMonitor()
+    private var lastLoggedNetworkStatus: NWPath.Status?
     private var fastPhotoNameSkipEnabled: Bool {
         if UserDefaults.standard.object(forKey: "FTPFastPhotoNameSkipEnabled") == nil {
             return true
@@ -85,12 +86,16 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     // MARK: - Network Permission Management
     private func setupNetworkMonitoring() {
         networkMonitor.onUpdate = { [weak self] status in
-            self?.networkPermissionGranted = status == .satisfied
+            guard let self else { return }
+            self.networkPermissionGranted = status == .satisfied
+            let didChange = self.lastLoggedNetworkStatus != status
+            self.lastLoggedNetworkStatus = status
+            guard didChange else { return }
             if status == .satisfied {
-                self?.logger.info("FTP: Ağ bağlantısı kullanılabilir")
+                self.logger.info("FTP: Ağ bağlantısı kullanılabilir")
             } else {
                 let statusString = FTPNetworkMonitor.statusString(status)
-                self?.logger.warning("FTP: Ağ bağlantısı kullanılamıyor: \(statusString)")
+                self.logger.warning("FTP: Ağ bağlantısı kullanılamıyor: \(statusString)")
             }
         }
         networkMonitor.start()
@@ -1085,6 +1090,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         sourcePath: String, 
         isAnonymous: Bool,
         mediaType: MediaType,
+        includeICloudAssets: Bool = true,
         progressHandler: ((Double) -> Void)? = nil
     ) async throws -> SyncResult {
         
@@ -1137,6 +1143,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             let engine = try makeSyncEngine()
             syncResult = try await engine.syncBackupPhotoLibrary(
                 mediaType: mediaType,
+                includeICloudAssets: includeICloudAssets,
                 progressHandler: progressHandler
             )
         } else {
@@ -1153,6 +1160,9 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         print("   📤 Yeni dosya kopyalandı: \(syncResult.newFiles)")
         print("   🔄 Dosya güncellendi: \(syncResult.updatedFiles)")
         print("   ⏭ Aynı dosya pas geçildi: \(syncResult.skippedFiles)")
+        print("   ☁️ iCloud-only atlanan: \(syncResult.iCloudSkippedFiles)")
+        print("   ⏱️ Okuma zaman aşımı: \(syncResult.timedOutAssetReads)")
+        print("   ⚠️ Okunamayan asset: \(syncResult.failedAssetReads)")
         print("   🗑 Dosya silindi: \(syncResult.deletedFiles)")
         print("   📈 Toplam işlenen: \(syncResult.totalProcessed)")
         print("   💾 Toplam boyut: \(formatBytes(syncResult.totalBytes))")

@@ -80,6 +80,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
     )
     private var cancellables = Set<AnyCancellable>()
     private let lock = NSLock()
+    private var lastLoggedNetworkStatus: NWPath.Status?
     
     // Background session state tracking
     @Published private(set) var isBackgroundUploading = false
@@ -193,12 +194,16 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
     // MARK: - Network Permission Management
     private func setupNetworkMonitoring() {
         networkMonitor.onUpdate = { [weak self] status in
-            self?.networkPermissionGranted = status == .satisfied
+            guard let self else { return }
+            self.networkPermissionGranted = status == .satisfied
+            let didChange = self.lastLoggedNetworkStatus != status
+            self.lastLoggedNetworkStatus = status
+            guard didChange else { return }
             if status == .satisfied {
-                self?.logger.info("Ağ bağlantısı kullanılabilir")
+                self.logger.info("Ağ bağlantısı kullanılabilir")
             } else {
                 let statusString = WebDAVNetworkMonitor.statusString(status)
-                self?.logger.warning("Ağ bağlantısı kullanılamıyor: \(statusString)")
+                self.logger.warning("Ağ bağlantısı kullanılamıyor: \(statusString)")
             }
         }
         networkMonitor.start()
@@ -452,30 +457,53 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
                 try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
                     let resumeLock = NSLock()
                     var didResume = false
-                    func safeThrow(_ error: Error) {
+                    var timeoutWorkItem: DispatchWorkItem?
+                    func safeThrow(_ error: Error, isTimeout: Bool = false) {
+                        var shouldResume = false
+                        var timeoutToCancel: DispatchWorkItem?
                         resumeLock.lock()
-                        defer { resumeLock.unlock() }
-                        if didResume { return }
-                        didResume = true
+                        if !didResume {
+                            didResume = true
+                            shouldResume = true
+                            timeoutToCancel = timeoutWorkItem
+                            timeoutWorkItem = nil
+                        }
+                        resumeLock.unlock()
+                        guard shouldResume else { return }
+                        timeoutToCancel?.cancel()
+                        if isTimeout {
+                            self.logger.warning("⏱️ WebDAV upload timeout: \(localURL.lastPathComponent) after \(Int(timeoutSeconds))s")
+                        }
                         continuation.resume(throwing: error)
                     }
                     func safeResume() {
+                        var shouldResume = false
+                        var timeoutToCancel: DispatchWorkItem?
                         resumeLock.lock()
-                        defer { resumeLock.unlock() }
-                        if didResume { return }
-                        didResume = true
+                        if !didResume {
+                            didResume = true
+                            shouldResume = true
+                            timeoutToCancel = timeoutWorkItem
+                            timeoutWorkItem = nil
+                        }
+                        resumeLock.unlock()
+                        guard shouldResume else { return }
+                        timeoutToCancel?.cancel()
                         continuation.resume()
                     }
 
-                    DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + timeoutSeconds) {
+                    let timeoutItem = DispatchWorkItem {
                         let timeoutError = NSError(
                             domain: NSURLErrorDomain,
                             code: NSURLErrorTimedOut,
                             userInfo: [NSLocalizedDescriptionKey: "WebDAV upload timeout (\(Int(timeoutSeconds))s): \(localURL.lastPathComponent)"]
                         )
-                        self.logger.warning("⏱️ WebDAV upload timeout: \(localURL.lastPathComponent) after \(Int(timeoutSeconds))s")
-                        safeThrow(timeoutError)
+                        safeThrow(timeoutError, isTimeout: true)
                     }
+                    resumeLock.lock()
+                    timeoutWorkItem = timeoutItem
+                    resumeLock.unlock()
+                    DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + timeoutSeconds, execute: timeoutItem)
 
                     provider.copyItem(localFile: localURL, to: remotePath, overwrite: true) { error in
                         if let error = error {
@@ -643,6 +671,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
     private func syncBackupPhotoLibraryDirect(
         remoteBasePath: String,
         mediaType: MediaType,
+        includeICloudAssets: Bool,
         progressHandler: @escaping (Double) -> Void
     ) async throws -> FTPService.SyncResult {
         try await ensureDirectoryExists(at: remoteBasePath)
@@ -659,18 +688,43 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         let processedRelativePaths = Set(assets.map { photoLibraryManager.generateFileName(for: $0) })
         var timedOutUploads: [(asset: PHAsset, fileName: String, remotePath: String, localSize: Int64)] = []
         var failedUploads = 0
+        let totalAssets = assets.count
+        var lastHeartbeatAt = Date()
 
         try fileManager.createDirectory(at: exportRootURL(), withIntermediateDirectories: true)
 
         for (index, asset) in assets.enumerated() {
+            if index == 0 || (index + 1).isMultiple(of: 10) {
+                logger.info("📷 WebDAV photo sync progress: \(index + 1)/\(totalAssets) (uploaded: \(result.newFiles + result.updatedFiles), skipped: \(result.skippedFiles), iCloud-only: \(result.iCloudSkippedFiles), timeout: \(result.timedOutAssetReads), unreadable: \(result.failedAssetReads))")
+            }
+            if Date().timeIntervalSince(lastHeartbeatAt) >= 30 {
+                logger.info("⏳ WebDAV photo sync heartbeat: processed \(index)/\(totalAssets), transferred \(result.totalBytes) bytes")
+                lastHeartbeatAt = Date()
+            }
+
             let fileName = photoLibraryManager.generateFileName(for: asset)
-            guard let data = try await photoLibraryManager.getAssetData(asset: asset) else {
+            let assetDataResult = await photoLibraryManager.getAssetDataWithStatus(asset: asset, allowNetworkAccess: includeICloudAssets)
+            let data: Data
+            switch assetDataResult {
+            case .success(let fetchedData):
+                data = fetchedData
+            case .iCloudOnly:
+                result.iCloudSkippedFiles += 1
+                progressHandler(Double(index + 1) / Double(assets.count))
+                continue
+            case .timedOut:
+                result.timedOutAssetReads += 1
+                progressHandler(Double(index + 1) / Double(assets.count))
+                continue
+            case .unavailable:
+                result.failedAssetReads += 1
                 progressHandler(Double(index + 1) / Double(assets.count))
                 continue
             }
 
             let localSize = Int64(data.count)
             let remotePath = remoteBasePath == "/" ? "/\(fileName)" : "\(remoteBasePath)/\(fileName)"
+            logger.info("⬆️ Upload starting (\(index + 1)/\(totalAssets)): \(fileName) (\(localSize) bytes)")
 
             if let remoteFile = existingFileMap[fileName], remoteFile.size == localSize {
                 result.skippedFiles += 1
@@ -687,6 +741,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
                 try data.write(to: tempURL, options: .atomic)
                 defer { try? fileManager.removeItem(at: tempURL) }
                 try await uploadFileAwaitingCompletion(localURL: tempURL, remotePath: remotePath, progressHandler: nil)
+                logger.info("✅ Upload completed (\(index + 1)/\(totalAssets)): \(fileName)")
             } catch {
                 try? fileManager.removeItem(at: tempURL)
                 if isUploadTimeoutError(error) {
@@ -712,7 +767,23 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         if !timedOutUploads.isEmpty {
             logger.info("🔁 Retrying timed out uploads: \(timedOutUploads.count)")
             for item in timedOutUploads {
-                guard let retryData = try await photoLibraryManager.getAssetData(asset: item.asset) else {
+                let retryFetchResult = await photoLibraryManager.getAssetDataWithStatus(asset: item.asset, allowNetworkAccess: includeICloudAssets)
+                let retryData: Data
+                switch retryFetchResult {
+                case .success(let fetchedData):
+                    retryData = fetchedData
+                case .iCloudOnly:
+                    result.iCloudSkippedFiles += 1
+                    failedUploads += 1
+                    logger.warning("Retry skipped (asset iCloud-only): \(item.fileName)")
+                    continue
+                case .timedOut:
+                    result.timedOutAssetReads += 1
+                    failedUploads += 1
+                    logger.warning("Retry skipped (asset read timeout): \(item.fileName)")
+                    continue
+                case .unavailable:
+                    result.failedAssetReads += 1
                     failedUploads += 1
                     logger.warning("Retry skipped (asset data unavailable): \(item.fileName)")
                     continue
@@ -918,6 +989,10 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
             
             self.logger.info("Testing file upload to root directory...")
             do {
+                let tempURL = fileManager.temporaryDirectory.appendingPathComponent(testFileName)
+                try testContent.write(to: tempURL, options: .atomic)
+                defer { try? fileManager.removeItem(at: tempURL) }
+
                 try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
                     var didResume = false
                     func safeThrow(_ error: Error) {
@@ -931,12 +1006,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
                         continuation.resume()
                     }
                     
-                    provider.writeContents(
-                        path: testFilePath,
-                        contents: testContent,
-                        atomically: true,
-                        overwrite: true
-                    ) { error in
+                    provider.copyItem(localFile: tempURL, to: testFilePath, overwrite: true) { error in
                         if let error = error {
                             self.logger.error("File upload test failed: \(error.localizedDescription)")
                             if let nsError = error as NSError? {
@@ -1227,7 +1297,17 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
     }
     
     // MARK: - Backup Implementation
-    func performBackup(host: String, port: Int, username: String?, password: String?, sourcePath: String, isAnonymous: Bool, mediaType: MediaType, progressHandler: @escaping (Double) -> Void) async throws -> FTPService.SyncResult {
+    func performBackup(
+        host: String,
+        port: Int,
+        username: String?,
+        password: String?,
+        sourcePath: String,
+        isAnonymous: Bool,
+        mediaType: MediaType,
+        includeICloudAssets: Bool = true,
+        progressHandler: @escaping (Double) -> Void
+    ) async throws -> FTPService.SyncResult {
         self.logger.info("Starting backup: \(host):\(port)")
         if sourcePath == "PHOTOS_LIBRARY" {
             self.logger.info("Media type: \(mediaType == .photosOnly ? "Photos only" : "Photos and Videos")")
@@ -1287,9 +1367,10 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
             result = try await syncBackupPhotoLibraryDirect(
                 remoteBasePath: remotePhotosBase,
                 mediaType: mediaType,
+                includeICloudAssets: includeICloudAssets,
                 progressHandler: progressHandler
             )
-            self.logger.info("Successfully synced photos to WebDAV (uploaded: \(result.newFiles), updated: \(result.updatedFiles), skipped: \(result.skippedFiles), deleted: \(result.deletedFiles))")
+            self.logger.info("Successfully synced photos to WebDAV (uploaded: \(result.newFiles), updated: \(result.updatedFiles), skipped: \(result.skippedFiles), iCloud-skipped: \(result.iCloudSkippedFiles), timeouts: \(result.timedOutAssetReads), unreadable: \(result.failedAssetReads), deleted: \(result.deletedFiles))")
         } else {
             // Directory mirror - preserve source folder name
             self.logger.info("Backing up directory (mirror): \(sourcePath)")

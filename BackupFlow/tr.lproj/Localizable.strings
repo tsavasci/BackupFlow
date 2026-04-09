@@ -556,3 +556,5 @@
 "backup.current_file.skipped_file" = "Atlandı: %@";
 
 "backup.current_file.updating_file" = "Güncelleniyor: %@";
+"backup.photo_backup_include_icloud" = "Gerekirse iCloud öğelerini indir";
+"backup.photo_backup_include_icloud_hint" = "Tam yedekleme için önerilir. Bunu kapatırsanız yalnızca cihazda bulunan medyalar kopyalanır.";
