@@ -55,15 +55,11 @@
 		};
 		F2DA235B2E7D5FDA00B2727D /* BackupFlowTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = BackupFlowTests;
 			sourceTree = "<group>";
 		};
 		F2DA23652E7D5FDA00B2727D /* BackupFlowUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = BackupFlowUITests;
 			sourceTree = "<group>";
 		};
@@ -103,13 +99,6 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		630E66A8D79B89DDDD3DEE29 /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Pods;
-			sourceTree = "<group>";
-		};
 		A08578502E231DAC008FF3ED = {
 			isa = PBXGroup;
 			children = (
@@ -117,7 +106,6 @@
 				F2DA235B2E7D5FDA00B2727D /* BackupFlowTests */,
 				F2DA23652E7D5FDA00B2727D /* BackupFlowUITests */,
 				A085785A2E231DAC008FF3ED /* Products */,
-				630E66A8D79B89DDDD3DEE29 /* Pods */,
 				26E5B1AE2B5EDB1C255EB615 /* Frameworks */,
 			);
 			sourceTree = "<group>";
@@ -486,7 +474,7 @@
 					"@executable_path/Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 3.0;
+				MARKETING_VERSION = 3.1;
 				PRODUCT_BUNDLE_IDENTIFIER = tamersavasci.BackupFlow;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -539,7 +527,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.0;
+				MARKETING_VERSION = 3.1;
 				PRODUCT_BUNDLE_IDENTIFIER = tamersavasci.BackupFlow;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;

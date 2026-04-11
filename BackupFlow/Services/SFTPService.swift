@@ -275,11 +275,37 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         guard let sftp = currentSFTPClient() else {
             throw BackupServiceError.connectionFailed
         }
+        
+        let normalizedPath = path.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalizedPath.isEmpty, normalizedPath != "/" else {
+            return
+        }
+        
+        // İlk olarak parent directory'yi oluşturmayı dene (recursive)
+        let parentPath = (normalizedPath as NSString).deletingLastPathComponent
+        if !parentPath.isEmpty && parentPath != "/" && parentPath != normalizedPath {
+            do {
+                try await createDirectory(at: parentPath)
+            } catch {
+                logger.warning("SFTP parent directory creation warning for \(parentPath): \(error.localizedDescription)")
+                // Parent oluşturulamasa da devam et, belki zaten var
+            }
+        }
+        
+        // Şimdi hedef directory'yi oluştur
         do {
-            _ = try await sftp.getAttributes(at: path)
+            _ = try await sftp.getAttributes(at: normalizedPath)
+            logger.debug("SFTP directory already exists: \(normalizedPath)")
             return
         } catch {
-            try await sftp.createDirectory(atPath: path)
+            logger.debug("SFTP directory not found, creating: \(normalizedPath)")
+            do {
+                try await sftp.createDirectory(atPath: normalizedPath)
+                logger.debug("SFTP directory created successfully: \(normalizedPath)")
+            } catch {
+                logger.error("SFTP directory creation failed for \(normalizedPath): \(error.localizedDescription)")
+                throw error
+            }
         }
     }
     
@@ -362,11 +388,12 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         let isPhotosSource = sourcePath == "PHOTOS_LIBRARY"
         let sourceURL = URL(fileURLWithPath: sourcePath)
         let sourceFolderName = sourceURL.lastPathComponent
-        let effectiveRemotePath = normalizedRemoteBase(
+        let relativeRemoteBase = normalizedRemoteBase(
             destinationPath: destinationPath,
             fallback: isPhotosSource ? "photos" : sourceFolderName,
             allowRelative: true
         )
+        let effectiveRemotePath = try await resolveRemoteBase(relativeRemoteBase)
         let checkpointID = makeResumeCheckpointID(
             host: normalizedHost,
             port: port,
@@ -463,6 +490,37 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             path.removeLast()
         }
         return path.isEmpty ? safeFallback : path
+    }
+
+    private func resolveRemoteBase(_ basePath: String) async throws -> String {
+        let trimmed = basePath.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            return "backup"
+        }
+        if trimmed.hasPrefix("/") {
+            return trimmed
+        }
+        guard let sftp = currentSFTPClient() else {
+            return trimmed
+        }
+        do {
+            let home = try await sftp.getRealPath(atPath: ".")
+            let homeTrimmed = home.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !homeTrimmed.isEmpty else {
+                return trimmed
+            }
+            var combined = homeTrimmed.hasSuffix("/") ? homeTrimmed + trimmed : "\(homeTrimmed)/\(trimmed)"
+            while combined.contains("//") {
+                combined = combined.replacingOccurrences(of: "//", with: "/")
+            }
+            if combined.hasSuffix("/") {
+                combined.removeLast()
+            }
+            return combined
+        } catch {
+            logger.error("SFTP realpath lookup failed, using relative path: \(error.localizedDescription)")
+            return trimmed
+        }
     }
 
     private func makeResumeCheckpointID(
@@ -581,23 +639,34 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         let handle = try FileHandle(forReadingFrom: localURL)
         defer { try? handle.close() }
 
-        try await sftp.withFile(
-            filePath: remotePath,
-            flags: [.write, .create, .truncate]
-        ) { remoteFile in
-            var offset: UInt64 = 0
-            while !(await self.isCancelledState()) {
-                guard let chunk = try handle.read(upToCount: 64 * 1024), !chunk.isEmpty else {
-                    break
+        let fileName = (remotePath as NSString).lastPathComponent
+        let parentPath = (remotePath as NSString).deletingLastPathComponent
+        
+        logger.debug("SFTP uploading file: \(fileName) to \(parentPath)")
+        
+        do {
+            try await sftp.withFile(
+                filePath: remotePath,
+                flags: [.write, .create, .truncate]
+            ) { remoteFile in
+                var offset: UInt64 = 0
+                while !(await self.isCancelledState()) {
+                    guard let chunk = try handle.read(upToCount: 64 * 1024), !chunk.isEmpty else {
+                        break
+                    }
+                    var buffer = ByteBufferAllocator().buffer(capacity: chunk.count)
+                    buffer.writeBytes(chunk)
+                    try await remoteFile.write(buffer, at: offset)
+                    offset += UInt64(chunk.count)
                 }
-                var buffer = ByteBufferAllocator().buffer(capacity: chunk.count)
-                buffer.writeBytes(chunk)
-                try await remoteFile.write(buffer, at: offset)
-                offset += UInt64(chunk.count)
+                if await self.isCancelledState() {
+                    throw BackupServiceError.cancelled
+                }
             }
-            if await self.isCancelledState() {
-                throw BackupServiceError.cancelled
-            }
+            logger.debug("SFTP upload successful: \(fileName)")
+        } catch {
+            logger.error("SFTP upload failed for \(fileName): \(error.localizedDescription)")
+            throw error
         }
     }
 

@@ -64,7 +64,7 @@ struct SFTPSyncEngine {
                 checkpoint.insert(relativePath)
                 await markCheckpoint?(relativePath)
             } else if remoteFileMap[relativePath] != nil {
-                let didUpload = try await uploadFile(localFileURL, targetPath, localSize, false)
+                let didUpload = try await uploadFile(localFileURL, targetPath, localSize, true)
                 if didUpload {
                     result.updatedFiles += 1
                     result.totalBytes += localSize
@@ -76,7 +76,7 @@ struct SFTPSyncEngine {
                     result.totalBytes += localSize
                 }
             } else {
-                let didUpload = try await uploadFile(localFileURL, targetPath, localSize, false)
+                let didUpload = try await uploadFile(localFileURL, targetPath, localSize, true)
                 if didUpload {
                     result.newFiles += 1
                     result.totalBytes += localSize
@@ -131,7 +131,12 @@ struct SFTPSyncEngine {
         
         let photosDir = remotePath
         logger.info("SFTP sync target directory: \(photosDir)")
-        try? await createDirectory(photosDir)
+        do {
+            try await createDirectory(photosDir)
+        } catch {
+            logger.error("SFTP base directory creation failed: \(error.localizedDescription)")
+            throw error
+        }
         
         let existingFileMap = try await prefetchRemoteFiles(photosDir)
         var checkpoint = await loadCheckpoint?() ?? []
@@ -167,7 +172,7 @@ struct SFTPSyncEngine {
                 checkpoint.insert(fileName)
                 await markCheckpoint?(fileName)
             } else if existingFileMap[fileName] != nil {
-                let didUpload = try await uploadFile(tempURL, remotePath, localSize, false)
+                let didUpload = try await uploadFile(tempURL, remotePath, localSize, true)
                 if didUpload {
                     result.updatedFiles += 1
                     result.totalBytes += localSize
@@ -178,7 +183,7 @@ struct SFTPSyncEngine {
                     result.totalBytes += localSize
                 }
             } else {
-                let didUpload = try await uploadFile(tempURL, remotePath, localSize, false)
+                let didUpload = try await uploadFile(tempURL, remotePath, localSize, true)
                 if didUpload {
                     result.newFiles += 1
                     result.totalBytes += localSize
