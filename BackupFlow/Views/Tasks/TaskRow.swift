@@ -203,6 +203,10 @@ struct TaskRow: View {
             }
         }
         .padding()
+        .contentShape(Rectangle())
+        .onTapGesture {
+            showDetailsSheet = true
+        }
         .liquidCard(cornerRadius: 14)
         .padding(.vertical, 4)
         .sheet(isPresented: $showDetailsSheet) {
