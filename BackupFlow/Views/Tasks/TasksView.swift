@@ -1,12 +1,20 @@
 import SwiftUI
 import SwiftData
 
+private struct Brand {
+    static let gradient = LinearGradient(colors: [
+        Color(red: 0.15, green: 0.60, blue: 0.98), // bright blue
+        Color(red: 0.59, green: 0.33, blue: 0.98)  // violet
+    ], startPoint: .topLeading, endPoint: .bottomTrailing)
+}
+
 struct TasksView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \BackupTask.createdAt, order: .reverse) private var tasks: [BackupTask]
     @State private var showingDeleteAlert = false
     @State private var taskToDelete: BackupTask?
     @State private var searchText = ""
+    @State private var actionToast: String? = nil
     
     private var filteredTasks: [BackupTask] {
         if searchText.isEmpty {
@@ -30,7 +38,7 @@ struct TasksView: View {
                             NavigationLink(destination: BackupView()) {
                                 Image(systemName: "plus.circle.fill")
                                     .font(.system(size: 18, weight: .semibold))
-                                    .foregroundColor(DesignSystem.Colors.primary)
+                                    .foregroundStyle(Brand.gradient)
                             }
                         }
                     }
@@ -44,8 +52,37 @@ struct TasksView: View {
                     } message: {
                         Text("tasks.delete_message_full".localized)
                     }
+                    .overlay(alignment: .bottom) {
+                        if let msg = actionToast {
+                            Text(msg)
+                                .font(.subheadline)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 10)
+                                .background(.ultraThinMaterial, in: Capsule())
+                                .shadow(radius: 8)
+                                .padding(.bottom, 24)
+                                .transition(.move(edge: .bottom).combined(with: .opacity))
+                                .onAppear {
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                                        withAnimation(.easeInOut) { actionToast = nil }
+                                    }
+                                }
+                        }
+                    }
             }
         }
+    }
+    
+    private func gradientSectionHeader(title: String, systemImage: String) -> some View {
+        HStack(spacing: DesignSystem.Spacing.small) {
+            Image(systemName: systemImage)
+                .foregroundStyle(Brand.gradient)
+            Text(title)
+                .font(DesignSystem.Typography.headline)
+                .foregroundStyle(Brand.gradient)
+            Spacer()
+        }
+        .padding(.horizontal, DesignSystem.Spacing.base)
     }
     
     // MARK: - Subviews
@@ -71,7 +108,7 @@ struct TasksView: View {
                 // Search and Filter
                 HStack(spacing: DesignSystem.Spacing.small) {
                     Image(systemName: "magnifyingglass")
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(Brand.gradient)
                     
                     TextField("Görev ara...", text: $searchText)
                         .font(DesignSystem.Typography.body)
@@ -93,17 +130,32 @@ struct TasksView: View {
                 
                 // Quick Stats
                 if !filteredTasks.isEmpty {
+                    gradientSectionHeader(title: "Özet", systemImage: "chart.bar.fill")
                     quickStatsView
                 }
                 
                 // Task Items
+                if !filteredTasks.isEmpty {
+                    gradientSectionHeader(title: "Görevler", systemImage: "list.bullet.rectangle")
+                }
                 LazyVStack(spacing: DesignSystem.Spacing.medium) {
                     ForEach(filteredTasks) { task in
                         NavigationLink(destination: BackupView()) {
                             TaskItemCard(
                                 task: task,
-                                onDelete: { taskToDelete = $0 }
+                                onDelete: { selected in
+                                    taskToDelete = selected
+                                    showingDeleteAlert = true
+                                }
                             )
+                        }
+                        .contextMenu {
+                            Button("Şimdi çalıştır", systemImage: "play.fill") {
+                                runNow(task)
+                            }
+                            Button("İptal et", systemImage: "xmark.circle") {
+                                cancelTaskRun(task)
+                            }
                         }
                     }
                 }
@@ -138,6 +190,23 @@ struct TasksView: View {
     }
     
     // MARK: - Helper Methods
+    private func runNow(_ task: BackupTask) {
+        withAnimation {
+            task.isEnabled = true
+            task.isPaused = false
+            try? modelContext.save()
+            actionToast = "Görev başlatıldı"
+        }
+    }
+    
+    private func cancelTaskRun(_ task: BackupTask) {
+        withAnimation {
+            task.isPaused = true
+            try? modelContext.save()
+            actionToast = "Görev iptal edildi"
+        }
+    }
+    
     private func deleteButton(for task: BackupTask) -> some View {
         Button(role: .destructive) {
             taskToDelete = task
@@ -231,6 +300,10 @@ struct TaskItemCard: View {
                 }
             }
         }
+        .overlay(
+            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.large, style: .continuous)
+                .strokeBorder(Brand.gradient.opacity(0.6), lineWidth: 1)
+        )
     }
 }
 
@@ -244,7 +317,7 @@ struct TaskDetailItem: View {
         VStack(alignment: .center, spacing: 4) {
             Image(systemName: icon)
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(DesignSystem.Colors.primary)
+                .foregroundStyle(Brand.gradient)
             
             Text(label)
                 .font(DesignSystem.Typography.caption2)
@@ -261,3 +334,4 @@ struct TaskDetailItem: View {
             .modelContainer(for: [BackupTask.self, BackupHistory.self], inMemory: true)
     }
 }
+
