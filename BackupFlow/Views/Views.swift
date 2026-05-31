@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Liquid Theme
+// MARK: - Liquid Theme (Legacy - Use DesignSystem instead)
 
 struct LiquidTheme {
     static let accent = Color(red: 0.20, green: 0.45, blue: 0.95)
@@ -23,6 +23,9 @@ struct LiquidTheme {
         endPoint: .bottomTrailing
     )
 }
+
+// Alias for modern design system
+typealias AppTheme = DesignSystem
 
 private struct LiquidBackgroundModifier: ViewModifier {
     @Environment(\.colorScheme) private var colorScheme

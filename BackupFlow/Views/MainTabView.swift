@@ -5,46 +5,57 @@ struct MainTabView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var showBackupAlert = false
     @State private var pendingBackupTask: BackupTask?
+    @State private var selectedTab: Int = 0
     
     var body: some View {
-        TabView {
-            // BackupView'ı çağırmadan önce NavigationStack'e bir referans vererek belirsizliği giderin
-            NavigationStack {
-                BackupView()
+        ZStack {
+            TabView(selection: $selectedTab) {
+                // BackupView'ı çağırmadan önce NavigationStack'e bir referans vererek belirsizliği giderin
+                NavigationStack {
+                    BackupView()
+                }
+                .tabItem {
+                    Label("nav.backup".localized, systemImage: "externaldrive.fill")
+                }
+                .tag(0)
+                
+                NavigationStack {
+                    TasksView()
+                }
+                .tabItem {
+                    Label("nav.tasks".localized, systemImage: "checklist")
+                }
+                .tag(1)
+                
+                NavigationStack {
+                    HistoryView()
+                }
+                .tabItem {
+                    Label("nav.history".localized, systemImage: "clock.fill")
+                }
+                .tag(2)
+                
+                NavigationStack {
+                    SettingsView()
+                }
+                .tabItem {
+                    Label("nav.settings".localized, systemImage: "gearshape.fill")
+                }
+                .tag(3)
+                
+                NavigationStack {
+                    AboutView()
+                }
+                .tabItem {
+                    Label("nav.about".localized, systemImage: "info.circle.fill")
+                }
+                .tag(4)
             }
-            .tabItem {
-                Label("nav.backup".localized, systemImage: "externaldrive.fill")
-            }
-            
-            NavigationStack {
-                TasksView()
-            }
-            .tabItem {
-                Label("nav.tasks".localized, systemImage: "checklist")
-            }
-            
-            NavigationStack {
-                HistoryView()
-            }
-            .tabItem {
-                Label("nav.history".localized, systemImage: "clock.fill")
-            }
-            
-            NavigationStack {
-                SettingsView()
-            }
-            .tabItem {
-                Label("nav.settings".localized, systemImage: "gearshape.fill")
-            }
-            
-            NavigationStack {
-                AboutView()
-            }
-            .tabItem {
-                Label("nav.about".localized, systemImage: "info.circle.fill")
+            .tint(DesignSystem.Colors.primary)
+            .transaction { transaction in
+                transaction.animation = .easeInOut(duration: 0.3)
             }
         }
-        .tint(LiquidTheme.accent)
         .onAppear {
             checkForPendingBackup()
         }

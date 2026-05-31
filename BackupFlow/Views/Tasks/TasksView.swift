@@ -6,70 +6,138 @@ struct TasksView: View {
     @Query(sort: \BackupTask.createdAt, order: .reverse) private var tasks: [BackupTask]
     @State private var showingDeleteAlert = false
     @State private var taskToDelete: BackupTask?
+    @State private var searchText = ""
+    
+    private var filteredTasks: [BackupTask] {
+        if searchText.isEmpty {
+            return tasks
+        }
+        return tasks.filter { $0.displayName.localizedCaseInsensitiveContains(searchText) }
+    }
     
     // MARK: - Main View
     var body: some View {
-        contentView
-            .navigationTitle("nav.tasks".localized)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    NavigationLink(destination: BackupView()) {
-                        Image(systemName: "plus")
+        ZStack {
+            Color(.systemBackground)
+                .ignoresSafeArea()
+            
+            VStack(spacing: 0) {
+                contentView
+                    .navigationTitle("nav.tasks".localized)
+                    .navigationBarTitleDisplayMode(.large)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            NavigationLink(destination: BackupView()) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundColor(DesignSystem.Colors.primary)
+                            }
+                        }
                     }
-                }
-            }
-            .alert("tasks.delete_confirmation".localized, isPresented: $showingDeleteAlert) {
-                Button("alert.cancel".localized, role: .cancel) {}
-                Button("tasks.delete".localized, role: .destructive) {
-                    if let task = taskToDelete {
-                        deleteTask(task)
+                    .alert("tasks.delete_confirmation".localized, isPresented: $showingDeleteAlert) {
+                        Button("alert.cancel".localized, role: .cancel) {}
+                        Button("tasks.delete".localized, role: .destructive) {
+                            if let task = taskToDelete {
+                                deleteTask(task)
+                            }
+                        }
+                    } message: {
+                        Text("tasks.delete_message_full".localized)
                     }
-                }
-            } message: {
-                Text("tasks.delete_message_full".localized)
             }
-            .liquidBackground()
+        }
     }
     
     // MARK: - Subviews
     private var contentView: some View {
         Group {
             if tasks.isEmpty {
-                emptyStateView
+                ModernEmptyState(
+                    icon: "plus.circle.dashed",
+                    title: "tasks.no_tasks".localized,
+                    description: "Yeni bir yedekleme görevi oluşturmaya başlamak için + düğmesine tıklayın",
+                    action: nil,
+                    actionLabel: nil
+                )
             } else {
                 taskListView
             }
         }
     }
     
-    private var emptyStateView: some View {
-        ContentUnavailableView(
-            "tasks.no_tasks".localized,
-            systemImage: "plus.circle",
-            description: Text("tasks.create_first_task".localized)
-        )
-    }
-    
     private var taskListView: some View {
-        List {
-            Section {
-                DashboardWidget()
-                    .listRowInsets(EdgeInsets())
-                    .listRowBackground(Color.clear)
-            }
-            
-            Section("tasks.your_tasks".localized) {
-                ForEach(tasks) { task in
-                    TaskRow(task: task, onDelete: { self.taskToDelete = $0 })
-                        .swipeActions(edge: .trailing) { deleteButton(for: task) }
-                        .listRowBackground(Color.clear)
+        ScrollView {
+            VStack(spacing: DesignSystem.Spacing.large) {
+                // Search and Filter
+                HStack(spacing: DesignSystem.Spacing.small) {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.secondary)
+                    
+                    TextField("Görev ara...", text: $searchText)
+                        .font(DesignSystem.Typography.body)
+                    
+                    if !searchText.isEmpty {
+                        Button(action: { searchText = "" }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.secondary)
+                        }
+                    }
                 }
+                .padding(.horizontal, DesignSystem.Spacing.base)
+                .padding(.vertical, DesignSystem.Spacing.medium)
+                .background(
+                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium, style: .continuous)
+                        .fill(Color.gray.opacity(0.05))
+                )
+                .padding(.horizontal, DesignSystem.Spacing.base)
+                
+                // Quick Stats
+                if !filteredTasks.isEmpty {
+                    quickStatsView
+                }
+                
+                // Task Items
+                LazyVStack(spacing: DesignSystem.Spacing.medium) {
+                    ForEach(filteredTasks) { task in
+                        NavigationLink(destination: BackupView()) {
+                            TaskItemCard(
+                                task: task,
+                                onDelete: { taskToDelete = $0 }
+                            )
+                        }
+                    }
+                }
+                .padding(.horizontal, DesignSystem.Spacing.base)
+                .padding(.bottom, DesignSystem.Spacing.large)
             }
+            .padding(.vertical, DesignSystem.Spacing.base)
         }
-        .listStyle(.insetGrouped)
-        .scrollContentBackground(.hidden)
+        .animation(.easeInOut(duration: 0.3), value: filteredTasks)
     }
     
+    private var quickStatsView: some View {
+        let enabledCount = filteredTasks.filter { $0.isEnabled && !$0.isPaused }.count
+        let pausedCount = filteredTasks.filter { $0.isPaused }.count
+        
+        return HStack(spacing: DesignSystem.Spacing.medium) {
+            StatCard(
+                label: "Aktif",
+                value: "\(enabledCount)",
+                icon: "play.circle.fill",
+                style: .success
+            )
+            
+            StatCard(
+                label: "Duraklatılmış",
+                value: "\(pausedCount)",
+                icon: "pause.circle.fill",
+                style: pausedCount > 0 ? .warning : .primary
+            )
+        }
+        .padding(.horizontal, DesignSystem.Spacing.base)
+    }
+    
+    // MARK: - Helper Methods
     private func deleteButton(for task: BackupTask) -> some View {
         Button(role: .destructive) {
             taskToDelete = task
@@ -79,11 +147,111 @@ struct TasksView: View {
         }
     }
     
-    // MARK: - Helper Methods
     private func deleteTask(_ task: BackupTask) {
         withAnimation {
             modelContext.delete(task)
+            try? modelContext.save()
         }
+    }
+}
+
+// MARK: - Task Item Card Component
+
+struct TaskItemCard: View {
+    let task: BackupTask
+    let onDelete: (BackupTask) -> Void
+    
+    var body: some View {
+        ModernCard(
+            cornerRadius: DesignSystem.CornerRadius.large,
+            padding: DesignSystem.Spacing.base
+        ) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.medium) {
+                // Title and Status
+                HStack(spacing: DesignSystem.Spacing.medium) {
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.extraSmall) {
+                        Text(task.displayName)
+                            .font(DesignSystem.Typography.headline)
+                            .lineLimit(1)
+                        
+                        Text((task.sourcePath as NSString?)?.abbreviatingWithTildeInPath ?? "Not set")
+                            .font(DesignSystem.Typography.caption2)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+                    
+                    Spacer()
+                    
+                    if task.isEnabled {
+                        StatusBadge(
+                            text: task.isPaused ? "Duraklatılmış" : "Aktif",
+                            style: task.isPaused ? .warning : .success
+                        )
+                    } else {
+                        StatusBadge(
+                            text: "Devre Dışı",
+                            style: .info
+                        )
+                    }
+                }
+                
+                Divider()
+                    .padding(.vertical, DesignSystem.Spacing.extraSmall)
+                
+                // Task Details
+                HStack(spacing: DesignSystem.Spacing.large) {
+                    TaskDetailItem(
+                        icon: "network",
+                        label: task.backupType == .ftp ? "FTP" : task.backupType == .webdav ? "WebDAV" : "SFTP"
+                    )
+                    
+                    TaskDetailItem(
+                        icon: "timer",
+                        label: task.frequency == .manual ? "Manuel" : "Planlı"
+                    )
+                    
+                    TaskDetailItem(
+                        icon: "doc.on.doc",
+                        label: task.mediaType.displayName
+                    )
+                    
+                    Spacer()
+                    
+                    // Quick Actions
+                    HStack(spacing: DesignSystem.Spacing.small) {
+                        Button(action: { onDelete(task) }) {
+                            Image(systemName: "trash.fill")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(.red)
+                                .frame(width: 32, height: 32)
+                                .background(Color.red.opacity(0.1))
+                                .clipShape(Circle())
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Task Detail Item Component
+
+struct TaskDetailItem: View {
+    let icon: String
+    let label: String
+    
+    var body: some View {
+        VStack(alignment: .center, spacing: 4) {
+            Image(systemName: icon)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(DesignSystem.Colors.primary)
+            
+            Text(label)
+                .font(DesignSystem.Typography.caption2)
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 

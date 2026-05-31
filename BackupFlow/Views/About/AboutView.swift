@@ -3,67 +3,137 @@ import SwiftUI
 struct AboutView: View {
     let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
     let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+    @State private var showContactAlert = false
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                Image(systemName: "externaldrive.fill")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 100, height: 100)
-                    .foregroundColor(.blue)
-                    .padding(.top, 40)
+        NavigationStack {
+            ZStack {
+                Color(.systemBackground)
+                    .ignoresSafeArea()
                 
-                Text("BackupFlow")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                
-                Text(String(format: "about.version_build".localized, appVersion, buildNumber))
-                    .foregroundColor(.secondary)
-                    .font(.subheadline)
-                
-                VStack(alignment: .leading, spacing: 16) {
-                    InfoRow(icon: "info.circle", title: "about.title".localized, description: "about.description".localized)
-                        .padding()
-                        .liquidCard(cornerRadius: 14)
-                    
-                    InfoRow(icon: "doc.text", title: "about.license".localized, description: "about.license_description".localized)
-                        .padding()
-                        .liquidCard(cornerRadius: 14)
-                    
-                    Button(action: {
-                        openSupportEmail()
-                    }) {
-                        InfoRow(icon: "envelope", title: "about.contact".localized, description: "tamersavasci@icloud.com")
+                ScrollView {
+                    VStack(spacing: DesignSystem.Spacing.large) {
+                        // App Logo and Title
+                        VStack(spacing: DesignSystem.Spacing.medium) {
+                            ZStack {
+                                Circle()
+                                    .fill(DesignSystem.Colors.primaryGradient)
+                                    .frame(width: 100, height: 100)
+                                
+                                Image(systemName: "externaldrive.fill")
+                                    .font(.system(size: 48, weight: .semibold))
+                                    .foregroundColor(.white)
+                            }
+                            .padding(.top, DesignSystem.Spacing.xLarge)
+                            
+                            Text("BackupFlow")
+                                .font(DesignSystem.Typography.largeTitle)
+                                .fontWeight(.bold)
+                            
+                            Text(String(format: "v%@ (%@)", appVersion, buildNumber))
+                                .font(DesignSystem.Typography.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        
+                        // About Section
+                        SectionCard(
+                            title: "Hakkında",
+                            icon: "info.circle.fill",
+                            content: {
+                                Text("BackupFlow, dosyalarınızı FTP, SFTP ve WebDAV sunucularına otomatik olarak yedeklemek için tasarlanmıştır. Güvenli, hızlı ve güvenilir yedekleme çözümü.")
+                                    .font(DesignSystem.Typography.body)
+                                    .foregroundColor(.secondary)
+                            }
+                        )
+                        
+                        // Features Section
+                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.medium) {
+                            HStack(spacing: DesignSystem.Spacing.small) {
+                                Image(systemName: "star.fill")
+                                    .foregroundColor(DesignSystem.Colors.primary)
+                                Text("Özellikler")
+                                    .font(DesignSystem.Typography.headline)
+                            }
+                            
+                            VStack(alignment: .leading, spacing: DesignSystem.Spacing.small) {
+                                FeatureRow(icon: "shield.fill", text: "Güvenli şifreleme ve bağlantı")
+                                FeatureRow(icon: "clock.fill", text: "Otomatik zamanlanmış yedeklemeler")
+                                FeatureRow(icon: "bolt.fill", text: "Hızlı ve etkili dosya senkronizasyonu")
+                                FeatureRow(icon: "globe", text: "FTP, SFTP ve WebDAV desteği")
+                                FeatureRow(icon: "checkmark.circle.fill", text: "Akıllı dosya filtreleme")
+                                FeatureRow(icon: "chart.bar.fill", text: "Detaylı geçmiş ve istatistikler")
+                            }
+                        }
+                        .padding(DesignSystem.Spacing.base)
+                        .background(
+                            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.large, style: .continuous)
+                                .fill(Color.gray.opacity(0.05))
+                        )
+                        
+                        // Support Section
+                        SectionCard(
+                            title: "Destek",
+                            icon: "envelope.circle.fill",
+                            content: {
+                                VStack(alignment: .leading, spacing: DesignSystem.Spacing.medium) {
+                                    Text("Sorularınız veya önerileriniz mi var? Bize iletişim kurabilirsiniz.")
+                                        .font(DesignSystem.Typography.body)
+                                        .foregroundColor(.secondary)
+                                    
+                                    Button(action: { openSupportEmail() }) {
+                                        HStack(spacing: DesignSystem.Spacing.small) {
+                                            Image(systemName: "envelope.fill")
+                                                .font(.system(size: 16, weight: .semibold))
+                                            Text("tamersavasci@icloud.com")
+                                                .font(DesignSystem.Typography.callout)
+                                        }
+                                        .frame(maxWidth: .infinity)
+                                        .padding(DesignSystem.Spacing.base)
+                                        .background(DesignSystem.Colors.primary.opacity(0.1))
+                                        .foregroundColor(DesignSystem.Colors.primary)
+                                        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium, style: .continuous))
+                                    }
+                                }
+                            }
+                        )
+                        
+                        // License Section
+                        SectionCard(
+                            title: "Lisans",
+                            icon: "doc.text.fill",
+                            content: {
+                                Text("BackupFlow, MIT Lisansı altında dağıtılmaktadır. Yazılımı özgürce kullanabilir, değiştirebilir ve dağıtabilirsiniz.")
+                                    .font(DesignSystem.Typography.body)
+                                    .foregroundColor(.secondary)
+                            }
+                        )
+                        
+                        // Footer
+                        VStack(spacing: DesignSystem.Spacing.small) {
+                            Text(verbatim: "© \(Calendar.current.component(.year, from: Date())) BackupFlow")
+                                .font(DesignSystem.Typography.caption1)
+                                .foregroundColor(.secondary)
+                            
+                            Text("Tüm hakları saklıdır.")
+                                .font(DesignSystem.Typography.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.bottom, DesignSystem.Spacing.xLarge)
                     }
-                    .buttonStyle(PlainButtonStyle())
-                    .padding()
-                    .liquidCard(cornerRadius: 14)
+                    .padding(.horizontal, DesignSystem.Spacing.base)
+                    .padding(.vertical, DesignSystem.Spacing.base)
                 }
-                .padding()
-                
-                Spacer(minLength: 60) // Tab bar için minimum boşluk
-                
-                VStack(spacing: 8) {
-                    Text(verbatim: "© \(Calendar.current.component(.year, from: Date())) BackupFlow")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    Text("about.rights_reserved".localized)
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-                .padding(.bottom, 40) // Tab bar için extra padding
+                .navigationTitle("about.title".localized)
+                .navigationBarTitleDisplayMode(.large)
             }
-            .padding()
         }
-        .navigationTitle("about.title".localized)
-        .liquidBackground()
     }
     
     private func openSupportEmail() {
         let email = "tamersavasci@icloud.com"
-        let subject = "BackupFlow Support Request"
+        let subject = "BackupFlow Destek İsteği"
         let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
         let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
         let deviceModel = UIDevice.current.model
@@ -73,8 +143,8 @@ struct AboutView: View {
         
         
         ---
-        App Version: \(appVersion) (\(buildNumber))
-        Device: \(deviceModel)
+        Uygulama Sürümü: \(appVersion) (\(buildNumber))
+        Cihaz: \(deviceModel)
         iOS: \(iosVersion)
         """
         
@@ -91,33 +161,70 @@ struct AboutView: View {
             UIApplication.shared.open(url)
             print("📧 BackupFlow: Destek email'i açılıyor")
         } else {
-            // Mail app yoksa, email adresini clipboard'a kopyala
             UIPasteboard.general.string = email
             print("📋 BackupFlow: Email adresi kopyalandı: \(email)")
         }
     }
 }
 
-struct InfoRow: View {
-    let icon: String
+// MARK: - Section Card Component
+
+struct SectionCard<Content: View>: View {
     let title: String
-    let description: String
+    let icon: String
+    let content: Content
+    
+    init(
+        title: String,
+        icon: String,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.title = title
+        self.icon = icon
+        self.content = content()
+    }
     
     var body: some View {
-        HStack(alignment: .top, spacing: 16) {
-            Image(systemName: icon)
-                .frame(width: 24)
-                .foregroundColor(.blue)
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.headline)
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.medium) {
+            HStack(spacing: DesignSystem.Spacing.small) {
+                Image(systemName: icon)
+                    .foregroundColor(DesignSystem.Colors.primary)
+                    .font(.system(size: 18, weight: .semibold))
                 
-                Text(description)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                Text(title)
+                    .font(DesignSystem.Typography.headline)
+                
+                Spacer()
             }
+            
+            content
+        }
+        .padding(DesignSystem.Spacing.base)
+        .background(
+            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.large, style: .continuous)
+                .fill(Color.gray.opacity(0.05))
+        )
+    }
+}
+
+// MARK: - Feature Row Component
+
+struct FeatureRow: View {
+    let icon: String
+    let text: String
+    
+    var body: some View {
+        HStack(spacing: DesignSystem.Spacing.medium) {
+            Image(systemName: icon)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(DesignSystem.Colors.primary)
+                .frame(width: 24)
+            
+            Text(text)
+                .font(DesignSystem.Typography.body)
+                .foregroundColor(.primary)
+            
+            Spacer()
         }
     }
 }
