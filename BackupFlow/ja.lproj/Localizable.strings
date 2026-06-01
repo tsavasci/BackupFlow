@@ -581,3 +581,12 @@
 "backup.current_file.updating_file" = "更新中: %@";
 "backup.photo_backup_include_icloud" = "必要に応じてiCloud項目をダウンロード";
 "backup.photo_backup_include_icloud_hint" = "完全バックアップに推奨。オフにすると、端末に保存済みのメディアのみコピーされます。";
+"tasks.search_prompt" = "タスクを検索...";
+"tasks.summary" = "概要";
+"tasks.no_search_results" = "結果が見つかりません";
+"tasks.active" = "アクティブ";
+"tasks.scheduled_short" = "予定済み";
+"tasks.run_started" = "タスクを開始しました";
+"tasks.resumed_toast" = "タスクを再開しました";
+"tasks.paused_toast" = "タスクを一時停止しました";
+"tasks.source_not_set" = "未設定";

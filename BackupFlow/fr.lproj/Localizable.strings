@@ -583,3 +583,12 @@
 "backup.current_file.updating_file" = "Mise à jour en cours : %@";
 "backup.photo_backup_include_icloud" = "Télécharger les éléments iCloud si nécessaire";
 "backup.photo_backup_include_icloud_hint" = "Recommandé pour une sauvegarde complète. Si désactivé, seuls les éléments multimédias déjà stockés sur l’appareil seront copiés.";
+"tasks.search_prompt" = "Rechercher des tâches...";
+"tasks.summary" = "Résumé";
+"tasks.no_search_results" = "Aucun résultat trouvé";
+"tasks.active" = "Actif";
+"tasks.scheduled_short" = "Planifié";
+"tasks.run_started" = "Tâche démarrée";
+"tasks.resumed_toast" = "Tâche reprise";
+"tasks.paused_toast" = "Tâche en pause";
+"tasks.source_not_set" = "Non défini";

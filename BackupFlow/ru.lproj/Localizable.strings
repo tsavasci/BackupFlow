@@ -581,3 +581,12 @@
 "backup.current_file.updating_file" = "Обновляется: %@";
 "backup.photo_backup_include_icloud" = "Загружать элементы iCloud при необходимости";
 "backup.photo_backup_include_icloud_hint" = "Рекомендуется для полного резервного копирования. Если выключить, будут копироваться только медиафайлы, уже сохранённые на устройстве.";
+"tasks.search_prompt" = "Поиск задач...";
+"tasks.summary" = "Сводка";
+"tasks.no_search_results" = "Ничего не найдено";
+"tasks.active" = "Активно";
+"tasks.scheduled_short" = "Запланировано";
+"tasks.run_started" = "Задача запущена";
+"tasks.resumed_toast" = "Задача возобновлена";
+"tasks.paused_toast" = "Задача приостановлена";
+"tasks.source_not_set" = "Не задано";

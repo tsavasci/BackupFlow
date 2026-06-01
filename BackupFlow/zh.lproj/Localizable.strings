@@ -580,3 +580,12 @@
 "backup.current_file.updating_file" = "正在更新：%@";
 "backup.photo_backup_include_icloud" = "需要时下载 iCloud 项目";
 "backup.photo_backup_include_icloud_hint" = "建议用于完整备份。关闭后仅会复制已存储在设备上的媒体。";
+"tasks.search_prompt" = "搜索任务...";
+"tasks.summary" = "摘要";
+"tasks.no_search_results" = "未找到结果";
+"tasks.active" = "活跃";
+"tasks.scheduled_short" = "已计划";
+"tasks.run_started" = "任务已启动";
+"tasks.resumed_toast" = "任务已恢复";
+"tasks.paused_toast" = "任务已暂停";
+"tasks.source_not_set" = "未设置";

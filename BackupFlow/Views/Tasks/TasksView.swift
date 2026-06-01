@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import Combine
 
 private struct Brand {
     static let gradient = LinearGradient(colors: [
@@ -13,14 +14,28 @@ struct TasksView: View {
     @Query(sort: \BackupTask.createdAt, order: .reverse) private var tasks: [BackupTask]
     @State private var showingDeleteAlert = false
     @State private var taskToDelete: BackupTask?
+    @State private var selectedTask: BackupTask?
     @State private var searchText = ""
     @State private var actionToast: String? = nil
+    @State private var currentTime = Date()
+    
+    @Environment(\.horizontalSizeClass) private var hSizeClass
+    private var isWide: Bool { hSizeClass == .regular }
+    private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     
     private var filteredTasks: [BackupTask] {
         if searchText.isEmpty {
             return tasks
         }
         return tasks.filter { $0.displayName.localizedCaseInsensitiveContains(searchText) }
+    }
+
+    private var nextScheduledTask: BackupTask? {
+        tasks
+            .filter { $0.isEnabled && !$0.isPaused && $0.nextRunTime != nil }
+            .min { task1, task2 in
+                (task1.nextRunTime ?? .distantFuture) < (task2.nextRunTime ?? .distantFuture)
+            }
     }
     
     // MARK: - Main View
@@ -33,6 +48,7 @@ struct TasksView: View {
                 contentView
                     .navigationTitle("nav.tasks".localized)
                     .navigationBarTitleDisplayMode(.large)
+                    .searchable(text: $searchText, placement: .navigationBarDrawer, prompt: Text("tasks.search_prompt".localized))
                     .toolbar {
                         ToolbarItem(placement: .navigationBarTrailing) {
                             NavigationLink(destination: BackupView()) {
@@ -52,6 +68,13 @@ struct TasksView: View {
                     } message: {
                         Text("tasks.delete_message_full".localized)
                     }
+                    .sheet(item: $selectedTask) { task in
+                        NavigationView {
+                            TaskDetailView(task: task)
+                                .navigationTitle("task.details.title".localized)
+                                .navigationBarTitleDisplayMode(.inline)
+                        }
+                    }
                     .overlay(alignment: .bottom) {
                         if let msg = actionToast {
                             Text(msg)
@@ -61,13 +84,15 @@ struct TasksView: View {
                                 .background(.ultraThinMaterial, in: Capsule())
                                 .shadow(radius: 8)
                                 .padding(.bottom, 24)
-                                .transition(.move(edge: .bottom).combined(with: .opacity))
                                 .onAppear {
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                                        withAnimation(.easeInOut) { actionToast = nil }
+                                        actionToast = nil
                                     }
                                 }
                         }
+                    }
+                    .onReceive(timer) { time in
+                        currentTime = time
                     }
             }
         }
@@ -92,7 +117,7 @@ struct TasksView: View {
                 ModernEmptyState(
                     icon: "plus.circle.dashed",
                     title: "tasks.no_tasks".localized,
-                    description: "Yeni bir yedekleme görevi oluşturmaya başlamak için + düğmesine tıklayın",
+                    description: "tasks.create_first_task".localized,
                     action: nil,
                     actionLabel: nil
                 )
@@ -105,66 +130,103 @@ struct TasksView: View {
     private var taskListView: some View {
         ScrollView {
             VStack(spacing: DesignSystem.Spacing.large) {
-                // Search and Filter
-                HStack(spacing: DesignSystem.Spacing.small) {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundStyle(Brand.gradient)
-                    
-                    TextField("Görev ara...", text: $searchText)
-                        .font(DesignSystem.Typography.body)
-                    
-                    if !searchText.isEmpty {
-                        Button(action: { searchText = "" }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                }
-                .padding(.horizontal, DesignSystem.Spacing.base)
-                .padding(.vertical, DesignSystem.Spacing.medium)
-                .background(
-                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium, style: .continuous)
-                        .fill(Color.gray.opacity(0.05))
-                )
-                .padding(.horizontal, DesignSystem.Spacing.base)
-                
                 // Quick Stats
                 if !filteredTasks.isEmpty {
-                    gradientSectionHeader(title: "Özet", systemImage: "chart.bar.fill")
+                    gradientSectionHeader(title: "tasks.summary".localized, systemImage: "chart.bar.fill")
                     quickStatsView
+                    nextScheduledTaskView
+                    RoundedRectangle(cornerRadius: 1)
+                        .fill(Brand.gradient.opacity(0.7))
+                        .frame(height: 2)
+                        .padding(.horizontal, DesignSystem.Spacing.base)
                 }
                 
                 // Task Items
                 if !filteredTasks.isEmpty {
-                    gradientSectionHeader(title: "Görevler", systemImage: "list.bullet.rectangle")
+                    gradientSectionHeader(title: "nav.tasks".localized, systemImage: "list.bullet.rectangle")
                 }
-                LazyVStack(spacing: DesignSystem.Spacing.medium) {
-                    ForEach(filteredTasks) { task in
-                        NavigationLink(destination: BackupView()) {
+                if !searchText.isEmpty && filteredTasks.isEmpty {
+                    VStack(spacing: 8) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.largeTitle)
+                            .foregroundStyle(.secondary)
+                        Text("tasks.no_search_results".localized)
+                            .font(DesignSystem.Typography.body)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, DesignSystem.Spacing.large)
+                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium, style: .continuous))
+                    .padding(.horizontal, DesignSystem.Spacing.base)
+                }
+                
+                if isWide {
+                    let columns = [GridItem(.flexible(), spacing: DesignSystem.Spacing.medium), GridItem(.flexible(), spacing: DesignSystem.Spacing.medium)]
+                    LazyVGrid(columns: columns, spacing: DesignSystem.Spacing.medium) {
+                        ForEach(filteredTasks) { task in
                             TaskItemCard(
                                 task: task,
                                 onDelete: { selected in
                                     taskToDelete = selected
                                     showingDeleteAlert = true
+                                },
+                                onTogglePause: { selected in
+                                    togglePause(for: selected)
                                 }
                             )
-                        }
-                        .contextMenu {
-                            Button("Şimdi çalıştır", systemImage: "play.fill") {
-                                runNow(task)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                selectedTask = task
                             }
-                            Button("İptal et", systemImage: "xmark.circle") {
-                                cancelTaskRun(task)
+                            .contextMenu {
+                                Button("backup.notification.action.start".localized, systemImage: "play.fill") {
+                                    runNow(task)
+                                }
+                                if task.frequency != .manual {
+                                    Button(task.isPaused ? "task.resume.button".localized : "task.pause.button".localized, systemImage: task.isPaused ? "play.circle" : "pause.circle") {
+                                        togglePause(for: task)
+                                    }
+                                }
                             }
                         }
                     }
+                    .padding(.horizontal, DesignSystem.Spacing.base)
+                    .padding(.bottom, DesignSystem.Spacing.large)
+                } else {
+                    LazyVStack(spacing: DesignSystem.Spacing.medium) {
+                        ForEach(filteredTasks) { task in
+                            TaskItemCard(
+                                task: task,
+                                onDelete: { selected in
+                                    taskToDelete = selected
+                                    showingDeleteAlert = true
+                                },
+                                onTogglePause: { selected in
+                                    togglePause(for: selected)
+                                }
+                            )
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                selectedTask = task
+                            }
+                            .contextMenu {
+                                Button("backup.notification.action.start".localized, systemImage: "play.fill") {
+                                    runNow(task)
+                                }
+                                if task.frequency != .manual {
+                                    Button(task.isPaused ? "task.resume.button".localized : "task.pause.button".localized, systemImage: task.isPaused ? "play.circle" : "pause.circle") {
+                                        togglePause(for: task)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .padding(.horizontal, DesignSystem.Spacing.base)
+                    .padding(.bottom, DesignSystem.Spacing.large)
                 }
-                .padding(.horizontal, DesignSystem.Spacing.base)
-                .padding(.bottom, DesignSystem.Spacing.large)
             }
             .padding(.vertical, DesignSystem.Spacing.base)
         }
-        .animation(.easeInOut(duration: 0.3), value: filteredTasks)
     }
     
     private var quickStatsView: some View {
@@ -173,38 +235,98 @@ struct TasksView: View {
         
         return HStack(spacing: DesignSystem.Spacing.medium) {
             StatCard(
-                label: "Aktif",
+                label: "tasks.active".localized,
                 value: "\(enabledCount)",
                 icon: "play.circle.fill",
                 style: .success
             )
             
             StatCard(
-                label: "Duraklatılmış",
+                label: "task.status.paused".localized,
                 value: "\(pausedCount)",
                 icon: "pause.circle.fill",
                 style: pausedCount > 0 ? .warning : .primary
             )
         }
         .padding(.horizontal, DesignSystem.Spacing.base)
+        .symbolRenderingMode(.hierarchical)
+        .foregroundStyle(Brand.gradient)
+    }
+
+    @ViewBuilder
+    private var nextScheduledTaskView: some View {
+        if let task = nextScheduledTask, let nextRun = task.nextRunTime {
+            ModernCard(
+                cornerRadius: DesignSystem.CornerRadius.medium,
+                padding: DesignSystem.Spacing.base
+            ) {
+                HStack(spacing: DesignSystem.Spacing.medium) {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(Brand.gradient)
+                        .frame(width: 32, height: 32)
+                        .background(Color.orange.opacity(0.1))
+                        .clipShape(Circle())
+
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.extraSmall) {
+                        Text("dashboard.next_task".localized)
+                            .font(DesignSystem.Typography.caption2)
+                            .foregroundColor(.secondary)
+
+                        Text(task.displayName)
+                            .font(DesignSystem.Typography.subheadline)
+                            .lineLimit(1)
+                    }
+
+                    Spacer()
+
+                    Text(timeUntilNextTask(nextRun, currentTime: currentTime))
+                        .font(DesignSystem.Typography.callout)
+                        .foregroundColor(nextRun.timeIntervalSince(currentTime) < -30 ? .orange : DesignSystem.Colors.primary)
+                        .monospacedDigit()
+                }
+            }
+            .padding(.horizontal, DesignSystem.Spacing.base)
+        }
     }
     
     // MARK: - Helper Methods
     private func runNow(_ task: BackupTask) {
-        withAnimation {
-            task.isEnabled = true
-            task.isPaused = false
-            try? modelContext.save()
-            actionToast = "Görev başlatıldı"
-        }
+        task.isEnabled = true
+        task.isPaused = false
+        try? modelContext.save()
+        actionToast = "tasks.run_started".localized
     }
     
-    private func cancelTaskRun(_ task: BackupTask) {
-        withAnimation {
-            task.isPaused = true
-            try? modelContext.save()
-            actionToast = "Görev iptal edildi"
+    private func togglePause(for task: BackupTask) {
+        if task.isPaused {
+            BackupScheduler.shared.resumeTask(task)
+            actionToast = "tasks.resumed_toast".localized
+        } else {
+            BackupScheduler.shared.pauseTask(task)
+            actionToast = "tasks.paused_toast".localized
         }
+
+        try? modelContext.save()
+    }
+
+    private func timeUntilNextTask(_ nextRun: Date, currentTime: Date) -> String {
+        let timeInterval = nextRun.timeIntervalSince(currentTime)
+
+        if timeInterval < -30 {
+            return "dashboard.overdue".localized
+        }
+
+        let totalSeconds = Int(max(0, timeInterval))
+        let hours = totalSeconds / 3600
+        let minutes = (totalSeconds % 3600) / 60
+        let seconds = totalSeconds % 60
+
+        if hours >= 1 {
+            return String(format: "%02d:%02d", hours, minutes)
+        }
+
+        return String(format: "%02d:%02d", minutes, seconds)
     }
     
     private func deleteButton(for task: BackupTask) -> some View {
@@ -217,10 +339,8 @@ struct TasksView: View {
     }
     
     private func deleteTask(_ task: BackupTask) {
-        withAnimation {
-            modelContext.delete(task)
-            try? modelContext.save()
-        }
+        modelContext.delete(task)
+        try? modelContext.save()
     }
 }
 
@@ -229,6 +349,29 @@ struct TasksView: View {
 struct TaskItemCard: View {
     let task: BackupTask
     let onDelete: (BackupTask) -> Void
+    let onTogglePause: (BackupTask) -> Void
+
+    private var showsProgress: Bool {
+        task.backupStatus != .idle &&
+        task.backupStatus != .completed &&
+        task.backupStatus != .failed &&
+        task.backupStatus != .cancelled
+    }
+
+    private var currentFileDisplayName: String? {
+        guard let currentFile = task.currentFile?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !currentFile.isEmpty,
+              currentFile != "/" else {
+            return nil
+        }
+
+        let fileName = URL(fileURLWithPath: currentFile).lastPathComponent
+        if !fileName.isEmpty && fileName != "/" {
+            return fileName
+        }
+
+        return currentFile.contains("/") ? nil : currentFile
+    }
     
     var body: some View {
         ModernCard(
@@ -243,7 +386,7 @@ struct TaskItemCard: View {
                             .font(DesignSystem.Typography.headline)
                             .lineLimit(1)
                         
-                        Text((task.sourcePath as NSString?)?.abbreviatingWithTildeInPath ?? "Not set")
+                        Text((task.sourcePath as NSString?)?.abbreviatingWithTildeInPath ?? "tasks.source_not_set".localized)
                             .font(DesignSystem.Typography.caption2)
                             .foregroundColor(.secondary)
                             .lineLimit(1)
@@ -253,30 +396,33 @@ struct TaskItemCard: View {
                     
                     if task.isEnabled {
                         StatusBadge(
-                            text: task.isPaused ? "Duraklatılmış" : "Aktif",
+                            text: task.isPaused ? "task.status.paused".localized : "tasks.active".localized,
                             style: task.isPaused ? .warning : .success
                         )
                     } else {
                         StatusBadge(
-                            text: "Devre Dışı",
+                            text: "tasks.disabled".localized,
                             style: .info
                         )
                     }
                 }
                 
-                Divider()
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(Brand.gradient.opacity(0.8))
+                    .frame(height: 2)
+                    .opacity(0.9)
                     .padding(.vertical, DesignSystem.Spacing.extraSmall)
                 
                 // Task Details
                 HStack(spacing: DesignSystem.Spacing.large) {
                     TaskDetailItem(
                         icon: "network",
-                        label: task.backupType == .ftp ? "FTP" : task.backupType == .webdav ? "WebDAV" : "SFTP"
+                        label: task.backupType.displayName
                     )
                     
                     TaskDetailItem(
                         icon: "timer",
-                        label: task.frequency == .manual ? "Manuel" : "Planlı"
+                        label: task.frequency == .manual ? "task.details.manual".localized : "tasks.scheduled_short".localized
                     )
                     
                     TaskDetailItem(
@@ -288,6 +434,18 @@ struct TaskItemCard: View {
                     
                     // Quick Actions
                     HStack(spacing: DesignSystem.Spacing.small) {
+                        if task.frequency != .manual {
+                            Button(action: { onTogglePause(task) }) {
+                                Image(systemName: task.isPaused ? "play.fill" : "pause.fill")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(task.isPaused ? .green : .orange)
+                                    .frame(width: 32, height: 32)
+                                    .background((task.isPaused ? Color.green : Color.orange).opacity(0.1))
+                                    .clipShape(Circle())
+                            }
+                            .buttonStyle(.plain)
+                        }
+
                         Button(action: { onDelete(task) }) {
                             Image(systemName: "trash.fill")
                                 .font(.system(size: 14, weight: .semibold))
@@ -295,6 +453,34 @@ struct TaskItemCard: View {
                                 .frame(width: 32, height: 32)
                                 .background(Color.red.opacity(0.1))
                                 .clipShape(Circle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+                if showsProgress {
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.small) {
+                        HStack(spacing: DesignSystem.Spacing.small) {
+                            Text(task.backupStatus.displayName)
+                                .font(DesignSystem.Typography.caption1)
+                                .foregroundColor(task.backupStatus.color)
+
+                            Spacer()
+
+                            Text("%\(Int(task.progress * 100))")
+                                .font(DesignSystem.Typography.caption1.weight(.semibold))
+                                .foregroundColor(task.backupStatus.color)
+                        }
+
+                        ProgressView(value: task.progress)
+                            .progressViewStyle(.linear)
+                            .tint(task.backupStatus.color)
+
+                        if let currentFileDisplayName {
+                            Text(currentFileDisplayName)
+                                .font(DesignSystem.Typography.caption2)
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
                         }
                     }
                 }
@@ -334,4 +520,3 @@ struct TaskDetailItem: View {
             .modelContainer(for: [BackupTask.self, BackupHistory.self], inMemory: true)
     }
 }
-

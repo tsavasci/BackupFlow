@@ -583,3 +583,12 @@
 "backup.current_file.updating_file" = "업데이트 중: %@";
 "backup.photo_backup_include_icloud" = "필요한 경우 iCloud 항목 다운로드";
 "backup.photo_backup_include_icloud_hint" = "전체 백업에 권장됩니다. 끄면 기기에 이미 저장된 미디어만 복사됩니다.";
+"tasks.search_prompt" = "작업 검색...";
+"tasks.summary" = "요약";
+"tasks.no_search_results" = "결과를 찾을 수 없음";
+"tasks.active" = "활성";
+"tasks.scheduled_short" = "예약됨";
+"tasks.run_started" = "작업 시작됨";
+"tasks.resumed_toast" = "작업 재개됨";
+"tasks.paused_toast" = "작업 일시 중지됨";
+"tasks.source_not_set" = "설정되지 않음";

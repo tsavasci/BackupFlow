@@ -581,3 +581,12 @@
 "backup.current_file.updating_file" = "अपडेट हो रहा है: %@";
 "backup.photo_backup_include_icloud" = "आवश्यक होने पर iCloud आइटम डाउनलोड करें";
 "backup.photo_backup_include_icloud_hint" = "पूर्ण बैकअप के लिए अनुशंसित। इसे बंद करने पर केवल डिवाइस में पहले से संग्रहीत मीडिया कॉपी होगा।";
+"tasks.search_prompt" = "कार्य खोजें...";
+"tasks.summary" = "सारांश";
+"tasks.no_search_results" = "कोई परिणाम नहीं मिला";
+"tasks.active" = "सक्रिय";
+"tasks.scheduled_short" = "निर्धारित";
+"tasks.run_started" = "कार्य शुरू हुआ";
+"tasks.resumed_toast" = "कार्य फिर शुरू हुआ";
+"tasks.paused_toast" = "कार्य रोका गया";
+"tasks.source_not_set" = "सेट नहीं है";

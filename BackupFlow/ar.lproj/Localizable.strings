@@ -581,3 +581,12 @@
 "backup.current_file.updating_file" = "جارٍ التحديث: %@";
 "backup.photo_backup_include_icloud" = "تنزيل عناصر iCloud عند الحاجة";
 "backup.photo_backup_include_icloud_hint" = "موصى به للنسخ الاحتياطي الكامل. عند إيقافه، سيتم نسخ الوسائط المخزنة على الجهاز فقط.";
+"tasks.search_prompt" = "ابحث في المهام...";
+"tasks.summary" = "الملخص";
+"tasks.no_search_results" = "لم يتم العثور على نتائج";
+"tasks.active" = "نشط";
+"tasks.scheduled_short" = "مجدولة";
+"tasks.run_started" = "تم بدء المهمة";
+"tasks.resumed_toast" = "تم استئناف المهمة";
+"tasks.paused_toast" = "تم إيقاف المهمة مؤقتاً";
+"tasks.source_not_set" = "غير محدد";

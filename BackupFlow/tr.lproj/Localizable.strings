@@ -558,3 +558,12 @@
 "backup.current_file.updating_file" = "Güncelleniyor: %@";
 "backup.photo_backup_include_icloud" = "Gerekirse iCloud öğelerini indir";
 "backup.photo_backup_include_icloud_hint" = "Tam yedekleme için önerilir. Bunu kapatırsanız yalnızca cihazda bulunan medyalar kopyalanır.";
+"tasks.search_prompt" = "Görev ara...";
+"tasks.summary" = "Özet";
+"tasks.no_search_results" = "Sonuç bulunamadı";
+"tasks.active" = "Aktif";
+"tasks.scheduled_short" = "Planlı";
+"tasks.run_started" = "Görev başlatıldı";
+"tasks.resumed_toast" = "Görev devam ettirildi";
+"tasks.paused_toast" = "Görev duraklatıldı";
+"tasks.source_not_set" = "Ayarlanmadı";
