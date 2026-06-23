@@ -7,7 +7,7 @@ struct SFTPSyncEngine {
     let prefetchRemoteFiles: (String) async throws -> [String: Int64]
     let createDirectory: (String) async throws -> Void
     let deleteFile: (String) async throws -> Void
-    let uploadFile: (URL, String, Int64, Bool) async throws -> Bool
+    let uploadFile: (URL, String, Int64, Bool, ((Double) -> Void)?) async throws -> Bool
     let beginTransferBackgroundTask: (() -> Void)?
     let endTransferBackgroundTask: (() -> Void)?
     let isCancelled: (() -> Bool)?
@@ -64,7 +64,11 @@ struct SFTPSyncEngine {
                 checkpoint.insert(relativePath)
                 await markCheckpoint?(relativePath)
             } else if remoteFileMap[relativePath] != nil {
-                let didUpload = try await uploadFile(localFileURL, targetPath, localSize, true)
+                let didUpload = try await uploadFile(localFileURL, targetPath, localSize, true) { fileProgress in
+                    let fileShare = 0.8 / Double(max(totalFiles, 1))
+                    let overallProgress = (Double(index) / Double(max(totalFiles, 1)) * 0.8) + (fileProgress * fileShare)
+                    progressHandler?(min(max(overallProgress, 0.0), 0.8))
+                }
                 if didUpload {
                     result.updatedFiles += 1
                     result.totalBytes += localSize
@@ -76,7 +80,11 @@ struct SFTPSyncEngine {
                     result.totalBytes += localSize
                 }
             } else {
-                let didUpload = try await uploadFile(localFileURL, targetPath, localSize, true)
+                let didUpload = try await uploadFile(localFileURL, targetPath, localSize, true) { fileProgress in
+                    let fileShare = 0.8 / Double(max(totalFiles, 1))
+                    let overallProgress = (Double(index) / Double(max(totalFiles, 1)) * 0.8) + (fileProgress * fileShare)
+                    progressHandler?(min(max(overallProgress, 0.0), 0.8))
+                }
                 if didUpload {
                     result.newFiles += 1
                     result.totalBytes += localSize
@@ -177,7 +185,11 @@ struct SFTPSyncEngine {
                 checkpoint.insert(fileName)
                 await markCheckpoint?(fileName)
             } else if existingFileMap[fileName] != nil {
-                let didUpload = try await uploadFile(tempURL, remotePath, localSize, true)
+                let didUpload = try await uploadFile(tempURL, remotePath, localSize, true) { fileProgress in
+                    let assetShare = 1.0 / Double(max(totalCount, 1))
+                    let overallProgress = (Double(index) / Double(max(totalCount, 1))) + (fileProgress * assetShare)
+                    progressHandler?(min(max(overallProgress, 0.0), 1.0))
+                }
                 if didUpload {
                     result.updatedFiles += 1
                     result.totalBytes += localSize
@@ -188,7 +200,11 @@ struct SFTPSyncEngine {
                     result.totalBytes += localSize
                 }
             } else {
-                let didUpload = try await uploadFile(tempURL, remotePath, localSize, true)
+                let didUpload = try await uploadFile(tempURL, remotePath, localSize, true) { fileProgress in
+                    let assetShare = 1.0 / Double(max(totalCount, 1))
+                    let overallProgress = (Double(index) / Double(max(totalCount, 1))) + (fileProgress * assetShare)
+                    progressHandler?(min(max(overallProgress, 0.0), 1.0))
+                }
                 if didUpload {
                     result.newFiles += 1
                     result.totalBytes += localSize

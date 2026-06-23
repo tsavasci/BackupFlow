@@ -608,6 +608,7 @@
 "dashboard.no_saved_servers" = "保存済みサーバーはありません";
 "dashboard.used_date" = "使用: %@";
 "dashboard.action.sync" = "同期";
+"dashboard.action.pause" = "一時停止";
 "dashboard.action.files" = "ファイル";
 "dashboard.storage_overview" = "ストレージ概要";
 "dashboard.used" = "使用中";

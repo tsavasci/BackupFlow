@@ -610,6 +610,7 @@
 "dashboard.no_saved_servers" = "저장된 서버 없음";
 "dashboard.used_date" = "사용: %@";
 "dashboard.action.sync" = "동기화";
+"dashboard.action.pause" = "일시 정지";
 "dashboard.action.files" = "파일";
 "dashboard.storage_overview" = "저장 공간 개요";
 "dashboard.used" = "사용됨";

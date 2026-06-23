@@ -608,6 +608,7 @@
 "dashboard.no_saved_servers" = "Нет сохраненных серверов";
 "dashboard.used_date" = "Использовано: %@";
 "dashboard.action.sync" = "Синхр.";
+"dashboard.action.pause" = "Пауза";
 "dashboard.action.files" = "Файлы";
 "dashboard.storage_overview" = "Обзор хранилища";
 "dashboard.used" = "Использовано";

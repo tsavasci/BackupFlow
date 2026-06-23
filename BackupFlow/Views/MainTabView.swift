@@ -69,6 +69,10 @@ struct MainTabView: View {
         activeTask != nil ? 100 : max(history.first?.totalFiles ?? tasks.count, 1)
     }
 
+    private var dashboardTheme: DashboardTheme {
+        DashboardTheme.theme(for: activeTask?.backupType)
+    }
+
     var body: some View {
         ZStack {
             LinearGradient(
@@ -82,13 +86,13 @@ struct MainTabView: View {
             .ignoresSafeArea()
 
             RoundedRectangle(cornerRadius: 40)
-                .fill(Color.blue.opacity(0.03))
+                .fill(dashboardTheme.primary.opacity(0.03))
                 .blur(radius: 40)
                 .frame(width: 260, height: 260)
                 .offset(x: -110, y: -300)
 
             RoundedRectangle(cornerRadius: 40)
-                .fill(Color.purple.opacity(0.04))
+                .fill(dashboardTheme.secondary.opacity(0.04))
                 .blur(radius: 50)
                 .frame(width: 220, height: 220)
                 .offset(x: 130, y: -140)
@@ -189,10 +193,14 @@ struct MainTabView: View {
                 Spacer()
                 Text("\(Int(min(max(backupProgress, 0), 1) * 100))%")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(dashboardTheme.primary)
             }
 
-            AnimatedDashboardProgressBar(progress: backupProgress, reduceMotion: reduceMotion)
+            AnimatedDashboardProgressBar(
+                progress: backupProgress,
+                theme: dashboardTheme,
+                reduceMotion: reduceMotion
+            )
 
             Text(backupMessage)
                 .font(.footnote)
@@ -213,6 +221,7 @@ struct MainTabView: View {
         VStack(alignment: .leading, spacing: 6) {
             MiniTransferProgressBar(
                 progress: task.currentFileProgress > 0 ? task.currentFileProgress : nil,
+                theme: DashboardTheme.theme(for: task.backupType),
                 reduceMotion: reduceMotion
             )
 
@@ -240,8 +249,8 @@ struct MainTabView: View {
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color(red: 0.18, green: 0.30, blue: 0.98),
-                            Color(red: 0.52, green: 0.31, blue: 0.98),
+                            dashboardTheme.primary,
+                            dashboardTheme.secondary,
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -319,7 +328,7 @@ struct MainTabView: View {
                     showBackupSheet = true
                 }
                 .font(.subheadline)
-                .foregroundStyle(.blue)
+                .foregroundStyle(dashboardTheme.primary)
             }
 
             if tasks.isEmpty {
@@ -330,6 +339,7 @@ struct MainTabView: View {
             } else {
                 VStack(spacing: 8) {
                     ForEach(tasks.prefix(5)) { task in
+                        let taskTheme = DashboardTheme.theme(for: task.backupType)
                         HStack(alignment: .top, spacing: 12) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(task.displayName)
@@ -353,7 +363,7 @@ struct MainTabView: View {
                                 } label: {
                                     Image(systemName: "square.and.pencil")
                                         .font(.caption2)
-                                        .foregroundStyle(.blue)
+                                        .foregroundStyle(taskTheme.primary)
                                 }
                                 .buttonStyle(.plain)
 
@@ -371,8 +381,45 @@ struct MainTabView: View {
                         .padding(12)
                         .background(
                             RoundedRectangle(cornerRadius: 12)
-                                .fill(task.id == tasks.first?.id ? Color.blue.opacity(0.1) : Color(.systemGray6))
+                                .fill(
+                                    LinearGradient(
+                                        colors: [
+                                            taskTheme.primary.opacity(task.id == activeTask?.id ? 0.34 : 0.24),
+                                            taskTheme.secondary.opacity(task.id == activeTask?.id ? 0.26 : 0.18),
+                                            Color(.systemBackground).opacity(0.38)
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
                         )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(
+                                    LinearGradient(
+                                        colors: [
+                                            taskTheme.primary.opacity(task.id == activeTask?.id ? 0.62 : 0.38),
+                                            taskTheme.secondary.opacity(task.id == activeTask?.id ? 0.48 : 0.28)
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    lineWidth: task.id == activeTask?.id ? 1.2 : 0.8
+                                )
+                        )
+                        .contextMenu {
+                            Button {
+                                startTaskNow(task)
+                            } label: {
+                                Label("backup.notification.action.start".localized, systemImage: "play.fill")
+                            }
+
+                            Button {
+                                pauseOrCancelTask(task)
+                            } label: {
+                                Label("dashboard.action.pause".localized, systemImage: "pause.fill")
+                            }
+                        }
                     }
                 }
             }
@@ -381,16 +428,16 @@ struct MainTabView: View {
 
     private var quickActions: some View {
         HStack(spacing: 12) {
-            DashboardActionButton(icon: "arrow.triangle.2.circlepath", title: "dashboard.action.sync".localized) {
+            DashboardActionButton(icon: "arrow.triangle.2.circlepath", title: "dashboard.action.sync".localized, theme: dashboardTheme) {
                 showBackupSheet = true
             }
-            DashboardActionButton(icon: "clock.arrow.circlepath", title: "nav.history".localized) {
+            DashboardActionButton(icon: "clock.arrow.circlepath", title: "nav.history".localized, theme: dashboardTheme) {
                 showHistory = true
             }
-            DashboardActionButton(icon: "folder.badge.plus", title: "dashboard.action.files".localized) {
+            DashboardActionButton(icon: "folder.badge.plus", title: "dashboard.action.files".localized, theme: dashboardTheme) {
                 showBackupSheet = true
             }
-            DashboardActionButton(icon: "plus.circle.fill", title: "dashboard.add".localized) {
+            DashboardActionButton(icon: "plus.circle.fill", title: "dashboard.add".localized, theme: dashboardTheme) {
                 showBackupSheet = true
             }
         }
@@ -407,14 +454,14 @@ struct MainTabView: View {
                     title: "dashboard.used".localized,
                     value: transferredSizeText,
                     subtitle: "dashboard.of_value".localized(with: totalSizeText),
-                    color: .blue,
+                    color: dashboardTheme.primary,
                     progress: latestHistoryProgress
                 )
                 infoCard(
                     title: "dashboard.files".localized,
                     value: "\(currentBackupCount)/\(max(totalBackupCount, 1))",
                     subtitle: tasks.isEmpty ? "dashboard.items_ready".localized : "dashboard.selected".localized,
-                    color: .purple,
+                    color: dashboardTheme.secondary,
                     progress: Double(currentBackupCount) / Double(max(totalBackupCount, 1))
                 )
             }
@@ -432,7 +479,7 @@ struct MainTabView: View {
                     showHistory = true
                 }
                 .font(.subheadline)
-                .foregroundStyle(.blue)
+                .foregroundStyle(dashboardTheme.primary)
             }
 
             VStack(spacing: 12) {
@@ -440,10 +487,10 @@ struct MainTabView: View {
                     HStack(spacing: 12) {
                         ZStack {
                             RoundedRectangle(cornerRadius: 14)
-                                .fill(Color.blue.opacity(0.1))
+                                .fill(dashboardTheme.primary.opacity(0.1))
                                 .frame(width: 48, height: 48)
                             Image(systemName: "clock.arrow.circlepath")
-                                .foregroundStyle(.blue)
+                                .foregroundStyle(dashboardTheme.primary)
                         }
 
                         VStack(alignment: .leading, spacing: 4) {
@@ -466,10 +513,10 @@ struct MainTabView: View {
                         HStack(spacing: 12) {
                             ZStack {
                                 RoundedRectangle(cornerRadius: 14)
-                                    .fill(Color.blue.opacity(0.1))
+                                    .fill(dashboardTheme.primary.opacity(0.1))
                                     .frame(width: 48, height: 48)
                                 Image(systemName: record.status == "failed" ? "exclamationmark.triangle.fill" : "checkmark.seal.fill")
-                                    .foregroundStyle(record.status == "failed" ? .red : .blue)
+                                    .foregroundStyle(record.status == "failed" ? .red : dashboardTheme.primary)
                             }
 
                             VStack(alignment: .leading, spacing: 4) {
@@ -499,7 +546,7 @@ struct MainTabView: View {
     }
 
     private var statusDotColor: Color {
-        isBackingUp ? .orange : .green
+        isBackingUp ? dashboardTheme.primary : .green
     }
 
     private var lastSyncText: String {
@@ -557,6 +604,29 @@ struct MainTabView: View {
         modelContext.delete(task)
         try? modelContext.save()
         taskToDelete = nil
+    }
+
+    private func isTaskRunning(_ task: BackupTask) -> Bool {
+        task.backupStatus == .preparing ||
+        task.backupStatus == .scanning ||
+        task.backupStatus == .uploading
+    }
+
+    private func startTaskNow(_ task: BackupTask) {
+        if task.isPaused {
+            BackupScheduler.shared.resumeTask(task)
+        }
+        Task {
+            try? await BackupScheduler.shared.performBackup(task: task, bypassThrottle: true)
+        }
+    }
+
+    private func pauseOrCancelTask(_ task: BackupTask) {
+        if isTaskRunning(task) {
+            BackupScheduler.shared.cancelCurrentTask(for: task)
+        } else {
+            BackupScheduler.shared.pauseTask(task)
+        }
     }
 
     private func currentFileDisplayName(for task: BackupTask) -> String {
@@ -631,9 +701,41 @@ struct MainTabView: View {
     }
 }
 
+private struct DashboardTheme {
+    let primary: Color
+    let secondary: Color
+
+    static let webDAV = DashboardTheme(
+        primary: Color(red: 0.18, green: 0.30, blue: 0.98),
+        secondary: Color(red: 0.52, green: 0.31, blue: 0.98)
+    )
+
+    static let ftp = DashboardTheme(
+        primary: Color(red: 0.95, green: 0.42, blue: 0.10),
+        secondary: Color(red: 1.00, green: 0.66, blue: 0.20)
+    )
+
+    static let sftp = DashboardTheme(
+        primary: Color(red: 0.05, green: 0.58, blue: 0.34),
+        secondary: Color(red: 0.18, green: 0.74, blue: 0.45)
+    )
+
+    static func theme(for backupType: BackupType?) -> DashboardTheme {
+        switch backupType {
+        case .ftp:
+            return .ftp
+        case .sftp:
+            return .sftp
+        case .webdav, .none:
+            return .webDAV
+        }
+    }
+}
+
 private struct DashboardActionButton: View {
     let icon: String
     let title: String
+    let theme: DashboardTheme
     let action: () -> Void
 
     var body: some View {
@@ -644,7 +746,7 @@ private struct DashboardActionButton: View {
                     .frame(width: 52, height: 52)
                     .background(
                         LinearGradient(
-                            colors: [Color.blue.opacity(0.15), Color.purple.opacity(0.12)],
+                            colors: [theme.primary.opacity(0.15), theme.secondary.opacity(0.12)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -663,6 +765,7 @@ private struct DashboardActionButton: View {
 
 private struct AnimatedDashboardProgressBar: View {
     let progress: Double
+    let theme: DashboardTheme
     let reduceMotion: Bool
     @State private var phase: CGFloat = -1
 
@@ -676,17 +779,17 @@ private struct AnimatedDashboardProgressBar: View {
 
             ZStack(alignment: .leading) {
                 RoundedRectangle(cornerRadius: 999)
-                    .fill(Color.blue.opacity(0.1))
+                    .fill(theme.primary.opacity(0.1))
                     .frame(height: 8)
 
                 if progressWidth > 0 {
                     ZStack {
                         LinearGradient(
                             colors: [
-                                .blue,
-                                .purple,
-                                .blue,
-                                .purple
+                                theme.primary,
+                                theme.secondary,
+                                theme.primary,
+                                theme.secondary
                             ],
                             startPoint: .leading,
                             endPoint: .trailing
@@ -723,6 +826,7 @@ private struct AnimatedDashboardProgressBar: View {
 
 private struct MiniTransferProgressBar: View {
     let progress: Double?
+    let theme: DashboardTheme
     let reduceMotion: Bool
     @State private var phase: CGFloat = -1
 
@@ -735,14 +839,14 @@ private struct MiniTransferProgressBar: View {
         GeometryReader { geometry in
             ZStack(alignment: .leading) {
                 Capsule()
-                    .fill(Color.blue.opacity(0.08))
+                    .fill(theme.primary.opacity(0.08))
                     .frame(height: 4)
 
                 if let clampedProgress {
                     Capsule()
                         .fill(
                             LinearGradient(
-                                colors: [.blue, .purple],
+                                colors: [theme.primary, theme.secondary],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
@@ -753,7 +857,7 @@ private struct MiniTransferProgressBar: View {
                     Capsule()
                         .fill(
                             LinearGradient(
-                                colors: [.blue.opacity(0.25), .purple, .blue.opacity(0.25)],
+                                colors: [theme.primary.opacity(0.25), theme.secondary, theme.primary.opacity(0.25)],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )

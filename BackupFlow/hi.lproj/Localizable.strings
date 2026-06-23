@@ -608,6 +608,7 @@
 "dashboard.no_saved_servers" = "कोई सहेजा सर्वर नहीं";
 "dashboard.used_date" = "उपयोग: %@";
 "dashboard.action.sync" = "सिंक";
+"dashboard.action.pause" = "रोकें";
 "dashboard.action.files" = "फ़ाइलें";
 "dashboard.storage_overview" = "स्टोरेज अवलोकन";
 "dashboard.used" = "उपयोग";

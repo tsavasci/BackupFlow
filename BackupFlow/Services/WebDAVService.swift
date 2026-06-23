@@ -53,6 +53,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
     private var currentCredential: URLCredential?
     private var backgroundURLSession: URLSession?
     private var backgroundURLSessionCompletionHandler: (() -> Void)?
+    private var currentUploadTask: URLSessionTask?
     private lazy var backgroundSessionDelegate = WebDAVBackgroundSessionDelegate(
         logger: logger,
         allowSelfSigned: self.allowSelfSignedCertificates,
@@ -649,6 +650,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
 
             session = URLSession(configuration: configuration, delegate: delegate, delegateQueue: nil)
             let task = session?.uploadTask(with: request, fromFile: localURL)
+            self.currentUploadTask = task
             task?.resume()
         }
     }
@@ -671,6 +673,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
 
         // Enqueue background upload task from file (no in-memory buffering)
         let task = session.uploadTask(with: request, fromFile: localURL)
+        self.currentUploadTask = task
         
         if let activeIdString = UserDefaults.standard.string(forKey: "ActiveBackupTaskId") {
             struct _Meta: Codable { let taskId: String; let remotePath: String; let localFileName: String; let enqueuedAt: Date }
@@ -688,6 +691,15 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
 
         // Best-effort initial progress callback
         progressHandler?(0.0)
+    }
+
+    func cancelCurrentTask() {
+        logger.info("WebDAV işlemi iptal ediliyor...")
+        currentUploadTask?.cancel()
+        currentUploadTask = nil
+        backgroundURLSession?.getAllTasks { tasks in
+            tasks.forEach { $0.cancel() }
+        }
     }
     
     // Returns file info (size, name) of remote item if exists, nil if not exists

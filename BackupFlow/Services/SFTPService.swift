@@ -164,6 +164,13 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     private var sftpClient: SFTPClient?
     private(set) var lastError: Error?
     private(set) var isConnected = false
+    private var _currentFile: String = ""
+    private var _progress: Double = 0
+    private var _currentFileBytesTransferred: Int64 = 0
+    private var _currentFileTotalBytes: Int64 = 0
+    private var _transferSpeedBytesPerSecond: Double = 0
+    private var lastProgressSample: (date: Date, bytes: Int64)?
+    private var currentUploadProgressHandler: ((Double) -> Void)?
 #if canImport(UIKit)
     private let backgroundTaskCoordinator = SFTPBackgroundTaskCoordinator()
 #endif
@@ -177,6 +184,36 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             self?.handleBackgroundExpiration()
         }
 #endif
+    }
+
+    var currentFile: String {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return _currentFile
+    }
+
+    var progress: Double {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return _progress
+    }
+
+    var currentFileBytesTransferred: Int64 {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return _currentFileBytesTransferred
+    }
+
+    var currentFileTotalBytes: Int64 {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return _currentFileTotalBytes
+    }
+
+    var transferSpeedBytesPerSecond: Double {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return _transferSpeedBytesPerSecond
     }
 
     private func normalizedHost(_ rawHost: String) throws -> String {
@@ -266,7 +303,8 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             localURL: localURL,
             remotePath: remotePath,
             expectedSize: Int64(size),
-            skipRemoteStat: false
+            skipRemoteStat: false,
+            progressHandler: progressHandler
         )
         progressHandler?(1.0)
     }
@@ -307,6 +345,12 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                 throw error
             }
         }
+    }
+
+    func cancelCurrentTask() {
+        logger.info("SFTP işlemi iptal ediliyor...")
+        markCancelled()
+        disconnect()
     }
     
     func listDirectory(at path: String) async throws -> [FileObject] {
@@ -416,13 +460,14 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                 guard let self else { return }
                 try await self.deleteFile(at: path)
             },
-            uploadFile: { [weak self] localURL, remotePath, expectedSize, skipRemoteStat in
+            uploadFile: { [weak self] localURL, remotePath, expectedSize, skipRemoteStat, progressHandler in
                 guard let self else { return false }
                 return try await self.uploadFileWithRetry(
                     localURL: localURL,
                     remotePath: remotePath,
                     expectedSize: expectedSize,
-                    skipRemoteStat: skipRemoteStat
+                    skipRemoteStat: skipRemoteStat,
+                    progressHandler: progressHandler
                 )
             },
             beginTransferBackgroundTask: { [weak self] in
@@ -632,7 +677,59 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         }
     }
 
-    private func uploadLocalFile(localURL: URL, remotePath: String) async throws {
+    private func prepareCurrentUpload(
+        localURL: URL,
+        expectedSize: Int64,
+        progressHandler: ((Double) -> Void)?
+    ) {
+        stateLock.lock()
+        _currentFile = localURL.lastPathComponent
+        _progress = 0
+        _currentFileBytesTransferred = 0
+        _currentFileTotalBytes = expectedSize
+        _transferSpeedBytesPerSecond = 0
+        lastProgressSample = (Date(), 0)
+        currentUploadProgressHandler = progressHandler
+        stateLock.unlock()
+
+        progressHandler?(0.0)
+    }
+
+    private func updateCurrentUploadProgress(bytesSent: Int64, totalBytes: Int64) {
+        let now = Date()
+        let safeTotal = max(totalBytes, 0)
+        let safeBytes = max(0, min(bytesSent, safeTotal > 0 ? safeTotal : bytesSent))
+        let safeProgress = safeTotal > 0 ? Double(safeBytes) / Double(safeTotal) : 0
+        var handler: ((Double) -> Void)?
+
+        stateLock.lock()
+        if let sample = lastProgressSample {
+            let elapsed = now.timeIntervalSince(sample.date)
+            let delta = safeBytes - sample.bytes
+            if elapsed > 0.35, delta >= 0 {
+                _transferSpeedBytesPerSecond = Double(delta) / elapsed
+                lastProgressSample = (now, safeBytes)
+            }
+        } else {
+            lastProgressSample = (now, safeBytes)
+        }
+
+        _progress = min(max(safeProgress, 0), 1)
+        _currentFileBytesTransferred = safeBytes
+        _currentFileTotalBytes = safeTotal
+        handler = currentUploadProgressHandler
+        let progress = _progress
+        stateLock.unlock()
+
+        handler?(progress)
+    }
+
+    private func uploadLocalFile(
+        localURL: URL,
+        remotePath: String,
+        expectedSize: Int64,
+        progressHandler: ((Double) -> Void)?
+    ) async throws {
         guard let sftp = currentSFTPClient() else {
             throw makeSFTPError(.connection)
         }
@@ -658,6 +755,7 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                     buffer.writeBytes(chunk)
                     try await remoteFile.write(buffer, at: offset)
                     offset += UInt64(chunk.count)
+                    await self.updateCurrentUploadProgress(bytesSent: Int64(offset), totalBytes: expectedSize)
                 }
                 if await self.isCancelledState() {
                     throw BackupServiceError.cancelled
@@ -674,7 +772,8 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         localURL: URL,
         remotePath: String,
         expectedSize: Int64,
-        skipRemoteStat: Bool
+        skipRemoteStat: Bool,
+        progressHandler: ((Double) -> Void)? = nil
     ) async throws -> Bool {
         let retryDelays: [TimeInterval] = [5, 10, 10]
         
@@ -689,6 +788,8 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                 if let remoteSize = try await remoteFileSize(at: remotePath) {
                     if remoteSize == expectedSize {
                         logger.info("SFTP remote file already uploaded, skipping")
+                        prepareCurrentUpload(localURL: localURL, expectedSize: expectedSize, progressHandler: progressHandler)
+                        updateCurrentUploadProgress(bytesSent: expectedSize, totalBytes: expectedSize)
                         return false
                     } else if remoteSize > 0 {
                         try? await deleteFile(at: remotePath)
@@ -697,7 +798,14 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             }
             
             do {
-                try await uploadLocalFile(localURL: localURL, remotePath: remotePath)
+                prepareCurrentUpload(localURL: localURL, expectedSize: expectedSize, progressHandler: progressHandler)
+                try await uploadLocalFile(
+                    localURL: localURL,
+                    remotePath: remotePath,
+                    expectedSize: expectedSize,
+                    progressHandler: progressHandler
+                )
+                updateCurrentUploadProgress(bytesSent: expectedSize, totalBytes: expectedSize)
                 return true
             } catch {
                 logger.warning("SFTP upload attempt \(attempt + 1) failed: \(error.localizedDescription)")

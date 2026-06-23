@@ -605,6 +605,7 @@
 "dashboard.no_saved_servers" = "No saved servers";
 "dashboard.used_date" = "Used: %@";
 "dashboard.action.sync" = "Sync";
+"dashboard.action.pause" = "Pause";
 "dashboard.action.files" = "Files";
 "dashboard.storage_overview" = "Storage overview";
 "dashboard.used" = "Used";

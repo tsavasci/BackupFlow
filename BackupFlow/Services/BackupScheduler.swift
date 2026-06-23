@@ -261,6 +261,15 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     public func cancelCurrentTask(for task: BackupTask) {
         // Cancel timer for this specific task
         cancelTimer(for: task.id)
+
+        switch task.backupType {
+        case .ftp:
+            FTPService.shared.cancelCurrentTask()
+        case .sftp:
+            SFTPService.shared.cancelCurrentTask()
+        case .webdav:
+            WebDAVService.shared.cancelCurrentTask()
+        }
         
         // Update task status to cancelled
         task.backupStatus = .cancelled
@@ -1203,11 +1212,11 @@ extension BackupScheduler {
                     Task { @MainActor in
                         let safeProgress = progress.isNaN || progress.isInfinite ? 0.0 : max(0.0, min(1.0, progress))
                         task.progress = safeProgress
-                        task.currentFile = "backup.current_file.uploading".localized
-                        task.currentFileProgress = 0
-                        task.currentFileBytesTransferred = 0
-                        task.currentFileTotalBytes = 0
-                        task.transferSpeedBytesPerSecond = 0
+                        task.currentFile = sftpService.currentFile.isEmpty ? "backup.current_file.uploading".localized : sftpService.currentFile
+                        task.currentFileProgress = sftpService.progress
+                        task.currentFileBytesTransferred = sftpService.currentFileBytesTransferred
+                        task.currentFileTotalBytes = sftpService.currentFileTotalBytes
+                        task.transferSpeedBytesPerSecond = sftpService.transferSpeedBytesPerSecond
                     }
                 }
             )

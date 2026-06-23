@@ -585,6 +585,7 @@
 "dashboard.no_saved_servers" = "Kayıtlı sunucu yok";
 "dashboard.used_date" = "Kullanıldı: %@";
 "dashboard.action.sync" = "Eşitle";
+"dashboard.action.pause" = "Duraklat";
 "dashboard.action.files" = "Dosyalar";
 "dashboard.storage_overview" = "Depolama özeti";
 "dashboard.used" = "Kullanılan";

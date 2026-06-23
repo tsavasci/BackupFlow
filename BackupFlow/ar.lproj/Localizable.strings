@@ -608,6 +608,7 @@
 "dashboard.no_saved_servers" = "لا توجد خوادم محفوظة";
 "dashboard.used_date" = "استُخدم: %@";
 "dashboard.action.sync" = "مزامنة";
+"dashboard.action.pause" = "إيقاف مؤقت";
 "dashboard.action.files" = "الملفات";
 "dashboard.storage_overview" = "نظرة عامة على التخزين";
 "dashboard.used" = "مستخدم";

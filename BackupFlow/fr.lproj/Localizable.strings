@@ -610,6 +610,7 @@
 "dashboard.no_saved_servers" = "Aucun serveur enregistré";
 "dashboard.used_date" = "Utilisé : %@";
 "dashboard.action.sync" = "Sync";
+"dashboard.action.pause" = "Pause";
 "dashboard.action.files" = "Fichiers";
 "dashboard.storage_overview" = "Aperçu du stockage";
 "dashboard.used" = "Utilisé";

@@ -607,6 +607,7 @@
 "dashboard.no_saved_servers" = "没有已保存的服务器";
 "dashboard.used_date" = "使用时间：%@";
 "dashboard.action.sync" = "同步";
+"dashboard.action.pause" = "暂停";
 "dashboard.action.files" = "文件";
 "dashboard.storage_overview" = "存储概览";
 "dashboard.used" = "已用";
