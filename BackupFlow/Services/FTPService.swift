@@ -41,6 +41,10 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     private var backgroundSessionIdentifier: String?
     @Published private(set) var progress: Double = 0.0
     @Published private(set) var currentFile: String = ""
+    @Published private(set) var currentFileBytesTransferred: Int64 = 0
+    @Published private(set) var currentFileTotalBytes: Int64 = 0
+    @Published private(set) var transferSpeedBytesPerSecond: Double = 0
+    private var lastProgressSample: (date: Date, bytes: Int64)?
     
     private let networkMonitor = FTPNetworkMonitor()
     private var lastLoggedNetworkStatus: NWPath.Status?
@@ -154,6 +158,10 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             }
         }
 
+        DispatchQueue.main.async { [weak self] in
+            self?.updateCurrentUploadProgress(progress: progress.fractionCompleted)
+        }
+
         if progress.isFinished || progress.isCancelled {
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
@@ -182,6 +190,37 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             self.currentFile = "backup.status.cancelled".localized
             self.progress = 0.0
         }
+    }
+
+    @MainActor
+    private func prepareCurrentUpload(localURL: URL) {
+        currentFile = localURL.lastPathComponent
+        progress = 0
+        currentFileBytesTransferred = 0
+        currentFileTotalBytes = Int64((try? localURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
+        transferSpeedBytesPerSecond = 0
+        lastProgressSample = (Date(), 0)
+    }
+
+    @MainActor
+    private func updateCurrentUploadProgress(progress: Double) {
+        let safeProgress = progress.isNaN || progress.isInfinite ? 0.0 : max(0.0, min(1.0, progress))
+        let estimatedBytes = currentFileTotalBytes > 0 ? Int64(Double(currentFileTotalBytes) * safeProgress) : 0
+        let now = Date()
+
+        if let sample = lastProgressSample {
+            let elapsed = now.timeIntervalSince(sample.date)
+            let delta = estimatedBytes - sample.bytes
+            if elapsed > 0.35, delta >= 0 {
+                transferSpeedBytesPerSecond = Double(delta) / elapsed
+                lastProgressSample = (now, estimatedBytes)
+            }
+        } else {
+            lastProgressSample = (now, estimatedBytes)
+        }
+
+        self.progress = safeProgress
+        currentFileBytesTransferred = estimatedBytes
     }
 
     func testConnection(host: String, port: Int, username: String? = nil, password: String? = nil) async throws -> Bool {
@@ -781,6 +820,9 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
 
             let progress = Progress(totalUnitCount: 100)
             progress.completedUnitCount = 0
+            Task { @MainActor in
+                self.prepareCurrentUpload(localURL: localURL)
+            }
 
             if let progressHandler = progressHandler {
                 let handlerKey = UnsafeRawPointer(Unmanaged.passUnretained(AssociatedKeys.progressHandler).toOpaque())
@@ -992,20 +1034,14 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     // MARK: - Enhanced File Management for Mirror Sync
     typealias SyncResult = FTPSyncResult
     
-    /// Helper function to upload photo data
-    private func uploadPhotoData(data: Data, remotePath: String, fileName: String, progressHandler: ((Double) -> Void)? = nil) async throws {
-        let tempRoot = FileManager.default.temporaryDirectory.appendingPathComponent("backupflow_exports", isDirectory: true)
-        try? FileManager.default.createDirectory(at: tempRoot, withIntermediateDirectories: true)
-        let tempURL = tempRoot.appendingPathComponent(fileName)
-        try data.write(to: tempURL)
-        defer { try? FileManager.default.removeItem(at: tempURL) }
-        
+    /// Helper function to upload exported photo/video files.
+    private func uploadPhotoFile(localURL: URL, remotePath: String, fileName: String, progressHandler: ((Double) -> Void)? = nil) async throws {
         // Update current file being processed
         Task { @MainActor in
             self.currentFile = "backup.current_file.uploading_file".localized(with: fileName)
         }
         
-        try await uploadFile(localURL: tempURL, remotePath: remotePath, progressHandler: progressHandler)
+        try await uploadFile(localURL: localURL, remotePath: remotePath, progressHandler: progressHandler)
     }
     
     /// Enhanced directory sync with full mirror functionality (upload new, skip identical, delete orphans)
@@ -1036,9 +1072,9 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                 guard let self else { throw FTPError.connectionFailed }
                 try await self.deleteFile(at: path)
             },
-            uploadFile: { [weak self] localURL, remotePath in
+            uploadFile: { [weak self] localURL, remotePath, progressHandler in
                 guard let self else { throw FTPError.connectionFailed }
-                try await self.uploadFile(localURL: localURL, remotePath: remotePath, progressHandler: nil)
+                try await self.uploadFile(localURL: localURL, remotePath: remotePath, progressHandler: progressHandler)
             },
             setCurrentFile: { [weak self] name in
                 Task { @MainActor in
@@ -1051,9 +1087,9 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             mapError: { [weak self] error in
                 return self?.mapError(error) ?? .unknown(error)
             },
-            uploadPhotoData: { [weak self] data, remotePath, fileName in
+            uploadPhotoFile: { [weak self] localURL, remotePath, fileName in
                 guard let self else { throw FTPError.connectionFailed }
-                try await self.uploadPhotoData(data: data, remotePath: remotePath, fileName: fileName)
+                try await self.uploadPhotoFile(localURL: localURL, remotePath: remotePath, fileName: fileName)
             }
         )
     }

@@ -1,10 +1,10 @@
 import SwiftUI
 
-// MARK: - Liquid Theme (Legacy - Use DesignSystem instead)
+// MARK: - App Surface Theme
 
 struct LiquidTheme {
     static let accent = Color(red: 0.20, green: 0.45, blue: 0.95)
-    static let cardCornerRadius: CGFloat = 16
+    static let cardCornerRadius: CGFloat = 18
     static let cardStroke = LinearGradient(
         colors: [
             Color.white.opacity(0.65),
@@ -35,9 +35,8 @@ private struct LiquidBackgroundModifier: ViewModifier {
         case .dark:
             return LinearGradient(
                 colors: [
-                    Color(red: 0.08, green: 0.10, blue: 0.14),
-                    Color(red: 0.10, green: 0.12, blue: 0.18),
-                    Color(red: 0.06, green: 0.08, blue: 0.12)
+                    Color(.systemBackground),
+                    Color(.systemBackground).opacity(0.94)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
@@ -45,9 +44,8 @@ private struct LiquidBackgroundModifier: ViewModifier {
         default:
             return LinearGradient(
                 colors: [
-                    Color(red: 0.96, green: 0.97, blue: 0.99),
-                    Color(red: 0.92, green: 0.95, blue: 0.99),
-                    Color(red: 0.95, green: 0.94, blue: 0.99)
+                    Color(.systemBackground),
+                    Color(.systemBackground).opacity(0.94)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
@@ -65,11 +63,11 @@ private struct LiquidCardModifier: ViewModifier {
     let cornerRadius: CGFloat
 
     private var shadowColor: Color {
-        colorScheme == .dark ? Color.black.opacity(0.45) : Color.black.opacity(0.12)
+        colorScheme == .dark ? Color.black.opacity(0.22) : Color.black.opacity(0.06)
     }
 
     private var fillMaterial: Material {
-        colorScheme == .dark ? .regularMaterial : .ultraThinMaterial
+        .ultraThinMaterial
     }
 
     func body(content: Content) -> some View {
@@ -85,7 +83,7 @@ private struct LiquidCardModifier: ViewModifier {
                             )
                     )
             )
-            .shadow(color: shadowColor, radius: colorScheme == .dark ? 18 : 14, x: 0, y: colorScheme == .dark ? 8 : 6)
+            .shadow(color: shadowColor, radius: colorScheme == .dark ? 8 : 5, x: 0, y: colorScheme == .dark ? 4 : 2)
     }
 }
 

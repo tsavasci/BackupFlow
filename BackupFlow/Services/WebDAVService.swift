@@ -60,7 +60,11 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
             guard totalBytesExpected > 0 else { return }
             let progress = Double(totalBytesSent) / Double(totalBytesExpected)
             Task { @MainActor in
-                self?.progress = progress
+                self?.updateCurrentUploadProgress(
+                    progress: progress,
+                    bytesSent: totalBytesSent,
+                    totalBytes: totalBytesExpected
+                )
             }
         },
         onTaskComplete: { [weak self] task, error in
@@ -101,8 +105,13 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
     @Published private(set) var isConnected = false
     @Published private(set) var progress: Double = 0.0
     @Published private(set) var currentFile: String = ""
+    @Published private(set) var currentFileBytesTransferred: Int64 = 0
+    @Published private(set) var currentFileTotalBytes: Int64 = 0
+    @Published private(set) var transferSpeedBytesPerSecond: Double = 0
     @Published private(set) var networkPermissionGranted = false
     private(set) var lastError: Error?
+    private var lastProgressSample: (date: Date, bytes: Int64)?
+    private var currentUploadProgressHandler: ((Double) -> Void)?
     
     private let networkMonitor = WebDAVNetworkMonitor()
     
@@ -154,6 +163,13 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
     
     func fileproviderProgress(_ fileProvider: FileProviderOperations, operation: FileOperationType, progress: Float) {
         let percent = Int(progress * 100)
+        let clamped = max(0.0, min(1.0, Double(progress)))
+        let estimatedBytes = currentFileTotalBytes > 0 ? Int64(Double(currentFileTotalBytes) * clamped) : 0
+        updateCurrentUploadProgress(
+            progress: clamped,
+            bytesSent: estimatedBytes,
+            totalBytes: currentFileTotalBytes
+        )
         if isVerboseLoggingEnabled {
             self.logger.debug("Progress: \(operation.description) - \(percent)%")
         }
@@ -446,74 +462,21 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         if useBackgroundSession {
             // Set current file for UI feedback only if empty to reduce UI flicker/resets
             if self.currentFile.isEmpty { self.currentFile = localURL.lastPathComponent }
+            prepareCurrentUpload(localURL: localURL, progressHandler: progressHandler)
             try await uploadFileUsingBackgroundSession(localURL: localURL, remotePath: remotePath, progressHandler: progressHandler)
             return
         }
         
         // Foreground uploads: stream from file to avoid memory pressure
         do {
+            prepareCurrentUpload(localURL: localURL, progressHandler: progressHandler)
             let timeoutSeconds = uploadTimeoutSeconds(for: localURL) * max(1.0, timeoutMultiplier)
             try await executeWithRetry {
-                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                    let resumeLock = NSLock()
-                    var didResume = false
-                    var timeoutWorkItem: DispatchWorkItem?
-                    func safeThrow(_ error: Error, isTimeout: Bool = false) {
-                        var shouldResume = false
-                        var timeoutToCancel: DispatchWorkItem?
-                        resumeLock.lock()
-                        if !didResume {
-                            didResume = true
-                            shouldResume = true
-                            timeoutToCancel = timeoutWorkItem
-                            timeoutWorkItem = nil
-                        }
-                        resumeLock.unlock()
-                        guard shouldResume else { return }
-                        timeoutToCancel?.cancel()
-                        if isTimeout {
-                            self.logger.warning("⏱️ WebDAV upload timeout: \(localURL.lastPathComponent) after \(Int(timeoutSeconds))s")
-                        }
-                        continuation.resume(throwing: error)
-                    }
-                    func safeResume() {
-                        var shouldResume = false
-                        var timeoutToCancel: DispatchWorkItem?
-                        resumeLock.lock()
-                        if !didResume {
-                            didResume = true
-                            shouldResume = true
-                            timeoutToCancel = timeoutWorkItem
-                            timeoutWorkItem = nil
-                        }
-                        resumeLock.unlock()
-                        guard shouldResume else { return }
-                        timeoutToCancel?.cancel()
-                        continuation.resume()
-                    }
-
-                    let timeoutItem = DispatchWorkItem {
-                        let timeoutError = NSError(
-                            domain: NSURLErrorDomain,
-                            code: NSURLErrorTimedOut,
-                            userInfo: [NSLocalizedDescriptionKey: "WebDAV upload timeout (\(Int(timeoutSeconds))s): \(localURL.lastPathComponent)"]
-                        )
-                        safeThrow(timeoutError, isTimeout: true)
-                    }
-                    resumeLock.lock()
-                    timeoutWorkItem = timeoutItem
-                    resumeLock.unlock()
-                    DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + timeoutSeconds, execute: timeoutItem)
-
-                    provider.copyItem(localFile: localURL, to: remotePath, overwrite: true) { error in
-                        if let error = error {
-                            self.lastError = error
-                            safeThrow(WebDAVErrorMapper.mapError(error))
-                        } else {
-                            safeResume()
-                        }
-                    }
-                }
+                try await self.uploadFileUsingForegroundSession(
+                    localURL: localURL,
+                    remotePath: remotePath,
+                    timeoutSeconds: timeoutSeconds
+                )
             }
         } catch {
             self.lastError = error
@@ -546,6 +509,149 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         }
         return false
     }
+
+    private func prepareCurrentUpload(localURL: URL, progressHandler: ((Double) -> Void)? = nil) {
+        currentFile = localURL.lastPathComponent
+        progress = 0
+        currentFileBytesTransferred = 0
+        currentFileTotalBytes = Int64((try? localURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
+        transferSpeedBytesPerSecond = 0
+        lastProgressSample = (Date(), 0)
+        currentUploadProgressHandler = progressHandler
+        progressHandler?(0.0)
+    }
+
+    private func updateCurrentUploadProgress(progress: Double, bytesSent: Int64, totalBytes: Int64) {
+        let safeProgress = progress.isNaN || progress.isInfinite ? 0.0 : max(0.0, min(1.0, progress))
+        let now = Date()
+        let safeTotal = max(totalBytes, currentFileTotalBytes)
+        let safeBytes = max(0, min(bytesSent, safeTotal > 0 ? safeTotal : bytesSent))
+
+        if let sample = lastProgressSample {
+            let elapsed = now.timeIntervalSince(sample.date)
+            let delta = safeBytes - sample.bytes
+            if elapsed > 0.35, delta >= 0 {
+                transferSpeedBytesPerSecond = Double(delta) / elapsed
+                lastProgressSample = (now, safeBytes)
+            }
+        } else {
+            lastProgressSample = (now, safeBytes)
+        }
+
+        self.progress = safeProgress
+        currentFileBytesTransferred = safeBytes
+        currentFileTotalBytes = safeTotal
+        currentUploadProgressHandler?(safeProgress)
+    }
+
+    private func makeUploadRequest(remotePath: String) throws -> URLRequest {
+        guard let baseURL = currentBaseURL else {
+            throw BackupServiceError.connectionFailed
+        }
+
+        let relativePath = remotePath.hasPrefix("/") ? String(remotePath.dropFirst()) : remotePath
+        let targetURL = baseURL.appendingPathComponent(relativePath)
+
+        var request = URLRequest(url: targetURL)
+        request.httpMethod = "PUT"
+
+        if let cred = currentCredential, let user = cred.user {
+            let pwd = cred.password ?? ""
+            let userPass = "\(user):\(pwd)"
+            if let authData = userPass.data(using: .utf8) {
+                let token = authData.base64EncodedString()
+                request.setValue("Basic \(token)", forHTTPHeaderField: "Authorization")
+            }
+        }
+
+        return request
+    }
+
+    private func uploadFileUsingForegroundSession(
+        localURL: URL,
+        remotePath: String,
+        timeoutSeconds: TimeInterval
+    ) async throws {
+        let request = try makeUploadRequest(remotePath: remotePath)
+        let fileSize = currentFileTotalBytes
+
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            let resumeLock = NSLock()
+            var didResume = false
+            var session: URLSession?
+
+            func finish(_ result: Result<Void, Error>) {
+                var shouldResume = false
+                resumeLock.lock()
+                if !didResume {
+                    didResume = true
+                    shouldResume = true
+                }
+                resumeLock.unlock()
+
+                guard shouldResume else { return }
+                session?.finishTasksAndInvalidate()
+                switch result {
+                case .success:
+                    continuation.resume()
+                case .failure(let error):
+                    continuation.resume(throwing: error)
+                }
+            }
+
+            let delegate = WebDAVBackgroundSessionDelegate(
+                logger: logger,
+                allowSelfSigned: self.allowSelfSignedCertificates,
+                onTaskProgress: { [weak self] _, totalBytesSent, totalBytesExpected in
+                    guard let self else { return }
+                    let expectedBytes = totalBytesExpected > 0 ? totalBytesExpected : fileSize
+                    guard expectedBytes > 0 else { return }
+                    let progress = Double(totalBytesSent) / Double(expectedBytes)
+                    Task { @MainActor in
+                        self.updateCurrentUploadProgress(
+                            progress: progress,
+                            bytesSent: totalBytesSent,
+                            totalBytes: expectedBytes
+                        )
+                    }
+                },
+                onTaskComplete: { task, error in
+                    if let error {
+                        finish(.failure(WebDAVErrorMapper.mapError(error)))
+                        return
+                    }
+
+                    if let response = task.response as? HTTPURLResponse,
+                       !(200...299).contains(response.statusCode) {
+                        let error = NSError(
+                            domain: "WebDAVService",
+                            code: response.statusCode,
+                            userInfo: [NSLocalizedDescriptionKey: "WebDAV upload failed with HTTP \(response.statusCode)"]
+                        )
+                        finish(.failure(WebDAVErrorMapper.mapError(error)))
+                        return
+                    }
+
+                    Task { @MainActor in
+                        self.updateCurrentUploadProgress(progress: 1.0, bytesSent: fileSize, totalBytes: fileSize)
+                    }
+                    finish(.success(()))
+                },
+                onFinishEvents: {}
+            )
+
+            let configuration = URLSessionConfiguration.default
+            configuration.timeoutIntervalForRequest = 60
+            configuration.timeoutIntervalForResource = timeoutSeconds
+            configuration.httpMaximumConnectionsPerHost = 1
+            configuration.allowsCellularAccess = true
+            configuration.waitsForConnectivity = true
+
+            session = URLSession(configuration: configuration, delegate: delegate, delegateQueue: nil)
+            let task = session?.uploadTask(with: request, fromFile: localURL)
+            task?.resume()
+        }
+    }
     
     // MARK: - Background URLSession Upload
     private func uploadFileUsingBackgroundSession(
@@ -556,29 +662,12 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         guard let session = backgroundURLSession else {
             throw BackupServiceError.connectionFailed
         }
-        guard let baseURL = currentBaseURL else {
-            throw BackupServiceError.connectionFailed
-        }
-
-        // Build absolute URL by appending the remote path to base URL
-        let relativePath = remotePath.hasPrefix("/") ? String(remotePath.dropFirst()) : remotePath
-        let targetURL = baseURL.appendingPathComponent(relativePath)
-
-        var request = URLRequest(url: targetURL)
-        request.httpMethod = "PUT"
-        // Add Authorization header if we have credentials (Basic auth)
-        if let cred = currentCredential, let user = cred.user {
-            let pwd = cred.password ?? ""
-            let userPass = "\(user):\(pwd)"
-            if let authData = userPass.data(using: .utf8) {
-                let token = authData.base64EncodedString()
-                request.setValue("Basic \(token)", forHTTPHeaderField: "Authorization")
-            }
-        }
+        let request = try makeUploadRequest(remotePath: remotePath)
 
         // Set current file for UI feedback
         self.currentFile = localURL.lastPathComponent
-        self.logger.info("🌐 Enqueuing background PUT upload: \(targetURL.absoluteString)")
+        prepareCurrentUpload(localURL: localURL, progressHandler: progressHandler)
+        self.logger.info("🌐 Enqueuing background PUT upload: \(request.url?.absoluteString ?? remotePath)")
 
         // Enqueue background upload task from file (no in-memory buffering)
         let task = session.uploadTask(with: request, fromFile: localURL)
@@ -686,7 +775,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
 
         let existingFileMap = try await listAllRemoteFiles(at: remoteBasePath)
         let processedRelativePaths = Set(assets.map { photoLibraryManager.generateFileName(for: $0) })
-        var timedOutUploads: [(asset: PHAsset, fileName: String, remotePath: String, localSize: Int64)] = []
+        var timedOutUploads: [(asset: PHAsset, fileName: String, remotePath: String)] = []
         var failedUploads = 0
         let totalAssets = assets.count
         var lastHeartbeatAt = Date()
@@ -703,11 +792,17 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
             }
 
             let fileName = photoLibraryManager.generateFileName(for: asset)
-            let assetDataResult = await photoLibraryManager.getAssetDataWithStatus(asset: asset, allowNetworkAccess: includeICloudAssets)
-            let data: Data
-            switch assetDataResult {
-            case .success(let fetchedData):
-                data = fetchedData
+            let exportResult = await photoLibraryManager.exportAssetToTemporaryFile(
+                asset: asset,
+                fileName: fileName,
+                allowNetworkAccess: includeICloudAssets
+            )
+            let tempURL: URL
+            let localSize: Int64
+            switch exportResult {
+            case .success(let exportedURL, let exportedSize):
+                tempURL = exportedURL
+                localSize = exportedSize
             case .iCloudOnly:
                 result.iCloudSkippedFiles += 1
                 progressHandler(Double(index + 1) / Double(assets.count))
@@ -721,31 +816,29 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
                 progressHandler(Double(index + 1) / Double(assets.count))
                 continue
             }
+            defer { try? fileManager.removeItem(at: tempURL) }
 
-            let localSize = Int64(data.count)
             let remotePath = remoteBasePath == "/" ? "/\(fileName)" : "\(remoteBasePath)/\(fileName)"
-            logger.info("⬆️ Upload starting (\(index + 1)/\(totalAssets)): \(fileName) (\(localSize) bytes)")
 
             if let remoteFile = existingFileMap[fileName], remoteFile.size == localSize {
                 result.skippedFiles += 1
                 result.totalBytes += localSize
+                logger.debug("⏭️ Upload skipped (\(index + 1)/\(totalAssets)): \(fileName) (\(localSize) bytes)")
                 progressHandler(Double(index + 1) / Double(assets.count))
                 continue
             }
 
-            let tempURL = exportRootURL().appendingPathComponent(fileName)
-            if fileManager.fileExists(atPath: tempURL.path) {
-                try? fileManager.removeItem(at: tempURL)
-            }
             do {
-                try data.write(to: tempURL, options: .atomic)
-                defer { try? fileManager.removeItem(at: tempURL) }
-                try await uploadFileAwaitingCompletion(localURL: tempURL, remotePath: remotePath, progressHandler: nil)
+                logger.info("⬆️ Upload starting (\(index + 1)/\(totalAssets)): \(fileName) (\(localSize) bytes)")
+                try await uploadFileAwaitingCompletion(localURL: tempURL, remotePath: remotePath) { fileProgress in
+                    let assetShare = 1.0 / Double(max(assets.count, 1))
+                    let overallProgress = (Double(index) / Double(max(assets.count, 1))) + (fileProgress * assetShare)
+                    progressHandler(min(max(overallProgress, 0.0), 1.0))
+                }
                 logger.info("✅ Upload completed (\(index + 1)/\(totalAssets)): \(fileName)")
             } catch {
-                try? fileManager.removeItem(at: tempURL)
                 if isUploadTimeoutError(error) {
-                    timedOutUploads.append((asset: asset, fileName: fileName, remotePath: remotePath, localSize: localSize))
+                    timedOutUploads.append((asset: asset, fileName: fileName, remotePath: remotePath))
                     logger.warning("⏱️ Upload timeout queued for retry: \(fileName)")
                 } else {
                     failedUploads += 1
@@ -767,11 +860,17 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         if !timedOutUploads.isEmpty {
             logger.info("🔁 Retrying timed out uploads: \(timedOutUploads.count)")
             for item in timedOutUploads {
-                let retryFetchResult = await photoLibraryManager.getAssetDataWithStatus(asset: item.asset, allowNetworkAccess: includeICloudAssets)
-                let retryData: Data
-                switch retryFetchResult {
-                case .success(let fetchedData):
-                    retryData = fetchedData
+                let retryExportResult = await photoLibraryManager.exportAssetToTemporaryFile(
+                    asset: item.asset,
+                    fileName: item.fileName,
+                    allowNetworkAccess: includeICloudAssets
+                )
+                let retryTempURL: URL
+                let retrySize: Int64
+                switch retryExportResult {
+                case .success(let exportedURL, let exportedSize):
+                    retryTempURL = exportedURL
+                    retrySize = exportedSize
                 case .iCloudOnly:
                     result.iCloudSkippedFiles += 1
                     failedUploads += 1
@@ -788,15 +887,9 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
                     logger.warning("Retry skipped (asset data unavailable): \(item.fileName)")
                     continue
                 }
-
-                let retryTempURL = exportRootURL().appendingPathComponent(item.fileName)
-                if fileManager.fileExists(atPath: retryTempURL.path) {
-                    try? fileManager.removeItem(at: retryTempURL)
-                }
+                defer { try? fileManager.removeItem(at: retryTempURL) }
 
                 do {
-                    try retryData.write(to: retryTempURL, options: .atomic)
-                    defer { try? fileManager.removeItem(at: retryTempURL) }
                     // Relax timeout budget for second-chance uploads on slow/unstable links.
                     try await uploadFile(
                         localURL: retryTempURL,
@@ -810,7 +903,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
                     } else {
                         result.newFiles += 1
                     }
-                    result.totalBytes += item.localSize
+                    result.totalBytes += retrySize
                 } catch {
                     failedUploads += 1
                     logger.error("Retry failed: \(item.fileName) - \(error.localizedDescription)")
@@ -1115,9 +1208,9 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
             setCurrentFile: { [weak self] name in
                 self?.currentFile = name
             },
-            uploadFile: { [weak self] localURL, remotePath in
+            uploadFile: { [weak self] localURL, remotePath, progressHandler in
                 guard let self else { throw BackupServiceError.connectionFailed }
-                try await self.uploadFileAwaitingCompletion(localURL: localURL, remotePath: remotePath, progressHandler: nil)
+                try await self.uploadFileAwaitingCompletion(localURL: localURL, remotePath: remotePath, progressHandler: progressHandler)
             }
         )
     }

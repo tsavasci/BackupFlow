@@ -196,6 +196,10 @@ final class BackupTask: Identifiable, Hashable {
     var backupStatus: BackupStatus
     var progress: Double
     var currentFile: String?
+    var currentFileProgress: Double = 0.0
+    var currentFileBytesTransferred: Int64 = 0
+    var currentFileTotalBytes: Int64 = 0
+    var transferSpeedBytesPerSecond: Double = 0.0
     var lastError: String?
     
     // Network policy
@@ -298,6 +302,10 @@ final class BackupTask: Identifiable, Hashable {
         self.backupStatus = .idle
         self.progress = 0.0
         self.currentFile = nil
+        self.currentFileProgress = 0.0
+        self.currentFileBytesTransferred = 0
+        self.currentFileTotalBytes = 0
+        self.transferSpeedBytesPerSecond = 0.0
         self.lastError = nil
     }
     

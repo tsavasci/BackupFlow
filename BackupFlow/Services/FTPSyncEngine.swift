@@ -32,11 +32,11 @@ struct FTPSyncEngine {
     let isCancelled: () -> Bool
     let createDirectory: (String) async throws -> Void
     let deleteFile: (String) async throws -> Void
-    let uploadFile: (URL, String) async throws -> Void
+    let uploadFile: (URL, String, ((Double) -> Void)?) async throws -> Void
     let setCurrentFile: (String) -> Void
     let formatBytes: (Int64) -> String
     let mapError: (Error) -> FTPError
-    let uploadPhotoData: (Data, String, String) async throws -> Void
+    let uploadPhotoFile: (URL, String, String) async throws -> Void
 
     func syncUploadDirectory(
         localURL: URL,
@@ -97,7 +97,11 @@ struct FTPSyncEngine {
                 }
             case .new:
                 setCurrentFile("backup.current_file.uploading_file".localized(with: fileName))
-                try await uploadFile(localFileURL, targetPath)
+                try await uploadFile(localFileURL, targetPath) { fileProgress in
+                    let fileShare = 0.8 / Double(max(totalFiles, 1))
+                    let overallProgress = (Double(index) / Double(max(totalFiles, 1)) * 0.8) + (fileProgress * fileShare)
+                    progressHandler?(min(max(overallProgress, 0.0), 0.8))
+                }
                 result.newFiles += 1
                 result.totalBytes += localSize
                 transferredBytes += localSize
@@ -107,7 +111,11 @@ struct FTPSyncEngine {
                 }
             case .updated:
                 setCurrentFile("backup.current_file.updating_file".localized(with: fileName))
-                try await uploadFile(localFileURL, targetPath)
+                try await uploadFile(localFileURL, targetPath) { fileProgress in
+                    let fileShare = 0.8 / Double(max(totalFiles, 1))
+                    let overallProgress = (Double(index) / Double(max(totalFiles, 1)) * 0.8) + (fileProgress * fileShare)
+                    progressHandler?(min(max(overallProgress, 0.0), 0.8))
+                }
                 result.updatedFiles += 1
                 result.totalBytes += localSize
                 transferredBytes += localSize
@@ -315,11 +323,17 @@ struct FTPSyncEngine {
                 continue
             }
 
-            let assetDataResult = await photoManager.getAssetDataWithStatus(asset: asset, allowNetworkAccess: includeICloudAssets)
-            let data: Data
-            switch assetDataResult {
-            case .success(let fetchedData):
-                data = fetchedData
+            let exportResult = await photoManager.exportAssetToTemporaryFile(
+                asset: asset,
+                fileName: stableFileName,
+                allowNetworkAccess: includeICloudAssets
+            )
+            let localURL: URL
+            let localSize: Int64
+            switch exportResult {
+            case .success(let exportedURL, let exportedSize):
+                localURL = exportedURL
+                localSize = exportedSize
             case .iCloudOnly:
                 result.iCloudSkippedFiles += 1
                 print("☁️ BackupFlow: iCloud-only medya atlandı (ayar: sadece lokal): \(asset.localIdentifier)")
@@ -333,8 +347,8 @@ struct FTPSyncEngine {
                 print("⚠️ BackupFlow: Asset verisi alınamadı: \(asset.localIdentifier)")
                 continue
             }
+            defer { try? FileManager.default.removeItem(at: localURL) }
 
-            let localSize = Int64(data.count)
             let remotePath = "\(photosDir)/\(stableFileName)"
 
             let comparisonResult = compareFileEnhanced(
@@ -351,13 +365,13 @@ struct FTPSyncEngine {
                 print("⏭ BackupFlow: Aynı dosya pas geçildi: \(stableFileName) (\(formatBytes(localSize)))")
             case .new:
                 setCurrentFile("backup.current_file.uploading_file".localized(with: stableFileName))
-                try await uploadPhotoData(data, remotePath, stableFileName)
+                try await uploadPhotoFile(localURL, remotePath, stableFileName)
                 result.newFiles += 1
                 result.totalBytes += localSize
                 print("📤 BackupFlow: Yeni dosya yüklendi: \(stableFileName) (\(formatBytes(localSize)))")
             case .updated:
                 setCurrentFile("backup.current_file.updating_file".localized(with: stableFileName))
-                try await uploadPhotoData(data, remotePath, stableFileName)
+                try await uploadPhotoFile(localURL, remotePath, stableFileName)
                 result.updatedFiles += 1
                 result.totalBytes += localSize
                 print("🔄 BackupFlow: Güncellenmiş dosya yüklendi: \(stableFileName) (\(formatBytes(localSize)))")

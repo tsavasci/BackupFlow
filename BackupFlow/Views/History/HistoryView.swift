@@ -100,7 +100,7 @@ struct HistoryView: View {
             }
             .padding(.vertical, DesignSystem.Spacing.base)
         }
-        .animation(.easeInOut(duration: 0.3), value: history)
+        .animation(DesignSystem.Animation.swift, value: history)
     }
     
     private var summaryStatsView: some View {
@@ -153,7 +153,7 @@ struct HistoryView: View {
     }
     
     private func deleteItem(_ item: BackupHistory) {
-        withAnimation {
+        withAnimation(DesignSystem.Animation.swift) {
             modelContext.delete(item)
             try? modelContext.save()
         }

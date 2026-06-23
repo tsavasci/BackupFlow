@@ -157,11 +157,16 @@ struct SFTPSyncEngine {
                 continue
             }
 
-            guard let data = try await photoManager.getAssetData(asset: asset) else { continue }
-            let localSize = Int64(data.count)
-            
-            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-            try data.write(to: tempURL, options: .atomic)
+            let exportResult = await photoManager.exportAssetToTemporaryFile(asset: asset, fileName: fileName)
+            let tempURL: URL
+            let localSize: Int64
+            switch exportResult {
+            case .success(let exportedURL, let exportedSize):
+                tempURL = exportedURL
+                localSize = exportedSize
+            case .iCloudOnly, .timedOut, .unavailable:
+                continue
+            }
             defer { try? FileManager.default.removeItem(at: tempURL) }
             
             let remotePath = "\(photosDir)/\(fileName)"

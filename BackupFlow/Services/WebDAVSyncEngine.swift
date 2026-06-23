@@ -10,7 +10,7 @@ struct WebDAVSyncEngine {
     let ensureDirectoryExists: (String) async throws -> Void
     let deleteFile: (String) async throws -> Void
     let setCurrentFile: (String) -> Void
-    let uploadFile: (URL, String) async throws -> Void
+    let uploadFile: (URL, String, ((Double) -> Void)?) async throws -> Void
 
     func syncUploadDirectory(
         localPath: String,
@@ -51,7 +51,11 @@ struct WebDAVSyncEngine {
             } else {
                 do {
                     logger.info("Uploading: \(relativePath) (\(ByteCountFormatter.string(fromByteCount: localSize, countStyle: .file)))")
-                    try await uploadFile(localFileURL, remotePath)
+                    try await uploadFile(localFileURL, remotePath) { fileProgress in
+                        let fileShare = 0.8 / Double(max(totalFiles, 1))
+                        let overallProgress = (Double(index) / Double(max(totalFiles, 1)) * 0.8) + (fileProgress * fileShare)
+                        progressHandler(min(max(overallProgress, 0.0), 0.8))
+                    }
                     logger.debug("Successfully uploaded: \(relativePath)")
                     uploaded += 1
                     transferred += localSize

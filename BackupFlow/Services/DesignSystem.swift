@@ -6,9 +6,10 @@ struct DesignSystem {
     // MARK: - Colors
     struct Colors {
         // Primary palette
-        static let primary = Color(red: 0.20, green: 0.45, blue: 0.95)
-        static let primaryLight = Color(red: 0.35, green: 0.60, blue: 0.98)
-        static let primaryDark = Color(red: 0.10, green: 0.30, blue: 0.80)
+        static let primary = Color(red: 0.18, green: 0.30, blue: 0.98)
+        static let primaryLight = Color(red: 0.15, green: 0.60, blue: 0.98)
+        static let primaryDark = Color(red: 0.12, green: 0.24, blue: 0.82)
+        static let secondary = Color(red: 0.52, green: 0.31, blue: 0.98)
         
         // Status colors
         static let success = Color(red: 0.34, green: 0.84, blue: 0.40)
@@ -24,7 +25,7 @@ struct DesignSystem {
         
         // Gradients
         static let primaryGradient = LinearGradient(
-            gradient: Gradient(colors: [primaryLight, primary]),
+            gradient: Gradient(colors: [primary, secondary]),
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
@@ -74,31 +75,31 @@ struct DesignSystem {
     // MARK: - Shadows
     struct Shadows {
         static let small = Shadow(
-            color: Color.black.opacity(0.08),
-            radius: 4,
+            color: Color.black.opacity(0.05),
+            radius: 3,
             x: 0,
             y: 2
         )
         
         static let medium = Shadow(
-            color: Color.black.opacity(0.12),
-            radius: 8,
+            color: Color.black.opacity(0.06),
+            radius: 5,
+            x: 0,
+            y: 2
+        )
+        
+        static let large = Shadow(
+            color: Color.black.opacity(0.08),
+            radius: 10,
             x: 0,
             y: 4
         )
         
-        static let large = Shadow(
-            color: Color.black.opacity(0.15),
-            radius: 16,
-            x: 0,
-            y: 8
-        )
-        
         static let elevation = Shadow(
-            color: Color.black.opacity(0.20),
-            radius: 24,
+            color: Color.black.opacity(0.10),
+            radius: 12,
             x: 0,
-            y: 12
+            y: 6
         )
     }
     
@@ -111,10 +112,10 @@ struct DesignSystem {
     
     // MARK: - Animation Timing
     struct Animation {
-        static let swift = SwiftUI.Animation.easeInOut(duration: 0.3)
-        static let smooth = SwiftUI.Animation.easeInOut(duration: 0.5)
-        static let spring = SwiftUI.Animation.spring(response: 0.4, dampingFraction: 0.8)
-        static let bounce = SwiftUI.Animation.spring(response: 0.5, dampingFraction: 0.6)
+        static let swift = SwiftUI.Animation.easeOut(duration: 0.16)
+        static let smooth = SwiftUI.Animation.easeOut(duration: 0.22)
+        static let spring = SwiftUI.Animation.spring(response: 0.24, dampingFraction: 0.88)
+        static let bounce = SwiftUI.Animation.spring(response: 0.28, dampingFraction: 0.82)
     }
     
     // MARK: - Dimensions

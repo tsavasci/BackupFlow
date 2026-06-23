@@ -27,7 +27,7 @@ struct ModernButton: View {
                 RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.large, style: .continuous)
                     .stroke(style.borderColor, lineWidth: style.borderWidth)
             )
-            .withMediumShadow()
+            .withSmallShadow()
         }
     }
     
@@ -130,22 +130,17 @@ struct ModernCard<Content: View>: View {
             .padding(padding)
             .background(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(
-                        backgroundColor ?? (
-                            colorScheme == .dark ?
-                            Color(red: 0.12, green: 0.12, blue: 0.14).opacity(0.8) :
-                            Color.white.opacity(0.8)
-                        )
-                    )
+                    .fill(backgroundColor ?? Color(.systemBackground).opacity(colorScheme == .dark ? 0.68 : 0.55))
                     .overlay(
                         RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                             .stroke(
-                                Color.white.opacity(colorScheme == .dark ? 0.1 : 0.4),
+                                Color.white.opacity(colorScheme == .dark ? 0.10 : 0.34),
                                 lineWidth: 1
                             )
                     )
             )
-            .withMediumShadow()
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .withSmallShadow()
     }
 }
 
@@ -225,22 +220,7 @@ struct ModernProgressBar: View {
                             .stroke(style.color.opacity(0.5), lineWidth: 1)
                             .frame(width: geometry.size.width * CGFloat(min(max(progress, 0), 1)))
                     )
-                    .animation(.easeInOut(duration: 0.3), value: progress)
-                
-                // Shimmer effect
-                if progress > 0 {
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            .clear,
-                            .white.opacity(0.3),
-                            .clear
-                        ]),
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                    .frame(width: geometry.size.width * CGFloat(min(max(progress, 0), 1)))
-                    .offset(x: -100)
-                }
+                    .animation(DesignSystem.Animation.swift, value: progress)
             }
         }
         .frame(height: height)
@@ -289,7 +269,7 @@ struct ModernLoadingView: View {
                     )
             }
             
-            Text("Lütfen bekleyin...")
+            Text("common.please_wait".localized)
                 .font(DesignSystem.Typography.subheadline)
                 .foregroundColor(.secondary)
         }

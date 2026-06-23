@@ -266,6 +266,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         task.backupStatus = .cancelled
         task.progress = 0.0
         task.currentFile = nil
+        resetCurrentFileProgress(for: task)
         
         print("🚫 BackupFlow: Görev iptal edildi: \(task.displayName)")
     }
@@ -414,6 +415,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         }
         if task.progress <= 0.0 || task.progress.isNaN || task.progress.isInfinite {
             task.progress = 0.0
+            resetCurrentFileProgress(for: task)
         }
         task.lastError = nil
         
@@ -434,6 +436,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             task.progress = 1.0  // Success is always 1.0, safe value
             task.lastBackupDate = Date()
             task.currentFile = nil
+            resetCurrentFileProgress(for: task)
             
             // Schedule next run
             task.nextRunTime = calculateNextRunTime(for: task)
@@ -458,6 +461,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                 task.lastError = backupError.localizedDescription
                 task.progress = 0.0
                 task.currentFile = nil
+                resetCurrentFileProgress(for: task)
                 task.nextRunTime = calculateNextRunTime(for: task)
                 
                 let duration = Date().timeIntervalSince(runStart)
@@ -740,6 +744,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         task.lastError = postponedMessage
         task.progress = 0.0
         task.currentFile = nil
+        resetCurrentFileProgress(for: task)
         task.lastBackupDate = Date()
 
         // Shift next run time by +24h from scheduled time if exists; otherwise from now
@@ -1012,6 +1017,7 @@ extension BackupScheduler {
         
         task.backupStatus = .preparing
         task.progress = 0.0
+        resetCurrentFileProgress(for: task)
         let startTime = Date()
         
         do {
@@ -1029,6 +1035,7 @@ extension BackupScheduler {
             task.backupStatus = .failed
             task.lastBackupDate = Date()
             task.currentFile = nil
+            resetCurrentFileProgress(for: task)
             
             throw error
         }
@@ -1055,7 +1062,11 @@ extension BackupScheduler {
                         // NaN kontrolü ile güvenli progress update
                         let safeProgress = progress.isNaN || progress.isInfinite ? 0.0 : max(0.0, min(1.0, progress))
                         task.progress = safeProgress
-                        task.currentFile = "backup.current_file.uploading".localized
+                        task.currentFile = ftpService.currentFile.isEmpty ? "backup.current_file.uploading".localized : ftpService.currentFile
+                        task.currentFileProgress = ftpService.progress
+                        task.currentFileBytesTransferred = ftpService.currentFileBytesTransferred
+                        task.currentFileTotalBytes = ftpService.currentFileTotalBytes
+                        task.transferSpeedBytesPerSecond = ftpService.transferSpeedBytesPerSecond
                     }
                 }
             )
@@ -1137,6 +1148,10 @@ extension BackupScheduler {
                         let safeProgress = progress.isNaN || progress.isInfinite ? 0.0 : max(0.0, min(1.0, progress))
                         task.progress = safeProgress
                         task.currentFile = webDAVService.currentFile
+                        task.currentFileProgress = webDAVService.progress
+                        task.currentFileBytesTransferred = webDAVService.currentFileBytesTransferred
+                        task.currentFileTotalBytes = webDAVService.currentFileTotalBytes
+                        task.transferSpeedBytesPerSecond = webDAVService.transferSpeedBytesPerSecond
                     }
                 }
             )
@@ -1147,6 +1162,7 @@ extension BackupScheduler {
             task.backupStatus = .failed
             task.progress = 0.0  // Reset to 0.0 on failure, safe value
             task.currentFile = "backup.current_file.error".localized(with: error.localizedDescription)
+            resetCurrentFileProgress(for: task)
             
             print("❌ BackupFlow: WebDAV yedekleme hatası: \(error.localizedDescription)")
             throw error
@@ -1188,6 +1204,10 @@ extension BackupScheduler {
                         let safeProgress = progress.isNaN || progress.isInfinite ? 0.0 : max(0.0, min(1.0, progress))
                         task.progress = safeProgress
                         task.currentFile = "backup.current_file.uploading".localized
+                        task.currentFileProgress = 0
+                        task.currentFileBytesTransferred = 0
+                        task.currentFileTotalBytes = 0
+                        task.transferSpeedBytesPerSecond = 0
                     }
                 }
             )
@@ -1197,11 +1217,19 @@ extension BackupScheduler {
             task.backupStatus = .failed
             task.progress = 0.0
             task.currentFile = "backup.current_file.error".localized(with: error.localizedDescription)
+            resetCurrentFileProgress(for: task)
             print("❌ BackupFlow: SFTP yedekleme hatası: \(error.localizedDescription)")
             throw error
         }
     }
     
+    private func resetCurrentFileProgress(for task: BackupTask) {
+        task.currentFileProgress = 0
+        task.currentFileBytesTransferred = 0
+        task.currentFileTotalBytes = 0
+        task.transferSpeedBytesPerSecond = 0
+    }
+
     /// Detaylı yedekleme tamamlanma bildirimi gönder
     private func sendBackupCompletionNotification(task: BackupTask, syncResult: FTPService.SyncResult) async {
         guard await UNUserNotificationCenter.current().notificationSettings().authorizationStatus == .authorized else {
