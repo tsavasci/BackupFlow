@@ -453,7 +453,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         allowBackgroundSession: Bool,
         timeoutMultiplier: Double = 1.0
     ) async throws {
-        guard let provider = webdavProvider else {
+        guard webdavProvider != nil else {
             throw BackupServiceError.connectionFailed
         }
         
