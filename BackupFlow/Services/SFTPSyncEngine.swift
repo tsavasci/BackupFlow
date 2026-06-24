@@ -248,7 +248,7 @@ struct SFTPSyncEngine {
             var isDirectory: ObjCBool = false
             let exists = FileManager.default.fileExists(atPath: coordinatedURL.path, isDirectory: &isDirectory)
             guard exists && isDirectory.boolValue else {
-                throw NSError(domain: "SFTPError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Directory does not exist or is not accessible"])
+                throw NSError(domain: "SFTPError", code: -1, userInfo: [NSLocalizedDescriptionKey: "error.directory.not_accessible".localized])
             }
             
             guard let enumerator = FileManager.default.enumerator(
@@ -256,7 +256,7 @@ struct SFTPSyncEngine {
                 includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey],
                 options: [.skipsHiddenFiles]
             ) else {
-                throw NSError(domain: "SFTPError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Could not enumerate directory"])
+                throw NSError(domain: "SFTPError", code: -1, userInfo: [NSLocalizedDescriptionKey: "error.directory.enumeration_failed".localized])
             }
             
             for case let fileURL as URL in enumerator {

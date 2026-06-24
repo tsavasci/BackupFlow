@@ -38,10 +38,10 @@ struct AboutView: View {
                         
                         // About Section
                         SectionCard(
-                            title: "Hakkında",
+                            title: "about.section.about".localized,
                             icon: "info.circle.fill",
                             content: {
-                                Text("BackupFlow, dosyalarınızı FTP, SFTP ve WebDAV sunucularına otomatik olarak yedeklemek için tasarlanmıştır. Güvenli, hızlı ve güvenilir yedekleme çözümü.")
+                                Text("about.description".localized)
                                     .font(DesignSystem.Typography.body)
                                     .foregroundColor(.secondary)
                             }
@@ -52,17 +52,17 @@ struct AboutView: View {
                             HStack(spacing: DesignSystem.Spacing.small) {
                                 Image(systemName: "star.fill")
                                     .foregroundColor(DesignSystem.Colors.primary)
-                                Text("Özellikler")
+                                Text("about.features.title".localized)
                                     .font(DesignSystem.Typography.headline)
                             }
                             
                             VStack(alignment: .leading, spacing: DesignSystem.Spacing.small) {
-                                FeatureRow(icon: "shield.fill", text: "Güvenli şifreleme ve bağlantı")
-                                FeatureRow(icon: "clock.fill", text: "Otomatik zamanlanmış yedeklemeler")
-                                FeatureRow(icon: "bolt.fill", text: "Hızlı ve etkili dosya senkronizasyonu")
-                                FeatureRow(icon: "globe", text: "FTP, SFTP ve WebDAV desteği")
-                                FeatureRow(icon: "checkmark.circle.fill", text: "Akıllı dosya filtreleme")
-                                FeatureRow(icon: "chart.bar.fill", text: "Detaylı geçmiş ve istatistikler")
+                                FeatureRow(icon: "shield.fill", text: "about.feature.security".localized)
+                                FeatureRow(icon: "clock.fill", text: "about.feature.scheduled".localized)
+                                FeatureRow(icon: "bolt.fill", text: "about.feature.fast_sync".localized)
+                                FeatureRow(icon: "globe", text: "about.feature.protocols".localized)
+                                FeatureRow(icon: "checkmark.circle.fill", text: "about.feature.smart_filtering".localized)
+                                FeatureRow(icon: "chart.bar.fill", text: "about.feature.history_stats".localized)
                             }
                         }
                         .padding(DesignSystem.Spacing.base)
@@ -73,11 +73,11 @@ struct AboutView: View {
                         
                         // Support Section
                         SectionCard(
-                            title: "Destek",
+                            title: "about.section.support".localized,
                             icon: "envelope.circle.fill",
                             content: {
                                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.medium) {
-                                    Text("Sorularınız veya önerileriniz mi var? Bize iletişim kurabilirsiniz.")
+                                    Text("about.support.description".localized)
                                         .font(DesignSystem.Typography.body)
                                         .foregroundColor(.secondary)
                                     
@@ -100,10 +100,10 @@ struct AboutView: View {
                         
                         // License Section
                         SectionCard(
-                            title: "Lisans",
+                            title: "about.section.license".localized,
                             icon: "doc.text.fill",
                             content: {
-                                Text("BackupFlow, MIT Lisansı altında dağıtılmaktadır. Yazılımı özgürce kullanabilir, değiştirebilir ve dağıtabilirsiniz.")
+                                Text("about.license.description".localized)
                                     .font(DesignSystem.Typography.body)
                                     .foregroundColor(.secondary)
                             }
@@ -115,7 +115,7 @@ struct AboutView: View {
                                 .font(DesignSystem.Typography.caption1)
                                 .foregroundColor(.secondary)
                             
-                            Text("Tüm hakları saklıdır.")
+                            Text("about.rights_reserved".localized)
                                 .font(DesignSystem.Typography.caption2)
                                 .foregroundColor(.secondary)
                         }
@@ -133,7 +133,7 @@ struct AboutView: View {
     
     private func openSupportEmail() {
         let email = "tamersavasci@icloud.com"
-        let subject = "BackupFlow Destek İsteği"
+        let subject = "about.support.email_subject".localized
         let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
         let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
         let deviceModel = UIDevice.current.model
@@ -143,8 +143,8 @@ struct AboutView: View {
         
         
         ---
-        Uygulama Sürümü: \(appVersion) (\(buildNumber))
-        Cihaz: \(deviceModel)
+        \("about.support.email_app_version".localized): \(appVersion) (\(buildNumber))
+        \("about.support.email_device".localized): \(deviceModel)
         iOS: \(iosVersion)
         """
         
@@ -153,16 +153,16 @@ struct AboutView: View {
         let mailtoURL = "mailto:\(email)?subject=\(encodedSubject)&body=\(encodedBody)"
         
         guard let url = URL(string: mailtoURL) else {
-            print("❌ BackupFlow: Geçersiz email URL")
+            debugLog("❌ BackupFlow: Geçersiz email URL")
             return
         }
         
         if UIApplication.shared.canOpenURL(url) {
             UIApplication.shared.open(url)
-            print("📧 BackupFlow: Destek email'i açılıyor")
+            debugLog("📧 BackupFlow: Destek email'i açılıyor")
         } else {
             UIPasteboard.general.string = email
-            print("📋 BackupFlow: Email adresi kopyalandı: \(email)")
+            debugLog("📋 BackupFlow: Email adresi kopyalandı: \(email)")
         }
     }
 }

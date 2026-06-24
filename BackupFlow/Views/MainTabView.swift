@@ -53,8 +53,12 @@ struct MainTabView: View {
 
     private var lastConnectionStatus: String {
         if isBackingUp { return "dashboard.status.syncing".localized }
-        if tasks.isEmpty { return "backup.status.idle".localized }
-        return "dashboard.status.connected".localized
+        if activeTaskCount == 1 { return "dashboard.status.active_task_count_one".localized(with: activeTaskCount) }
+        return "dashboard.status.active_task_count_many".localized(with: activeTaskCount)
+    }
+
+    private var activeTaskCount: Int {
+        tasks.filter { $0.isEnabled && !$0.isPaused }.count
     }
 
     private var selectedServerName: String {
@@ -285,32 +289,38 @@ struct MainTabView: View {
                         .foregroundStyle(.white)
                 }
 
-                HStack(alignment: .bottom, spacing: 12) {
+                HStack(alignment: .bottom, spacing: 10) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(isBackingUp ? "dashboard.backing_up_now".localized : "dashboard.safe_synced".localized)
                             .font(.title.weight(.bold))
                             .foregroundStyle(.white)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.72)
+                            .allowsTightening(true)
                         Text(isBackingUp ? backupMessage : selectedServerName)
                             .font(.subheadline)
                             .foregroundStyle(.white.opacity(0.85))
                             .lineLimit(2)
+                            .minimumScaleFactor(0.82)
                     }
-
-                    Spacer()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .layoutPriority(2)
 
                     Button {
                         if isBackingUp { return }
                         showBackupSheet = true
                     } label: {
-                        Label("dashboard.backup_now".localized, systemImage: "arrow.up.circle.fill")
-                            .font(.subheadline.weight(.semibold))
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 12)
-                            .background(.white.opacity(0.15))
+                        Image(systemName: "play.fill")
+                            .font(.headline.weight(.bold))
+                            .frame(width: 48, height: 48)
+                            .background(Color.green.opacity(0.92))
                             .foregroundStyle(.white)
-                            .clipShape(Capsule())
+                            .clipShape(Circle())
+                            .shadow(color: .black.opacity(0.12), radius: 10, x: 0, y: 6)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("dashboard.backup_now".localized)
+                    .layoutPriority(1)
                 }
             }
             .padding(24)
@@ -346,7 +356,7 @@ struct MainTabView: View {
                                     .font(.subheadline.weight(.semibold))
                                     .foregroundStyle(.primary)
                                     .lineLimit(1)
-                                Text(task.destinationPath.isEmpty ? "/" : task.destinationPath)
+                                Text("dashboard.destination_format".localized(with: serverDestinationText(for: task)))
                                     .font(.caption2)
                                     .foregroundStyle(.secondary)
                                     .lineLimit(1)
@@ -392,6 +402,18 @@ struct MainTabView: View {
                                         endPoint: .bottomTrailing
                                     )
                                 )
+                                .overlay(alignment: .bottomTrailing) {
+                                    Text(serverProtocolWatermark(for: task))
+                                        .font(.system(size: 58, weight: .black, design: .rounded))
+                                        .foregroundStyle(taskTheme.primary.opacity(task.id == activeTask?.id ? 0.24 : 0.16))
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.72)
+                                        .allowsTightening(true)
+                                        .padding(.trailing, 18)
+                                        .offset(y: 10)
+                                        .allowsHitTesting(false)
+                                }
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
@@ -407,6 +429,10 @@ struct MainTabView: View {
                                     lineWidth: task.id == activeTask?.id ? 1.2 : 0.8
                                 )
                         )
+                        .contentShape(RoundedRectangle(cornerRadius: 12))
+                        .onTapGesture {
+                            selectedTask = task
+                        }
                         .contextMenu {
                             Button {
                                 startTaskNow(task)
@@ -429,13 +455,10 @@ struct MainTabView: View {
     private var quickActions: some View {
         HStack(spacing: 12) {
             DashboardActionButton(icon: "arrow.triangle.2.circlepath", title: "dashboard.action.sync".localized, theme: dashboardTheme) {
-                showBackupSheet = true
+                syncActiveTasks()
             }
             DashboardActionButton(icon: "clock.arrow.circlepath", title: "nav.history".localized, theme: dashboardTheme) {
                 showHistory = true
-            }
-            DashboardActionButton(icon: "folder.badge.plus", title: "dashboard.action.files".localized, theme: dashboardTheme) {
-                showBackupSheet = true
             }
             DashboardActionButton(icon: "plus.circle.fill", title: "dashboard.add".localized, theme: dashboardTheme) {
                 showBackupSheet = true
@@ -546,7 +569,8 @@ struct MainTabView: View {
     }
 
     private var statusDotColor: Color {
-        isBackingUp ? dashboardTheme.primary : .green
+        if isBackingUp { return dashboardTheme.primary }
+        return activeTaskCount > 0 ? .green : .secondary
     }
 
     private var lastSyncText: String {
@@ -601,6 +625,7 @@ struct MainTabView: View {
     }
 
     private func deleteTask(_ task: BackupTask) {
+        task.removeStoredPassword()
         modelContext.delete(task)
         try? modelContext.save()
         taskToDelete = nil
@@ -619,6 +644,57 @@ struct MainTabView: View {
         Task {
             try? await BackupScheduler.shared.performBackup(task: task, bypassThrottle: true)
         }
+    }
+
+    private func syncActiveTasks() {
+        let runnableTasks = tasks.filter { $0.isEnabled && !$0.isPaused }
+        guard !runnableTasks.isEmpty else {
+            showBackupSheet = true
+            return
+        }
+
+        Task {
+            for task in runnableTasks where !isTaskRunning(task) {
+                try? await BackupScheduler.shared.performBackup(task: task, bypassThrottle: true)
+            }
+        }
+    }
+
+    private func serverDestinationText(for task: BackupTask) -> String {
+        let path = task.destinationPath.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard path.isEmpty || path == "/" else { return path }
+
+        switch task.backupType {
+        case .sftp:
+            return "dashboard.destination.auto".localized(with: fallbackDestinationName(for: task))
+        case .ftp, .webdav:
+            return "dashboard.destination.root".localized
+        }
+    }
+
+    private func serverProtocolWatermark(for task: BackupTask) -> String {
+        switch task.backupType {
+        case .ftp:
+            return "FTP"
+        case .sftp:
+            return "SFTP"
+        case .webdav:
+            return "WebDAV"
+        }
+    }
+
+    private func fallbackDestinationName(for task: BackupTask) -> String {
+        guard let sourcePath = task.sourcePath?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !sourcePath.isEmpty else {
+            return "backup"
+        }
+
+        if sourcePath == "PHOTOS_LIBRARY" {
+            return "photos"
+        }
+
+        let name = URL(fileURLWithPath: sourcePath).lastPathComponent
+        return name.isEmpty ? "backup" : name
     }
 
     private func pauseOrCancelTask(_ task: BackupTask) {

@@ -40,7 +40,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     }()
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        print("🔄 BackupFlow: AppDelegate başlatıldı (BGTaskScheduler mode)")
+        debugLog("🔄 BackupFlow: AppDelegate başlatıldı (BGTaskScheduler mode)")
         
         // Suppress auto-layout constraint warnings
         UserDefaults.standard.set(false, forKey: "_UIConstraintBasedLayoutLogUnsatisfiable")
@@ -61,12 +61,12 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             do {
                 let granted = try await center.requestAuthorization(options: [.alert, .sound, .badge])
                 if granted {
-                    print("✅ BackupFlow: Bildirim izni verildi")
+                    debugLog("✅ BackupFlow: Bildirim izni verildi")
                 } else {
-                    print("❌ BackupFlow: Bildirim izni reddedildi")
+                    debugLog("❌ BackupFlow: Bildirim izni reddedildi")
                 }
             } catch {
-                print("❌ BackupFlow: Bildirim izni hatası: \(error)")
+                debugLog("❌ BackupFlow: Bildirim izni hatası: \(error)")
             }
         }
         
@@ -97,33 +97,41 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         
         // Register categories
         UNUserNotificationCenter.current().setNotificationCategories([scheduledBackupCategory])
-        print("✅ BackupFlow: Notification kategorileri kaydedildi")
+        debugLog("✅ BackupFlow: Notification kategorileri kaydedildi")
     }
 
     func registerBackgroundTask() {
         BGTaskScheduler.shared.register(forTaskWithIdentifier: backgroundTaskIdentifier, using: nil) { task in
             // This is called by the OS when it's time to run the task
-            print("🔄 BGTaskScheduler: Görev çalıştırılıyor.")
-            self.handleAppRefresh(task: task as! BGAppRefreshTask)
+            debugLog("🔄 BGTaskScheduler: Görev çalıştırılıyor.")
+            guard let appRefreshTask = task as? BGAppRefreshTask else {
+                task.setTaskCompleted(success: false)
+                return
+            }
+            self.handleAppRefresh(task: appRefreshTask)
         }
         BGTaskScheduler.shared.register(forTaskWithIdentifier: processingTaskIdentifier, using: nil) { task in
-            print("🔄 BGTaskScheduler: Processing görevi çalıştırılıyor.")
-            self.handleProcessing(task: task as! BGProcessingTask)
+            debugLog("🔄 BGTaskScheduler: Processing görevi çalıştırılıyor.")
+            guard let processingTask = task as? BGProcessingTask else {
+                task.setTaskCompleted(success: false)
+                return
+            }
+            self.handleProcessing(task: processingTask)
         }
         // Not: AppRefresh görevi kayıtlı fakat her background geçişinde planlanmıyor; çifte tetiklemeyi azaltmak için Processing tercih edildi.
-        print("✅ BGTaskScheduler: Arka plan görevi kaydedildi.")
+        debugLog("✅ BGTaskScheduler: Arka plan görevi kaydedildi.")
     }
 
     func handleAppRefresh(task: BGAppRefreshTask) {
-        print("🔄 BGTaskScheduler: Arka plan yenileme görevi başlatılıyor...")
+        debugLog("🔄 BGTaskScheduler: Arka plan yenileme görevi başlatılıyor...")
         
         // Schedule a new refresh task for the future
         BackupScheduler.shared.scheduleAppRefresh()
         
         // Log task details
-        print("ℹ️ Görev detayları:")
-        print("   - ID: \(task.identifier)")
-        print("   - Başlangıç: \(Date())")
+        debugLog("ℹ️ Görev detayları:")
+        debugLog("   - ID: \(task.identifier)")
+        debugLog("   - Başlangıç: \(Date())")
         
         let completionLock = NSLock()
         var didComplete = false
@@ -137,8 +145,8 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         
         task.expirationHandler = {
             // Clean up any unfinished work
-            print("⚠️ BGTaskScheduler: Görev süresi doluyor...")
-            print("ℹ️ BGTaskScheduler: Upload işlemi devam ediyor, sistem iptal etse de network aktif kalacak")
+            debugLog("⚠️ BGTaskScheduler: Görev süresi doluyor...")
+            debugLog("ℹ️ BGTaskScheduler: Upload işlemi devam ediyor, sistem iptal etse de network aktif kalacak")
             // Görevi tamamlandı olarak işaretle; upload devam edebilir ama BGTask kapanmalı
             complete(false)
         }
@@ -146,15 +154,15 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         // Perform the backup in a background-safe way
         let startTime = Date()
         Task {
-            print("⏳ BGTaskScheduler: Yedekleme işlemi başlatılıyor...")
+            debugLog("⏳ BGTaskScheduler: Yedekleme işlemi başlatılıyor...")
             
             // Log available background time
             let remainingTime = UIApplication.shared.backgroundTimeRemaining
             let remainingText: String = remainingTime.isFinite ? String(format: "%.1f", remainingTime) : "∞"
-            print("   ⏳ Kalan arka plan süresi: \(remainingText) saniye")
+            debugLog("   ⏳ Kalan arka plan süresi: \(remainingText) saniye")
             
             // Also check if any timers should have fired but didn't
-            print("🔍 BGTaskScheduler: Timer durumları kontrol ediliyor...")
+            debugLog("🔍 BGTaskScheduler: Timer durumları kontrol ediliyor...")
             await BackupScheduler.shared.checkMissedTimers()
             
             let success = await BackupScheduler.shared.executeBackgroundTask()
@@ -162,10 +170,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             // Log completion status and duration
             let duration = Date().timeIntervalSince(startTime)
             if success {
-                print("✅ BGTaskScheduler: Görev başarıyla tamamlandı.")
-                print("   ⏱️ Toplam süre: \(String(format: "%.1f", duration)) saniye")
+                debugLog("✅ BGTaskScheduler: Görev başarıyla tamamlandı.")
+                debugLog("   ⏱️ Toplam süre: \(String(format: "%.1f", duration)) saniye")
             } else {
-                print("⚠️ BGTaskScheduler: Görev tamamlandı ancak yedekleme yapılamadı.")
+                debugLog("⚠️ BGTaskScheduler: Görev tamamlandı ancak yedekleme yapılamadı.")
             }
             
             complete(success)
@@ -177,7 +185,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         handleEventsForBackgroundURLSession identifier: String,
         completionHandler: @escaping () -> Void
     ) {
-        print("🌐 Background URLSession event received: \(identifier)")
+        debugLog("🌐 Background URLSession event received: \(identifier)")
         
         // Store the completion handler for WebDAVService to call when background session completes
         DispatchQueue.main.async {
@@ -186,15 +194,15 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     }
 
     func handleProcessing(task: BGProcessingTask) {
-        print("🔄 BGTaskScheduler: Uzun süreli işlem görevi başlatılıyor...")
+        debugLog("🔄 BGTaskScheduler: Uzun süreli işlem görevi başlatılıyor...")
         
         // Re-schedule after finish
         BackupScheduler.shared.scheduleProcessingTask()
         
         // Log task details
-        print("ℹ️ İşlem görevi detayları:")
-        print("   - ID: \(task.identifier)")
-        print("   - Başlangıç: \(Date())")
+        debugLog("ℹ️ İşlem görevi detayları:")
+        debugLog("   - ID: \(task.identifier)")
+        debugLog("   - Başlangıç: \(Date())")
         
         let completionLock = NSLock()
         var didComplete = false
@@ -210,8 +218,8 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
         
         task.expirationHandler = {
-            print("⚠️ BGTaskScheduler: İşlem süresi doluyor...")
-            print("ℹ️ BGTaskScheduler: Upload devam ediyor, network bağlantısı korunuyor")
+            debugLog("⚠️ BGTaskScheduler: İşlem süresi doluyor...")
+            debugLog("ℹ️ BGTaskScheduler: Upload devam ediyor, network bağlantısı korunuyor")
             // Upload işlemi devam etsin, BGTask tamamlanmış sayılsın
             if backgroundTaskID != .invalid {
                 UIApplication.shared.endBackgroundTask(backgroundTaskID)
@@ -221,7 +229,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         }
 
         backgroundTaskID = UIApplication.shared.beginBackgroundTask {
-            print("⚠️ Arka plan süresi doluyor, işlem sonlandırılıyor...")
+            debugLog("⚠️ Arka plan süresi doluyor, işlem sonlandırılıyor...")
             if backgroundTaskID != .invalid {
                 UIApplication.shared.endBackgroundTask(backgroundTaskID)
                 backgroundTaskID = .invalid
@@ -231,22 +239,22 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         
         let startTime = Date()
         Task {
-            print("⏳ BGTaskScheduler: Uzun süreli yedekleme işlemi başlatılıyor...")
+            debugLog("⏳ BGTaskScheduler: Uzun süreli yedekleme işlemi başlatılıyor...")
             
             // Log available background time
             let remainingTime = UIApplication.shared.backgroundTimeRemaining
             let remainingText: String = remainingTime.isFinite ? String(format: "%.1f", remainingTime) : "∞"
-            print("   ⏳ Kalan arka plan süresi: \(remainingText) saniye")
+            debugLog("   ⏳ Kalan arka plan süresi: \(remainingText) saniye")
             
             let success = await BackupScheduler.shared.executeBackgroundTask()
             
             // Log completion status and duration
             let duration = Date().timeIntervalSince(startTime)
             if success {
-                print("✅ BGTaskScheduler: İşlem görevi başarıyla tamamlandı.")
-                print("   ⏱️ Toplam süre: \(String(format: "%.1f", duration)) saniye")
+                debugLog("✅ BGTaskScheduler: İşlem görevi başarıyla tamamlandı.")
+                debugLog("   ⏱️ Toplam süre: \(String(format: "%.1f", duration)) saniye")
             } else {
-                print("⚠️ BGTaskScheduler: İşlem tamamlandı ancak yedekleme yapılamadı.")
+                debugLog("⚠️ BGTaskScheduler: İşlem tamamlandı ancak yedekleme yapılamadı.")
             }
             
             // End the background task
@@ -277,7 +285,7 @@ struct BackupFlowApp: App {
             let appSupportURL = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
             try FileManager.default.createDirectory(at: appSupportURL, withIntermediateDirectories: true)
         } catch {
-            print("⚠️ BackupFlow: Application Support dizini oluşturulamadı: \(error)")
+            debugLog("⚠️ BackupFlow: Application Support dizini oluşturulamadı: \(error)")
         }
         
         do {
@@ -290,7 +298,13 @@ struct BackupFlowApp: App {
             
             return container
         } catch {
-            fatalError("Could not create ModelContainer: \(error)")
+            assertionFailure("Could not create ModelContainer: \(error)")
+            let fallbackConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+            do {
+                return try ModelContainer(for: schema, configurations: [fallbackConfiguration])
+            } catch {
+                preconditionFailure("Could not create fallback ModelContainer: \(error)")
+            }
         }
     }()
     
@@ -299,21 +313,23 @@ struct BackupFlowApp: App {
         let context = ModelContext(container)
         
         do {
-            // MediaType artık nil olamaz, bu yüzden migration gerekli değil
-            // Eski verilerle uyumluluk için gerekliyse, başka bir migration stratejisi uygulanabilir
+            let tasks = try context.fetch(FetchDescriptor<BackupTask>())
+            for task in tasks {
+                task.migratePasswordToKeychainIfNeeded()
+            }
             
             // Eğer başka migration işlemleri yapılıyorsa, burada devam edilebilir
             try context.save()
-            print("✅ BackupFlow: Veritabanı güncellendi")
+            debugLog("✅ BackupFlow: Veritabanı güncellendi")
         } catch {
-            print("❌ BackupFlow: Veritabanı güncelleme hatası: \(error)")
+            debugLog("❌ BackupFlow: Veritabanı güncelleme hatası: \(error)")
         }
     }
     
     init() {
         // Test localization
         let testString = "settings.title".localized
-        print("🌍 Test localization: \(testString)")
+        debugLog("🌍 Test localization: \(testString)")
         
         // BackupScheduler'a shared container'ı inject et
         BackupScheduler.sharedModelContainer = sharedModelContainer
@@ -335,15 +351,15 @@ struct BackupFlowApp: App {
             if newPhase == .background {
                 WebDAVService.shared.updateBackgroundMode(isBackground: true)
                 if BackupScheduler.shared.isProcessing {
-                    print("⚠️ App moved to background. Active backup detected - keeping current process running.")
-                    print("📱 Background URLSession will continue the upload process.")
+                    debugLog("⚠️ App moved to background. Active backup detected - keeping current process running.")
+                    debugLog("📱 Background URLSession will continue the upload process.")
                 } else {
-                    print("🔄 App moved to background. Scheduling processing task.")
+                    debugLog("🔄 App moved to background. Scheduling processing task.")
                 }
                 // Processing görevi ağ ve uzun işlem için daha uygun
                 BackupScheduler.shared.scheduleProcessingTask()
             } else if newPhase == .active {
-                print("📱 BackupFlow: App foreground'a geldi")
+                debugLog("📱 BackupFlow: App foreground'a geldi")
                 WebDAVService.shared.updateBackgroundMode(isBackground: false)
                 
                 // Missed timer kontrolü
@@ -359,9 +375,9 @@ struct BackupFlowApp: App {
                 Task {
                     do {
                         try await UNUserNotificationCenter.current().setBadgeCount(0)
-                        print("🔔 BackupFlow: App badge temizlendi")
+                        debugLog("🔔 BackupFlow: App badge temizlendi")
                     } catch {
-                        print("❌ BackupFlow: Badge temizleme hatası: \(error)")
+                        debugLog("❌ BackupFlow: Badge temizleme hatası: \(error)")
                     }
                 }
             }

@@ -132,20 +132,20 @@ struct SettingsView: View {
             // This uses the modern SwiftUI approach which is preferred.
             // It automatically finds the correct scene.
             requestReview()
-            print("📱 BackupFlow: requestReview() çağrıldı (iOS 14+)")
+            debugLog("📱 BackupFlow: requestReview() çağrıldı (iOS 14+)")
         } else {
             // Fallback for iOS 13.
             SKStoreReviewController.requestReview()
-            print("📱 BackupFlow: SKStoreReviewController.requestReview() çağrıldı (iOS 13)")
+            debugLog("📱 BackupFlow: SKStoreReviewController.requestReview() çağrıldı (iOS 13)")
         }
         #elseif os(macOS)
         if #available(macOS 11.0, *) {
             requestReview()
-            print("🖥️ BackupFlow: requestReview() çağrıldı (macOS 11+)")
+            debugLog("🖥️ BackupFlow: requestReview() çağrıldı (macOS 11+)")
         } else {
             // Fallback for macOS 10.14, 10.15.
             SKStoreReviewController.requestReview()
-            print("🖥️ BackupFlow: SKStoreReviewController.requestReview() çağrıldı (eski macOS)")
+            debugLog("🖥️ BackupFlow: SKStoreReviewController.requestReview() çağrıldı (eski macOS)")
         }
         #endif
     }
@@ -177,21 +177,21 @@ struct SettingsView: View {
         let mailtoURL = "mailto:\(email)?subject=\(encodedSubject)&body=\(encodedBody)"
         
         guard let url = URL(string: mailtoURL) else {
-            print("❌ BackupFlow: Geçersiz email URL")
+            debugLog("❌ BackupFlow: Geçersiz email URL")
             return
         }
 
         #if canImport(UIKit)
         if UIApplication.shared.canOpenURL(url) {
             UIApplication.shared.open(url)
-            print("📧 BackupFlow: Destek email'i açılıyor")
+            debugLog("📧 BackupFlow: Destek email'i açılıyor")
         } else {
             // Mail app yoksa, sadece email adresini clipboard'a kopyala
             UIPasteboard.general.string = email
-            print("📋 BackupFlow: Email adresi kopyalandı: \(email)")
+            debugLog("📋 BackupFlow: Email adresi kopyalandı: \(email)")
         }
         #else
-        print("📧 BackupFlow: Mail URL: \(mailtoURL)")
+        debugLog("📧 BackupFlow: Mail URL: \(mailtoURL)")
         #endif
     }
     
@@ -206,6 +206,7 @@ struct SettingsView: View {
                 let taskDescriptor = FetchDescriptor<BackupTask>()
                 let allTasks = try modelContext.fetch(taskDescriptor)
                 for task in allTasks {
+                    task.removeStoredPassword()
                     modelContext.delete(task)
                 }
                 
@@ -217,7 +218,7 @@ struct SettingsView: View {
                 }
                 
                 try modelContext.save()
-                print("✅ BackupFlow: Tüm veriler başarıyla silindi")
+                debugLog("✅ BackupFlow: Tüm veriler başarıyla silindi")
                 
                 // Reset app storage values to defaults
                 keepHistoryDays = 30
@@ -225,7 +226,7 @@ struct SettingsView: View {
                 // Dil sıfırlama kaldırıldı - Uygulama sadece Türkçe
                 
             } catch {
-                print("❌ BackupFlow: Veri silme hatası: \(error)")
+                debugLog("❌ BackupFlow: Veri silme hatası: \(error)")
             }
         }
     }

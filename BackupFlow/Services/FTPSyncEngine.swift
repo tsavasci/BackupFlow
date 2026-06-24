@@ -149,14 +149,14 @@ struct FTPSyncEngine {
 
         progressHandler?(1.0)
 
-        print("✅ BackupFlow: FTP enhanced mirror sync completed")
-        print("   📊 Sync Report:")
-        print("   📤 New files uploaded: \(result.newFiles)")
-        print("   🔄 Files updated: \(result.updatedFiles)")
-        print("   ⏭ Files skipped (identical): \(result.skippedFiles)")
-        print("   🗑 Orphaned files deleted: \(result.deletedFiles)")
-        print("   ❌ Failed operations: \(failedCount)")
-        print("   💾 Total data transferred: \(formatBytes(transferredBytes))")
+        debugLog("✅ BackupFlow: FTP enhanced mirror sync completed")
+        debugLog("   📊 Sync Report:")
+        debugLog("   📤 New files uploaded: \(result.newFiles)")
+        debugLog("   🔄 Files updated: \(result.updatedFiles)")
+        debugLog("   ⏭ Files skipped (identical): \(result.skippedFiles)")
+        debugLog("   🗑 Orphaned files deleted: \(result.deletedFiles)")
+        debugLog("   ❌ Failed operations: \(failedCount)")
+        debugLog("   💾 Total data transferred: \(formatBytes(transferredBytes))")
 
         if isVerboseLoggingEnabled {
             logger.info("Enhanced mirror sync completed - Uploaded: \(uploadedCount), Skipped: \(skippedCount), Failed: \(failedCount), Deleted: \(deletedCount)")
@@ -216,7 +216,7 @@ struct FTPSyncEngine {
                 logger.info("📂 Directory exists: \(exists), isDirectory: \(isDirectory.boolValue)")
 
                 guard exists && isDirectory.boolValue else {
-                    throw NSError(domain: "FTPError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Directory does not exist or is not accessible"])
+                    throw NSError(domain: "FTPError", code: -1, userInfo: [NSLocalizedDescriptionKey: "error.directory.not_accessible".localized])
                 }
 
                 do {
@@ -240,7 +240,7 @@ struct FTPSyncEngine {
                     options: [.skipsHiddenFiles]
                 ) else {
                     logger.error("❌ Could not create file enumerator for: \(coordinatedURL.path)")
-                    throw NSError(domain: "FTPError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Could not enumerate directory"])
+                    throw NSError(domain: "FTPError", code: -1, userInfo: [NSLocalizedDescriptionKey: "error.directory.enumeration_failed".localized])
                 }
 
                 var fileCount = 0
@@ -282,14 +282,14 @@ struct FTPSyncEngine {
         let assets = try await photoManager.getAllAssets(mediaType: mediaType)
         let totalCount = assets.count
 
-        print("📸 BackupFlow: \(totalCount) medya dosyası bulundu")
+        debugLog("📸 BackupFlow: \(totalCount) medya dosyası bulundu")
 
         let photosDir = "photos"
         do {
             try await createDirectory(photosDir)
-            print("📁 BackupFlow: Photos klasörü hazır: \(photosDir)")
+            debugLog("📁 BackupFlow: Photos klasörü hazır: \(photosDir)")
         } catch {
-            print("⚠️ BackupFlow: Photos klasörü oluşturma hatası (devam edilecek): \(error)")
+            debugLog("⚠️ BackupFlow: Photos klasörü oluşturma hatası (devam edilecek): \(error)")
         }
 
         let existingFileMap = try await listAllFiles(at: photosDir)
@@ -336,15 +336,15 @@ struct FTPSyncEngine {
                 localSize = exportedSize
             case .iCloudOnly:
                 result.iCloudSkippedFiles += 1
-                print("☁️ BackupFlow: iCloud-only medya atlandı (ayar: sadece lokal): \(asset.localIdentifier)")
+                debugLog("☁️ BackupFlow: iCloud-only medya atlandı (ayar: sadece lokal): \(asset.localIdentifier)")
                 continue
             case .timedOut:
                 result.timedOutAssetReads += 1
-                print("⏱️ BackupFlow: Asset okuma zaman aşımı: \(asset.localIdentifier)")
+                debugLog("⏱️ BackupFlow: Asset okuma zaman aşımı: \(asset.localIdentifier)")
                 continue
             case .unavailable:
                 result.failedAssetReads += 1
-                print("⚠️ BackupFlow: Asset verisi alınamadı: \(asset.localIdentifier)")
+                debugLog("⚠️ BackupFlow: Asset verisi alınamadı: \(asset.localIdentifier)")
                 continue
             }
             defer { try? FileManager.default.removeItem(at: localURL) }
@@ -362,19 +362,19 @@ struct FTPSyncEngine {
                 result.skippedFiles += 1
                 result.totalBytes += localSize
                 setCurrentFile("backup.current_file.skipped_file".localized(with: stableFileName))
-                print("⏭ BackupFlow: Aynı dosya pas geçildi: \(stableFileName) (\(formatBytes(localSize)))")
+                debugLog("⏭ BackupFlow: Aynı dosya pas geçildi: \(stableFileName) (\(formatBytes(localSize)))")
             case .new:
                 setCurrentFile("backup.current_file.uploading_file".localized(with: stableFileName))
                 try await uploadPhotoFile(localURL, remotePath, stableFileName)
                 result.newFiles += 1
                 result.totalBytes += localSize
-                print("📤 BackupFlow: Yeni dosya yüklendi: \(stableFileName) (\(formatBytes(localSize)))")
+                debugLog("📤 BackupFlow: Yeni dosya yüklendi: \(stableFileName) (\(formatBytes(localSize)))")
             case .updated:
                 setCurrentFile("backup.current_file.updating_file".localized(with: stableFileName))
                 try await uploadPhotoFile(localURL, remotePath, stableFileName)
                 result.updatedFiles += 1
                 result.totalBytes += localSize
-                print("🔄 BackupFlow: Güncellenmiş dosya yüklendi: \(stableFileName) (\(formatBytes(localSize)))")
+                debugLog("🔄 BackupFlow: Güncellenmiş dosya yüklendi: \(stableFileName) (\(formatBytes(localSize)))")
             }
 
             let progress = Double(index + 1) / Double(totalCount)
@@ -395,10 +395,10 @@ struct FTPSyncEngine {
                     let fullRemotePath = "\(photosDir)/\(remotePath)"
                     try await deleteFile(fullRemotePath)
                     result.deletedFiles += 1
-                    print("🗑 BackupFlow: Silinmiş fotoğraf FTP'den kaldırıldı: \(remoteFile.name)")
+                    debugLog("🗑 BackupFlow: Silinmiş fotoğraf FTP'den kaldırıldı: \(remoteFile.name)")
                     logger.debug("Successfully deleted orphaned photo: \(remoteFile.name)")
                 } catch {
-                    print("⚠️ BackupFlow: Fotoğraf silinemedi: \(remoteFile.name), hata: \(error)")
+                    debugLog("⚠️ BackupFlow: Fotoğraf silinemedi: \(remoteFile.name), hata: \(error)")
                     logger.error("Failed to delete orphaned photo \(remoteFile.name): \(error.localizedDescription)")
                 }
             }

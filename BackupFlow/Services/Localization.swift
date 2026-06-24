@@ -4,7 +4,7 @@ import Foundation
 private struct LocalizationLogger {
     nonisolated static func logMissingLocalization(for key: String) {
         #if DEBUG
-        print("⚠️ Missing localization for key: \(key)")
+        debugLog("⚠️ Missing localization for key: \(key)")
         #endif
     }
 }

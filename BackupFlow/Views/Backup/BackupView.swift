@@ -10,7 +10,7 @@ enum PhotoLibraryPermission {
     case notDetermined
     case authorized
     case denied
-    
+
     var isGranted: Bool {
         return self == .authorized
     }
@@ -21,17 +21,17 @@ enum ConnectionStatus: Equatable {
     case testing(String)
     case success(String)
     case failure(String)
-    
+
     var isSuccess: Bool {
         if case .success = self { return true }
         return false
     }
-    
+
     var isTesting: Bool {
         if case .testing = self { return true }
         return false
     }
-    
+
     var message: String? {
         switch self {
         case .idle:
@@ -50,9 +50,9 @@ enum FrequencyType: String, CaseIterable, Identifiable {
     case manual
     case daily
     case weekly
-    
+
     var id: String { String(describing: self) }
-    
+
     var displayName: String {
         switch self {
         case .manual:
@@ -105,7 +105,7 @@ struct TimePicker: View {
 
 struct DayPicker: View {
     @Binding var selectedDay: Int // 1: Sunday, 2: Monday, ..., 7: Saturday
-    
+
     private var days: [(Int, String)] {
         [
             (1, "day.names.sunday".localized),
@@ -117,13 +117,13 @@ struct DayPicker: View {
             (7, "day.names.saturday".localized)
         ]
     }
-    
+
     var body: some View {
         VStack(alignment: .leading) {
             Text("backup.select_day".localized)
                 .font(.caption)
                 .foregroundColor(.secondary)
-            
+
             Picker("backup.day".localized, selection: $selectedDay) {
                 ForEach(days, id: \.0) { day, name in
                     Text(name).tag(day)
@@ -140,18 +140,18 @@ struct BackupView: View {
     // Varsayılan ayarlar
     private static let defaultFTPHost = "192.168.1.1"
     private static let defaultWebDAVPath = "/remote.php/dav/files/"
-    
+
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
-    
+
     @State private var selectedURL: URL?
     @State private var isPhotoLibrarySelected = false
     @State private var selectedMediaType: MediaType = .photosOnly
     @State private var includeICloudAssets = true
-    
+
     // Hedef seçimi
     @State private var selectedTarget: BackupTarget = .ftp
-    
+
     // FTP ayarları
     @State private var ftpHost = defaultFTPHost
     @State private var ftpPort = "21"
@@ -159,26 +159,26 @@ struct BackupView: View {
     @State private var ftpPassword = ""
     @State private var isAnonymous = false
     @State private var destinationPath = "/"
-    
+
     // SFTP ayarları
     @State private var sftpHost = ""
     @State private var sftpPort = "22"
     @State private var sftpUsername = ""
     @State private var sftpPassword = ""
     @State private var sftpPath = ""
-    
+
     // WebDAV ayarları
     @State private var webdavURL = ""
     @State private var webdavPort = "443"
     @State private var webdavUsername = ""
     @State private var webdavPassword = ""
     @State private var webdavPath = defaultWebDAVPath
-    
+
     @State private var frequencyType: FrequencyType = .manual
     @State private var selectedTime = ScheduleTime(hour: 0, minute: 0)
     @State private var selectedDay = 1 // 1: Sunday, 2: Monday, ..., 7: Saturday
     @State private var allowCellularForLocalServer = false // Network policy
-    
+
     @State private var showingDocumentPicker = false
     @State private var showingSaveAlert = false
     @State private var showingPhotoLibraryDeniedAlert = false
@@ -191,206 +191,297 @@ struct BackupView: View {
     @State private var firstBackupTaskToStart: BackupTask? = nil
     @State private var showingSFTPHostKeyAlert = false
     @State private var sftpHostKeyAlertMessage = ""
-    
+
     var body: some View {
-        return Form {
-            Section(header: Text("backup.source_section".localized)) {
-                VStack(alignment: .leading, spacing: 16) {
-                    // Photo Library Option
-                    Button(action: {
-                        isPhotoLibrarySelected = true
-                        selectedURL = nil
-                        requestPhotoLibraryAccess()
-                    }) {
-                        HStack {
-                            Image(systemName: isPhotoLibrarySelected ? "checkmark.circle.fill" : "circle")
-                                .foregroundColor(isPhotoLibrarySelected ? .blue : .gray)
-                            Text("backup.photos_option".localized)
+        let targetTheme = BackupSetupTheme.theme(for: selectedTarget)
+
+        return ZStack {
+            LinearGradient(
+                colors: [
+                    Color(.systemBackground),
+                    targetTheme.primary.opacity(0.05),
+                    Color(.systemBackground)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 16) {
+                    VStack(alignment: .leading, spacing: 18) {
+                        HStack(alignment: .top) {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("backup.new_backup".localized)
+                                    .font(.title.weight(.bold))
+                                    .foregroundStyle(.white)
+                                Text(selectedTarget.displayName)
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(.white.opacity(0.82))
+                            }
+
                             Spacer()
+
+                            Image(systemName: selectedTarget.iconName)
+                                .font(.title2.weight(.bold))
+                                .foregroundStyle(.white)
+                                .frame(width: 50, height: 50)
+                                .background(.white.opacity(0.16))
+                                .clipShape(Circle())
                         }
-                        .contentShape(Rectangle())
+
+                        HStack(spacing: 10) {
+                            Image(systemName: isPhotoLibrarySelected ? selectedMediaType.systemImageName : "folder.fill")
+                                .font(.callout.weight(.semibold))
+                            Text(isPhotoLibrarySelected ? selectedMediaType.displayName : (selectedURL?.lastPathComponent ?? "backup.source_section".localized))
+                                .font(.callout.weight(.semibold))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.78)
+                        }
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(.white.opacity(0.14))
+                        .clipShape(Capsule())
                     }
-                    .buttonStyle(PlainButtonStyle())
-                    
-                    // Media Type Selection (only when photo library is selected)
-                    if isPhotoLibrarySelected {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("backup.media_type_caption".localized)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            
-                            ForEach(MediaType.allCases) { mediaType in
-                                Button(action: {
-                                    selectedMediaType = mediaType
-                                }) {
-                                    HStack {
-                                        Image(systemName: selectedMediaType == mediaType ? "checkmark.circle.fill" : "circle")
-                                            .foregroundColor(selectedMediaType == mediaType ? .blue : .gray)
-                                        Image(systemName: mediaType.systemImageName)
-                                            .foregroundColor(.blue)
-                                        Text(mediaType.displayName)
-                                        Spacer()
+                    .padding(22)
+                    .background(
+                        RoundedRectangle(cornerRadius: 30)
+                            .fill(
+                                LinearGradient(
+                                    colors: [targetTheme.primary, targetTheme.secondary],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                    )
+                    .overlay(alignment: .bottomTrailing) {
+                        Text(selectedTarget.rawValue)
+                            .font(.system(size: 66, weight: .black, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.12))
+                            .padding(.trailing, 18)
+                            .offset(y: 14)
+                            .allowsHitTesting(false)
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 30))
+
+                    BackupSetupCard(
+                        title: "backup.source_section".localized,
+                        icon: "photo.on.rectangle.angled",
+                        theme: targetTheme
+                    ) {
+                        VStack(alignment: .leading, spacing: 14) {
+                            Button {
+                                isPhotoLibrarySelected = true
+                                selectedURL = nil
+                                requestPhotoLibraryAccess()
+                            } label: {
+                                BackupChoiceRow(
+                                    icon: "photo.on.rectangle.angled",
+                                    title: "backup.photos_option".localized,
+                                    subtitle: selectedMediaType.displayName,
+                                    isSelected: isPhotoLibrarySelected,
+                                    theme: targetTheme
+                                )
+                            }
+                            .buttonStyle(.plain)
+
+                            if isPhotoLibrarySelected {
+                                VStack(alignment: .leading, spacing: 10) {
+                                    Text("backup.media_type_caption".localized)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+
+                                    ForEach(MediaType.allCases) { mediaType in
+                                        Button {
+                                            selectedMediaType = mediaType
+                                        } label: {
+                                            BackupChoiceRow(
+                                                icon: mediaType.systemImageName,
+                                                title: mediaType.displayName,
+                                                subtitle: nil,
+                                                isSelected: selectedMediaType == mediaType,
+                                                theme: targetTheme
+                                            )
+                                        }
+                                        .buttonStyle(.plain)
                                     }
-                                    .contentShape(Rectangle())
+
+                                    Toggle("backup.photo_backup_include_icloud".localized, isOn: $includeICloudAssets)
+                                        .tint(targetTheme.primary)
+                                        .padding(.top, 2)
+
+                                    Text("backup.photo_backup_include_icloud_hint".localized)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
                                 }
-                                .buttonStyle(PlainButtonStyle())
+                                .padding(12)
+                                .background(targetTheme.primary.opacity(0.06))
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
                             }
 
-                            Toggle("backup.photo_backup_include_icloud".localized, isOn: $includeICloudAssets)
-                                .padding(.top, 4)
+                            HStack {
+                                Rectangle()
+                                    .frame(height: 1)
+                                    .foregroundStyle(.secondary.opacity(0.16))
+                                Text("backup.or".localized)
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                Rectangle()
+                                    .frame(height: 1)
+                                    .foregroundStyle(.secondary.opacity(0.16))
+                            }
 
-                            Text("backup.photo_backup_include_icloud_hint".localized)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                            Button {
+                                isPhotoLibrarySelected = false
+                                showingDocumentPicker = true
+                            } label: {
+                                BackupChoiceRow(
+                                    icon: "folder.fill",
+                                    title: selectedURL?.lastPathComponent ?? "backup.folder_select".localized,
+                                    subtitle: selectedURL?.path,
+                                    isSelected: !isPhotoLibrarySelected && selectedURL != nil,
+                                    theme: targetTheme
+                                )
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .padding(.leading, 24)
-                        .padding(.top, 8)
                     }
-                    
-                    // Or Divider
-                    HStack {
-                        Rectangle()
-                            .frame(height: 1)
-                            .foregroundColor(.gray.opacity(0.3))
-                        Text("backup.or".localized)
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                            .padding(.horizontal, 8)
-                        Rectangle()
-                            .frame(height: 1)
-                            .foregroundColor(.gray.opacity(0.3))
-                    }
-                    .padding(.vertical, 4)
-                    
-                    // Folder Selection Option
-                    HStack {
-                        Image(systemName: !isPhotoLibrarySelected && selectedURL != nil ? "checkmark.circle.fill" : "circle")
-                            .foregroundColor(!isPhotoLibrarySelected && selectedURL != nil ? .blue : .gray)
-                        
-                        Button {
-                            isPhotoLibrarySelected = false
-                            showingDocumentPicker = true
-                        } label: {
-                            if let url = selectedURL {
-                                Text(url.lastPathComponent)
-                                    .foregroundColor(.blue)
-                            } else {
-                                Text("backup.folder_select".localized)
-                                    .foregroundColor(.gray)
+
+                    BackupSetupCard(
+                        title: "backup.target_type".localized,
+                        icon: selectedTarget.iconName,
+                        theme: targetTheme
+                    ) {
+                        VStack(alignment: .leading, spacing: 12) {
+                            BackupTargetView(
+                                selectedTarget: $selectedTarget,
+                                ftpHost: $ftpHost,
+                                ftpPort: $ftpPort,
+                                ftpUsername: $ftpUsername,
+                                ftpPassword: $ftpPassword,
+                                destinationPath: $destinationPath,
+                                isAnonymous: $isAnonymous,
+                                sftpHost: $sftpHost,
+                                sftpPort: $sftpPort,
+                                sftpUsername: $sftpUsername,
+                                sftpPassword: $sftpPassword,
+                                sftpPath: $sftpPath,
+                                webdavURL: $webdavURL,
+                                webdavPort: $webdavPort,
+                                webdavUsername: $webdavUsername,
+                                webdavPassword: $webdavPassword,
+                                webdavPath: $webdavPath
+                            )
+
+                            Button {
+                                Task {
+                                    let now = Date()
+                                    if let last = lastTestTapAt, now.timeIntervalSince(last) < 2 { return }
+                                    lastTestTapAt = now
+                                    await testConnection()
+                                }
+                            } label: {
+                                HStack {
+                                    if isTestingConnection {
+                                        ProgressView()
+                                            .tint(.white)
+                                    } else {
+                                        Image(systemName: "network")
+                                    }
+                                    Text("backup.test_connection".localized)
+                                        .fontWeight(.semibold)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(isValidConnectionSettings() ? targetTheme.primary : Color.secondary.opacity(0.22))
+                                .foregroundStyle(.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                            }
+                            .disabled(isTestingConnection || !isValidConnectionSettings() || (lastTestTapAt != nil && Date().timeIntervalSince(lastTestTapAt!) < 2))
+
+                            if let message = connectionStatus.message, !message.isEmpty {
+                                HStack(spacing: 8) {
+                                    Image(systemName: connectionStatus.isSuccess ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                    Text(message)
+                                        .font(.caption)
+                                }
+                                .foregroundStyle(connectionStatus.isSuccess ? .green : .red)
+                                .transition(.opacity)
                             }
                         }
-                        .buttonStyle(PlainButtonStyle())
-                        
-                        Spacer()
                     }
-                    .contentShape(Rectangle())
-                }
-                
-                // Backup Target Selection (FTP/WebDAV)
-                BackupTargetView(
-                    selectedTarget: $selectedTarget,
-                    ftpHost: $ftpHost,
-                    ftpPort: $ftpPort,
-                    ftpUsername: $ftpUsername,
-                    ftpPassword: $ftpPassword,
-                    destinationPath: $destinationPath,
-                    isAnonymous: $isAnonymous,
-                    sftpHost: $sftpHost,
-                    sftpPort: $sftpPort,
-                    sftpUsername: $sftpUsername,
-                    sftpPassword: $sftpPassword,
-                    sftpPath: $sftpPath,
-                    webdavURL: $webdavURL,
-                    webdavPort: $webdavPort,
-                    webdavUsername: $webdavUsername,
-                    webdavPassword: $webdavPassword,
-                    webdavPath: $webdavPath
-                )
-                
-                Button {
-                    Task {
-                        let now = Date()
-                        if let last = lastTestTapAt, now.timeIntervalSince(last) < 2 { return }
-                        lastTestTapAt = now
-                        await testConnection()
+
+                    BackupSetupCard(
+                        title: "backup.scheduling".localized,
+                        icon: "clock.arrow.circlepath",
+                        theme: targetTheme
+                    ) {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Picker("backup.frequency".localized, selection: $frequencyType) {
+                                ForEach(FrequencyType.allCases) { type in
+                                    Text(type.displayName).tag(type)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+
+                            if frequencyType == .daily || frequencyType == .weekly {
+                                TimePicker(time: $selectedTime)
+                            }
+
+                            if frequencyType == .weekly {
+                                DayPicker(selectedDay: $selectedDay)
+                            }
+                        }
                     }
-                } label: {
-                    Text("backup.test_connection".localized)
-                }
-                .disabled(isTestingConnection || !isValidConnectionSettings() || (lastTestTapAt != nil && Date().timeIntervalSince(lastTestTapAt!) < 2))
-                
-                if isTestingConnection {
-                    ProgressView()
-                }
-                
-                if let message = connectionStatus.message, !message.isEmpty {
-                    HStack {
-                        Image(systemName: connectionStatus.isSuccess ? "checkmark.circle.fill" : "xmark.circle.fill")
-                            .foregroundColor(connectionStatus.isSuccess ? .green : .red)
-                        Text(message)
-                            .font(.caption)
-                            .foregroundColor(connectionStatus.isSuccess ? .green : .red)
+
+                    if isLocalServer() {
+                        BackupSetupCard(
+                            title: "backup.network_settings".localized,
+                            icon: "antenna.radiowaves.left.and.right",
+                            theme: targetTheme
+                        ) {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Toggle("backup.allow_cellular".localized, isOn: $allowCellularForLocalServer)
+                                    .tint(targetTheme.primary)
+
+                                Text(allowCellularForLocalServer ? "backup.allow_cellular_warning".localized : "backup.wifi_only_info".localized)
+                                    .font(.caption)
+                                    .foregroundStyle(allowCellularForLocalServer ? .orange : .secondary)
+                            }
+                        }
                     }
-                    .transition(.opacity)
-                }
-            }
-            .liquidListRow()
-            
-            Section(header: Text("backup.scheduling".localized)) {
-                Picker("backup.frequency".localized, selection: $frequencyType) {
-                    ForEach(FrequencyType.allCases) { type in
-                        Text(type.displayName).tag(type)
+
+                    Button {
+                        Task {
+                            await saveTask()
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: "checkmark.circle.fill")
+                            Text("backup.save_task".localized)
+                                .fontWeight(.bold)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 15)
+                        .background(
+                            LinearGradient(
+                                colors: [targetTheme.primary, targetTheme.secondary],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 18))
+                        .shadow(color: targetTheme.primary.opacity(0.22), radius: 14, x: 0, y: 8)
                     }
+                    .buttonStyle(.plain)
                 }
-                .pickerStyle(SegmentedPickerStyle())
-                
-                if frequencyType == .daily || frequencyType == .weekly {
-                    TimePicker(time: $selectedTime)
-                }
-                
-                if frequencyType == .weekly {
-                    DayPicker(selectedDay: $selectedDay)
-                }
-            }
-            .liquidListRow()
-            
-            // Network ayarları (sadece local server için)
-            if isLocalServer() {
-                Section(header: Text("backup.network_settings".localized)) {
-                    Toggle("backup.allow_cellular".localized, isOn: $allowCellularForLocalServer)
-                    
-                    if allowCellularForLocalServer {
-                        Text("backup.allow_cellular_warning".localized)
-                            .font(.caption)
-                            .foregroundColor(.orange)
-                    } else {
-                        Text("backup.wifi_only_info".localized)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                .liquidListRow()
-            }
-            
-            Section {
-                Button(action: {
-                    Task {
-                        await saveTask()
-                    }
-                }) {
-                    HStack {
-                        Spacer()
-                        Text("backup.save_task".localized)
-                            .fontWeight(.semibold)
-                        Spacer()
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-                .listRowBackground(Color.clear)
+                .padding(.horizontal, 20)
+                .padding(.top, 14)
+                .padding(.bottom, 36)
             }
         }
-        .scrollContentBackground(.hidden)
-        .liquidBackground()
         .navigationTitle("backup.new_backup".localized)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -440,7 +531,7 @@ struct BackupView: View {
         } message: {
             Text(sftpHostKeyAlertMessage)
         }
-        
+
         func isLocalServer() -> Bool {
             let host: String
             switch selectedTarget {
@@ -451,7 +542,7 @@ struct BackupView: View {
             case .webdav:
                 host = webdavURL
             }
-            
+
             // Extract hostname from URL if it's a full URL
             let hostname: String
             if host.hasPrefix("http://") || host.hasPrefix("https://") {
@@ -459,7 +550,7 @@ struct BackupView: View {
             } else {
                 hostname = host
             }
-            
+
             // Local IP ranges: 192.168.x.x, 10.x.x.x, 172.16-31.x.x, localhost
             let localPatterns = [
                 "^192\\.168\\.",
@@ -468,12 +559,12 @@ struct BackupView: View {
                 "^127\\.",
                 "localhost"
             ]
-            
+
             return localPatterns.contains { pattern in
                 hostname.range(of: pattern, options: .regularExpression) != nil
             }
         }
-        
+
         func isValidConnectionSettings() -> Bool {
             switch selectedTarget {
             case .ftp:
@@ -484,7 +575,7 @@ struct BackupView: View {
                 return !webdavURL.isEmpty && !webdavUsername.isEmpty
             }
         }
-        
+
         func testConnection() async {
             if isTestingConnection { return }
 
@@ -495,54 +586,54 @@ struct BackupView: View {
                 connectionStatus = .failure(errorMessage)
                 return
             }
-            
+
             isTestingConnection = true
             connectionStatus = .testing("backup.testing_network".localized)
-            
+
             do {
                 switch selectedTarget {
                 case .ftp:
                     let ftpService = FTPService.shared
                     let port = Int(ftpPort) ?? 21
-                    
+
                     // İlk kurulumda ağ izni bildirimi göster
                     connectionStatus = .testing("backup.connection_testing".localized)
-                    
+
                     try await ftpService.connect(
                         host: ftpHost,
                         port: port,
                         username: isAnonymous ? nil : ftpUsername,
                         password: isAnonymous ? nil : ftpPassword
                     )
-                    
+
                     connectionStatus = .success("backup.connection_success_ftp".localized)
-                    
+
                 case .sftp:
                     let sftpService = SFTPService.shared
                     let port = Int(sftpPort) ?? 22
-                    
+
                     connectionStatus = .testing("backup.connection_testing".localized)
-                    
+
                     let result = try await sftpService.testConnection(
                         host: sftpHost,
                         port: port,
                         username: sftpUsername,
                         password: sftpPassword
                     )
-                    
+
                     connectionStatus = .success("backup.connection_success_sftp".localized)
                     if result.isNewHostKey, let fingerprint = result.fingerprint {
                         sftpHostKeyAlertMessage = String(format: "sftp.hostkey_message".localized, fingerprint)
                         showingSFTPHostKeyAlert = true
                     }
-                    
+
                 case .webdav:
                     // Extract host and port from webdavURL
                     let (host, port) = parseWebDAVURL(webdavURL, portOverride: webdavPort)
-                    
+
                     // İlk kurulumda ağ izni bildirimi göster
                     connectionStatus = .testing("backup.connection_testing".localized)
-                    
+
                     // Test WebDAV connection
                     let webDAVService = WebDAVService.shared
                     let isConnected = await webDAVService.testConnection(
@@ -551,7 +642,7 @@ struct BackupView: View {
                         username: webdavUsername,
                         password: webdavPassword
                     )
-                    
+
                     if isConnected {
                         connectionStatus = .success("backup.connection_success_webdav".localized)
                     } else {
@@ -565,10 +656,10 @@ struct BackupView: View {
             } catch {
                 connectionStatus = .failure(String(format: "backup.connection_error".localized, error.localizedDescription))
             }
-            
+
             isTestingConnection = false
         }
-        
+
         func requestPhotoLibraryAccess() {
             let photoLibraryManager = PhotoLibraryManager.shared
             if photoLibraryManager.authorizationStatus == .notDetermined {
@@ -583,7 +674,7 @@ struct BackupView: View {
                 showingPhotoLibraryDeniedAlert = true
             }
         }
-        
+
         func saveTask() async {
             // Check if either folder or photo library is selected
             guard isPhotoLibrarySelected || selectedURL != nil else {
@@ -594,7 +685,7 @@ struct BackupView: View {
                 showingSaveAlert = true
                 return
             }
-            
+
             // If photo library is selected, check permission
             if isPhotoLibrarySelected {
                 let status = PHPhotoLibrary.authorizationStatus()
@@ -607,7 +698,7 @@ struct BackupView: View {
                     return
                 }
             }
-            
+
             // Check folder access if a folder is selected
             if !isPhotoLibrarySelected, let sourceURL = selectedURL {
                 guard sourceURL.startAccessingSecurityScopedResource() else {
@@ -618,14 +709,14 @@ struct BackupView: View {
                     showingSaveAlert = true
                     return
                 }
-                
+
                 // We need to verify the URL is accessible
                 var isDirectory: ObjCBool = false
                 let exists = FileManager.default.fileExists(atPath: sourceURL.path, isDirectory: &isDirectory)
-                
+
                 // Stop accessing the resource
                 sourceURL.stopAccessingSecurityScopedResource()
-                
+
                 // Check if the path exists and is a directory
                 guard exists && isDirectory.boolValue else {
                     saveAlertMessage = "backup.invalid_folder".localized
@@ -636,7 +727,7 @@ struct BackupView: View {
                     return
                 }
             }
-            
+
             // Create the frequency based on the selected type
             let frequency: BackupFrequency = {
                 switch frequencyType {
@@ -650,11 +741,11 @@ struct BackupView: View {
                     return BackupFrequency.weekly(day: selectedDay, time: time)
                 }
             }()
-            
+
             // Determine source path and display name based on selection
             let sourcePath = isPhotoLibrarySelected ? "PHOTOS_LIBRARY" : (selectedURL?.path ?? "")
             let displayNameValue = isPhotoLibrarySelected ? selectedMediaType.displayName : (selectedURL?.lastPathComponent ?? "backup.default_task_name".localized)
-            
+
             // Check for existing tasks with the same configuration
             let hostToCheck: String
             let destPathToCheck: String
@@ -670,7 +761,7 @@ struct BackupView: View {
                 destPathToCheck = webdavPath
             }
             var isFirstTask = false
-            
+
             do {
                 let allTasks = try modelContext.fetch(FetchDescriptor<BackupTask>())
                 isFirstTask = allTasks.isEmpty
@@ -707,11 +798,11 @@ struct BackupView: View {
                     return
                 }
             } catch {
-                print("Görev kontrolü sırasında hata oluştu: \(error.localizedDescription)")
+                debugLog("Görev kontrolü sırasında hata oluştu: \(error.localizedDescription)")
             }
-            
+
             let task: BackupTask
-            
+
             switch selectedTarget {
             case .ftp:
                 guard !ftpHost.isEmpty else {
@@ -722,9 +813,9 @@ struct BackupView: View {
                     showingSaveAlert = true
                     return
                 }
-                
+
                 let port = Int(ftpPort) ?? 21
-                
+
                 task = BackupTask(
                     sourcePath: sourcePath,
                     backupType: .ftp,
@@ -743,7 +834,7 @@ struct BackupView: View {
                     allowCellularForLocalServer: allowCellularForLocalServer,
                     includeICloudAssets: isPhotoLibrarySelected ? includeICloudAssets : false
                 )
-                
+
             case .sftp:
                 guard !sftpHost.isEmpty else {
                     saveAlertMessage = "backup.fill_required_fields".localized
@@ -753,9 +844,9 @@ struct BackupView: View {
                     showingSaveAlert = true
                     return
                 }
-                
+
                 let port = Int(sftpPort) ?? 22
-                
+
                 task = BackupTask(
                     sourcePath: sourcePath,
                     backupType: .sftp,
@@ -774,7 +865,7 @@ struct BackupView: View {
                     allowCellularForLocalServer: allowCellularForLocalServer,
                     includeICloudAssets: isPhotoLibrarySelected ? includeICloudAssets : false
                 )
-                
+
             case .webdav:
                 guard !webdavURL.isEmpty else {
                     saveAlertMessage = "backup.webdav_credentials_required".localized
@@ -784,7 +875,7 @@ struct BackupView: View {
                     showingSaveAlert = true
                     return
                 }
-                
+
                 task = BackupTask(
                     sourcePath: sourcePath,
                     backupType: .webdav,
@@ -804,14 +895,14 @@ struct BackupView: View {
                     includeICloudAssets: isPhotoLibrarySelected ? includeICloudAssets : false
                 )
             }
-            
+
             modelContext.insert(task)
-            
+
             do {
                 try modelContext.save()
-                print("✅ BackupFlow: Görev başarıyla kaydedildi - \(displayNameValue)")
+                debugLog("✅ BackupFlow: Görev başarıyla kaydedildi - \(displayNameValue)")
                 saveAlertMessage = "tasks.save_success".localized
-                
+
                 // Schedule the backup if frequency is set
                 if task.frequency != .manual {
                     do {
@@ -824,7 +915,7 @@ struct BackupView: View {
                     // Manual task: still schedule processing to allow future background checks
                     BackupScheduler.shared.scheduleProcessingTask()
                 }
-                
+
                 // Reset form
                 selectedURL = nil
                 ftpHost = Self.defaultFTPHost
@@ -837,7 +928,7 @@ struct BackupView: View {
                 sftpUsername = ""
                 sftpPassword = ""
                 sftpPath = ""
-                
+
                 if isFirstTask {
                     firstBackupTaskToStart = task
                     showingFirstBackupPrompt = true
@@ -855,14 +946,14 @@ struct BackupView: View {
                 showingSaveAlert = true
             }
         }
-        
+
         // MARK: - WebDAV Helper
-        
+
         func parseWebDAVURL(_ urlString: String, portOverride: String) -> (host: String, port: Int) {
             let trimmed = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
             let overridePort = Int(portOverride)
             guard !trimmed.isEmpty else { return ("", overridePort ?? 443) }
-            
+
             let lowerTrimmed = trimmed.lowercased()
             let hasScheme = lowerTrimmed.hasPrefix("http://") || lowerTrimmed.hasPrefix("https://")
             let schemeFromPort: String = {
@@ -870,9 +961,9 @@ struct BackupView: View {
                 if let p = overridePort, p == 5006 || p == 443 { return "https" }
                 return "https"
             }()
-            
+
             let withScheme = hasScheme ? trimmed : "\(schemeFromPort)://\(trimmed)"
-            
+
             if let components = URLComponents(string: withScheme) {
                 let scheme = components.scheme?.lowercased() ?? schemeFromPort
                 let host = components.host ?? trimmed
@@ -882,7 +973,7 @@ struct BackupView: View {
                 let hostForConnect = "\(scheme)://\(host)\(normalizedPath)"
                 return (hostForConnect, port)
             }
-            
+
             // Fallback: strip path then parse host:port
             var host = trimmed
             var path = ""
@@ -903,9 +994,9 @@ struct BackupView: View {
             let hostForConnect = "\(scheme)://\(host)\(normalizedPath)"
             return (hostForConnect, port)
         }
-        
+
         // MARK: - Helper Methods
-        
+
         func resetForm() {
             selectedURL = nil
             isPhotoLibrarySelected = false
@@ -933,5 +1024,114 @@ struct BackupView: View {
             connectionStatus = .idle
             saveAlertMessage = ""
         }
+    }
+}
+
+private struct BackupSetupTheme {
+    let primary: Color
+    let secondary: Color
+
+    static func theme(for target: BackupTarget) -> BackupSetupTheme {
+        switch target {
+        case .ftp:
+            return BackupSetupTheme(
+                primary: Color(red: 0.95, green: 0.42, blue: 0.10),
+                secondary: Color(red: 1.00, green: 0.66, blue: 0.20)
+            )
+        case .sftp:
+            return BackupSetupTheme(
+                primary: Color(red: 0.05, green: 0.58, blue: 0.34),
+                secondary: Color(red: 0.18, green: 0.74, blue: 0.45)
+            )
+        case .webdav:
+            return BackupSetupTheme(
+                primary: Color(red: 0.18, green: 0.30, blue: 0.98),
+                secondary: Color(red: 0.52, green: 0.31, blue: 0.98)
+            )
+        }
+    }
+}
+
+private struct BackupSetupCard<Content: View>: View {
+    let title: String
+    let icon: String
+    let theme: BackupSetupTheme
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 10) {
+                Image(systemName: icon)
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(theme.primary)
+                    .frame(width: 34, height: 34)
+                    .background(theme.primary.opacity(0.12))
+                    .clipShape(Circle())
+
+                Text(title)
+                    .font(.headline.weight(.semibold))
+
+                Spacer()
+            }
+
+            content
+        }
+        .padding(16)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 22))
+        .overlay(
+            RoundedRectangle(cornerRadius: 22)
+                .stroke(
+                    LinearGradient(
+                        colors: [theme.primary.opacity(0.22), theme.secondary.opacity(0.16)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+        )
+    }
+}
+
+private struct BackupChoiceRow: View {
+    let icon: String
+    let title: String
+    let subtitle: String?
+    let isSelected: Bool
+    let theme: BackupSetupTheme
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.headline)
+                .foregroundStyle(isSelected ? .white : theme.primary)
+                .frame(width: 42, height: 42)
+                .background(isSelected ? theme.primary : theme.primary.opacity(0.1))
+                .clipShape(Circle())
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+
+                if let subtitle, !subtitle.isEmpty {
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.78)
+                }
+            }
+
+            Spacer()
+
+            Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                .font(.title3)
+                .foregroundStyle(isSelected ? theme.primary : .secondary.opacity(0.5))
+        }
+        .padding(12)
+        .background(isSelected ? theme.primary.opacity(0.08) : Color(.secondarySystemBackground).opacity(0.62))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 }

@@ -48,16 +48,16 @@ struct DocumentPicker: UIViewControllerRepresentable {
             guard let selectedURL = urls.first else { return }
             
             let path = selectedURL.path
-            print("📁 Selected path: \(path)")
+            debugLog("📁 Selected path: \(path)")
             
             // Start accessing security scoped resource
             let isScoped = selectedURL.startAccessingSecurityScopedResource()
-            print("🔑 Security scoped access started: \(isScoped)")
+            debugLog("🔑 Security scoped access started: \(isScoped)")
             
             defer {
                 if isScoped {
                     selectedURL.stopAccessingSecurityScopedResource()
-                    print("🔒 Security scoped access stopped")
+                    debugLog("🔒 Security scoped access stopped")
                 }
             }
             
@@ -72,7 +72,7 @@ struct DocumentPicker: UIViewControllerRepresentable {
                 
                 // Save general bookmark
                 UserDefaults.standard.set(bookmark, forKey: "selectedFolderBookmark")
-                print("💾 General bookmark saved")
+                debugLog("💾 General bookmark saved")
                 
                 // Generate key from path for saving bookmark
                 let bookmarkKey = "folder_bookmark_\(path.replacingOccurrences(of: "/", with: "_"))"
@@ -80,8 +80,8 @@ struct DocumentPicker: UIViewControllerRepresentable {
                 UserDefaults.standard.set(bookmark, forKey: bookmarkKey)
                 UserDefaults.standard.set(path, forKey: "folder_bookmark_path_\(bookmarkKey)")
                 
-                print("💾 Bookmark saved for path: \(path)")
-                print("🔑 Bookmark key: \(bookmarkKey)")
+                debugLog("💾 Bookmark saved for path: \(path)")
+                debugLog("🔑 Bookmark key: \(bookmarkKey)")
                 
                 // Test bookmark resolution immediately
                 do {
@@ -93,26 +93,26 @@ struct DocumentPicker: UIViewControllerRepresentable {
                         bookmarkDataIsStale: &isStale
                     )
                     
-                    print("✅ Bookmark resolution test successful: \(resolvedURL.path)")
-                    print("� Resolved URL: \(resolvedURL)")
+                    debugLog("✅ Bookmark resolution test successful: \(resolvedURL.path)")
+                    debugLog("� Resolved URL: \(resolvedURL)")
                     
                     // Also save using FileAccessManager
                     do {
                         try FileAccessManager.shared.saveBookmark(for: selectedURL, key: path)
-                        print("💾 Bookmark also saved via FileAccessManager")
+                        debugLog("💾 Bookmark also saved via FileAccessManager")
                     } catch {
-                        print("⚠️ FileAccessManager bookmark save failed: \(error)")
+                        debugLog("⚠️ FileAccessManager bookmark save failed: \(error)")
                     }
                     
                 } catch {
-                    print("❌ Bookmark resolution test failed: \(error)")
+                    debugLog("❌ Bookmark resolution test failed: \(error)")
                 }
                 
                 // Store the URL
                 parent.url = selectedURL
                 
             } catch {
-                print("❌ Failed to create bookmark: \(error)")
+                debugLog("❌ Failed to create bookmark: \(error)")
                 // Still store the URL even if bookmark creation fails
                 parent.url = selectedURL
             }

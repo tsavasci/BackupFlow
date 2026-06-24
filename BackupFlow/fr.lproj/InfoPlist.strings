@@ -1,0 +1,5 @@
+"NSLocalNetworkUsageDescription" = "L'accès au réseau local est nécessaire pour se connecter à votre serveur FTP, SFTP ou WebDAV et effectuer des sauvegardes.";
+"NSPhotoLibraryUsageDescription" = "L'accès à la photothèque est nécessaire pour sauvegarder vos photos et vidéos.";
+"NSPhotoLibraryAddUsageDescription" = "L'accès en écriture à la photothèque est nécessaire pour restaurer les photos et vidéos sauvegardées.";
+"NSDocumentsDirUsageDescription" = "L'accès aux documents est nécessaire pour sauvegarder les fichiers sélectionnés.";
+"NSFileProviderDomainUsageDescription" = "L'accès aux fichiers d'iCloud Drive et de l'app Fichiers est nécessaire pour la sauvegarde.";

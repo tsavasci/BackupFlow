@@ -107,7 +107,7 @@ struct TaskDetailView: View {
         do {
             histories = try modelContext.fetch(descriptor)
         } catch {
-            print("Histories yükleme hatası: \(error)")
+            debugLog("Histories yükleme hatası: \(error)")
         }
         isLoading = false
     }

@@ -246,13 +246,42 @@ final class BackupTask: Identifiable, Hashable {
     
     /// Legacy FTP password (for backward compatibility)
     var ftpPassword: String {
-        get { serverPassword }
-        set { serverPassword = newValue }
+        get { resolvedServerPassword }
+        set { saveServerPassword(newValue) }
     }
     
     /// Whether the connection is anonymous (no username/password)
     var isAnonymous: Bool {
-        return serverUsername.isEmpty && serverPassword.isEmpty
+        return serverUsername.isEmpty && resolvedServerPassword.isEmpty
+    }
+
+    var resolvedServerPassword: String {
+        if BackupCredentialStore.shared.isReference(serverPassword) {
+            return BackupCredentialStore.shared.password(for: id) ?? ""
+        }
+
+        return serverPassword
+    }
+
+    func saveServerPassword(_ password: String) {
+        if password.isEmpty {
+            BackupCredentialStore.shared.deletePassword(for: id)
+            serverPassword = ""
+            return
+        }
+
+        BackupCredentialStore.shared.savePassword(password, for: id)
+        serverPassword = BackupCredentialStore.shared.reference(for: id)
+    }
+
+    func migratePasswordToKeychainIfNeeded() {
+        guard !serverPassword.isEmpty, !BackupCredentialStore.shared.isReference(serverPassword) else { return }
+        saveServerPassword(serverPassword)
+    }
+
+    func removeStoredPassword() {
+        BackupCredentialStore.shared.deletePassword(for: id)
+        serverPassword = ""
     }
 
     
@@ -285,7 +314,7 @@ final class BackupTask: Identifiable, Hashable {
         self.serverHost = serverHost
         self.serverPort = serverPort > 0 ? serverPort : backupType.defaultPort
         self.serverUsername = serverUsername
-        self.serverPassword = serverPassword
+        self.serverPassword = ""
         self.destinationPath = destinationPath
         self.displayName = displayName.isEmpty ? "backup.default_task_name".localized : displayName
         self.isEnabled = isEnabled
@@ -307,6 +336,7 @@ final class BackupTask: Identifiable, Hashable {
         self.currentFileTotalBytes = 0
         self.transferSpeedBytesPerSecond = 0.0
         self.lastError = nil
+        self.saveServerPassword(serverPassword)
     }
     
     // MARK: - Hashable Conformance

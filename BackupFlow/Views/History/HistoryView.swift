@@ -42,7 +42,7 @@ struct HistoryView: View {
             ModernEmptyState(
                 icon: "clock.arrow.circlepath",
                 title: "history.no_history".localized,
-                description: "Başlattığınız yedeklemelerin geçmişi burada gösterilecek",
+                description: "history.empty_description".localized,
                 action: nil,
                 actionLabel: nil
             )
@@ -111,14 +111,14 @@ struct HistoryView: View {
         return VStack(spacing: DesignSystem.Spacing.medium) {
             HStack(spacing: DesignSystem.Spacing.medium) {
                 StatCard(
-                    label: "Tamamlanan",
+                    label: "history.summary.completed".localized,
                     value: "\(completedCount)",
                     icon: "checkmark.circle.fill",
                     style: .success
                 )
                 
                 StatCard(
-                    label: "Başarısız",
+                    label: "history.summary.failed".localized,
                     value: "\(failedCount)",
                     icon: "xmark.circle.fill",
                     style: failedCount > 0 ? .error : .primary
@@ -127,7 +127,7 @@ struct HistoryView: View {
             
             HStack {
                 StatCard(
-                    label: "Aktarılan",
+                    label: "history.summary.transferred".localized,
                     value: formatFileSize(totalSize),
                     icon: "arrow.up.circle.fill",
                     style: .primary
@@ -173,7 +173,7 @@ struct HistoryView: View {
             try modelContext.delete(model: BackupHistory.self)
             try modelContext.save()
         } catch {
-            print("Geçmiş temizlenirken hata oluştu: \(error)")
+            debugLog("Geçmiş temizlenirken hata oluştu: \(error)")
         }
         isLoading = false
         loadHistory()
@@ -188,11 +188,11 @@ struct HistoryView: View {
     
     private func formatDuration(_ seconds: TimeInterval) -> String {
         if seconds < 60 {
-            return String(format: "%.0f saniye", seconds)
+            return "history.duration.seconds".localized(with: String(format: "%.0f", seconds))
         } else if seconds < 3600 {
-            return String(format: "%.1f dakika", seconds / 60)
+            return "history.duration.minutes".localized(with: String(format: "%.1f", seconds / 60))
         } else {
-            return String(format: "%.1f saat", seconds / 3600)
+            return "history.duration.hours".localized(with: String(format: "%.1f", seconds / 3600))
         }
     }
 
@@ -319,19 +319,19 @@ struct HistoryItemCard: View {
                 HStack(spacing: DesignSystem.Spacing.medium) {
                     StatItem(
                         icon: "doc.fill",
-                        label: "Dosyalar",
+                        label: "history.item.files".localized,
                         value: "\(item.filesProcessed)/\(item.totalFiles)"
                     )
                     
                     StatItem(
                         icon: "arrow.up.circle.fill",
-                        label: "Aktarılan",
+                        label: "history.item.transferred".localized,
                         value: formatFileSize(item.bytesTransferred)
                     )
                     
                     StatItem(
                         icon: "timer",
-                        label: "Süre",
+                        label: "history.item.duration".localized,
                         value: formatDuration(item.duration)
                     )
                     
@@ -360,11 +360,19 @@ struct HistoryItemCard: View {
     private func localizedHistoryStatus(_ status: String) -> String {
         switch status.lowercased() {
         case "completed":
-            return "Tamamlandı"
+            return "backup.status.completed".localized
         case "failed":
-            return "Başarısız"
+            return "backup.status.failed".localized
         case "cancelled":
-            return "İptal Edildi"
+            return "backup.status.cancelled".localized
+        case "interrupted":
+            return "backup.status.interrupted".localized
+        case "uploading":
+            return "backup.status.uploading".localized
+        case "scanning":
+            return "backup.status.scanning".localized
+        case "preparing":
+            return "backup.status.preparing".localized
         default:
             return status.capitalized
         }
@@ -378,11 +386,11 @@ struct HistoryItemCard: View {
     
     private func formatDuration(_ seconds: TimeInterval) -> String {
         if seconds < 60 {
-            return String(format: "%.0fs", seconds)
+            return "history.duration.short_seconds".localized(with: String(format: "%.0f", seconds))
         } else if seconds < 3600 {
-            return String(format: "%.1fm", seconds / 60)
+            return "history.duration.short_minutes".localized(with: String(format: "%.1f", seconds / 60))
         } else {
-            return String(format: "%.1fh", seconds / 3600)
+            return "history.duration.short_hours".localized(with: String(format: "%.1f", seconds / 3600))
         }
     }
 }

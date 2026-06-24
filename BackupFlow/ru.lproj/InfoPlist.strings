@@ -1,0 +1,5 @@
+"NSLocalNetworkUsageDescription" = "Доступ к локальной сети требуется для подключения к серверу FTP, SFTP или WebDAV и выполнения резервного копирования.";
+"NSPhotoLibraryUsageDescription" = "Доступ к медиатеке требуется для резервного копирования ваших фото и видео.";
+"NSPhotoLibraryAddUsageDescription" = "Доступ на запись в медиатеку требуется для восстановления сохраненных фото и видео.";
+"NSDocumentsDirUsageDescription" = "Доступ к документам требуется для резервного копирования выбранных файлов.";
+"NSFileProviderDomainUsageDescription" = "Доступ к файлам из iCloud Drive и приложения Файлы требуется для резервного копирования.";

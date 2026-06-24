@@ -339,6 +339,7 @@ struct TasksView: View {
     }
     
     private func deleteTask(_ task: BackupTask) {
+        task.removeStoredPassword()
         modelContext.delete(task)
         try? modelContext.save()
     }

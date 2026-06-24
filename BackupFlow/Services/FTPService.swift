@@ -133,7 +133,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             throw NSError(
                 domain: "FTPError",
                 code: -1009,
-                userInfo: [NSLocalizedDescriptionKey: "Ağ bağlantısı için izin gerekli. Lütfen Ayarlar > Gizlilik ve Güvenlik > Yerel Ağ'dan uygulamaya izin verin."]
+                userInfo: [NSLocalizedDescriptionKey: "error.network.local_permission_required".localized]
             )
         }
     }
@@ -287,7 +287,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                 group.addTask {
                     try await Task.sleep(nanoseconds: 10_000_000_000)
                     throw NSError(domain: "FTPErrorDomain", code: -1001, userInfo: [
-                        NSLocalizedDescriptionKey: "Connection timed out"
+                        NSLocalizedDescriptionKey: "error.connection.timeout".localized
                     ])
                 }
 
@@ -331,7 +331,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     
     func connect(host: String, port: Int, username: String?, password: String?) async throws {
         let connectionInfo = try FTPConnectionBuilder.build(host: host, port: port)
-        print("📡 BackupFlow: FTPService - Bağlantı başlatılıyor: \(connectionInfo.displayHost):\(port)")
+        debugLog("📡 BackupFlow: FTPService - Bağlantı başlatılıyor: \(connectionInfo.displayHost):\(port)")
         
         // Önce ağ iznini bekle
         try await waitForNetworkPermission()
@@ -340,7 +340,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         disconnect()
         
         if connectionInfo.host.isEmpty {
-            print("❌ BackupFlow: FTP sunucu adresi boş")
+            debugLog("❌ BackupFlow: FTP sunucu adresi boş")
             logger.error("FTP sunucu adresi boş olamaz")
             throw FTPError.invalidURL
         }
@@ -353,7 +353,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         for attempt in 1...maxRetries {
             do {
                 try await performConnection(host: host, port: port, username: username, password: password, attempt: attempt)
-                print("✅ BackupFlow: FTP bağlantısı başarıyla kuruldu!")
+                debugLog("✅ BackupFlow: FTP bağlantısı başarıyla kuruldu!")
                 return // Başarılı, fonksiyondan çık
             } catch {
                 lastError = error
@@ -768,13 +768,13 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
 
     func uploadFile(localURL: URL, remotePath: String, progressHandler: ((Double) -> Void)? = nil) async throws {
         guard !isCancelled else {
-            print("🛑 BackupFlow: İşlem iptal edildiği için yükleme iptal edildi")
+            debugLog("🛑 BackupFlow: İşlem iptal edildiği için yükleme iptal edildi")
             logger.info("İşlem iptal edildiği için yükleme iptal edildi")
             throw FTPError.fileOperationFailed
         }
         
         guard let ftp = ftpProvider else {
-            print("❌ BackupFlow: FTP bağlantısı kurulamamış")
+            debugLog("❌ BackupFlow: FTP bağlantısı kurulamamış")
             logger.error("FTP bağlantısı kurulamamış")
             throw FTPError.connectionFailed
         }
@@ -859,7 +859,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                 }
 
                 if let error = error {
-                    print("❌ BackupFlow: Dosya yükleme hatası: \(error.localizedDescription)")
+                    debugLog("❌ BackupFlow: Dosya yükleme hatası: \(error.localizedDescription)")
                     // Clear progress state on error
                     Task { @MainActor in
                         self.currentFile = "backup.current_file.error".localized(with: error.localizedDescription)
@@ -869,7 +869,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                 } else {
                     progress.completedUnitCount = 100
                     progressHandler?(1.0)
-                    print("✅ BackupFlow: Dosya başarıyla yüklendi: \(remotePath)")
+                    debugLog("✅ BackupFlow: Dosya başarıyla yüklendi: \(remotePath)")
                     // Update progress state on success
                     Task { @MainActor in
                         self.currentFile = "backup.current_file.completed_file".localized(with: localURL.lastPathComponent)
@@ -1130,7 +1130,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         progressHandler: ((Double) -> Void)? = nil
     ) async throws -> SyncResult {
         
-        print("📡 BackupFlow: FTP senkronize yedekleme başlatılıyor - \(host):\(port)")
+        debugLog("📡 BackupFlow: FTP senkronize yedekleme başlatılıyor - \(host):\(port)")
         
         // Check if we're in background mode
         let isBackgroundMode: Bool = {
@@ -1191,17 +1191,17 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         }
         
         // Print detailed report
-        print("✅ BackupFlow: FTP senkronize yedekleme tamamlandı")
-        print("   📊 Yedekleme Raporu:")
-        print("   📤 Yeni dosya kopyalandı: \(syncResult.newFiles)")
-        print("   🔄 Dosya güncellendi: \(syncResult.updatedFiles)")
-        print("   ⏭ Aynı dosya pas geçildi: \(syncResult.skippedFiles)")
-        print("   ☁️ iCloud-only atlanan: \(syncResult.iCloudSkippedFiles)")
-        print("   ⏱️ Okuma zaman aşımı: \(syncResult.timedOutAssetReads)")
-        print("   ⚠️ Okunamayan asset: \(syncResult.failedAssetReads)")
-        print("   🗑 Dosya silindi: \(syncResult.deletedFiles)")
-        print("   📈 Toplam işlenen: \(syncResult.totalProcessed)")
-        print("   💾 Toplam boyut: \(formatBytes(syncResult.totalBytes))")
+        debugLog("✅ BackupFlow: FTP senkronize yedekleme tamamlandı")
+        debugLog("   📊 Yedekleme Raporu:")
+        debugLog("   📤 Yeni dosya kopyalandı: \(syncResult.newFiles)")
+        debugLog("   🔄 Dosya güncellendi: \(syncResult.updatedFiles)")
+        debugLog("   ⏭ Aynı dosya pas geçildi: \(syncResult.skippedFiles)")
+        debugLog("   ☁️ iCloud-only atlanan: \(syncResult.iCloudSkippedFiles)")
+        debugLog("   ⏱️ Okuma zaman aşımı: \(syncResult.timedOutAssetReads)")
+        debugLog("   ⚠️ Okunamayan asset: \(syncResult.failedAssetReads)")
+        debugLog("   🗑 Dosya silindi: \(syncResult.deletedFiles)")
+        debugLog("   📈 Toplam işlenen: \(syncResult.totalProcessed)")
+        debugLog("   💾 Toplam boyut: \(formatBytes(syncResult.totalBytes))")
         
         return syncResult
     }

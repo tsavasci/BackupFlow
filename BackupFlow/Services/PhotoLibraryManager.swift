@@ -143,7 +143,7 @@ class PhotoLibraryManager: NSObject, ObservableObject {
     // MARK: - Backup Support Methods
     func getAllAssets(mediaType: MediaType) async throws -> [PHAsset] {
         guard hasAccess else {
-            throw NSError(domain: "PhotoLibraryManager", code: 1, userInfo: [NSLocalizedDescriptionKey: "Fotoğraf kütüphanesine erişim izni yok"])
+            throw NSError(domain: "PhotoLibraryManager", code: 1, userInfo: [NSLocalizedDescriptionKey: "error.photo_library.no_access".localized])
         }
         
         let fetchOptions = PHFetchOptions()

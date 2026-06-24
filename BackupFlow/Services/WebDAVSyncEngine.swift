@@ -148,7 +148,7 @@ struct WebDAVSyncEngine {
                 logger.info("📂 Directory exists: \(exists), isDirectory: \(isDirectory.boolValue)")
 
                 guard exists && isDirectory.boolValue else {
-                    throw NSError(domain: "WebDAVError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Directory does not exist or is not accessible"])
+                    throw NSError(domain: "WebDAVError", code: -1, userInfo: [NSLocalizedDescriptionKey: "error.directory.not_accessible".localized])
                 }
 
                 do {
@@ -170,7 +170,7 @@ struct WebDAVSyncEngine {
                     options: [.skipsHiddenFiles]
                 ) else {
                     logger.error("❌ Could not create file enumerator for: \(coordinatedURL.path)")
-                    throw NSError(domain: "WebDAVError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Could not enumerate directory"])
+                    throw NSError(domain: "WebDAVError", code: -1, userInfo: [NSLocalizedDescriptionKey: "error.directory.enumeration_failed".localized])
                 }
 
                 var fileCount = 0

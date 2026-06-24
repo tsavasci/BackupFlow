@@ -1,0 +1,5 @@
+"NSLocalNetworkUsageDescription" = "Se requiere acceso a la red local para conectar con su servidor FTP, SFTP o WebDAV y realizar copias de seguridad.";
+"NSPhotoLibraryUsageDescription" = "Se requiere acceso a la fototeca para hacer copias de seguridad de sus fotos y videos.";
+"NSPhotoLibraryAddUsageDescription" = "Se requiere permiso de escritura en la fototeca para restaurar fotos y videos respaldados.";
+"NSDocumentsDirUsageDescription" = "Se requiere acceso a Documentos para hacer copias de seguridad de los archivos que seleccione.";
+"NSFileProviderDomainUsageDescription" = "Se requiere acceso a archivos de iCloud Drive y la app Archivos para la copia de seguridad.";

@@ -144,7 +144,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
                 }
             }
         }
-        throw WebDAVErrorMapper.mapError(lastError ?? NSError(domain: "WebDAVService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Unknown error after retries"]))
+        throw WebDAVErrorMapper.mapError(lastError ?? NSError(domain: "WebDAVService", code: -1, userInfo: [NSLocalizedDescriptionKey: "error.unknown_after_retries".localized]))
     }
     
     // MARK: - FileProviderDelegate
@@ -254,7 +254,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
             throw NSError(
                 domain: "WebDAVError",
                 code: -1009,
-                userInfo: [NSLocalizedDescriptionKey: "Ağ bağlantısı için izin gerekli. Lütfen Ayarlar > Gizlilik ve Güvenlik > Yerel Ağ'dan uygulamaya izin verin."]
+                userInfo: [NSLocalizedDescriptionKey: "error.network.local_permission_required".localized]
             )
         }
     }
@@ -320,7 +320,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         
         // Create and configure the WebDAV provider
         guard let provider = WebDAVFileProvider(baseURL: url, credential: credential) else {
-            let error = NSError(domain: "WebDAVError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Could not create WebDAV provider"])
+            let error = NSError(domain: "WebDAVError", code: -1, userInfo: [NSLocalizedDescriptionKey: "error.webdav.provider_create_failed".localized])
             self.logger.error("\(error.localizedDescription)")
             throw error
         }
@@ -627,7 +627,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
                         let error = NSError(
                             domain: "WebDAVService",
                             code: response.statusCode,
-                            userInfo: [NSLocalizedDescriptionKey: "WebDAV upload failed with HTTP \(response.statusCode)"]
+                            userInfo: [NSLocalizedDescriptionKey: "error.webdav.upload_failed_http".localized(with: response.statusCode)]
                         )
                         finish(.failure(WebDAVErrorMapper.mapError(error)))
                         return
@@ -1194,7 +1194,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
     // MARK: - Directory Management
     private func ensureDirectoryExists(at path: String) async throws {
         guard let provider = webdavProvider else {
-            throw NSError(domain: "WebDAVError", code: -1, userInfo: [NSLocalizedDescriptionKey: "WebDAV provider not available"])
+            throw NSError(domain: "WebDAVError", code: -1, userInfo: [NSLocalizedDescriptionKey: "error.webdav.provider_unavailable".localized])
         }
         let ops = WebDAVFileOperations(provider: provider)
         try await ops.ensureDirectoryExists(at: path, logger: logger)
@@ -1458,7 +1458,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         }
         
         guard webdavProvider != nil else {
-            throw NSError(domain: "WebDAVError", code: -1, userInfo: [NSLocalizedDescriptionKey: "WebDAV provider is not available"])
+            throw NSError(domain: "WebDAVError", code: -1, userInfo: [NSLocalizedDescriptionKey: "error.webdav.provider_unavailable".localized])
         }
         
         var result = FTPService.SyncResult()

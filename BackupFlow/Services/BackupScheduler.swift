@@ -24,10 +24,10 @@ enum NetworkType {
 
     var description: String {
         switch self {
-        case .wifi: return "WiFi"
-        case .cellular: return "Hücresel"
-        case .ethernet: return "Ethernet"
-        case .unknown: return "Bilinmeyen"
+        case .wifi: return "network.type.wifi".localized
+        case .cellular: return "network.type.cellular".localized
+        case .ethernet: return "network.type.ethernet".localized
+        case .unknown: return "network.type.unknown".localized
         }
     }
 }
@@ -105,13 +105,13 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     override init() {
         super.init()
         setupNotifications()
-        print("🔄 BackupFlow: BackupScheduler init tamamlandı (BGTask + Timer hibrit)")
+        debugLog("🔄 BackupFlow: BackupScheduler init tamamlandı (BGTask + Timer hibrit)")
         
         // Debug: Veritabanındaki tüm görevleri listele
         if let container = Self.sharedModelContainer {
             let context = ModelContext(container)
             if let tasks = try? context.fetch(FetchDescriptor<BackupTask>()) {
-                print("📋 BackupFlow: Veritabanında \(tasks.count) görev bulundu:")
+                debugLog("📋 BackupFlow: Veritabanında \(tasks.count) görev bulundu:")
                 for (index, task) in tasks.enumerated() {
                     let statusText = task.isEnabled ? (task.isPaused ? "⏸️ Duraklatılmış" : "✅ Aktif") : "❌ Devre dışı"
                     let freqText: String = {
@@ -124,11 +124,11 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                         }
                     }()
                     let nextRunText = task.nextRunTime.map { userLocalDateFormatter.string(from: $0) } ?? "Belirlenmedi"
-                    print("   \(index + 1). \(task.displayName)")
-                    print("      - Tür: \(task.backupType.displayName)")
-                    print("      - Durum: \(statusText)")
-                    print("      - Sıklık: \(freqText)")
-                    print("      - Sonraki çalışma: \(nextRunText)")
+                    debugLog("   \(index + 1). \(task.displayName)")
+                    debugLog("      - Tür: \(task.backupType.displayName)")
+                    debugLog("      - Durum: \(statusText)")
+                    debugLog("      - Sıklık: \(freqText)")
+                    debugLog("      - Sonraki çalışma: \(nextRunText)")
                 }
             }
         }
@@ -144,7 +144,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             if let tasks = try? context.fetch(FetchDescriptor<BackupTask>()) {
                 let hasAnyActive = tasks.contains { $0.isEnabled && !$0.isPaused }
                 if !hasAnyActive {
-                    print("ℹ️ BGTaskScheduler: Etkin görev yok, processing planlanmadı")
+                    debugLog("ℹ️ BGTaskScheduler: Etkin görev yok, processing planlanmadı")
                     return
                 }
             }
@@ -164,7 +164,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                     let minimumLead: TimeInterval = 15 * 60
                     if candidate.timeIntervalSince(now) < minimumLead {
                         candidate = now.addingTimeInterval(minimumLead)
-                        print("ℹ️ BGTaskScheduler: Processing earliest çok yakın, 15 dk'ya yuvarlandı -> \(userLocalDateFormatter.string(from: candidate))")
+                        debugLog("ℹ️ BGTaskScheduler: Processing earliest çok yakın, 15 dk'ya yuvarlandı -> \(userLocalDateFormatter.string(from: candidate))")
                     }
                     earliestBeginDate = candidate
                 }
@@ -193,12 +193,12 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         requireExternal: Bool
     ) {
         if hasPending {
-            print("ℹ️ BGTaskScheduler: Processing görevi zaten pending, yeniden planlama atlandı")
+            debugLog("ℹ️ BGTaskScheduler: Processing görevi zaten pending, yeniden planlama atlandı")
             return
         }
         
         if let last = lastSubmitByIdentifier[identifier], Date().timeIntervalSince(last) < 900 {
-            print("ℹ️ BGTaskScheduler: Son 15 dk içinde submit edilmiş ama pending yok; yeniden planlanıyor")
+            debugLog("ℹ️ BGTaskScheduler: Son 15 dk içinde submit edilmiş ama pending yok; yeniden planlanıyor")
         }
         
         let request = BGProcessingTaskRequest(identifier: identifier)
@@ -211,9 +211,9 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             lastBGSubmitAt = Date()
             lastSubmitByIdentifier[identifier] = Date()
             if let d = request.earliestBeginDate {
-                print("✅ BGTaskScheduler: Processing görevi planlandı -> \(userLocalDateFormatter.string(from: d))")
+                debugLog("✅ BGTaskScheduler: Processing görevi planlandı -> \(userLocalDateFormatter.string(from: d))")
             } else {
-                print("✅ BGTaskScheduler: Processing görevi planlandı (tarih yok)")
+                debugLog("✅ BGTaskScheduler: Processing görevi planlandı (tarih yok)")
             }
         } catch {
             let nsError = error as NSError
@@ -226,14 +226,14 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                 default: break
                 }
             }
-            print("❌ BGTaskScheduler: Processing planlanamadı (code=\(nsError.code) reason=\(reason)): \(error)")
+            debugLog("❌ BGTaskScheduler: Processing planlanamadı (code=\(nsError.code) reason=\(reason)): \(error)")
         }
     }
     
     public func pauseTask(_ task: BackupTask) {
         cancelTimer(for: task.id)
         task.isPaused = true
-        print("⏸️ BackupFlow: Görev duraklatıldı: \(task.displayName)")
+        debugLog("⏸️ BackupFlow: Görev duraklatıldı: \(task.displayName)")
         // Kullanıcı bildirimi gönderme (gürültüyü azaltmak için kaldırıldı)
 
         // Ayrıca bekleyen zamanlanmış bildirimleri iptal et (çift bildirimi önlemek için)
@@ -246,7 +246,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     
     public func resumeTask(_ task: BackupTask) {
         task.isPaused = false
-        print("▶️ BackupFlow: Görev devam ettirildi: \(task.displayName)")
+        debugLog("▶️ BackupFlow: Görev devam ettirildi: \(task.displayName)")
         
         // Reschedule the task (bildirim gönderimi yok)
         Task {
@@ -277,7 +277,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         task.currentFile = nil
         resetCurrentFileProgress(for: task)
         
-        print("🚫 BackupFlow: Görev iptal edildi: \(task.displayName)")
+        debugLog("🚫 BackupFlow: Görev iptal edildi: \(task.displayName)")
     }
     
     // MARK: - Timer Management
@@ -285,15 +285,15 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     private func scheduleTask(_ task: BackupTask) async {
         // Skip if paused, manual, or disabled
         if task.isPaused {
-            print("⏸️ BackupFlow: Görev duraklatılmış, zamanlama atlanıyor: \(task.displayName)")
+            debugLog("⏸️ BackupFlow: Görev duraklatılmış, zamanlama atlanıyor: \(task.displayName)")
             return
         }
         if case .manual = task.frequency {
-            print("📝 BackupFlow: Manuel görev, zamanlama atlanıyor: \(task.displayName)")
+            debugLog("📝 BackupFlow: Manuel görev, zamanlama atlanıyor: \(task.displayName)")
             return
         }
         if !task.isEnabled {
-            print("🚫 BackupFlow: Devre dışı görev, zamanlama atlanıyor: \(task.displayName)")
+            debugLog("🚫 BackupFlow: Devre dışı görev, zamanlama atlanıyor: \(task.displayName)")
             return
         }
 
@@ -302,7 +302,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
 
         // Calculate and set the next run time
         guard let nextRunTime = calculateNextRunTime(for: task) else {
-            print("❌ BackupFlow: Sonraki çalışma zamanı hesaplanamadı: \(task.displayName)")
+            debugLog("❌ BackupFlow: Sonraki çalışma zamanı hesaplanamadı: \(task.displayName)")
             return
         }
         task.nextRunTime = nextRunTime
@@ -310,7 +310,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             do {
                 try context.save()
             } catch {
-                print("❌ BackupFlow: nextRunTime kaydedilemedi: \(error)")
+                debugLog("❌ BackupFlow: nextRunTime kaydedilemedi: \(error)")
             }
         }
         
@@ -323,10 +323,10 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             RunLoop.main.add(newTimer, forMode: .common)
             scheduledTimers[task.id] = newTimer
             
-            print("✅ BackupFlow: Görev zamanlayıcı ile planlandı: \(task.displayName) -> \(userLocalDateFormatter.string(from: nextRunTime))")
+            debugLog("✅ BackupFlow: Görev zamanlayıcı ile planlandı: \(task.displayName) -> \(userLocalDateFormatter.string(from: nextRunTime))")
         } else {
             // Eğer görev çok yakında ise, doğrudan tetikle
-            print("ℹ️ BackupFlow: Görev çok yakında, doğrudan tetikleniyor: \(task.displayName)")
+            debugLog("ℹ️ BackupFlow: Görev çok yakında, doğrudan tetikleniyor: \(task.displayName)")
             Task {
                 try? await performBackup(task: task)
             }
@@ -342,23 +342,23 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         if let timer = scheduledTimers[taskId] {
             timer.invalidate()
             scheduledTimers.removeValue(forKey: taskId)
-            print("🚫 BackupFlow: Timer iptal edildi: \(taskId)")
+            debugLog("🚫 BackupFlow: Timer iptal edildi: \(taskId)")
         }
     }
     
     @objc private func timerFired(timer: Timer) {
         guard let userInfo = timer.userInfo as? [String: Any],
               let taskId = userInfo["taskId"] as? UUID else {
-            print("❌ BackupFlow: Timer tetiklendi ancak görev ID'si bulunamadı")
+            debugLog("❌ BackupFlow: Timer tetiklendi ancak görev ID'si bulunamadı")
             return
         }
         
-        print("⏰ BackupFlow: Timer tetiklendi: \(taskId)")
+        debugLog("⏰ BackupFlow: Timer tetiklendi: \(taskId)")
         
         // Find the task and perform the backup
         Task {
             guard let container = Self.sharedModelContainer else {
-                print("❌ BackupFlow: ModelContainer bulunamadı (timerFired)")
+                debugLog("❌ BackupFlow: ModelContainer bulunamadı (timerFired)")
                 return
             }
             let context = ModelContext(container)
@@ -368,10 +368,10 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             descriptor.fetchLimit = 1
             
             if let taskToRun = try? context.fetch(descriptor).first {
-                print("▶️ BackupFlow: Timer'dan yedekleme başlatılıyor: \(taskToRun.displayName)")
+                debugLog("▶️ BackupFlow: Timer'dan yedekleme başlatılıyor: \(taskToRun.displayName)")
                 try? await performBackup(task: taskToRun)
             } else {
-                print("❌ BackupFlow: Timer tetiklendi ancak görev veritabanında bulunamadı: \(taskId)")
+                debugLog("❌ BackupFlow: Timer tetiklendi ancak görev veritabanında bulunamadı: \(taskId)")
             }
         }
     }
@@ -381,7 +381,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         let runStart = Date()
         // Re-entrancy guard: Çok sık tetiklemeyi engelle
         if !bypassThrottle, let last = lastRunAt, Date().timeIntervalSince(last) < minRunInterval {
-            print("ℹ️ BackupFlow: Son çalıştırmadan bu yana minimum süre dolmadı, tetikleme atlandı")
+            debugLog("ℹ️ BackupFlow: Son çalıştırmadan bu yana minimum süre dolmadı, tetikleme atlandı")
             return
         }
         if !bypassThrottle {
@@ -389,7 +389,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         }
         
         guard !task.isPaused else {
-            print("⏸️ BackupFlow: Görev duraklatılmış, yedekleme atlanıyor: \(task.displayName)")
+            debugLog("⏸️ BackupFlow: Görev duraklatılmış, yedekleme atlanıyor: \(task.displayName)")
             return
         }
         
@@ -397,7 +397,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         let currentType = await getCurrentNetworkType()
         let online = (currentType == .wifi || currentType == .cellular || currentType == .ethernet)
         if !online {
-            print("⚠️ BackupFlow: Ağ bağlantısı yok - failsafe devrede")
+            debugLog("⚠️ BackupFlow: Ağ bağlantısı yok - failsafe devrede")
             await handleNoNetworkFor(task: task)
             return
         }
@@ -416,7 +416,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             }
         }
         
-        print("🚀 BackupFlow: Yedekleme başlatılıyor: \(task.displayName)")
+        debugLog("🚀 BackupFlow: Yedekleme başlatılıyor: \(task.displayName)")
         
         // Update task status with safe initial progress, but avoid resetting during an ongoing run
         if task.backupStatus != .uploading {
@@ -462,7 +462,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             // Send detailed notification with sync results
             await sendBackupCompletionNotification(task: task, syncResult: syncResult)
 
-            print("✅ BackupFlow: Yedekleme tamamlandı: \(task.displayName)")
+            debugLog("✅ BackupFlow: Yedekleme tamamlandı: \(task.displayName)")
             
         } catch {
             if let backupError = error as? BackupServiceError, case .cancelled = backupError {
@@ -482,7 +482,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                     errorMessage: backupError.localizedDescription
                 )
                 
-                print("⏸️ BackupFlow: Yedekleme yarıda kesildi: \(task.displayName)")
+                debugLog("⏸️ BackupFlow: Yedekleme yarıda kesildi: \(task.displayName)")
                 return
             }
 
@@ -497,20 +497,20 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             task.backupStatus = .failed
             task.lastError = error.localizedDescription
             
-            print("❌ BackupFlow: Yedekleme başarısız: \(task.displayName) - \(error)")
+            debugLog("❌ BackupFlow: Yedekleme başarısız: \(task.displayName) - \(error)")
             
             // Retry logic
             let currentRetryCount = retryCount[task.id] ?? 0
             if currentRetryCount < maxRetryAttempts {
                 retryCount[task.id] = currentRetryCount + 1
-                print("🔄 BackupFlow: Yeniden deneme \(currentRetryCount + 1)/\(maxRetryAttempts)")
+                debugLog("🔄 BackupFlow: Yeniden deneme \(currentRetryCount + 1)/\(maxRetryAttempts)")
                 
                 let delay = self.jitteredDelay(for: currentRetryCount + 1)
                 // Advance nextRunTime to avoid foreground re-trigger via missed timers
                 task.nextRunTime = Date().addingTimeInterval(delay)
                 if let context = task.modelContext {
                     do { try context.save() }
-                    catch { print("❌ BackupFlow: nextRunTime kaydedilemedi (retry): \\ (error)") }
+                    catch { debugLog("❌ BackupFlow: nextRunTime kaydedilemedi (retry): \\ (error)") }
                 }
                 DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
                     Task {
@@ -520,12 +520,12 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                 return
             } else {
                 retryCount.removeValue(forKey: task.id)
-                print("💥 BackupFlow: Maksimum yeniden deneme sayısına ulaşıldı")
+                debugLog("💥 BackupFlow: Maksimum yeniden deneme sayısına ulaşıldı")
                 // Move to the next scheduled time to prevent immediate re-run on foreground
                 task.nextRunTime = calculateNextRunTime(for: task)
                 if let context = task.modelContext {
                     do { try context.save() }
-                    catch { print("❌ BackupFlow: nextRunTime kaydedilemedi (max retry): \\ (error)") }
+                    catch { debugLog("❌ BackupFlow: nextRunTime kaydedilemedi (max retry): \\ (error)") }
                 }
             }
             
@@ -606,7 +606,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     public func sendScheduledBackupNotification(for task: BackupTask) {
         // Son bildirimin üzerinden yeterli süre geçmediyse tekrarlama (debounce)
         if let last = lastNotificationSentAt[task.id], Date().timeIntervalSince(last) < 120 {
-            print("ℹ️ BackupFlow: Yakın zamanda aynı görev için bildirim gönderilmiş, tekrar edilmiyor")
+            debugLog("ℹ️ BackupFlow: Yakın zamanda aynı görev için bildirim gönderilmiş, tekrar edilmiyor")
             return
         }
 
@@ -652,7 +652,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [request.identifier])
         UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [request.identifier])
         UNUserNotificationCenter.current().add(request)
-        print("🔔 BackupFlow: Zamanlanmış yedekleme bildirimi gönderildi: \(task.displayName) (\(frequencyText))")
+        debugLog("🔔 BackupFlow: Zamanlanmış yedekleme bildirimi gönderildi: \(task.displayName) (\(frequencyText))")
         lastNotificationSentAt[task.id] = Date()
     }
     
@@ -672,9 +672,9 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
-                print("❌ BackupFlow: FTP uyarı bildirimi gönderilemedi: \(error.localizedDescription)")
+                debugLog("❌ BackupFlow: FTP uyarı bildirimi gönderilemedi: \(error.localizedDescription)")
             } else {
-                print("🔔 BackupFlow: FTP arka plan uyarı bildirimi gönderildi.")
+                debugLog("🔔 BackupFlow: FTP arka plan uyarı bildirimi gönderildi.")
             }
         }
     }
@@ -692,7 +692,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         content.sound = .default
         let request = UNNotificationRequest(identifier: "no-network-retry-\(task.id)", content: content, trigger: nil)
         UNUserNotificationCenter.current().add(request) { error in
-            if let error = error { print("❌ BackupFlow: No-network retry bildirimi hatası: \(error)") }
+            if let error = error { debugLog("❌ BackupFlow: No-network retry bildirimi hatası: \(error)") }
         }
     }
     
@@ -704,7 +704,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         content.sound = .default
         let request = UNNotificationRequest(identifier: "no-network-postponed-\(task.id)", content: content, trigger: nil)
         UNUserNotificationCenter.current().add(request) { error in
-            if let error = error { print("❌ BackupFlow: Erteleme bildirimi hatası: \(error)") }
+            if let error = error { debugLog("❌ BackupFlow: Erteleme bildirimi hatası: \(error)") }
         }
     }
     
@@ -766,7 +766,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
 
         // Persist changes
         if let context = task.modelContext {
-            do { try context.save() } catch { print("❌ BackupFlow: Erteleme kaydı sırasında hata: \(error)") }
+            do { try context.save() } catch { debugLog("❌ BackupFlow: Erteleme kaydı sırasında hata: \(error)") }
         }
 
         // Create a failed history record
@@ -790,7 +790,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             timer.invalidate()
         }
         scheduledTimers.removeAll()
-        print("🚫 BackupFlow: Tüm timer'lar iptal edildi")
+        debugLog("🚫 BackupFlow: Tüm timer'lar iptal edildi")
     }
 
     // MARK: - BGTaskScheduler Integration
@@ -819,7 +819,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             let minimumLead: TimeInterval = 15 * 60
             if candidate.timeIntervalSince(now) < minimumLead {
                 candidate = now.addingTimeInterval(minimumLead)
-                print("ℹ️ BGTaskScheduler: Earliest çok yakın, 15 dk'ya yuvarlandı -> \(userLocalDateFormatter.string(from: candidate))")
+                debugLog("ℹ️ BGTaskScheduler: Earliest çok yakın, 15 dk'ya yuvarlandı -> \(userLocalDateFormatter.string(from: candidate))")
             }
             request.earliestBeginDate = candidate
         } else {
@@ -837,9 +837,9 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             lastBGSubmitAt = Date()
             lastSubmitByIdentifier[id] = Date()
             if let d = request.earliestBeginDate {
-                print("✅ BGTaskScheduler: App refresh görevi planlandı -> \(userLocalDateFormatter.string(from: d))")
+                debugLog("✅ BGTaskScheduler: App refresh görevi planlandı -> \(userLocalDateFormatter.string(from: d))")
             } else {
-                print("✅ BGTaskScheduler: App refresh görevi planlandı (tarih yok)")
+                debugLog("✅ BGTaskScheduler: App refresh görevi planlandı (tarih yok)")
             }
         } catch {
             let nsError = error as NSError
@@ -852,15 +852,15 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                 default: break
                 }
             }
-            print("❌ BGTaskScheduler: Görev planlanamadı (code=\(nsError.code) reason=\(reason)): \(error)")
-            print("⛑ Fallback: Foreground timer'lar çalışmaya devam edecek.")
+            debugLog("❌ BGTaskScheduler: Görev planlanamadı (code=\(nsError.code) reason=\(reason)): \(error)")
+            debugLog("⛑ Fallback: Foreground timer'lar çalışmaya devam edecek.")
         }
     }
     
     /// Missed timer kontrolü - BGTask tarafından çağrılır
     public func checkMissedTimers() async {
         guard let container = Self.sharedModelContainer else {
-            print("❌ checkMissedTimers: ModelContainer yok")
+            debugLog("❌ checkMissedTimers: ModelContainer yok")
             return
         }
         
@@ -869,11 +869,11 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         let descriptor = FetchDescriptor<BackupTask>()
         
         guard let tasks = try? context.fetch(descriptor) else {
-            print("❌ checkMissedTimers: Görevler yüklenemedi")
+            debugLog("❌ checkMissedTimers: Görevler yüklenemedi")
             return
         }
         
-        print("🔍 checkMissedTimers: \(tasks.count) görev kontrol ediliyor")
+        debugLog("🔍 checkMissedTimers: \(tasks.count) görev kontrol ediliyor")
         
         for task in tasks {
             guard !task.isPaused, task.isEnabled else { continue }
@@ -884,10 +884,10 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                 
                 // Timer 2+ dakika geç kalmışsa manuel tetikle
                 if timeDiff > 120 { // 2 dakika
-                    print("⚠️ checkMissedTimers: Kaçırılmış görev tespit edildi: \(task.displayName)")
-                    print("   📅 Planlanmış: \(userLocalDateFormatter.string(from: nextRunTime))")
-                    print("   📅 Şu anda: \(userLocalDateFormatter.string(from: now))")
-                    print("   ⏰ Gecikme: \(String(format: "%.1f", timeDiff)) saniye")
+                    debugLog("⚠️ checkMissedTimers: Kaçırılmış görev tespit edildi: \(task.displayName)")
+                    debugLog("   📅 Planlanmış: \(userLocalDateFormatter.string(from: nextRunTime))")
+                    debugLog("   📅 Şu anda: \(userLocalDateFormatter.string(from: now))")
+                    debugLog("   ⏰ Gecikme: \(String(format: "%.1f", timeDiff)) saniye")
                     
                     // App state kontrol et
                     let isActive: Bool = {
@@ -899,25 +899,25 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                     }()
                     if isActive {
                         if let last = lastRunAt, Date().timeIntervalSince(last) < minRunInterval {
-                            print("ℹ️ checkMissedTimers: Minimum aralık dolmadı, atlanıyor")
+                            debugLog("ℹ️ checkMissedTimers: Minimum aralık dolmadı, atlanıyor")
                             continue
                         }
                         if isProcessing {
-                            print("ℹ️ checkMissedTimers: Aktif işlem var, tetikleme atlandı")
+                            debugLog("ℹ️ checkMissedTimers: Aktif işlem var, tetikleme atlandı")
                             continue
                         }
-                        print("📱 checkMissedTimers: App aktif - Yedekleme başlatılıyor")
+                        debugLog("📱 checkMissedTimers: App aktif - Yedekleme başlatılıyor")
                         try? await performBackup(task: task)
                     } else {
                         if isProcessing {
-                            print("ℹ️ checkMissedTimers: App arka planda ama aktif işlem var, tetikleme atlandı")
+                            debugLog("ℹ️ checkMissedTimers: App arka planda ama aktif işlem var, tetikleme atlandı")
                             continue
                         }
-                        print("🌙 checkMissedTimers: App arka planda - otomatik yedekleme deneniyor")
+                        debugLog("🌙 checkMissedTimers: App arka planda - otomatik yedekleme deneniyor")
                         do {
                             try await performBackup(task: task, bypassThrottle: true)
                         } catch {
-                            print("⚠️ checkMissedTimers: Arka plan otomatik yedekleme başarısız, bildirim fallback: \(error)")
+                            debugLog("⚠️ checkMissedTimers: Arka plan otomatik yedekleme başarısız, bildirim fallback: \(error)")
                             sendScheduledBackupNotification(for: task)
                         }
                     }
@@ -931,7 +931,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         // Re-entrancy guard: allow only one background execution at a time
         if isProcessing {
             // Another backup is already running (foreground/background). Treat as handled.
-            print("ℹ️ BGTaskScheduler: Zaten bir işlem sürüyor, yeni görev başarılı kabul edilerek atlandı")
+            debugLog("ℹ️ BGTaskScheduler: Zaten bir işlem sürüyor, yeni görev başarılı kabul edilerek atlandı")
             return true
         }
         
@@ -948,14 +948,14 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         }
 
         guard let container = Self.sharedModelContainer else {
-            print("❌ BGTaskScheduler: ModelContainer yok")
+            debugLog("❌ BGTaskScheduler: ModelContainer yok")
             return false
         }
         let context = ModelContext(container)
         let now = Date()
         let descriptor = FetchDescriptor<BackupTask>()
         guard let tasks = try? context.fetch(descriptor), !tasks.isEmpty else {
-            print("ℹ️ BGTaskScheduler: Çalışacak görev yok")
+            debugLog("ℹ️ BGTaskScheduler: Çalışacak görev yok")
             return true
         }
         let dueTasks = tasks.filter { task in
@@ -966,7 +966,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             return false
         }
         if dueTasks.isEmpty {
-            print("⏱️ BGTaskScheduler: Zamanı gelen görev yok, yeniden planlanıyor")
+            debugLog("⏱️ BGTaskScheduler: Zamanı gelen görev yok, yeniden planlanıyor")
             scheduleAppRefresh()
             scheduleProcessingTask()
             return true
@@ -974,7 +974,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         
         await sendBackgroundTaskStartedNotification(taskCount: dueTasks.count)
 
-        print("🚀 BGTaskScheduler: \(dueTasks.count) görev arka planda yürütülecek")
+        debugLog("🚀 BGTaskScheduler: \(dueTasks.count) görev arka planda yürütülecek")
         
         var anySuccess = false
         for taskToRun in dueTasks {
@@ -988,13 +988,13 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                 #endif
             }
             
-            print("📱 BGTaskScheduler: Arka plan görevi başlatılıyor: \(taskToRun.displayName)")
+            debugLog("📱 BGTaskScheduler: Arka plan görevi başlatılıyor: \(taskToRun.displayName)")
             do {
                 try await performBackup(task: taskToRun, bypassThrottle: true)
                 anySuccess = true
-                print("✅ BGTaskScheduler: Arka plan görevi başarıyla tamamlandı: \(taskToRun.displayName)")
+                debugLog("✅ BGTaskScheduler: Arka plan görevi başarıyla tamamlandı: \(taskToRun.displayName)")
             } catch {
-                print("⚠️ BGTaskScheduler: Arka plan görevi başarısız -> \(taskToRun.displayName) - \(error)")
+                debugLog("⚠️ BGTaskScheduler: Arka plan görevi başarısız -> \(taskToRun.displayName) - \(error)")
             }
         }
         
@@ -1008,20 +1008,20 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
 extension BackupScheduler {
     
     private func executeBackup(task: BackupTask) async throws -> FTPService.SyncResult {
-        print("🚀 BackupFlow: Yedekleme başlatılıyor: \(task.displayName) - \(task.backupType.rawValue)")
+        debugLog("🚀 BackupFlow: Yedekleme başlatılıyor: \(task.displayName) - \(task.backupType.rawValue)")
         
         // Network türü kontrolü - local server için WiFi gerekli (ayar kontrollü)
         if isLocalServer(host: task.serverHost) && !task.allowCellularForLocalServer {
             let networkType = await getCurrentNetworkType()
             if networkType != .wifi {
-                let errorMessage = "Local sunucu erişimi için WiFi bağlantısı gerekli (Şu anda: \(networkType.description)). Ayarlardan hücresel veri kullanımını aktifleştirebilirsiniz."
-                print("❌ BackupFlow: \(errorMessage)")
+                let errorMessage = "error.network.local_server_wifi_required".localized(with: networkType.description)
+                debugLog("❌ BackupFlow: \(errorMessage)")
                 throw NSError(domain: "NetworkError", code: -1000, userInfo: [NSLocalizedDescriptionKey: errorMessage])
             }
-            print("✅ BackupFlow: WiFi bağlantısı tespit edildi, local server erişimi uygun")
+            debugLog("✅ BackupFlow: WiFi bağlantısı tespit edildi, local server erişimi uygun")
         } else if isLocalServer(host: task.serverHost) && task.allowCellularForLocalServer {
             let networkType = await getCurrentNetworkType()
-            print("⚠️ BackupFlow: Local server için hücresel veri kullanımına izin verildi (Şu anda: \(networkType.description))")
+            debugLog("⚠️ BackupFlow: Local server için hücresel veri kullanımına izin verildi (Şu anda: \(networkType.description))")
         }
         
         task.backupStatus = .preparing
@@ -1051,7 +1051,7 @@ extension BackupScheduler {
     }
     
     private func executeFTPBackup(task: BackupTask, startTime: Date) async throws -> FTPService.SyncResult {
-        print("📡 BackupFlow: FTP yedekleme başlatılıyor...")
+        debugLog("📡 BackupFlow: FTP yedekleme başlatılıyor...")
         task.backupStatus = .uploading
         
         let ftpService = FTPService.shared
@@ -1061,7 +1061,7 @@ extension BackupScheduler {
                 host: task.serverHost,
                 port: task.serverPort,
                 username: task.isAnonymous ? "" : task.serverUsername,
-                password: task.isAnonymous ? "" : task.serverPassword,
+                password: task.isAnonymous ? "" : task.resolvedServerPassword,
                 sourcePath: task.sourcePath ?? "",
                 isAnonymous: task.isAnonymous,
                 mediaType: task.mediaType,
@@ -1084,7 +1084,7 @@ extension BackupScheduler {
     }
     
     private func executeWebDAVBackup(task: BackupTask, startTime: Date) async throws -> FTPService.SyncResult {
-        print("🌐 BackupFlow: WebDAV yedekleme başlatılıyor...")
+        debugLog("🌐 BackupFlow: WebDAV yedekleme başlatılıyor...")
         task.backupStatus = .uploading
         
         do {
@@ -1096,7 +1096,8 @@ extension BackupScheduler {
             
             // Configure WebDAV connection parameters
             let username = task.serverUsername.isEmpty ? nil : task.serverUsername
-            let password = task.serverPassword.isEmpty ? nil : task.serverPassword
+            let resolvedPassword = task.resolvedServerPassword
+            let password = resolvedPassword.isEmpty ? nil : resolvedPassword
             
             // Convert host to proper format if needed
             let rawHost = task.serverHost.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1173,13 +1174,13 @@ extension BackupScheduler {
             task.currentFile = "backup.current_file.error".localized(with: error.localizedDescription)
             resetCurrentFileProgress(for: task)
             
-            print("❌ BackupFlow: WebDAV yedekleme hatası: \(error.localizedDescription)")
+            debugLog("❌ BackupFlow: WebDAV yedekleme hatası: \(error.localizedDescription)")
             throw error
         }
     }
 
     private func executeSFTPBackup(task: BackupTask, startTime: Date) async throws -> FTPService.SyncResult {
-        print("🔐 BackupFlow: SFTP yedekleme başlatılıyor...")
+        debugLog("🔐 BackupFlow: SFTP yedekleme başlatılıyor...")
         let effectiveDestination: String = {
             let trimmed = task.destinationPath.trimmingCharacters(in: .whitespacesAndNewlines)
             if !trimmed.isEmpty && trimmed != "/" {
@@ -1192,8 +1193,8 @@ extension BackupScheduler {
             let safeSourceFolder = sourceFolder.trimmingCharacters(in: .whitespacesAndNewlines)
             return safeSourceFolder.isEmpty ? "backup" : safeSourceFolder
         }()
-        print("🔐 BackupFlow: SFTP hedef dizin (effective): \(effectiveDestination)")
-        print("🔐 BackupFlow: SFTP kaynak: \(task.sourcePath ?? "")")
+        debugLog("🔐 BackupFlow: SFTP hedef dizin (effective): \(effectiveDestination)")
+        debugLog("🔐 BackupFlow: SFTP kaynak: \(task.sourcePath ?? "")")
         task.backupStatus = .uploading
         
         do {
@@ -1204,7 +1205,7 @@ extension BackupScheduler {
                 host: task.serverHost,
                 port: task.serverPort,
                 username: task.serverUsername,
-                password: task.serverPassword,
+                password: task.resolvedServerPassword,
                 sourcePath: task.sourcePath ?? "",
                 destinationPath: task.destinationPath,
                 mediaType: task.mediaType,
@@ -1227,7 +1228,7 @@ extension BackupScheduler {
             task.progress = 0.0
             task.currentFile = "backup.current_file.error".localized(with: error.localizedDescription)
             resetCurrentFileProgress(for: task)
-            print("❌ BackupFlow: SFTP yedekleme hatası: \(error.localizedDescription)")
+            debugLog("❌ BackupFlow: SFTP yedekleme hatası: \(error.localizedDescription)")
             throw error
         }
     }
@@ -1258,9 +1259,9 @@ extension BackupScheduler {
         
         do {
             try await UNUserNotificationCenter.current().add(request)
-            print("🔔 BackupFlow: Detaylı yedekleme bildirimi gönderildi")
+            debugLog("🔔 BackupFlow: Detaylı yedekleme bildirimi gönderildi")
         } catch {
-            print("❌ BackupFlow: Bildirim gönderme hatası: \(error)")
+            debugLog("❌ BackupFlow: Bildirim gönderme hatası: \(error)")
         }
     }
     
@@ -1307,9 +1308,9 @@ extension BackupScheduler {
                 // In many cases, appending to a relationship is enough; insert is optional
                 try context.save()
                 HistoryRetentionManager.pruneIfNeeded(context: context)
-                print("📝 BackupFlow: Geçmiş kaydı eklendi - \(syncResult.totalProcessed) dosya, \(Int(duration))s")
+                debugLog("📝 BackupFlow: Geçmiş kaydı eklendi - \(syncResult.totalProcessed) dosya, \(Int(duration))s")
             } catch {
-                print("❌ BackupFlow: Geçmiş kaydı hatası (taskContext): \(error)")
+                debugLog("❌ BackupFlow: Geçmiş kaydı hatası (taskContext): \(error)")
             }
             return
         }
@@ -1319,7 +1320,7 @@ extension BackupScheduler {
         do {
             let fetch = FetchDescriptor<BackupTask>()
             guard let taskInContext = try context.fetch(fetch).first(where: { $0.id == task.id }) else {
-                print("❌ BackupFlow: Geçmiş kaydı için görev bulunamadı (refetch failed)")
+                debugLog("❌ BackupFlow: Geçmiş kaydı için görev bulunamadı (refetch failed)")
                 return
             }
 
@@ -1348,9 +1349,9 @@ extension BackupScheduler {
 
             try context.save()
             HistoryRetentionManager.pruneIfNeeded(context: context)
-            print("📝 BackupFlow: Geçmiş kaydı eklendi (refetched) - \(syncResult.totalProcessed) dosya, \(Int(duration))s")
+            debugLog("📝 BackupFlow: Geçmiş kaydı eklendi (refetched) - \(syncResult.totalProcessed) dosya, \(Int(duration))s")
         } catch {
-            print("❌ BackupFlow: Geçmiş kaydı hatası (refetch): \(error)")
+            debugLog("❌ BackupFlow: Geçmiş kaydı hatası (refetch): \(error)")
         }
     }
 
@@ -1377,9 +1378,9 @@ extension BackupScheduler {
         do {
             try await UNUserNotificationCenter.current().add(request)
             lastBGTaskNotificationAt = Date()
-            print("🔔 BackupFlow: BGTask başlangıç bildirimi gönderildi")
+            debugLog("🔔 BackupFlow: BGTask başlangıç bildirimi gönderildi")
         } catch {
-            print("❌ BackupFlow: BGTask başlangıç bildirimi hatası: \(error)")
+            debugLog("❌ BackupFlow: BGTask başlangıç bildirimi hatası: \(error)")
         }
     }
 }
@@ -1394,15 +1395,15 @@ extension BackupScheduler {
         let identifier = response.notification.request.identifier
         let actionIdentifier = response.actionIdentifier
         
-        print("🔔 BackupFlow: Bildirime tıklandı - ID: \(identifier), Action: \(actionIdentifier)")
+        debugLog("🔔 BackupFlow: Bildirime tıklandı - ID: \(identifier), Action: \(actionIdentifier)")
         
         // Bildirim okunduğunda badge'i temizle
         Task {
             do {
                 try await UNUserNotificationCenter.current().setBadgeCount(0)
-                print("🔔 BackupFlow: Bildirim badge temizlendi")
+                debugLog("🔔 BackupFlow: Bildirim badge temizlendi")
             } catch {
-                print("❌ BackupFlow: Badge temizleme hatası: \(error)")
+                debugLog("❌ BackupFlow: Badge temizleme hatası: \(error)")
             }
         }
         
@@ -1412,7 +1413,7 @@ extension BackupScheduler {
             if identifier.hasPrefix("scheduled-backup-") {
                 let taskIdString = String(identifier.dropFirst("scheduled-backup-".count))
                 if let taskId = UUID(uuidString: taskIdString) {
-                    print("📱 BackupFlow: Yedekleme başlatma talebi - Task ID: \(taskId.uuidString)")
+                    debugLog("📱 BackupFlow: Yedekleme başlatma talebi - Task ID: \(taskId.uuidString)")
                     
                     // Global state'e yedekleme talebi kaydet
                     UserDefaults.standard.set(taskId.uuidString, forKey: "pendingBackupTaskId")
@@ -1422,7 +1423,7 @@ extension BackupScheduler {
                 }
             }
         } else if actionIdentifier == "CANCEL_BACKUP_ACTION" {
-            print("❌ BackupFlow: Kullanıcı yedeklemeyi iptal etti")
+            debugLog("❌ BackupFlow: Kullanıcı yedeklemeyi iptal etti")
             // İsteğe bağlı: İptal bildirimi gönder
         }
         

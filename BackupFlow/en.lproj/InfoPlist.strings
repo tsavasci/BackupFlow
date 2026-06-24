@@ -1,0 +1,5 @@
+"NSLocalNetworkUsageDescription" = "Local network access is required to connect to your FTP, SFTP, or WebDAV server and run backups.";
+"NSPhotoLibraryUsageDescription" = "Photo library access is required to back up your photos and videos.";
+"NSPhotoLibraryAddUsageDescription" = "Photo library write access is required to restore backed up photos and videos.";
+"NSDocumentsDirUsageDescription" = "Documents access is required to back up files you select.";
+"NSFileProviderDomainUsageDescription" = "Access to files from iCloud Drive and the Files app is required for backup.";

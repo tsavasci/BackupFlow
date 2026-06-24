@@ -39,7 +39,7 @@ enum WebDAVConnectionBuilder {
             throw NSError(
                 domain: "WebDAVError",
                 code: -1,
-                userInfo: [NSLocalizedDescriptionKey: "Geçersiz sunucu adresi. Lütfen 'http://192.168.1.1' veya '192.168.1.1' formatında girin."]
+                userInfo: [NSLocalizedDescriptionKey: "error.webdav.invalid_server_address".localized]
             )
         }
 
@@ -70,7 +70,7 @@ enum WebDAVConnectionBuilder {
             throw NSError(
                 domain: "WebDAVError",
                 code: -1,
-                userInfo: [NSLocalizedDescriptionKey: "Invalid URL created. Please check the server address."]
+                userInfo: [NSLocalizedDescriptionKey: "error.webdav.invalid_url_created".localized]
             )
         }
 

@@ -46,27 +46,27 @@ private func makeSFTPError(
     switch kind {
     case .authentication:
         code = SFTPFailureCode.authentication.rawValue
-        message = "SFTP kimlik doğrulama başarısız. Kullanıcı adı/şifreyi ve sunucu izinlerini kontrol edin."
+        message = "error.sftp.authentication".localized
     case .timeout:
         code = SFTPFailureCode.timeout.rawValue
-        message = "SFTP bağlantısı zaman aşımına uğradı. Ağ erişimini ve sunucu yanıt süresini kontrol edin."
+        message = "error.sftp.timeout".localized
     case .hostKeyMismatch:
         code = SFTPFailureCode.hostKeyMismatch.rawValue
-        message = "SFTP host key doğrulaması başarısız. Sunucu anahtarı değişmiş olabilir."
+        message = "error.sftp.host_key_mismatch".localized
     case .connection:
         code = SFTPFailureCode.connection.rawValue
-        message = "SFTP sunucusuna bağlantı kurulamadı."
+        message = "error.sftp.connection".localized
     case .fileOperation:
         code = SFTPFailureCode.fileOperation.rawValue
-        message = "SFTP dosya işlemi başarısız."
+        message = "error.sftp.file_operation".localized
     case .unavailable:
         code = SFTPFailureCode.unavailable.rawValue
-        message = "SFTP desteği etkin değil. Citadel bağımlılığı eklenmeli."
+        message = "error.sftp.unavailable".localized
     }
 
     var userInfo: [String: Any] = [NSLocalizedDescriptionKey: message]
     if let details, !details.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-        userInfo[NSLocalizedDescriptionKey] = "\(message) Detay: \(details)"
+        userInfo[NSLocalizedDescriptionKey] = "error.with_detail".localized(with: message, details)
     }
     if let underlying {
         userInfo[NSUnderlyingErrorKey] = underlying
@@ -1066,7 +1066,7 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     private let unavailableError = NSError(
         domain: "SFTPUnavailable",
         code: -1,
-        userInfo: [NSLocalizedDescriptionKey: "SFTP desteği etkin değil. Citadel bağımlılığı eklenmeli."]
+        userInfo: [NSLocalizedDescriptionKey: "error.sftp.unavailable".localized]
     )
     
     private override init() {

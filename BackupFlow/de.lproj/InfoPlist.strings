@@ -1,0 +1,5 @@
+"NSLocalNetworkUsageDescription" = "Lokaler Netzwerkzugriff ist erforderlich, um eine Verbindung zu Ihrem FTP-, SFTP- oder WebDAV-Server herzustellen und Backups auszuführen.";
+"NSPhotoLibraryUsageDescription" = "Zugriff auf die Fotomediathek ist erforderlich, um Ihre Fotos und Videos zu sichern.";
+"NSPhotoLibraryAddUsageDescription" = "Schreibzugriff auf die Fotomediathek ist erforderlich, um gesicherte Fotos und Videos wiederherzustellen.";
+"NSDocumentsDirUsageDescription" = "Zugriff auf Dokumente ist erforderlich, um ausgewählte Dateien zu sichern.";
+"NSFileProviderDomainUsageDescription" = "Zugriff auf Dateien aus iCloud Drive und der Dateien-App ist für Backups erforderlich.";

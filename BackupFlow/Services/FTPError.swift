@@ -11,17 +11,17 @@ enum FTPError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidURL:
-            return "Geçersiz FTP sunucu adresi"
+            return "error.ftp.invalid_url".localized
         case .connectionFailed:
-            return "FTP sunucusuna bağlanılamadı"
+            return "error.ftp.connection_failed".localized
         case .authenticationFailed:
-            return "Kimlik doğrulama başarısız. Kullanıcı adı ve şifrenizi kontrol edin"
+            return "error.ftp.authentication_failed".localized
         case .fileOperationFailed:
-            return "Dosya işlemi başarısız oldu"
+            return "error.ftp.file_operation_failed".localized
         case .invalidResponse:
-            return "Geçersiz sunucu yanıtı"
+            return "error.ftp.invalid_response".localized
         case .unknown(let error):
-            return "Beklenmeyen bir hata oluştu: \(error.localizedDescription)"
+            return "error.unexpected_with_detail".localized(with: error.localizedDescription)
         }
     }
 }

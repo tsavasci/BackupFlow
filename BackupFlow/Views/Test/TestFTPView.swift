@@ -1,6 +1,7 @@
 import SwiftUI
 import UserNotifications
 
+#if DEBUG
 struct TestFTPView: View {
     @State private var isTesting = false
     @State private var testResult: String?
@@ -142,3 +143,4 @@ struct TestFTPView_Previews: PreviewProvider {
         }
     }
 }
+#endif

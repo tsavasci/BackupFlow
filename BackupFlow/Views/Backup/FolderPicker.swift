@@ -130,13 +130,13 @@ extension URL {
             )
             
             if isStale {
-                print("Bookmark is stale")
+                debugLog("Bookmark is stale")
                 return nil
             }
             
             return url
         } catch {
-            print("Error resolving bookmark: \(error)")
+            debugLog("Error resolving bookmark: \(error)")
             return nil
         }
     }

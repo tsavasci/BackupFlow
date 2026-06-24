@@ -1,0 +1,5 @@
+"NSLocalNetworkUsageDescription" = "FTP, SFTP veya WebDAV sunucunuza bağlanmak ve yedekleme yapmak için yerel ağ erişimi gereklidir.";
+"NSPhotoLibraryUsageDescription" = "Fotoğraf ve videolarınızı yedeklemek için fotoğraf arşivi erişimi gereklidir.";
+"NSPhotoLibraryAddUsageDescription" = "Yedeklenen fotoğraf ve videoları geri yüklemek için fotoğraf arşivine yazma izni gereklidir.";
+"NSDocumentsDirUsageDescription" = "Seçtiğiniz dosyaları yedeklemek için Belgeler erişimi gereklidir.";
+"NSFileProviderDomainUsageDescription" = "Yedekleme için iCloud Drive ve Dosyalar uygulamasındaki dosyalara erişim gereklidir.";
