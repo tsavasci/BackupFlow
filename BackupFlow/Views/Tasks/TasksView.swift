@@ -18,6 +18,10 @@ struct TasksView: View {
     @State private var searchText = ""
     @State private var actionToast: String? = nil
     @State private var currentTime = Date()
+    @State private var previewTask: BackupTask?
+    @State private var previewResult: BackupPreviewResult?
+    @State private var previewError: String?
+    @State private var isPreviewLoading = false
     
     @Environment(\.horizontalSizeClass) private var hSizeClass
     private var isWide: Bool { hSizeClass == .regular }
@@ -74,6 +78,20 @@ struct TasksView: View {
                                 .navigationTitle("task.details.title".localized)
                                 .navigationBarTitleDisplayMode(.inline)
                         }
+                    }
+                    .sheet(item: $previewTask) { task in
+                        BackupPreviewSheet(
+                            taskName: task.displayName,
+                            result: previewResult,
+                            isLoading: isPreviewLoading,
+                            errorMessage: previewError,
+                            onConfirm: {
+                                startPreviewedTask(task)
+                            },
+                            onCancel: {
+                                clearPreview()
+                            }
+                        )
                     }
                     .overlay(alignment: .bottom) {
                         if let msg = actionToast {
@@ -292,10 +310,38 @@ struct TasksView: View {
     
     // MARK: - Helper Methods
     private func runNow(_ task: BackupTask) {
+        previewTask = task
+        previewResult = nil
+        previewError = nil
+        isPreviewLoading = true
+
+        Task {
+            do {
+                let result = try await BackupScheduler.shared.previewBackup(task: task)
+                previewResult = result
+            } catch {
+                previewError = error.localizedDescription
+            }
+            isPreviewLoading = false
+        }
+    }
+
+    private func startPreviewedTask(_ task: BackupTask) {
         task.isEnabled = true
         task.isPaused = false
         try? modelContext.save()
+        clearPreview()
         actionToast = "tasks.run_started".localized
+        Task {
+            try? await BackupScheduler.shared.performBackup(task: task, bypassThrottle: true)
+        }
+    }
+
+    private func clearPreview() {
+        previewTask = nil
+        previewResult = nil
+        previewError = nil
+        isPreviewLoading = false
     }
     
     private func togglePause(for task: BackupTask) {

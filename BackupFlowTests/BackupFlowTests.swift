@@ -1,36 +1,51 @@
-//
-//  BackupFlowTests.swift
-//  BackupFlowTests
-//
-//  Created by Tamer Savaşcı on 19.09.2025.
-//
-
 import XCTest
 @testable import BackupFlow
 
 final class BackupFlowTests: XCTestCase {
+    func testExecutionOptionsDefaultToMirrorAndNoChecksum() throws {
+        let task = BackupTask(sourcePath: "/tmp/source")
 
-    override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
+        let options = BackupExecutionOptions.forTask(task)
+
+        XCTAssertFalse(options.isDryRun)
+        XCTAssertEqual(options.deletionPolicy, .mirror)
+        XCTAssertEqual(options.checksumMode, .off)
+        XCTAssertFalse(options.requiresWiFi)
+        XCTAssertFalse(options.requiresExternalPower)
     }
 
-    override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
+    func testDryRunOptionsPreserveTaskPolicies() throws {
+        let task = BackupTask(
+            sourcePath: "/tmp/source",
+            deletionPolicy: .appendOnly,
+            checksumMode: .verifyUploads,
+            requiresExternalPower: true,
+            requiresWiFi: true
+        )
+
+        let options = BackupExecutionOptions.forTask(task, isDryRun: true)
+
+        XCTAssertTrue(options.isDryRun)
+        XCTAssertEqual(options.deletionPolicy, .appendOnly)
+        XCTAssertEqual(options.checksumMode, .verifyUploads)
+        XCTAssertTrue(options.requiresWiFi)
+        XCTAssertTrue(options.requiresExternalPower)
     }
 
-    func testExample() throws {
-        // This is an example of a functional test case.
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
-        // Any test you write for XCTest can be annotated as throws and async.
-        // Mark your test throws to produce an unexpected failure when your test encounters an uncaught error.
-        // Mark your test async to allow awaiting for asynchronous code to complete. Check the results with assertions afterwards.
-    }
+    func testPreviewSummarySnapshotContainsCountsAndPolicy() throws {
+        let result = FTPSyncResult(
+            newFiles: 2,
+            updatedFiles: 1,
+            skippedFiles: 3,
+            deletedFiles: 4,
+            totalBytes: 1024
+        )
 
-    func testPerformanceExample() throws {
-        // This is an example of a performance test case.
-        self.measure {
-            // Put the code you want to measure the time of here.
-        }
-    }
+        let preview = BackupPreviewResult.fromSyncResult(result, deletionPolicy: .mirror)
 
+        XCTAssertEqual(preview.totalChanges, 7)
+        XCTAssertTrue(preview.summarySnapshot.contains("new=2"))
+        XCTAssertTrue(preview.summarySnapshot.contains("deleted=4"))
+        XCTAssertTrue(preview.summarySnapshot.contains("policy=mirror"))
+    }
 }

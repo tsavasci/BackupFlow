@@ -41,6 +41,7 @@ struct FTPSyncEngine {
     func syncUploadDirectory(
         localURL: URL,
         remotePath: String = "",
+        options: BackupExecutionOptions = .defaults,
         progressHandler: ((Double) -> Void)? = nil
     ) async throws -> FTPSyncResult {
         guard !isCancelled() else {
@@ -97,28 +98,36 @@ struct FTPSyncEngine {
                 }
             case .new:
                 setCurrentFile("backup.current_file.uploading_file".localized(with: fileName))
-                try await uploadFile(localFileURL, targetPath) { fileProgress in
-                    let fileShare = 0.8 / Double(max(totalFiles, 1))
-                    let overallProgress = (Double(index) / Double(max(totalFiles, 1)) * 0.8) + (fileProgress * fileShare)
-                    progressHandler?(min(max(overallProgress, 0.0), 0.8))
+                if !options.isDryRun {
+                    try await uploadFile(localFileURL, targetPath) { fileProgress in
+                        let fileShare = 0.8 / Double(max(totalFiles, 1))
+                        let overallProgress = (Double(index) / Double(max(totalFiles, 1)) * 0.8) + (fileProgress * fileShare)
+                        progressHandler?(min(max(overallProgress, 0.0), 0.8))
+                    }
                 }
                 result.newFiles += 1
                 result.totalBytes += localSize
-                transferredBytes += localSize
+                if !options.isDryRun {
+                    transferredBytes += localSize
+                }
                 uploadedCount += 1
                 if isVerboseLoggingEnabled {
                     logger.debug("Successfully uploaded new file: \(relativePath)")
                 }
             case .updated:
                 setCurrentFile("backup.current_file.updating_file".localized(with: fileName))
-                try await uploadFile(localFileURL, targetPath) { fileProgress in
-                    let fileShare = 0.8 / Double(max(totalFiles, 1))
-                    let overallProgress = (Double(index) / Double(max(totalFiles, 1)) * 0.8) + (fileProgress * fileShare)
-                    progressHandler?(min(max(overallProgress, 0.0), 0.8))
+                if !options.isDryRun {
+                    try await uploadFile(localFileURL, targetPath) { fileProgress in
+                        let fileShare = 0.8 / Double(max(totalFiles, 1))
+                        let overallProgress = (Double(index) / Double(max(totalFiles, 1)) * 0.8) + (fileProgress * fileShare)
+                        progressHandler?(min(max(overallProgress, 0.0), 0.8))
+                    }
                 }
                 result.updatedFiles += 1
                 result.totalBytes += localSize
-                transferredBytes += localSize
+                if !options.isDryRun {
+                    transferredBytes += localSize
+                }
                 uploadedCount += 1
                 if isVerboseLoggingEnabled {
                     logger.debug("Successfully updated file: \(relativePath)")
@@ -135,14 +144,26 @@ struct FTPSyncEngine {
         for (remotePath, _) in remoteFileMap {
             if !localRelativePaths.contains(remotePath) {
                 let fullRemotePath = remoteBasePath == "/" ? "/\(remotePath)" : "\(remoteBasePath)/\(remotePath)"
-                do {
-                    logger.info("Deleting orphaned file: \(remotePath)")
-                    try await deleteFile(fullRemotePath)
+                if options.isDryRun {
                     result.deletedFiles += 1
                     deletedCount += 1
-                    logger.debug("Successfully deleted orphaned file: \(remotePath)")
-                } catch {
-                    logger.error("Failed to delete orphaned file \(remotePath): \(error.localizedDescription)")
+                } else {
+                    switch options.deletionPolicy {
+                    case .mirror:
+                        do {
+                            logger.info("Deleting orphaned file: \(remotePath)")
+                            try await deleteFile(fullRemotePath)
+                            result.deletedFiles += 1
+                            deletedCount += 1
+                            logger.debug("Successfully deleted orphaned file: \(remotePath)")
+                        } catch {
+                            logger.error("Failed to delete orphaned file \(remotePath): \(error.localizedDescription)")
+                        }
+                    case .appendOnly:
+                        logger.info("Skipping orphan deletion because append-only policy is active: \(remotePath)")
+                    case .archive:
+                        logger.warning("Archive delete policy is not supported for FTP yet; orphan left untouched: \(remotePath)")
+                    }
                 }
             }
         }
@@ -274,6 +295,7 @@ struct FTPSyncEngine {
     func syncBackupPhotoLibrary(
         mediaType: MediaType,
         includeICloudAssets: Bool,
+        options: BackupExecutionOptions = .defaults,
         progressHandler: ((Double) -> Void)? = nil
     ) async throws -> FTPSyncResult {
         let photoManager = PhotoLibraryManager.shared
@@ -365,13 +387,17 @@ struct FTPSyncEngine {
                 debugLog("⏭ BackupFlow: Aynı dosya pas geçildi: \(stableFileName) (\(formatBytes(localSize)))")
             case .new:
                 setCurrentFile("backup.current_file.uploading_file".localized(with: stableFileName))
-                try await uploadPhotoFile(localURL, remotePath, stableFileName)
+                if !options.isDryRun {
+                    try await uploadPhotoFile(localURL, remotePath, stableFileName)
+                }
                 result.newFiles += 1
                 result.totalBytes += localSize
                 debugLog("📤 BackupFlow: Yeni dosya yüklendi: \(stableFileName) (\(formatBytes(localSize)))")
             case .updated:
                 setCurrentFile("backup.current_file.updating_file".localized(with: stableFileName))
-                try await uploadPhotoFile(localURL, remotePath, stableFileName)
+                if !options.isDryRun {
+                    try await uploadPhotoFile(localURL, remotePath, stableFileName)
+                }
                 result.updatedFiles += 1
                 result.totalBytes += localSize
                 debugLog("🔄 BackupFlow: Güncellenmiş dosya yüklendi: \(stableFileName) (\(formatBytes(localSize)))")
@@ -391,15 +417,26 @@ struct FTPSyncEngine {
 
         for (remotePath, remoteFile) in existingFileMap {
             if !processedFiles.contains(remoteFile.name) {
-                do {
-                    let fullRemotePath = "\(photosDir)/\(remotePath)"
-                    try await deleteFile(fullRemotePath)
+                let fullRemotePath = "\(photosDir)/\(remotePath)"
+                if options.isDryRun {
                     result.deletedFiles += 1
-                    debugLog("🗑 BackupFlow: Silinmiş fotoğraf FTP'den kaldırıldı: \(remoteFile.name)")
-                    logger.debug("Successfully deleted orphaned photo: \(remoteFile.name)")
-                } catch {
-                    debugLog("⚠️ BackupFlow: Fotoğraf silinemedi: \(remoteFile.name), hata: \(error)")
-                    logger.error("Failed to delete orphaned photo \(remoteFile.name): \(error.localizedDescription)")
+                } else {
+                    switch options.deletionPolicy {
+                    case .mirror:
+                        do {
+                            try await deleteFile(fullRemotePath)
+                            result.deletedFiles += 1
+                            debugLog("🗑 BackupFlow: Silinmiş fotoğraf FTP'den kaldırıldı: \(remoteFile.name)")
+                            logger.debug("Successfully deleted orphaned photo: \(remoteFile.name)")
+                        } catch {
+                            debugLog("⚠️ BackupFlow: Fotoğraf silinemedi: \(remoteFile.name), hata: \(error)")
+                            logger.error("Failed to delete orphaned photo \(remoteFile.name): \(error.localizedDescription)")
+                        }
+                    case .appendOnly:
+                        logger.info("Skipping orphan photo deletion because append-only policy is active: \(remoteFile.name)")
+                    case .archive:
+                        logger.warning("Archive delete policy is not supported for FTP photos yet; orphan left untouched: \(remoteFile.name)")
+                    }
                 }
             }
         }

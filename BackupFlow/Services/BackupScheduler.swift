@@ -121,6 +121,10 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                         case .weekly(let day, let time):
                             let dayName = ["Pzr", "Pzt", "Sal", "Çrş", "Prş", "Cum", "Cts"][day - 1]
                             return "Haftalık (\(dayName) \(time.timeString))"
+                        case .monthly(let day, let time):
+                            return "Aylık (\(day). gün \(time.timeString))"
+                        case .intervalHours(let hours):
+                            return "Her \(hours) saat"
                         }
                     }()
                     let nextRunText = task.nextRunTime.map { userLocalDateFormatter.string(from: $0) } ?? "Belirlenmedi"
@@ -379,6 +383,22 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     // MARK: - Backup Execution
     public func performBackup(task: BackupTask, bypassThrottle: Bool = false) async throws {
         let runStart = Date()
+        let executionOptions = BackupExecutionOptions.forTask(task)
+        if let blockReason = await blockedReason(for: task, options: executionOptions) {
+            debugLog("⏸️ BackupFlow: Görev koşullar nedeniyle ertelendi: \(blockReason)")
+            task.lastError = blockReason
+            task.nextRunTime = Date().addingTimeInterval(15 * 60)
+            await createBackupHistoryRecord(
+                task: task,
+                syncResult: FTPService.SyncResult(newFiles: 0, skippedFiles: 0, totalBytes: 0),
+                duration: 0,
+                status: "deferred",
+                errorMessage: blockReason,
+                failureCategory: .network
+            )
+            return
+        }
+
         // Re-entrancy guard: Çok sık tetiklemeyi engelle
         if !bypassThrottle, let last = lastRunAt, Date().timeIntervalSince(last) < minRunInterval {
             debugLog("ℹ️ BackupFlow: Son çalıştırmadan bu yana minimum süre dolmadı, tetikleme atlandı")
@@ -433,11 +453,11 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             // Perform the actual backup
             switch task.backupType {
             case .ftp:
-                syncResult = try await executeFTPBackup(task: task, startTime: Date())
+                syncResult = try await executeFTPBackup(task: task, startTime: Date(), options: executionOptions)
             case .sftp:
-                syncResult = try await executeSFTPBackup(task: task, startTime: Date())
+                syncResult = try await executeSFTPBackup(task: task, startTime: Date(), options: executionOptions)
             case .webdav:
-                syncResult = try await executeWebDAVBackup(task: task, startTime: Date())
+                syncResult = try await executeWebDAVBackup(task: task, startTime: Date(), options: executionOptions)
             }
             
             // Update task on success with safe progress
@@ -446,6 +466,8 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             task.lastBackupDate = Date()
             task.currentFile = nil
             resetCurrentFileProgress(for: task)
+            task.lastFailureCategory = nil
+            task.consecutiveFailureCount = 0
             
             // Schedule next run
             task.nextRunTime = calculateNextRunTime(for: task)
@@ -479,7 +501,8 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                     syncResult: FTPService.SyncResult(newFiles: 0, skippedFiles: 0, totalBytes: 0),
                     duration: duration,
                     status: "interrupted",
-                    errorMessage: backupError.localizedDescription
+                    errorMessage: backupError.localizedDescription,
+                    failureCategory: .cancelled
                 )
                 
                 debugLog("⏸️ BackupFlow: Yedekleme yarıda kesildi: \(task.displayName)")
@@ -496,6 +519,9 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             // Update task on failure
             task.backupStatus = .failed
             task.lastError = error.localizedDescription
+            let failureCategory = categorizeFailure(error)
+            task.lastFailureCategory = failureCategory
+            task.consecutiveFailureCount += 1
             
             debugLog("❌ BackupFlow: Yedekleme başarısız: \(task.displayName) - \(error)")
             
@@ -536,9 +562,28 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                 syncResult: FTPService.SyncResult(newFiles: 0, skippedFiles: 0, totalBytes: 0),
                 duration: duration,
                 status: "failed",
-                errorMessage: error.localizedDescription
+                errorMessage: error.localizedDescription,
+                failureCategory: failureCategory
             )
         }
+    }
+
+    public func previewBackup(task: BackupTask) async throws -> BackupPreviewResult {
+        let options = BackupExecutionOptions.forTask(task, isDryRun: true)
+        let syncResult: FTPService.SyncResult
+        switch task.backupType {
+        case .ftp:
+            syncResult = try await executeFTPBackup(task: task, startTime: Date(), options: options)
+        case .sftp:
+            syncResult = try await executeSFTPBackup(task: task, startTime: Date(), options: options)
+        case .webdav:
+            syncResult = try await executeWebDAVBackup(task: task, startTime: Date(), options: options)
+        }
+        task.backupStatus = .idle
+        task.progress = 0.0
+        task.currentFile = nil
+        resetCurrentFileProgress(for: task)
+        return BackupPreviewResult.fromSyncResult(syncResult, deletionPolicy: options.deletionPolicy)
     }
     
     // MARK: - Helper Methods
@@ -579,6 +624,44 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             } else {
                 return calendar.date(byAdding: .weekOfYear, value: 1, to: scheduledThisWeek)
             }
+        case .monthly(let day, let time):
+            let safeDay = max(1, min(31, day))
+            var components = calendar.dateComponents([.year, .month], from: now)
+            components.day = safeDay
+            components.hour = time.hour
+            components.minute = time.minute
+            components.second = 0
+
+            func validMonthlyDate(from components: DateComponents) -> Date? {
+                guard let date = calendar.date(from: components),
+                      calendar.component(.day, from: date) == safeDay else {
+                    return nil
+                }
+                return date
+            }
+
+            if let scheduledThisMonth = validMonthlyDate(from: components), scheduledThisMonth > now {
+                return scheduledThisMonth
+            }
+
+            for offset in 1...12 {
+                guard let nextMonth = calendar.date(byAdding: .month, value: offset, to: now) else { continue }
+                var nextComponents = calendar.dateComponents([.year, .month], from: nextMonth)
+                nextComponents.day = safeDay
+                nextComponents.hour = time.hour
+                nextComponents.minute = time.minute
+                nextComponents.second = 0
+                if let date = validMonthlyDate(from: nextComponents), date > now {
+                    return date
+                }
+            }
+            return nil
+        case .intervalHours(let hours):
+            let interval = TimeInterval(max(1, hours) * 3600)
+            if let nextRun = task.nextRunTime, nextRun > now {
+                return nextRun
+            }
+            return Date().addingTimeInterval(interval)
         }
     }
     
@@ -622,6 +705,10 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             frequencyText = "backup.frequency_text.daily".localized
         case .weekly:
             frequencyText = "backup.frequency_text.weekly".localized
+        case .monthly:
+            frequencyText = "backup.frequency_text.monthly".localized
+        case .intervalHours:
+            frequencyText = "backup.frequency_text.interval".localized
         }
         
         // Base body
@@ -775,7 +862,8 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             syncResult: FTPService.SyncResult(newFiles: 0, skippedFiles: 0, totalBytes: 0),
             duration: 0,
             status: "failed",
-            errorMessage: postponedMessage
+            errorMessage: postponedMessage,
+            failureCategory: .network
         )
 
         // Re-schedule background tasks
@@ -1031,13 +1119,14 @@ extension BackupScheduler {
         
         do {
             let syncResult: FTPService.SyncResult
+            let options = BackupExecutionOptions.forTask(task)
             switch task.backupType {
             case .ftp:
-                syncResult = try await executeFTPBackup(task: task, startTime: startTime)
+                syncResult = try await executeFTPBackup(task: task, startTime: startTime, options: options)
             case .sftp:
-                syncResult = try await executeSFTPBackup(task: task, startTime: startTime)
+                syncResult = try await executeSFTPBackup(task: task, startTime: startTime, options: options)
             case .webdav:
-                syncResult = try await executeWebDAVBackup(task: task, startTime: startTime)
+                syncResult = try await executeWebDAVBackup(task: task, startTime: startTime, options: options)
             }
             return syncResult
         } catch {
@@ -1050,7 +1139,7 @@ extension BackupScheduler {
         }
     }
     
-    private func executeFTPBackup(task: BackupTask, startTime: Date) async throws -> FTPService.SyncResult {
+    private func executeFTPBackup(task: BackupTask, startTime: Date, options: BackupExecutionOptions = .defaults) async throws -> FTPService.SyncResult {
         debugLog("📡 BackupFlow: FTP yedekleme başlatılıyor...")
         task.backupStatus = .uploading
         
@@ -1066,6 +1155,7 @@ extension BackupScheduler {
                 isAnonymous: task.isAnonymous,
                 mediaType: task.mediaType,
                 includeICloudAssets: task.includeICloudAssets,
+                options: options,
                 progressHandler: { progress in
                     Task { @MainActor in
                         // NaN kontrolü ile güvenli progress update
@@ -1083,7 +1173,7 @@ extension BackupScheduler {
         return syncResult
     }
     
-    private func executeWebDAVBackup(task: BackupTask, startTime: Date) async throws -> FTPService.SyncResult {
+    private func executeWebDAVBackup(task: BackupTask, startTime: Date, options: BackupExecutionOptions = .defaults) async throws -> FTPService.SyncResult {
         debugLog("🌐 BackupFlow: WebDAV yedekleme başlatılıyor...")
         task.backupStatus = .uploading
         
@@ -1152,6 +1242,7 @@ extension BackupScheduler {
                 isAnonymous: username == nil,
                 mediaType: task.mediaType,
                 includeICloudAssets: task.includeICloudAssets,
+                options: options,
                 progressHandler: { progress in
                     Task { @MainActor in
                         // NaN kontrolü ile güvenli progress update
@@ -1179,7 +1270,7 @@ extension BackupScheduler {
         }
     }
 
-    private func executeSFTPBackup(task: BackupTask, startTime: Date) async throws -> FTPService.SyncResult {
+    private func executeSFTPBackup(task: BackupTask, startTime: Date, options: BackupExecutionOptions = .defaults) async throws -> FTPService.SyncResult {
         debugLog("🔐 BackupFlow: SFTP yedekleme başlatılıyor...")
         let effectiveDestination: String = {
             let trimmed = task.destinationPath.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1209,6 +1300,7 @@ extension BackupScheduler {
                 sourcePath: task.sourcePath ?? "",
                 destinationPath: task.destinationPath,
                 mediaType: task.mediaType,
+                options: options,
                 progressHandler: { progress in
                     Task { @MainActor in
                         let safeProgress = progress.isNaN || progress.isInfinite ? 0.0 : max(0.0, min(1.0, progress))
@@ -1238,6 +1330,79 @@ extension BackupScheduler {
         task.currentFileBytesTransferred = 0
         task.currentFileTotalBytes = 0
         task.transferSpeedBytesPerSecond = 0
+    }
+
+    private func blockedReason(for task: BackupTask, options: BackupExecutionOptions) async -> String? {
+        if options.requiresWiFi {
+            let networkType = await getCurrentNetworkType()
+            if networkType != .wifi {
+                return "backup.defer.wifi_required".localized
+            }
+        }
+
+        if options.requiresExternalPower {
+            #if canImport(UIKit)
+            let batteryState = BatteryManager.shared.batteryState
+            if batteryState != .charging && batteryState != .full {
+                return "backup.defer.external_power_required".localized
+            }
+            #endif
+        }
+
+        if let start = options.allowedStartTime, let end = options.allowedEndTime, !isNowWithinAllowedWindow(start: start, end: end) {
+            return "backup.defer.outside_allowed_window".localized
+        }
+
+        return nil
+    }
+
+    private func isNowWithinAllowedWindow(start: ScheduleTime, end: ScheduleTime, now: Date = Date()) -> Bool {
+        let calendar = Calendar.current
+        let currentMinute = calendar.component(.hour, from: now) * 60 + calendar.component(.minute, from: now)
+        let startMinute = start.hour * 60 + start.minute
+        let endMinute = end.hour * 60 + end.minute
+
+        if startMinute == endMinute {
+            return true
+        }
+        if startMinute < endMinute {
+            return currentMinute >= startMinute && currentMinute <= endMinute
+        }
+        return currentMinute >= startMinute || currentMinute <= endMinute
+    }
+
+    private func categorizeFailure(_ error: Error) -> BackupFailureCategory {
+        if let backupError = error as? BackupServiceError, case .cancelled = backupError {
+            return .cancelled
+        }
+
+        let message = error.localizedDescription.lowercased()
+        if message.contains("auth") || message.contains("password") || message.contains("credential") || message.contains("login") {
+            return .auth
+        }
+        if message.contains("permission") || message.contains("denied") || message.contains("not allowed") {
+            return .permission
+        }
+        if message.contains("network") || message.contains("internet") || message.contains("offline") || message.contains("timed out") {
+            return .network
+        }
+        if message.contains("quota") || message.contains("space") || message.contains("disk") {
+            return .quota
+        }
+        if message.contains("icloud") || message.contains("cloud") {
+            return .iCloud
+        }
+        if message.contains("certificate") || message.contains("host key") || message.contains("ssl") || message.contains("tls") {
+            return .certificate
+        }
+        if message.contains("server") || message.contains("host") || message.contains("response") {
+            return .server
+        }
+        return .unknown
+    }
+
+    private func optionsVerifiedFileCount(for task: BackupTask, syncResult: FTPService.SyncResult) -> Int {
+        task.checksumMode == .verifyUploads ? syncResult.newFiles + syncResult.updatedFiles : 0
     }
 
     /// Detaylı yedekleme tamamlanma bildirimi gönder
@@ -1271,7 +1436,9 @@ extension BackupScheduler {
         syncResult: FTPService.SyncResult,
         duration: TimeInterval,
         status: String,
-        errorMessage: String? = nil
+        errorMessage: String? = nil,
+        failureCategory: BackupFailureCategory? = nil,
+        previewSummarySnapshot: String? = nil
     ) async {
         guard let container = Self.sharedModelContainer else { return }
 
@@ -1292,6 +1459,11 @@ extension BackupScheduler {
                 duration: duration,
                 skippedFiles: syncResult.skippedFiles,
                 deletedFiles: syncResult.deletedFiles,
+                newFiles: syncResult.newFiles,
+                updatedFiles: syncResult.updatedFiles,
+                verifiedFiles: optionsVerifiedFileCount(for: task, syncResult: syncResult),
+                failureCategory: failureCategory,
+                previewSummarySnapshot: previewSummarySnapshot,
                 taskDisplayName: task.displayName,
                 taskSourcePath: task.sourcePath,
                 taskServerHost: task.serverHost,
@@ -1336,6 +1508,11 @@ extension BackupScheduler {
                 duration: duration,
                 skippedFiles: syncResult.skippedFiles,
                 deletedFiles: syncResult.deletedFiles,
+                newFiles: syncResult.newFiles,
+                updatedFiles: syncResult.updatedFiles,
+                verifiedFiles: optionsVerifiedFileCount(for: taskInContext, syncResult: syncResult),
+                failureCategory: failureCategory,
+                previewSummarySnapshot: previewSummarySnapshot,
                 taskDisplayName: taskInContext.displayName,
                 taskSourcePath: taskInContext.sourcePath,
                 taskServerHost: taskInContext.serverHost,
@@ -1408,7 +1585,7 @@ extension BackupScheduler {
         }
         
         // Action'a göre işlem yap
-        if actionIdentifier == "START_BACKUP_ACTION" {
+        if actionIdentifier == "START_BACKUP_ACTION" || actionIdentifier == "OPEN_DETAILS_ACTION" {
             // Notification'dan task ID'yi al
             if identifier.hasPrefix("scheduled-backup-") {
                 let taskIdString = String(identifier.dropFirst("scheduled-backup-".count))
@@ -1418,8 +1595,18 @@ extension BackupScheduler {
                     // Global state'e yedekleme talebi kaydet
                     UserDefaults.standard.set(taskId.uuidString, forKey: "pendingBackupTaskId")
                     UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "pendingBackupTimestamp")
+                    UserDefaults.standard.set(actionIdentifier == "OPEN_DETAILS_ACTION", forKey: "pendingBackupOpenDetails")
                     
                     // App açıldığında bu task otomatik başlatılacak
+                }
+            }
+        } else if actionIdentifier == "POSTPONE_1H_ACTION" {
+            if identifier.hasPrefix("scheduled-backup-") {
+                let taskIdString = String(identifier.dropFirst("scheduled-backup-".count))
+                if let taskId = UUID(uuidString: taskIdString) {
+                    Task {
+                        await self.postponeTask(taskId: taskId, interval: 3600)
+                    }
                 }
             }
         } else if actionIdentifier == "CANCEL_BACKUP_ACTION" {
@@ -1428,6 +1615,26 @@ extension BackupScheduler {
         }
         
         completionHandler()
+    }
+
+    private func postponeTask(taskId: UUID, interval: TimeInterval) async {
+        guard let container = Self.sharedModelContainer else { return }
+        let context = ModelContext(container)
+        var descriptor = FetchDescriptor<BackupTask>(
+            predicate: #Predicate { $0.id == taskId }
+        )
+        descriptor.fetchLimit = 1
+
+        guard let task = try? context.fetch(descriptor).first else { return }
+        task.nextRunTime = Date().addingTimeInterval(interval)
+        do {
+            try context.save()
+            scheduleAppRefresh()
+            scheduleProcessingTask()
+            debugLog("⏰ BackupFlow: Görev 1 saat ertelendi: \(task.displayName)")
+        } catch {
+            debugLog("❌ BackupFlow: Görev erteleme kaydedilemedi: \(error)")
+        }
     }
     
     // MARK: - Network Detection Helpers

@@ -86,11 +86,23 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             title: "alert.cancel".localized,
             options: []
         )
+
+        let postponeAction = UNNotificationAction(
+            identifier: "POSTPONE_1H_ACTION",
+            title: "backup.notification.action.postpone_1h".localized,
+            options: []
+        )
+
+        let detailsAction = UNNotificationAction(
+            identifier: "OPEN_DETAILS_ACTION",
+            title: "backup.notification.action.details".localized,
+            options: [.foreground]
+        )
         
         // Create notification category
         let scheduledBackupCategory = UNNotificationCategory(
             identifier: "SCHEDULED_BACKUP",
-            actions: [startAction, cancelAction],
+            actions: [startAction, postponeAction, detailsAction, cancelAction],
             intentIdentifiers: [],
             options: [.customDismissAction]
         )

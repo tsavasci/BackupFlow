@@ -1,5 +1,6 @@
 import SwiftData
 import SwiftUI
+import Combine
 
 struct MainTabView: View {
     @Environment(\.modelContext) private var modelContext
@@ -13,7 +14,13 @@ struct MainTabView: View {
     @State private var selectedTask: BackupTask?
     @State private var taskToDelete: BackupTask?
     @State private var showDeleteAlert = false
+    @State private var currentTime = Date()
+    @State private var previewTask: BackupTask?
+    @State private var previewResult: BackupPreviewResult?
+    @State private var previewError: String?
+    @State private var isPreviewLoading = false
     private static let largeFileProgressThresholdBytes: Int64 = 50 * 1024 * 1024
+    private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     private var activeTask: BackupTask? {
         tasks.first {
@@ -59,6 +66,14 @@ struct MainTabView: View {
 
     private var activeTaskCount: Int {
         tasks.filter { $0.isEnabled && !$0.isPaused }.count
+    }
+
+    private var nextScheduledTask: BackupTask? {
+        tasks
+            .filter { $0.isEnabled && !$0.isPaused && $0.nextRunTime != nil }
+            .min { task1, task2 in
+                (task1.nextRunTime ?? .distantFuture) < (task2.nextRunTime ?? .distantFuture)
+            }
     }
 
     private var selectedServerName: String {
@@ -108,6 +123,7 @@ struct MainTabView: View {
                         backupProgressCard
                     }
                     heroBackupCard
+                    healthOverviewCard
                     savedServersSection
                     quickActions
                     statsSection
@@ -138,6 +154,20 @@ struct MainTabView: View {
                     .navigationBarTitleDisplayMode(.inline)
             }
         }
+        .sheet(item: $previewTask) { task in
+            BackupPreviewSheet(
+                taskName: task.displayName,
+                result: previewResult,
+                isLoading: isPreviewLoading,
+                errorMessage: previewError,
+                onConfirm: {
+                    startPreviewedTask(task)
+                },
+                onCancel: {
+                    clearPreview()
+                }
+            )
+        }
         .alert("tasks.delete_confirmation".localized, isPresented: $showDeleteAlert) {
             Button("alert.cancel".localized, role: .cancel) {}
             Button("tasks.delete".localized, role: .destructive) {
@@ -147,6 +177,9 @@ struct MainTabView: View {
             }
         } message: {
             Text("tasks.delete_message_full".localized)
+        }
+        .onReceive(timer) { time in
+            currentTime = time
         }
     }
 
@@ -284,9 +317,28 @@ struct MainTabView: View {
 
                     Spacer()
 
-                    Text("\(Int(min(max(backupProgress, 0), 1) * 100))%")
-                        .font(.title2.weight(.bold))
-                        .foregroundStyle(.white)
+                    if let task = nextScheduledTask, let nextRun = task.nextRunTime {
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Text("dashboard.next_task".localized)
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(.white.opacity(0.78))
+                            Text(timeUntilNextTask(nextRun, currentTime: currentTime))
+                                .font(.title2.weight(.bold))
+                                .foregroundStyle(.white)
+                                .monospacedDigit()
+                            Text(task.displayName)
+                                .font(.caption2)
+                                .foregroundStyle(.white.opacity(0.78))
+                                .lineLimit(1)
+                        }
+                        .multilineTextAlignment(.trailing)
+                        .frame(maxWidth: 132, alignment: .trailing)
+                        .accessibilityElement(children: .combine)
+                    } else {
+                        Text("\(Int(min(max(backupProgress, 0), 1) * 100))%")
+                            .font(.title2.weight(.bold))
+                            .foregroundStyle(.white)
+                    }
                 }
 
                 HStack(alignment: .bottom, spacing: 10) {
@@ -449,6 +501,47 @@ struct MainTabView: View {
                     }
                 }
             }
+        }
+    }
+
+    private var healthOverviewCard: some View {
+        let completed = history.filter { $0.status == "completed" }.count
+        let failed = history.filter { $0.status == "failed" }.count
+        let total = max(completed + failed, 1)
+        let successRate = Int((Double(completed) / Double(total)) * 100)
+        let consecutiveFailures = tasks.map(\.consecutiveFailureCount).max() ?? 0
+        let averageDuration = history.isEmpty ? 0 : history.reduce(0) { $0 + $1.duration } / Double(history.count)
+
+        return VStack(alignment: .leading, spacing: 12) {
+            Text("dashboard.health.title".localized)
+                .font(.headline.weight(.semibold))
+
+            HStack(spacing: 12) {
+                infoCard(
+                    title: "dashboard.health.success".localized,
+                    value: "\(successRate)%",
+                    subtitle: "dashboard.health.runs".localized(with: completed, completed + failed),
+                    color: successRate >= 80 ? .green : .orange,
+                    progress: Double(successRate) / 100.0
+                )
+                infoCard(
+                    title: "dashboard.health.failures".localized,
+                    value: "\(consecutiveFailures)",
+                    subtitle: "dashboard.health.consecutive".localized,
+                    color: consecutiveFailures == 0 ? .green : .red,
+                    progress: consecutiveFailures == 0 ? 1 : 0.35
+                )
+            }
+
+            if let lastSuccess = history.first(where: { $0.status == "completed" }) {
+                Text("dashboard.health.last_success".localized(with: formatDate(lastSuccess.timestamp)))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Text("dashboard.health.average_duration".localized(with: formatDuration(averageDuration)))
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -638,12 +731,35 @@ struct MainTabView: View {
     }
 
     private func startTaskNow(_ task: BackupTask) {
+        previewTask = task
+        previewResult = nil
+        previewError = nil
+        isPreviewLoading = true
+        Task {
+            do {
+                previewResult = try await BackupScheduler.shared.previewBackup(task: task)
+            } catch {
+                previewError = error.localizedDescription
+            }
+            isPreviewLoading = false
+        }
+    }
+
+    private func startPreviewedTask(_ task: BackupTask) {
         if task.isPaused {
             BackupScheduler.shared.resumeTask(task)
         }
+        clearPreview()
         Task {
             try? await BackupScheduler.shared.performBackup(task: task, bypassThrottle: true)
         }
+    }
+
+    private func clearPreview() {
+        previewTask = nil
+        previewResult = nil
+        previewError = nil
+        isPreviewLoading = false
     }
 
     private func syncActiveTasks() {
@@ -653,10 +769,8 @@ struct MainTabView: View {
             return
         }
 
-        Task {
-            for task in runnableTasks where !isTaskRunning(task) {
-                try? await BackupScheduler.shared.performBackup(task: task, bypassThrottle: true)
-            }
+        if let firstRunnable = runnableTasks.first(where: { !isTaskRunning($0) }) {
+            startTaskNow(firstRunnable)
         }
     }
 
@@ -747,6 +861,35 @@ struct MainTabView: View {
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         return formatter.string(from: date)
+    }
+
+    private func formatDuration(_ seconds: TimeInterval) -> String {
+        if seconds < 60 {
+            return "\(Int(seconds))s"
+        }
+        if seconds < 3600 {
+            return "\(Int(seconds / 60))m"
+        }
+        return String(format: "%.1fh", seconds / 3600)
+    }
+
+    private func timeUntilNextTask(_ nextRun: Date, currentTime: Date) -> String {
+        let timeInterval = nextRun.timeIntervalSince(currentTime)
+
+        if timeInterval < -30 {
+            return "dashboard.overdue".localized
+        }
+
+        let totalSeconds = Int(max(0, timeInterval))
+        let hours = totalSeconds / 3600
+        let minutes = (totalSeconds % 3600) / 60
+        let seconds = totalSeconds % 60
+
+        if hours >= 1 {
+            return String(format: "%02d:%02d", hours, minutes)
+        }
+
+        return String(format: "%02d:%02d", minutes, seconds)
     }
 
     private func formatBytes(_ bytes: Int64) -> String {

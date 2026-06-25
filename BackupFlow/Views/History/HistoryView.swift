@@ -261,11 +261,57 @@ struct HistoryView: View {
                 }
                 .liquidListRow()
             }
+
+            Section("history.report.section".localized) {
+                ShareLink("history.report.share_json".localized, item: reportJSON(for: item))
+                ShareLink("history.report.share_csv".localized, item: reportCSV(for: item))
+            }
+            .liquidListRow()
         }
         .navigationTitle("history.backup_detail".localized)
         .navigationBarTitleDisplayMode(.inline)
         .scrollContentBackground(.hidden)
         .liquidBackground()
+    }
+
+    private func reportJSON(for item: BackupHistory) -> String {
+        """
+        {
+          "id": "\(item.id.uuidString)",
+          "task": "\(item.taskDisplayName ?? "")",
+          "status": "\(item.status)",
+          "failureCategory": "\(item.failureCategory?.rawValue ?? "")",
+          "timestamp": "\(ISO8601DateFormatter().string(from: item.timestamp))",
+          "filesProcessed": \(item.filesProcessed),
+          "newFiles": \(item.newFiles),
+          "updatedFiles": \(item.updatedFiles),
+          "skippedFiles": \(item.skippedFiles),
+          "deletedFiles": \(item.deletedFiles),
+          "verifiedFiles": \(item.verifiedFiles),
+          "totalBytes": \(item.totalBytes),
+          "duration": \(item.duration)
+        }
+        """
+    }
+
+    private func reportCSV(for item: BackupHistory) -> String {
+        let values = [
+            item.id.uuidString,
+            item.taskDisplayName ?? "",
+            item.status,
+            item.failureCategory?.rawValue ?? "",
+            ISO8601DateFormatter().string(from: item.timestamp),
+            "\(item.filesProcessed)",
+            "\(item.newFiles)",
+            "\(item.updatedFiles)",
+            "\(item.skippedFiles)",
+            "\(item.deletedFiles)",
+            "\(item.verifiedFiles)",
+            "\(item.totalBytes)",
+            "\(item.duration)"
+        ]
+        let escaped = values.map { "\"\($0.replacingOccurrences(of: "\"", with: "\"\""))\"" }.joined(separator: ",")
+        return "id,task,status,failureCategory,timestamp,filesProcessed,newFiles,updatedFiles,skippedFiles,deletedFiles,verifiedFiles,totalBytes,duration\n\(escaped)"
     }
 }
 

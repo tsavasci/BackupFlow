@@ -61,6 +61,64 @@ enum BackupStatus: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+enum BackupDeletionPolicy: String, Codable, CaseIterable, Identifiable {
+    case mirror
+    case appendOnly
+    case archive
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .mirror: return "backup.deletion_policy.mirror".localized
+        case .appendOnly: return "backup.deletion_policy.append_only".localized
+        case .archive: return "backup.deletion_policy.archive".localized
+        }
+    }
+}
+
+enum BackupChecksumMode: String, Codable, CaseIterable, Identifiable {
+    case off
+    case verifyUploads
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .off: return "backup.checksum.off".localized
+        case .verifyUploads: return "backup.checksum.verify_uploads".localized
+        }
+    }
+}
+
+enum BackupFailureCategory: String, Codable, CaseIterable, Identifiable {
+    case network
+    case auth
+    case permission
+    case server
+    case quota
+    case iCloud
+    case certificate
+    case cancelled
+    case unknown
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .network: return "backup.failure.network".localized
+        case .auth: return "backup.failure.auth".localized
+        case .permission: return "backup.failure.permission".localized
+        case .server: return "backup.failure.server".localized
+        case .quota: return "backup.failure.quota".localized
+        case .iCloud: return "backup.failure.icloud".localized
+        case .certificate: return "backup.failure.certificate".localized
+        case .cancelled: return "backup.failure.cancelled".localized
+        case .unknown: return "backup.failure.unknown".localized
+        }
+    }
+}
+
 enum MediaType: String, Codable, CaseIterable, Identifiable {
     case photosOnly = "photos"
     case videosOnly = "videos" 
@@ -111,6 +169,8 @@ nonisolated enum BackupFrequency: Codable, Equatable, Hashable, Identifiable, Ca
     case manual
     case daily(time: ScheduleTime)
     case weekly(day: Int, time: ScheduleTime) // 1: Sunday, 2: Monday, ..., 7: Saturday
+    case monthly(day: Int, time: ScheduleTime)
+    case intervalHours(Int)
     
     // For Picker compatibility
     static var allCases: [BackupFrequency] {
@@ -118,7 +178,9 @@ nonisolated enum BackupFrequency: Codable, Equatable, Hashable, Identifiable, Ca
         return [
             .manual,
             .daily(time: defaultTime),
-            .weekly(day: 1, time: defaultTime) // Default to Sunday
+            .weekly(day: 1, time: defaultTime), // Default to Sunday
+            .monthly(day: 1, time: defaultTime),
+            .intervalHours(6)
         ]
     }
     
@@ -128,6 +190,8 @@ nonisolated enum BackupFrequency: Codable, Equatable, Hashable, Identifiable, Ca
         case .manual: return "manual"
         case .daily: return "daily"
         case .weekly: return "weekly"
+        case .monthly: return "monthly"
+        case .intervalHours: return "intervalHours"
         }
     }
     
@@ -136,6 +200,8 @@ nonisolated enum BackupFrequency: Codable, Equatable, Hashable, Identifiable, Ca
         switch tag {
         case "daily": return .daily(time: time)
         case "weekly": return .weekly(day: 1, time: time)
+        case "monthly": return .monthly(day: 1, time: time)
+        case "intervalHours": return .intervalHours(6)
         default: return .manual
         }
     }
@@ -145,6 +211,8 @@ nonisolated enum BackupFrequency: Codable, Equatable, Hashable, Identifiable, Ca
         case .manual: return "manual"
         case .daily(let time): return "daily-\(time.hour)-\(time.minute)"
         case .weekly(let day, let time): return "weekly-\(day)-\(time.hour)-\(time.minute)"
+        case .monthly(let day, let time): return "monthly-\(day)-\(time.hour)-\(time.minute)"
+        case .intervalHours(let hours): return "interval-\(hours)"
         }
     }
     
@@ -162,6 +230,14 @@ nonisolated enum BackupFrequency: Codable, Equatable, Hashable, Identifiable, Ca
             hasher.combine(day)
             hasher.combine(time.hour)
             hasher.combine(time.minute)
+        case .monthly(let day, let time):
+            hasher.combine(3)
+            hasher.combine(day)
+            hasher.combine(time.hour)
+            hasher.combine(time.minute)
+        case .intervalHours(let hours):
+            hasher.combine(4)
+            hasher.combine(hours)
         }
     }
     
@@ -170,13 +246,16 @@ nonisolated enum BackupFrequency: Codable, Equatable, Hashable, Identifiable, Ca
         case .manual: return "backup.frequency.manual".localized
         case .daily: return "backup.frequency.daily".localized
         case .weekly: return "backup.frequency.weekly".localized
+        case .monthly: return "backup.frequency.monthly".localized
+        case .intervalHours: return "backup.frequency.interval_hours".localized
         }
     }
     
     var scheduledTime: ScheduleTime? {
         switch self {
-        case .daily(let time), .weekly(_, let time): return time
+        case .daily(let time), .weekly(_, let time), .monthly(_, let time): return time
         case .manual: return nil
+        case .intervalHours: return nil
         }
     }
 }
@@ -201,10 +280,18 @@ final class BackupTask: Identifiable, Hashable {
     var currentFileTotalBytes: Int64 = 0
     var transferSpeedBytesPerSecond: Double = 0.0
     var lastError: String?
+    var lastFailureCategoryRaw: String?
+    var consecutiveFailureCountValue: Int?
     
     // Network policy
     var allowCellularForLocalServer: Bool = false // Yeni özellik
     var includeICloudAssets: Bool = true
+    var deletionPolicyRaw: String?
+    var checksumModeRaw: String?
+    var allowedStartTime: ScheduleTime?
+    var allowedEndTime: ScheduleTime?
+    var requiresExternalPowerValue: Bool?
+    var requiresWiFiValue: Bool?
     
     // Backup type (FTP or WebDAV)
     var backupType: BackupType
@@ -225,6 +312,45 @@ final class BackupTask: Identifiable, Hashable {
     var scheduledWeekday: Int? // 1: Sunday, 2: Monday, ..., 7: Saturday
     
     // MARK: - Computed Properties
+
+    @Transient
+    var lastFailureCategory: BackupFailureCategory? {
+        get {
+            guard let rawValue = lastFailureCategoryRaw else { return nil }
+            return BackupFailureCategory(rawValue: rawValue)
+        }
+        set { lastFailureCategoryRaw = newValue?.rawValue }
+    }
+
+    @Transient
+    var consecutiveFailureCount: Int {
+        get { consecutiveFailureCountValue ?? 0 }
+        set { consecutiveFailureCountValue = newValue }
+    }
+
+    @Transient
+    var deletionPolicy: BackupDeletionPolicy {
+        get { BackupDeletionPolicy(rawValue: deletionPolicyRaw ?? "") ?? .mirror }
+        set { deletionPolicyRaw = newValue.rawValue }
+    }
+
+    @Transient
+    var checksumMode: BackupChecksumMode {
+        get { BackupChecksumMode(rawValue: checksumModeRaw ?? "") ?? .off }
+        set { checksumModeRaw = newValue.rawValue }
+    }
+
+    @Transient
+    var requiresExternalPower: Bool {
+        get { requiresExternalPowerValue ?? false }
+        set { requiresExternalPowerValue = newValue }
+    }
+
+    @Transient
+    var requiresWiFi: Bool {
+        get { requiresWiFiValue ?? false }
+        set { requiresWiFiValue = newValue }
+    }
     
     /// Legacy FTP host (for backward compatibility)
     var ftpHost: String {
@@ -305,6 +431,12 @@ final class BackupTask: Identifiable, Hashable {
         mediaType: MediaType = .photosOnly,
         allowCellularForLocalServer: Bool = false,
         includeICloudAssets: Bool = true,
+        deletionPolicy: BackupDeletionPolicy = .mirror,
+        checksumMode: BackupChecksumMode = .off,
+        allowedStartTime: ScheduleTime? = nil,
+        allowedEndTime: ScheduleTime? = nil,
+        requiresExternalPower: Bool = false,
+        requiresWiFi: Bool = false,
         lastBackupDate: Date? = nil,
         nextRunTime: Date? = nil
     ) {
@@ -325,6 +457,12 @@ final class BackupTask: Identifiable, Hashable {
         self.mediaType = mediaType
         self.allowCellularForLocalServer = allowCellularForLocalServer
         self.includeICloudAssets = includeICloudAssets
+        self.deletionPolicyRaw = deletionPolicy.rawValue
+        self.checksumModeRaw = checksumMode.rawValue
+        self.allowedStartTime = allowedStartTime
+        self.allowedEndTime = allowedEndTime
+        self.requiresExternalPowerValue = requiresExternalPower
+        self.requiresWiFiValue = requiresWiFi
         self.createdAt = Date()
         self.lastBackupDate = lastBackupDate
         self.nextRunTime = nextRunTime
@@ -336,6 +474,8 @@ final class BackupTask: Identifiable, Hashable {
         self.currentFileTotalBytes = 0
         self.transferSpeedBytesPerSecond = 0.0
         self.lastError = nil
+        self.lastFailureCategoryRaw = nil
+        self.consecutiveFailureCountValue = 0
         self.saveServerPassword(serverPassword)
     }
     
@@ -363,6 +503,11 @@ final class BackupHistory: Identifiable {
     var duration: TimeInterval
     var skippedFiles: Int = 0
     var deletedFiles: Int = 0
+    var newFilesValue: Int?
+    var updatedFilesValue: Int?
+    var verifiedFilesValue: Int?
+    var failureCategoryRaw: String?
+    var previewSummarySnapshot: String?
     var taskDisplayName: String?
     var taskSourcePath: String?
     var taskServerHost: String?
@@ -373,6 +518,33 @@ final class BackupHistory: Identifiable {
     
     // Relationship to the task that created this history entry
     @Relationship var task: BackupTask?
+
+    @Transient
+    var newFiles: Int {
+        get { newFilesValue ?? 0 }
+        set { newFilesValue = newValue }
+    }
+
+    @Transient
+    var updatedFiles: Int {
+        get { updatedFilesValue ?? 0 }
+        set { updatedFilesValue = newValue }
+    }
+
+    @Transient
+    var verifiedFiles: Int {
+        get { verifiedFilesValue ?? 0 }
+        set { verifiedFilesValue = newValue }
+    }
+
+    @Transient
+    var failureCategory: BackupFailureCategory? {
+        get {
+            guard let rawValue = failureCategoryRaw else { return nil }
+            return BackupFailureCategory(rawValue: rawValue)
+        }
+        set { failureCategoryRaw = newValue?.rawValue }
+    }
     
     init(
         id: UUID = UUID(),
@@ -386,6 +558,11 @@ final class BackupHistory: Identifiable {
         duration: TimeInterval = 0,
         skippedFiles: Int = 0,
         deletedFiles: Int = 0,
+        newFiles: Int = 0,
+        updatedFiles: Int = 0,
+        verifiedFiles: Int = 0,
+        failureCategory: BackupFailureCategory? = nil,
+        previewSummarySnapshot: String? = nil,
         taskDisplayName: String? = nil,
         taskSourcePath: String? = nil,
         taskServerHost: String? = nil,
@@ -406,6 +583,11 @@ final class BackupHistory: Identifiable {
         self.duration = duration
         self.skippedFiles = skippedFiles
         self.deletedFiles = deletedFiles
+        self.newFilesValue = newFiles
+        self.updatedFilesValue = updatedFiles
+        self.verifiedFilesValue = verifiedFiles
+        self.failureCategoryRaw = failureCategory?.rawValue
+        self.previewSummarySnapshot = previewSummarySnapshot
         self.taskDisplayName = taskDisplayName
         self.taskSourcePath = taskSourcePath
         self.taskServerHost = taskServerHost

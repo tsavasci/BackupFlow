@@ -50,6 +50,8 @@ enum FrequencyType: String, CaseIterable, Identifiable {
     case manual
     case daily
     case weekly
+    case monthly
+    case intervalHours
 
     var id: String { String(describing: self) }
 
@@ -61,6 +63,10 @@ enum FrequencyType: String, CaseIterable, Identifiable {
             return "backup.daily".localized
         case .weekly:
             return "backup.weekly".localized
+        case .monthly:
+            return "backup.monthly".localized
+        case .intervalHours:
+            return "backup.interval".localized
         }
     }
 }
@@ -143,6 +149,7 @@ struct BackupView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    private let editingTask: BackupTask?
 
     @State private var selectedURL: URL?
     @State private var isPhotoLibrarySelected = false
@@ -177,7 +184,16 @@ struct BackupView: View {
     @State private var frequencyType: FrequencyType = .manual
     @State private var selectedTime = ScheduleTime(hour: 0, minute: 0)
     @State private var selectedDay = 1 // 1: Sunday, 2: Monday, ..., 7: Saturday
+    @State private var selectedMonthDay = 1
+    @State private var intervalHours = 6
     @State private var allowCellularForLocalServer = false // Network policy
+    @State private var deletionPolicy: BackupDeletionPolicy = .mirror
+    @State private var checksumMode: BackupChecksumMode = .off
+    @State private var requiresWiFi = false
+    @State private var requiresExternalPower = false
+    @State private var useAllowedWindow = false
+    @State private var allowedStartTime = ScheduleTime(hour: 23, minute: 0)
+    @State private var allowedEndTime = ScheduleTime(hour: 6, minute: 0)
 
     @State private var showingDocumentPicker = false
     @State private var showingSaveAlert = false
@@ -191,6 +207,65 @@ struct BackupView: View {
     @State private var firstBackupTaskToStart: BackupTask? = nil
     @State private var showingSFTPHostKeyAlert = false
     @State private var sftpHostKeyAlertMessage = ""
+    @State private var showingRemoteFolderPicker = false
+
+    init(editingTask: BackupTask? = nil) {
+        self.editingTask = editingTask
+
+        guard let task = editingTask else { return }
+
+        _selectedURL = State(initialValue: task.sourcePath == "PHOTOS_LIBRARY" ? nil : URL(fileURLWithPath: task.sourcePath ?? ""))
+        _isPhotoLibrarySelected = State(initialValue: task.sourcePath == "PHOTOS_LIBRARY")
+        _selectedMediaType = State(initialValue: task.mediaType)
+        _includeICloudAssets = State(initialValue: task.includeICloudAssets)
+        _selectedTarget = State(initialValue: {
+            switch task.backupType {
+            case .ftp: return .ftp
+            case .sftp: return .sftp
+            case .webdav: return .webdav
+            }
+        }())
+        _ftpHost = State(initialValue: task.backupType == .ftp ? task.serverHost : Self.defaultFTPHost)
+        _ftpPort = State(initialValue: task.backupType == .ftp ? "\(task.serverPort)" : "21")
+        _ftpUsername = State(initialValue: task.backupType == .ftp ? task.serverUsername : "")
+        _isAnonymous = State(initialValue: task.backupType == .ftp && task.isAnonymous)
+        _destinationPath = State(initialValue: task.backupType == .ftp ? task.destinationPath : "/")
+        _sftpHost = State(initialValue: task.backupType == .sftp ? task.serverHost : "")
+        _sftpPort = State(initialValue: task.backupType == .sftp ? "\(task.serverPort)" : "22")
+        _sftpUsername = State(initialValue: task.backupType == .sftp ? task.serverUsername : "")
+        _sftpPath = State(initialValue: task.backupType == .sftp ? task.destinationPath : "")
+        _webdavURL = State(initialValue: task.backupType == .webdav ? task.serverHost : "")
+        _webdavPort = State(initialValue: task.backupType == .webdav ? "\(task.serverPort)" : "443")
+        _webdavUsername = State(initialValue: task.backupType == .webdav ? task.serverUsername : "")
+        _webdavPath = State(initialValue: task.backupType == .webdav ? task.destinationPath : Self.defaultWebDAVPath)
+        _allowCellularForLocalServer = State(initialValue: task.allowCellularForLocalServer)
+        _deletionPolicy = State(initialValue: task.deletionPolicy)
+        _checksumMode = State(initialValue: task.checksumMode)
+        _requiresWiFi = State(initialValue: task.requiresWiFi)
+        _requiresExternalPower = State(initialValue: task.requiresExternalPower)
+        _useAllowedWindow = State(initialValue: task.allowedStartTime != nil && task.allowedEndTime != nil)
+        _allowedStartTime = State(initialValue: task.allowedStartTime ?? ScheduleTime(hour: 23, minute: 0))
+        _allowedEndTime = State(initialValue: task.allowedEndTime ?? ScheduleTime(hour: 6, minute: 0))
+
+        switch task.frequency {
+        case .manual:
+            _frequencyType = State(initialValue: .manual)
+        case .daily(let time):
+            _frequencyType = State(initialValue: .daily)
+            _selectedTime = State(initialValue: time)
+        case .weekly(let day, let time):
+            _frequencyType = State(initialValue: .weekly)
+            _selectedDay = State(initialValue: day)
+            _selectedTime = State(initialValue: time)
+        case .monthly(let day, let time):
+            _frequencyType = State(initialValue: .monthly)
+            _selectedMonthDay = State(initialValue: day)
+            _selectedTime = State(initialValue: time)
+        case .intervalHours(let hours):
+            _frequencyType = State(initialValue: .intervalHours)
+            _intervalHours = State(initialValue: hours)
+        }
+    }
 
     var body: some View {
         let targetTheme = BackupSetupTheme.theme(for: selectedTarget)
@@ -409,6 +484,15 @@ struct BackupView: View {
                                 .foregroundStyle(connectionStatus.isSuccess ? .green : .red)
                                 .transition(.opacity)
                             }
+
+                            Button {
+                                showingRemoteFolderPicker = true
+                            } label: {
+                                Label("Browse remote folder", systemImage: "folder")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(!isValidConnectionSettings())
                         }
                     }
 
@@ -431,6 +515,55 @@ struct BackupView: View {
 
                             if frequencyType == .weekly {
                                 DayPicker(selectedDay: $selectedDay)
+                            }
+
+                            if frequencyType == .monthly {
+                                Stepper("backup.month_day".localized(with: selectedMonthDay), value: $selectedMonthDay, in: 1...31)
+                                TimePicker(time: $selectedTime)
+                            }
+
+                            if frequencyType == .intervalHours {
+                                Stepper("backup.every_hours".localized(with: intervalHours), value: $intervalHours, in: 1...24)
+                            }
+                        }
+                    }
+
+                    BackupSetupCard(
+                        title: "backup.behavior".localized,
+                        icon: "slider.horizontal.3",
+                        theme: targetTheme
+                    ) {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Picker("backup.deletion_policy".localized, selection: $deletionPolicy) {
+                                ForEach(BackupDeletionPolicy.allCases) { policy in
+                                    Text(policy.displayName).tag(policy)
+                                }
+                            }
+
+                            Picker("backup.checksum".localized, selection: $checksumMode) {
+                                ForEach(BackupChecksumMode.allCases) { mode in
+                                    Text(mode.displayName).tag(mode)
+                                }
+                            }
+
+                            Toggle("backup.require_wifi".localized, isOn: $requiresWiFi)
+                                .tint(targetTheme.primary)
+
+                            Toggle("backup.require_external_power".localized, isOn: $requiresExternalPower)
+                                .tint(targetTheme.primary)
+
+                            Toggle("backup.use_allowed_time_window".localized, isOn: $useAllowedWindow)
+                                .tint(targetTheme.primary)
+
+                            if useAllowedWindow {
+                                TimePicker(time: $allowedStartTime)
+                                TimePicker(time: $allowedEndTime)
+                            }
+
+                            if deletionPolicy == .archive {
+                                Text("backup.archive_policy_warning".localized)
+                                    .font(.caption)
+                                    .foregroundStyle(.orange)
                             }
                         }
                     }
@@ -531,6 +664,25 @@ struct BackupView: View {
         } message: {
             Text(sftpHostKeyAlertMessage)
         }
+        .sheet(isPresented: $showingRemoteFolderPicker) {
+            let config = remoteFolderConfig()
+            RemoteFolderPicker(
+                target: selectedTarget,
+                host: config.host,
+                port: config.port,
+                username: config.username,
+                password: config.password
+            ) { selectedPath in
+                switch selectedTarget {
+                case .ftp:
+                    destinationPath = selectedPath
+                case .sftp:
+                    sftpPath = selectedPath
+                case .webdav:
+                    webdavPath = selectedPath
+                }
+            }
+        }
 
         func isLocalServer() -> Bool {
             let host: String
@@ -573,6 +725,18 @@ struct BackupView: View {
                 return !sftpHost.isEmpty && !sftpUsername.isEmpty && !sftpPassword.isEmpty
             case .webdav:
                 return !webdavURL.isEmpty && !webdavUsername.isEmpty
+            }
+        }
+
+        func remoteFolderConfig() -> (host: String, port: Int, username: String?, password: String?) {
+            switch selectedTarget {
+            case .ftp:
+                return (ftpHost, Int(ftpPort) ?? 21, isAnonymous ? nil : ftpUsername, isAnonymous ? nil : ftpPassword)
+            case .sftp:
+                return (sftpHost, Int(sftpPort) ?? 22, sftpUsername, sftpPassword)
+            case .webdav:
+                let parsed = parseWebDAVURL(webdavURL, portOverride: webdavPort)
+                return (parsed.host, parsed.port, webdavUsername, webdavPassword)
             }
         }
 
@@ -739,6 +903,11 @@ struct BackupView: View {
                 case .weekly:
                     let time = ScheduleTime(hour: selectedTime.hour, minute: selectedTime.minute)
                     return BackupFrequency.weekly(day: selectedDay, time: time)
+                case .monthly:
+                    let time = ScheduleTime(hour: selectedTime.hour, minute: selectedTime.minute)
+                    return BackupFrequency.monthly(day: selectedMonthDay, time: time)
+                case .intervalHours:
+                    return BackupFrequency.intervalHours(intervalHours)
                 }
             }()
 
@@ -776,10 +945,11 @@ struct BackupView: View {
                     portToCheck = Int(sftpPort) ?? 22
                 case .webdav:
                     backupType = .webdav
-                    portToCheck = 443
+                    portToCheck = Int(webdavPort) ?? 443
                 }
 
                 let hasDuplicate = allTasks.contains { task in
+                    if let editingTask, task.id == editingTask.id { return false }
                     let isSameSource = (task.sourcePath ?? "") == sourcePath
                     let isSameType = task.backupType == backupType
                     let isSameHost = task.serverHost.lowercased() == hostToCheck
@@ -828,11 +998,17 @@ struct BackupView: View {
                     isEnabled: true,
                     isPaused: false,
                     frequency: frequency,
-                    scheduledTime: (frequencyType == .daily || frequencyType == .weekly) ? selectedTime : nil,
+                    scheduledTime: (frequencyType == .daily || frequencyType == .weekly || frequencyType == .monthly) ? selectedTime : nil,
                     scheduledWeekday: (frequencyType == .weekly) ? selectedDay : nil,
                     mediaType: isPhotoLibrarySelected ? selectedMediaType : .photosOnly,
                     allowCellularForLocalServer: allowCellularForLocalServer,
-                    includeICloudAssets: isPhotoLibrarySelected ? includeICloudAssets : false
+                    includeICloudAssets: isPhotoLibrarySelected ? includeICloudAssets : false,
+                    deletionPolicy: deletionPolicy,
+                    checksumMode: checksumMode,
+                    allowedStartTime: useAllowedWindow ? allowedStartTime : nil,
+                    allowedEndTime: useAllowedWindow ? allowedEndTime : nil,
+                    requiresExternalPower: requiresExternalPower,
+                    requiresWiFi: requiresWiFi
                 )
 
             case .sftp:
@@ -859,11 +1035,17 @@ struct BackupView: View {
                     isEnabled: true,
                     isPaused: false,
                     frequency: frequency,
-                    scheduledTime: (frequencyType == .daily || frequencyType == .weekly) ? selectedTime : nil,
+                    scheduledTime: (frequencyType == .daily || frequencyType == .weekly || frequencyType == .monthly) ? selectedTime : nil,
                     scheduledWeekday: (frequencyType == .weekly) ? selectedDay : nil,
                     mediaType: isPhotoLibrarySelected ? selectedMediaType : .photosOnly,
                     allowCellularForLocalServer: allowCellularForLocalServer,
-                    includeICloudAssets: isPhotoLibrarySelected ? includeICloudAssets : false
+                    includeICloudAssets: isPhotoLibrarySelected ? includeICloudAssets : false,
+                    deletionPolicy: deletionPolicy,
+                    checksumMode: checksumMode,
+                    allowedStartTime: useAllowedWindow ? allowedStartTime : nil,
+                    allowedEndTime: useAllowedWindow ? allowedEndTime : nil,
+                    requiresExternalPower: requiresExternalPower,
+                    requiresWiFi: requiresWiFi
                 )
 
             case .webdav:
@@ -888,15 +1070,29 @@ struct BackupView: View {
                     isEnabled: true,
                     isPaused: false,
                     frequency: frequency,
-                    scheduledTime: (frequencyType == .daily || frequencyType == .weekly) ? selectedTime : nil,
+                    scheduledTime: (frequencyType == .daily || frequencyType == .weekly || frequencyType == .monthly) ? selectedTime : nil,
                     scheduledWeekday: (frequencyType == .weekly) ? selectedDay : nil,
                     mediaType: isPhotoLibrarySelected ? selectedMediaType : .photosOnly,
                     allowCellularForLocalServer: allowCellularForLocalServer,
-                    includeICloudAssets: isPhotoLibrarySelected ? includeICloudAssets : false
+                    includeICloudAssets: isPhotoLibrarySelected ? includeICloudAssets : false,
+                    deletionPolicy: deletionPolicy,
+                    checksumMode: checksumMode,
+                    allowedStartTime: useAllowedWindow ? allowedStartTime : nil,
+                    allowedEndTime: useAllowedWindow ? allowedEndTime : nil,
+                    requiresExternalPower: requiresExternalPower,
+                    requiresWiFi: requiresWiFi
                 )
             }
 
-            modelContext.insert(task)
+            let taskToSave: BackupTask
+            if let editingTask {
+                copyTaskFields(from: task, to: editingTask)
+                task.removeStoredPassword()
+                taskToSave = editingTask
+            } else {
+                modelContext.insert(task)
+                taskToSave = task
+            }
 
             do {
                 try modelContext.save()
@@ -904,9 +1100,9 @@ struct BackupView: View {
                 saveAlertMessage = "tasks.save_success".localized
 
                 // Schedule the backup if frequency is set
-                if task.frequency != .manual {
+                if taskToSave.frequency != .manual {
                     do {
-                        try await BackupScheduler.shared.scheduleBackup(task: task)
+                        try await BackupScheduler.shared.scheduleBackup(task: taskToSave)
                         saveAlertMessage += " " + "tasks.scheduled".localized
                     } catch {
                         saveAlertMessage += " " + "tasks.schedule_error_detail".localized(with: error.localizedDescription)
@@ -930,7 +1126,7 @@ struct BackupView: View {
                 sftpPath = ""
 
                 if isFirstTask {
-                    firstBackupTaskToStart = task
+                    firstBackupTaskToStart = taskToSave
                     showingFirstBackupPrompt = true
                 } else {
                     let now = Date()
@@ -997,6 +1193,32 @@ struct BackupView: View {
 
         // MARK: - Helper Methods
 
+        func copyTaskFields(from source: BackupTask, to target: BackupTask) {
+            target.sourcePath = source.sourcePath
+            target.backupType = source.backupType
+            target.serverHost = source.serverHost
+            target.serverPort = source.serverPort
+            target.serverUsername = source.serverUsername
+            if !source.resolvedServerPassword.isEmpty {
+                target.saveServerPassword(source.resolvedServerPassword)
+            }
+            target.destinationPath = source.destinationPath
+            target.displayName = source.displayName
+            target.frequency = source.frequency
+            target.scheduledTime = source.scheduledTime
+            target.scheduledWeekday = source.scheduledWeekday
+            target.mediaType = source.mediaType
+            target.allowCellularForLocalServer = source.allowCellularForLocalServer
+            target.includeICloudAssets = source.includeICloudAssets
+            target.deletionPolicy = source.deletionPolicy
+            target.checksumMode = source.checksumMode
+            target.allowedStartTime = source.allowedStartTime
+            target.allowedEndTime = source.allowedEndTime
+            target.requiresExternalPower = source.requiresExternalPower
+            target.requiresWiFi = source.requiresWiFi
+            target.nextRunTime = nil
+        }
+
         func resetForm() {
             selectedURL = nil
             isPhotoLibrarySelected = false
@@ -1021,6 +1243,15 @@ struct BackupView: View {
             frequencyType = .manual
             selectedTime = ScheduleTime(hour: 0, minute: 0)
             selectedDay = 1
+            selectedMonthDay = 1
+            intervalHours = 6
+            deletionPolicy = .mirror
+            checksumMode = .off
+            requiresWiFi = false
+            requiresExternalPower = false
+            useAllowedWindow = false
+            allowedStartTime = ScheduleTime(hour: 23, minute: 0)
+            allowedEndTime = ScheduleTime(hour: 6, minute: 0)
             connectionStatus = .idle
             saveAlertMessage = ""
         }

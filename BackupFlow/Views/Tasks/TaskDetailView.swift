@@ -7,6 +7,7 @@ struct TaskDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var histories: [BackupHistory] = []
     @State private var isLoading = true
+    @State private var showingEdit = false
     
     init(task: BackupTask) {
         self.task = task
@@ -34,6 +35,17 @@ struct TaskDetailView: View {
                 LabeledContent("task.details.source".localized, value: URL(fileURLWithPath: task.sourcePath ?? "").lastPathComponent)
                 LabeledContent("task.details.status".localized, value: task.backupStatus.displayName)
                 LabeledContent("task.details.schedule".localized, value: task.frequency.displayText)
+                LabeledContent("backup.deletion_policy".localized, value: task.deletionPolicy.displayName)
+                LabeledContent("backup.checksum".localized, value: task.checksumMode.displayName)
+                if task.requiresWiFi {
+                    LabeledContent("task.details.network".localized, value: "backup.require_wifi".localized)
+                }
+                if task.requiresExternalPower {
+                    LabeledContent("task.details.power".localized, value: "backup.require_external_power".localized)
+                }
+                if let category = task.lastFailureCategory {
+                    LabeledContent("task.details.last_failure".localized, value: category.displayName)
+                }
                 if let nextRun = task.nextRunTime {
                     LabeledContent("task.details.next_backup".localized, value: taskDateFormatter.string(from: nextRun))
                 }
@@ -84,8 +96,18 @@ struct TaskDetailView: View {
             .liquidListRow()
         }
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button("common.edit".localized) {
+                    showingEdit = true
+                }
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("task.details.close".localized, action: { dismiss() })
+            }
+        }
+        .sheet(isPresented: $showingEdit) {
+            NavigationStack {
+                BackupView(editingTask: task)
             }
         }
         .scrollContentBackground(.hidden)
@@ -163,6 +185,10 @@ extension BackupFrequency {
             ]
             let dayName = (day >= 1 && day <= 7) ? dayNames[day - 1] : ""
             return "task.details.weekly_prefix".localized + dayName + " " + String(format: "%02d:%02d", time.hour, time.minute)
+        case .monthly(let day, let time):
+            return "task.details.monthly_format".localized(with: day, String(format: "%02d:%02d", time.hour, time.minute))
+        case .intervalHours(let hours):
+            return "task.details.interval_hours_format".localized(with: hours)
         }
     }
 }

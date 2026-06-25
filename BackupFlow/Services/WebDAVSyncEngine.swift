@@ -6,7 +6,6 @@ struct WebDAVSyncEngine {
     let provider: WebDAVFileProvider
     let fileManager: FileManager
     let logger: Logger
-    let deleteOrphansEnabled: Bool
     let ensureDirectoryExists: (String) async throws -> Void
     let deleteFile: (String) async throws -> Void
     let setCurrentFile: (String) -> Void
@@ -15,6 +14,7 @@ struct WebDAVSyncEngine {
     func syncUploadDirectory(
         localPath: String,
         remoteBasePath: String,
+        options: BackupExecutionOptions = .defaults,
         progressHandler: @escaping (Double) -> Void
     ) async throws -> (filesUploaded: Int, filesSkipped: Int, filesFailed: Int, bytesTransferred: Int64, deletedFiles: Int) {
         logger.info("Starting mirror sync: \(localPath) -> \(remoteBasePath)")
@@ -51,14 +51,18 @@ struct WebDAVSyncEngine {
             } else {
                 do {
                     logger.info("Uploading: \(relativePath) (\(ByteCountFormatter.string(fromByteCount: localSize, countStyle: .file)))")
-                    try await uploadFile(localFileURL, remotePath) { fileProgress in
-                        let fileShare = 0.8 / Double(max(totalFiles, 1))
-                        let overallProgress = (Double(index) / Double(max(totalFiles, 1)) * 0.8) + (fileProgress * fileShare)
-                        progressHandler(min(max(overallProgress, 0.0), 0.8))
+                    if !options.isDryRun {
+                        try await uploadFile(localFileURL, remotePath) { fileProgress in
+                            let fileShare = 0.8 / Double(max(totalFiles, 1))
+                            let overallProgress = (Double(index) / Double(max(totalFiles, 1)) * 0.8) + (fileProgress * fileShare)
+                            progressHandler(min(max(overallProgress, 0.0), 0.8))
+                        }
                     }
                     logger.debug("Successfully uploaded: \(relativePath)")
                     uploaded += 1
-                    transferred += localSize
+                    if !options.isDryRun {
+                        transferred += localSize
+                    }
                 } catch {
                     logger.error("Upload failed for \(relativePath): \(error.localizedDescription)")
                     failed += 1
@@ -68,25 +72,32 @@ struct WebDAVSyncEngine {
             progressHandler(Double(index + 1) / Double(max(totalFiles, 1)) * 0.8)
         }
 
-        if deleteOrphansEnabled {
-            logger.info("Checking for orphaned files to delete...")
-            let localRelativePaths = Set(localFileMap.keys)
+        logger.info("Checking for orphaned files to delete...")
+        let localRelativePaths = Set(localFileMap.keys)
 
-            for (remotePath, _) in remoteFileMap {
-                if !localRelativePaths.contains(remotePath) {
-                    let fullRemotePath = remoteBasePath == "/" ? "/\(remotePath)" : "\(remoteBasePath)/\(remotePath)"
-                    do {
-                        logger.info("Deleting orphaned file: \(remotePath)")
-                        try await deleteFile(fullRemotePath)
-                        deleted += 1
-                        logger.debug("Successfully deleted: \(remotePath)")
-                    } catch {
-                        logger.error("Failed to delete orphaned file \(remotePath): \(error.localizedDescription)")
+        for (remotePath, _) in remoteFileMap {
+            if !localRelativePaths.contains(remotePath) {
+                let fullRemotePath = remoteBasePath == "/" ? "/\(remotePath)" : "\(remoteBasePath)/\(remotePath)"
+                if options.isDryRun {
+                    deleted += 1
+                } else {
+                    switch options.deletionPolicy {
+                    case .mirror:
+                        do {
+                            logger.info("Deleting orphaned file: \(remotePath)")
+                            try await deleteFile(fullRemotePath)
+                            deleted += 1
+                            logger.debug("Successfully deleted: \(remotePath)")
+                        } catch {
+                            logger.error("Failed to delete orphaned file \(remotePath): \(error.localizedDescription)")
+                        }
+                    case .appendOnly:
+                        logger.info("Skipping orphan deletion because append-only policy is active: \(remotePath)")
+                    case .archive:
+                        logger.warning("Archive delete policy is not supported for WebDAV yet; orphan left untouched: \(remotePath)")
                     }
                 }
             }
-        } else {
-            logger.info("Skipping orphan deletion (disabled by settings)")
         }
 
         progressHandler(1.0)

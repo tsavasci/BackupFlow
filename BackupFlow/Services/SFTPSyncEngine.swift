@@ -20,6 +20,7 @@ struct SFTPSyncEngine {
     func syncUploadDirectory(
         localURL: URL,
         remotePath: String,
+        options: BackupExecutionOptions = .defaults,
         progressHandler: ((Double) -> Void)? = nil
     ) async throws -> FTPService.SyncResult {
         var result = FTPService.SyncResult()
@@ -64,7 +65,7 @@ struct SFTPSyncEngine {
                 checkpoint.insert(relativePath)
                 await markCheckpoint?(relativePath)
             } else if remoteFileMap[relativePath] != nil {
-                let didUpload = try await uploadFile(localFileURL, targetPath, localSize, true) { fileProgress in
+                let didUpload = options.isDryRun ? true : try await uploadFile(localFileURL, targetPath, localSize, true) { fileProgress in
                     let fileShare = 0.8 / Double(max(totalFiles, 1))
                     let overallProgress = (Double(index) / Double(max(totalFiles, 1)) * 0.8) + (fileProgress * fileShare)
                     progressHandler?(min(max(overallProgress, 0.0), 0.8))
@@ -73,14 +74,16 @@ struct SFTPSyncEngine {
                     result.updatedFiles += 1
                     result.totalBytes += localSize
                     transferred += localSize
-                    checkpoint.insert(relativePath)
-                    await markCheckpoint?(relativePath)
+                    if !options.isDryRun {
+                        checkpoint.insert(relativePath)
+                        await markCheckpoint?(relativePath)
+                    }
                 } else {
                     result.skippedFiles += 1
                     result.totalBytes += localSize
                 }
             } else {
-                let didUpload = try await uploadFile(localFileURL, targetPath, localSize, true) { fileProgress in
+                let didUpload = options.isDryRun ? true : try await uploadFile(localFileURL, targetPath, localSize, true) { fileProgress in
                     let fileShare = 0.8 / Double(max(totalFiles, 1))
                     let overallProgress = (Double(index) / Double(max(totalFiles, 1)) * 0.8) + (fileProgress * fileShare)
                     progressHandler?(min(max(overallProgress, 0.0), 0.8))
@@ -89,8 +92,10 @@ struct SFTPSyncEngine {
                     result.newFiles += 1
                     result.totalBytes += localSize
                     transferred += localSize
-                    checkpoint.insert(relativePath)
-                    await markCheckpoint?(relativePath)
+                    if !options.isDryRun {
+                        checkpoint.insert(relativePath)
+                        await markCheckpoint?(relativePath)
+                    }
                 } else {
                     result.skippedFiles += 1
                     result.totalBytes += localSize
@@ -108,17 +113,30 @@ struct SFTPSyncEngine {
             }
             if !localRelativePaths.contains(remoteRelativePath) {
                 let fullRemotePath = remoteBase.hasSuffix("/") ? remoteBase + remoteRelativePath : "\(remoteBase)/\(remoteRelativePath)"
-                do {
-                    try await deleteFile(fullRemotePath)
+                if options.isDryRun {
                     result.deletedFiles += 1
-                } catch {
-                    logger.error("Failed to delete orphaned file \(remoteRelativePath): \(error.localizedDescription)")
+                } else {
+                    switch options.deletionPolicy {
+                    case .mirror:
+                        do {
+                            try await deleteFile(fullRemotePath)
+                            result.deletedFiles += 1
+                        } catch {
+                            logger.error("Failed to delete orphaned file \(remoteRelativePath): \(error.localizedDescription)")
+                        }
+                    case .appendOnly:
+                        logger.info("Skipping orphan deletion because append-only policy is active: \(remoteRelativePath)")
+                    case .archive:
+                        logger.warning("Archive delete policy is not supported for SFTP yet; orphan left untouched: \(remoteRelativePath)")
+                    }
                 }
             }
         }
         
         progressHandler?(1.0)
-        await clearCheckpoint?()
+        if !options.isDryRun {
+            await clearCheckpoint?()
+        }
         logger.info("SFTP mirror sync completed - Uploaded: \(result.newFiles), Updated: \(result.updatedFiles), Skipped: \(result.skippedFiles), Deleted: \(result.deletedFiles)")
         
         return result
@@ -127,6 +145,7 @@ struct SFTPSyncEngine {
     func syncBackupPhotoLibrary(
         mediaType: MediaType,
         remotePath: String,
+        options: BackupExecutionOptions = .defaults,
         progressHandler: ((Double) -> Void)? = nil
     ) async throws -> FTPService.SyncResult {
         let photoManager = PhotoLibraryManager.shared
@@ -185,7 +204,7 @@ struct SFTPSyncEngine {
                 checkpoint.insert(fileName)
                 await markCheckpoint?(fileName)
             } else if existingFileMap[fileName] != nil {
-                let didUpload = try await uploadFile(tempURL, remotePath, localSize, true) { fileProgress in
+                let didUpload = options.isDryRun ? true : try await uploadFile(tempURL, remotePath, localSize, true) { fileProgress in
                     let assetShare = 1.0 / Double(max(totalCount, 1))
                     let overallProgress = (Double(index) / Double(max(totalCount, 1))) + (fileProgress * assetShare)
                     progressHandler?(min(max(overallProgress, 0.0), 1.0))
@@ -193,14 +212,16 @@ struct SFTPSyncEngine {
                 if didUpload {
                     result.updatedFiles += 1
                     result.totalBytes += localSize
-                    checkpoint.insert(fileName)
-                    await markCheckpoint?(fileName)
+                    if !options.isDryRun {
+                        checkpoint.insert(fileName)
+                        await markCheckpoint?(fileName)
+                    }
                 } else {
                     result.skippedFiles += 1
                     result.totalBytes += localSize
                 }
             } else {
-                let didUpload = try await uploadFile(tempURL, remotePath, localSize, true) { fileProgress in
+                let didUpload = options.isDryRun ? true : try await uploadFile(tempURL, remotePath, localSize, true) { fileProgress in
                     let assetShare = 1.0 / Double(max(totalCount, 1))
                     let overallProgress = (Double(index) / Double(max(totalCount, 1))) + (fileProgress * assetShare)
                     progressHandler?(min(max(overallProgress, 0.0), 1.0))
@@ -208,8 +229,10 @@ struct SFTPSyncEngine {
                 if didUpload {
                     result.newFiles += 1
                     result.totalBytes += localSize
-                    checkpoint.insert(fileName)
-                    await markCheckpoint?(fileName)
+                    if !options.isDryRun {
+                        checkpoint.insert(fileName)
+                        await markCheckpoint?(fileName)
+                    }
                 } else {
                     result.skippedFiles += 1
                     result.totalBytes += localSize
@@ -226,17 +249,30 @@ struct SFTPSyncEngine {
                 throw BackupServiceError.cancelled
             }
             if !processedFiles.contains(remotePath) {
-                do {
-                    let fullRemotePath = "\(photosDir)/\(remotePath)"
-                    try await deleteFile(fullRemotePath)
+                let fullRemotePath = "\(photosDir)/\(remotePath)"
+                if options.isDryRun {
                     result.deletedFiles += 1
-                } catch {
-                    logger.error("Failed to delete orphaned file \(remotePath): \(error.localizedDescription)")
+                } else {
+                    switch options.deletionPolicy {
+                    case .mirror:
+                        do {
+                            try await deleteFile(fullRemotePath)
+                            result.deletedFiles += 1
+                        } catch {
+                            logger.error("Failed to delete orphaned file \(remotePath): \(error.localizedDescription)")
+                        }
+                    case .appendOnly:
+                        logger.info("Skipping orphan photo deletion because append-only policy is active: \(remotePath)")
+                    case .archive:
+                        logger.warning("Archive delete policy is not supported for SFTP photos yet; orphan left untouched: \(remotePath)")
+                    }
                 }
             }
         }
 
-        await clearCheckpoint?()
+        if !options.isDryRun {
+            await clearCheckpoint?()
+        }
         
         return result
     }

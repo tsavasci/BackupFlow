@@ -421,6 +421,7 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         sourcePath: String,
         destinationPath: String,
         mediaType: MediaType,
+        options: BackupExecutionOptions = .defaults,
         progressHandler: ((Double) -> Void)?
     ) async throws -> FTPService.SyncResult {
         resetCancellation()
@@ -496,20 +497,50 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         if isPhotosSource {
             logger.info("SFTP health-check host=\(normalizedHost):\(port), source=PHOTOS_LIBRARY, remote=\(effectiveRemotePath)")
             logger.info("SFTP photos remote dir: \(effectiveRemotePath)")
-            return try await engine.syncBackupPhotoLibrary(
+            let result = try await engine.syncBackupPhotoLibrary(
                 mediaType: mediaType,
                 remotePath: effectiveRemotePath,
+                options: options,
                 progressHandler: progressHandler
             )
+            if !options.isDryRun {
+                try? await uploadManifest(syncResult: result, remoteBasePath: effectiveRemotePath, options: options)
+            }
+            return result
         }
 
         logger.info("SFTP health-check host=\(normalizedHost):\(port), source=FOLDER, remote=\(effectiveRemotePath)")
         logger.info("SFTP folder remote dir: \(effectiveRemotePath)")
-        return try await engine.syncUploadDirectory(
+        let result = try await engine.syncUploadDirectory(
             localURL: sourceURL,
             remotePath: effectiveRemotePath,
+            options: options,
             progressHandler: progressHandler
         )
+        if !options.isDryRun {
+            try? await uploadManifest(syncResult: result, remoteBasePath: effectiveRemotePath, options: options)
+        }
+        return result
+    }
+
+    private func uploadManifest(syncResult: FTPService.SyncResult, remoteBasePath: String, options: BackupExecutionOptions) async throws {
+        let manifest = """
+        {
+          "generatedAt": "\(ISO8601DateFormatter().string(from: Date()))",
+          "newFiles": \(syncResult.newFiles),
+          "updatedFiles": \(syncResult.updatedFiles),
+          "skippedFiles": \(syncResult.skippedFiles),
+          "deletedFiles": \(syncResult.deletedFiles),
+          "totalBytes": \(syncResult.totalBytes),
+          "deletionPolicy": "\(options.deletionPolicy.rawValue)",
+          "checksumMode": "\(options.checksumMode.rawValue)"
+        }
+        """
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("backupflow_manifest_\(UUID().uuidString).json")
+        try manifest.data(using: .utf8)?.write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let remotePath = remoteBasePath.hasSuffix("/") ? remoteBasePath + ".backupflow_manifest.json" : "\(remoteBasePath)/.backupflow_manifest.json"
+        try await uploadFile(localURL: url, remotePath: remotePath, progressHandler: nil)
     }
 
     private func normalizedRemoteBase(

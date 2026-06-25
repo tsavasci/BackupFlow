@@ -1045,11 +1045,17 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     }
     
     /// Enhanced directory sync with full mirror functionality (upload new, skip identical, delete orphans)
-    private func syncUploadDirectory(localURL: URL, remotePath: String = "", progressHandler: ((Double) -> Void)? = nil) async throws -> SyncResult {
+    private func syncUploadDirectory(
+        localURL: URL,
+        remotePath: String = "",
+        options: BackupExecutionOptions = .defaults,
+        progressHandler: ((Double) -> Void)? = nil
+    ) async throws -> SyncResult {
         let engine = try makeSyncEngine()
         return try await engine.syncUploadDirectory(
             localURL: localURL,
             remotePath: remotePath,
+            options: options,
             progressHandler: progressHandler
         )
     }
@@ -1127,6 +1133,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         isAnonymous: Bool,
         mediaType: MediaType,
         includeICloudAssets: Bool = true,
+        options: BackupExecutionOptions = .defaults,
         progressHandler: ((Double) -> Void)? = nil
     ) async throws -> SyncResult {
         
@@ -1180,14 +1187,21 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             syncResult = try await engine.syncBackupPhotoLibrary(
                 mediaType: mediaType,
                 includeICloudAssets: includeICloudAssets,
+                options: options,
                 progressHandler: progressHandler
             )
+            if !options.isDryRun {
+                try? await uploadManifest(syncResult: syncResult, remoteBasePath: "photos", options: options)
+            }
         } else {
             // Directory sync backup - preserve source folder name
             let sourceURL = URL(fileURLWithPath: sourcePath)
             let sourceFolderName = sourceURL.lastPathComponent
             let safeRemoteBase = normalizedRemotePath("/" + sourceFolderName)
-            syncResult = try await syncUploadDirectory(localURL: sourceURL, remotePath: safeRemoteBase, progressHandler: progressHandler)
+            syncResult = try await syncUploadDirectory(localURL: sourceURL, remotePath: safeRemoteBase, options: options, progressHandler: progressHandler)
+            if !options.isDryRun {
+                try? await uploadManifest(syncResult: syncResult, remoteBasePath: safeRemoteBase, options: options)
+            }
         }
         
         // Print detailed report
@@ -1204,6 +1218,26 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         debugLog("   💾 Toplam boyut: \(formatBytes(syncResult.totalBytes))")
         
         return syncResult
+    }
+
+    private func uploadManifest(syncResult: SyncResult, remoteBasePath: String, options: BackupExecutionOptions) async throws {
+        let manifest = """
+        {
+          "generatedAt": "\(ISO8601DateFormatter().string(from: Date()))",
+          "newFiles": \(syncResult.newFiles),
+          "updatedFiles": \(syncResult.updatedFiles),
+          "skippedFiles": \(syncResult.skippedFiles),
+          "deletedFiles": \(syncResult.deletedFiles),
+          "totalBytes": \(syncResult.totalBytes),
+          "deletionPolicy": "\(options.deletionPolicy.rawValue)",
+          "checksumMode": "\(options.checksumMode.rawValue)"
+        }
+        """
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("backupflow_manifest_\(UUID().uuidString).json")
+        try manifest.data(using: .utf8)?.write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let remotePath = remoteBasePath.hasSuffix("/") ? remoteBasePath + ".backupflow_manifest.json" : "\(remoteBasePath)/.backupflow_manifest.json"
+        try await uploadFile(localURL: url, remotePath: remotePath, progressHandler: nil)
     }
     
     /// Byte sayısını okunabilir formata çevirir
