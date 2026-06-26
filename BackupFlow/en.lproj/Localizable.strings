@@ -729,6 +729,7 @@
 "backup.remote_folder.use_this" = "Use this folder";
 "backup.remote_folder.parent" = "Parent folder";
 "backup.remote_folder.title" = "Remote folder";
+"backup.remote_folder.browse" = "Browse remote folder";
 "task.details.network" = "Network";
 "task.details.power" = "Power";
 "task.details.last_failure" = "Last failure";

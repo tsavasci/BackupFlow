@@ -488,7 +488,7 @@ struct BackupView: View {
                             Button {
                                 showingRemoteFolderPicker = true
                             } label: {
-                                Label("Browse remote folder", systemImage: "folder")
+                                Label("backup.remote_folder.browse".localized, systemImage: "folder")
                                     .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(.bordered)

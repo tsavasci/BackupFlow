@@ -709,6 +709,7 @@
 "backup.remote_folder.use_this" = "Bu klasörü kullan";
 "backup.remote_folder.parent" = "Üst klasör";
 "backup.remote_folder.title" = "Uzak klasör";
+"backup.remote_folder.browse" = "Uzak klasöre göz at";
 "task.details.network" = "Ağ";
 "task.details.power" = "Güç";
 "task.details.last_failure" = "Son hata";
