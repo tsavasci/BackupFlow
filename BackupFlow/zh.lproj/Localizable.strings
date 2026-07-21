@@ -720,7 +720,7 @@
 "backup.require_wifi" = "需要 Wi-Fi";
 "backup.require_external_power" = "需要外部电源";
 "backup.use_allowed_time_window" = "使用允许的时间窗口";
-"backup.archive_policy_warning" = "远程协议尚未启用归档删除。孤立文件将保持不变。";
+"backup.archive_policy_warning" = "孤立的远程文件将移至带日期的 .backupflow_archive 文件夹。";
 "backup.preview.loading" = "正在准备预览...";
 "backup.preview.new_files" = "新文件";
 "backup.preview.updated_files" = "更新的文件";

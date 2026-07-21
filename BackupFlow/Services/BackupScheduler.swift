@@ -74,7 +74,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     private var lastScheduledTargetTime: [UUID: Date] = [:]
     private var lastBGTaskNotificationAt: Date? = nil
     
-    private var lastRunAt: Date? = nil
+    private var lastRunAtByTask: [UUID: Date] = [:]
     private let minRunInterval: TimeInterval = 60 // en az 60 sn arayla çalıştır
     
     @Published private(set) var isProcessing = false
@@ -400,12 +400,14 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         }
 
         // Re-entrancy guard: Çok sık tetiklemeyi engelle
-        if !bypassThrottle, let last = lastRunAt, Date().timeIntervalSince(last) < minRunInterval {
+        if !bypassThrottle,
+           let last = lastRunAtByTask[task.id],
+           Date().timeIntervalSince(last) < minRunInterval {
             debugLog("ℹ️ BackupFlow: Son çalıştırmadan bu yana minimum süre dolmadı, tetikleme atlandı")
             return
         }
         if !bypassThrottle {
-            lastRunAt = runStart
+            lastRunAtByTask[task.id] = runStart
         }
         
         guard !task.isPaused else {
@@ -986,7 +988,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                         #endif
                     }()
                     if isActive {
-                        if let last = lastRunAt, Date().timeIntervalSince(last) < minRunInterval {
+                        if let last = lastRunAtByTask[task.id], Date().timeIntervalSince(last) < minRunInterval {
                             debugLog("ℹ️ checkMissedTimers: Minimum aralık dolmadı, atlanıyor")
                             continue
                         }
@@ -1401,8 +1403,8 @@ extension BackupScheduler {
         return .unknown
     }
 
-    private func optionsVerifiedFileCount(for task: BackupTask, syncResult: FTPService.SyncResult) -> Int {
-        task.checksumMode == .verifyUploads ? syncResult.newFiles + syncResult.updatedFiles : 0
+    private func verifiedFileCount(syncResult: FTPService.SyncResult) -> Int {
+        syncResult.verifiedFiles
     }
 
     /// Detaylı yedekleme tamamlanma bildirimi gönder
@@ -1461,7 +1463,7 @@ extension BackupScheduler {
                 deletedFiles: syncResult.deletedFiles,
                 newFiles: syncResult.newFiles,
                 updatedFiles: syncResult.updatedFiles,
-                verifiedFiles: optionsVerifiedFileCount(for: task, syncResult: syncResult),
+                verifiedFiles: verifiedFileCount(syncResult: syncResult),
                 failureCategory: failureCategory,
                 previewSummarySnapshot: previewSummarySnapshot,
                 taskDisplayName: task.displayName,
@@ -1473,6 +1475,7 @@ extension BackupScheduler {
                 taskMediaTypeRaw: task.mediaType.rawValue
             )
 
+            context.insert(historyRecord)
             // Attach the task to the history record
             historyRecord.task = task
 
@@ -1510,7 +1513,7 @@ extension BackupScheduler {
                 deletedFiles: syncResult.deletedFiles,
                 newFiles: syncResult.newFiles,
                 updatedFiles: syncResult.updatedFiles,
-                verifiedFiles: optionsVerifiedFileCount(for: taskInContext, syncResult: syncResult),
+                verifiedFiles: verifiedFileCount(syncResult: syncResult),
                 failureCategory: failureCategory,
                 previewSummarySnapshot: previewSummarySnapshot,
                 taskDisplayName: taskInContext.displayName,
@@ -1522,6 +1525,7 @@ extension BackupScheduler {
                 taskMediaTypeRaw: taskInContext.mediaType.rawValue
             )
 
+            context.insert(historyRecord)
             historyRecord.task = taskInContext
 
             try context.save()

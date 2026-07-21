@@ -721,7 +721,7 @@
 "backup.require_wifi" = "Wi-Fi आवश्यक";
 "backup.require_external_power" = "बाहरी बिजली आवश्यक";
 "backup.use_allowed_time_window" = "अनुमत समय विंडो उपयोग करें";
-"backup.archive_policy_warning" = "रिमोट प्रोटोकॉल के लिए आर्काइव हटाना अभी सक्रिय नहीं है। अनाथ फ़ाइलें नहीं बदली जाएँगी।";
+"backup.archive_policy_warning" = "अनाथ रिमोट फ़ाइलें दिनांकित .backupflow_archive फ़ोल्डर में ले जाई जाएँगी।";
 "backup.preview.loading" = "पूर्वावलोकन तैयार हो रहा है...";
 "backup.preview.new_files" = "नई फ़ाइलें";
 "backup.preview.updated_files" = "अपडेट की गई फ़ाइलें";

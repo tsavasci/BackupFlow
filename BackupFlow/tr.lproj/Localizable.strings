@@ -697,7 +697,7 @@
 "backup.require_wifi" = "Wi-Fi gerekli";
 "backup.require_external_power" = "Harici güç gerekli";
 "backup.use_allowed_time_window" = "İzinli saat aralığını kullan";
-"backup.archive_policy_warning" = "Arşivli silme uzak protokoller için henüz aktif değil. Sahipsiz dosyalar korunacak.";
+"backup.archive_policy_warning" = "Sahipsiz uzak dosyalar tarihli bir .backupflow_archive klasörüne taşınacak.";
 "backup.preview.loading" = "Önizleme hazırlanıyor...";
 "backup.preview.new_files" = "Yeni dosyalar";
 "backup.preview.updated_files" = "Güncellenecek dosyalar";

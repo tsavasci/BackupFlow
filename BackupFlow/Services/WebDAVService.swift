@@ -739,7 +739,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         remoteBasePath: String,
         options: BackupExecutionOptions = .defaults,
         progressHandler: @escaping (Double) -> Void
-    ) async throws -> (filesUploaded: Int, filesSkipped: Int, filesFailed: Int, bytesTransferred: Int64, deletedFiles: Int) {
+    ) async throws -> (filesUploaded: Int, filesSkipped: Int, filesFailed: Int, bytesTransferred: Int64, deletedFiles: Int, verifiedFiles: Int) {
         let engine = try makeSyncEngine()
         return try await engine.syncUploadDirectory(
             localPath: localPath,
@@ -755,6 +755,9 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
 
         for file in files {
             let relativePath = basePath.isEmpty ? file.name : "\(basePath)/\(file.name)"
+            if BackupArchive.isReserved(relativePath: relativePath) {
+                continue
+            }
             if file.isDirectory {
                 let subdirPath = path == "/" ? "/\(file.name)" : "\(path)/\(file.name)"
                 let subFiles = try await listAllRemoteFiles(at: subdirPath, relativeTo: relativePath)
@@ -778,7 +781,9 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         options: BackupExecutionOptions = .defaults,
         progressHandler: @escaping (Double) -> Void
     ) async throws -> FTPService.SyncResult {
-        try await ensureDirectoryExists(at: remoteBasePath)
+        if !options.isDryRun {
+            try await ensureDirectoryExists(at: remoteBasePath)
+        }
 
         let assets = try await photoLibraryManager.getAllAssets(mediaType: mediaType)
         var result = FTPService.SyncResult()
@@ -851,6 +856,10 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
                         let overallProgress = (Double(index) / Double(max(assets.count, 1))) + (fileProgress * assetShare)
                         progressHandler(min(max(overallProgress, 0.0), 1.0))
                     }
+                    if options.checksumMode == .verifyUploads {
+                        try await verifyUploadChecksum(localURL: tempURL, remotePath: remotePath)
+                        result.verifiedFiles += 1
+                    }
                 }
                 logger.info("✅ Upload completed (\(index + 1)/\(totalAssets)): \(fileName)")
             } catch {
@@ -915,6 +924,10 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
                         allowBackgroundSession: false,
                         timeoutMultiplier: 2.5
                     )
+                    if options.checksumMode == .verifyUploads {
+                        try await verifyUploadChecksum(localURL: retryTempURL, remotePath: item.remotePath)
+                        result.verifiedFiles += 1
+                    }
                     if existingFileMap[item.fileName] != nil {
                         result.updatedFiles += 1
                     } else {
@@ -928,23 +941,50 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
             }
         }
 
-        for (relativePath, _) in existingFileMap where !processedRelativePaths.contains(relativePath) {
+        let canDeletePhotoOrphans = failedUploads == 0 && options.permitsPhotoOrphanDeletion(
+            hasFullLibraryAccess: photoLibraryManager.hasFullLibraryAccess,
+            visibleAssetCount: assets.count
+        )
+        if !canDeletePhotoOrphans && options.deletionPolicy == .mirror {
+            logger.warning("Skipping orphan photo deletion because the source snapshot is unsafe or one or more uploads failed.")
+        }
+
+        let archiveRunIdentifier = BackupArchive.makeRunIdentifier()
+        for (relativePath, _) in existingFileMap
+        where !processedRelativePaths.contains(relativePath) && !BackupArchive.isReserved(relativePath: relativePath) {
             let fullRemotePath = remoteBasePath == "/" ? "/\(relativePath)" : "\(remoteBasePath)/\(relativePath)"
-            if options.isDryRun {
-                result.deletedFiles += 1
-            } else {
-                switch options.deletionPolicy {
-                case .mirror:
+            switch options.deletionPolicy {
+            case .mirror where canDeletePhotoOrphans:
+                if options.isDryRun {
+                    result.deletedFiles += 1
+                } else {
                     do {
                         try await deleteFile(at: fullRemotePath)
                         result.deletedFiles += 1
                     } catch {
                         logger.error("Failed to delete orphaned photo \(relativePath): \(error.localizedDescription)")
                     }
-                case .appendOnly:
-                    logger.info("Skipping orphan photo deletion because append-only policy is active: \(relativePath)")
-                case .archive:
-                    logger.warning("Archive delete policy is not supported for WebDAV photos yet; orphan left untouched: \(relativePath)")
+                }
+            case .mirror:
+                break
+            case .appendOnly:
+                logger.info("Skipping orphan photo deletion because append-only policy is active: \(relativePath)")
+            case .archive:
+                if options.isDryRun {
+                    logger.info("Would archive orphaned photo: \(relativePath)")
+                } else {
+                    do {
+                        let archivePath = BackupArchive.destinationPath(
+                            basePath: remoteBasePath,
+                            runIdentifier: archiveRunIdentifier,
+                            relativePath: relativePath
+                        )
+                        try await archiveFile(from: fullRemotePath, to: archivePath)
+                        logger.info("Archived orphaned photo: \(relativePath)")
+                    } catch {
+                        logger.error("Failed to archive orphaned photo \(relativePath): \(error.localizedDescription)")
+                        throw error
+                    }
                 }
             }
         }
@@ -959,6 +999,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
 
         if failedUploads > 0 {
             logger.warning("⚠️ Photo sync completed with \(failedUploads) failed/timeouted uploads")
+            throw BackupServiceError.fileOperationFailed
         }
 
         progressHandler(1.0)
@@ -1230,14 +1271,67 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
                 guard let self else { throw BackupServiceError.connectionFailed }
                 try await self.deleteFile(at: path)
             },
+            archiveFile: { [weak self] sourcePath, destinationPath in
+                guard let self else { throw BackupServiceError.connectionFailed }
+                try await self.archiveFile(from: sourcePath, to: destinationPath)
+            },
             setCurrentFile: { [weak self] name in
                 self?.currentFile = name
             },
             uploadFile: { [weak self] localURL, remotePath, progressHandler in
                 guard let self else { throw BackupServiceError.connectionFailed }
                 try await self.uploadFileAwaitingCompletion(localURL: localURL, remotePath: remotePath, progressHandler: progressHandler)
+            },
+            verifyUpload: { [weak self] localURL, remotePath in
+                guard let self else { throw BackupServiceError.connectionFailed }
+                try await self.verifyUploadChecksum(localURL: localURL, remotePath: remotePath)
             }
         )
+    }
+
+    private func verifyUploadChecksum(localURL: URL, remotePath: String) async throws {
+        guard let provider = webdavProvider else {
+            throw BackupServiceError.connectionFailed
+        }
+
+        let temporaryURL = fileManager.temporaryDirectory
+            .appendingPathComponent("backupflow-verify-\(UUID().uuidString)")
+        defer { try? fileManager.removeItem(at: temporaryURL) }
+
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            provider.copyItem(path: remotePath, toLocalURL: temporaryURL) { error in
+                if let error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume(returning: ())
+                }
+            }
+        }
+
+        let localChecksum = try BackupChecksum.sha256(of: localURL)
+        let remoteChecksum = try BackupChecksum.sha256(of: temporaryURL)
+        guard localChecksum == remoteChecksum else {
+            throw BackupIntegrityError.checksumMismatch(path: remotePath)
+        }
+    }
+
+    private func archiveFile(from sourcePath: String, to destinationPath: String) async throws {
+        guard let provider = webdavProvider else {
+            throw BackupServiceError.connectionFailed
+        }
+        let parentPath = (destinationPath as NSString).deletingLastPathComponent
+        if !parentPath.isEmpty && parentPath != "/" {
+            try await ensureDirectoryExists(at: parentPath)
+        }
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            provider.moveItem(path: sourcePath, to: destinationPath, overwrite: false) { error in
+                if let error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume(returning: ())
+                }
+            }
+        }
     }
     
     private func uploadDirectory(localPath: String, remotePath: String, progressHandler: @escaping (Double) -> Void) async throws -> (filesUploaded: Int, filesSkipped: Int, filesFailed: Int, bytesTransferred: Int64) {
@@ -1491,7 +1585,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
                 progressHandler: progressHandler
             )
             if !options.isDryRun {
-                try? await uploadManifest(syncResult: result, remoteBasePath: remotePhotosBase, options: options)
+                try await uploadManifest(syncResult: result, remoteBasePath: remotePhotosBase, options: options)
             }
             self.logger.info("Successfully synced photos to WebDAV (uploaded: \(result.newFiles), updated: \(result.updatedFiles), skipped: \(result.skippedFiles), iCloud-skipped: \(result.iCloudSkippedFiles), timeouts: \(result.timedOutAssetReads), unreadable: \(result.failedAssetReads), deleted: \(result.deletedFiles))")
         } else {
@@ -1501,7 +1595,9 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
             let sourceFolderName = sourceURL.lastPathComponent
             let remoteRoot = "/"
             let remoteDocumentsBase = remoteRoot == "/" ? "/\(sourceFolderName)" : "\(remoteRoot)/\(sourceFolderName)"
-            try await ensureDirectoryExists(at: remoteDocumentsBase)
+            if !options.isDryRun {
+                try await ensureDirectoryExists(at: remoteDocumentsBase)
+            }
             let sync = try await syncUploadDirectory(
                 localPath: sourcePath,
                 remoteBasePath: remoteDocumentsBase,
@@ -1511,9 +1607,14 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
             result.newFiles = sync.filesUploaded
             result.skippedFiles = sync.filesSkipped
             result.deletedFiles = sync.deletedFiles
+            result.verifiedFiles = sync.verifiedFiles
             result.totalBytes = sync.bytesTransferred
+            if sync.filesFailed > 0 {
+                logger.error("WebDAV directory sync failed for \(sync.filesFailed) file(s)")
+                throw BackupServiceError.fileOperationFailed
+            }
             if !options.isDryRun {
-                try? await uploadManifest(syncResult: result, remoteBasePath: remoteDocumentsBase, options: options)
+                try await uploadManifest(syncResult: result, remoteBasePath: remoteDocumentsBase, options: options)
             }
             self.logger.info("Successfully synced directory to WebDAV: \(sourceFolderName)/ (uploaded: \(sync.filesUploaded), skipped: \(sync.filesSkipped), deleted: \(sync.deletedFiles))")
         }
@@ -1529,6 +1630,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
           "updatedFiles": \(syncResult.updatedFiles),
           "skippedFiles": \(syncResult.skippedFiles),
           "deletedFiles": \(syncResult.deletedFiles),
+          "verifiedFiles": \(syncResult.verifiedFiles),
           "totalBytes": \(syncResult.totalBytes),
           "deletionPolicy": "\(options.deletionPolicy.rawValue)",
           "checksumMode": "\(options.checksumMode.rawValue)"

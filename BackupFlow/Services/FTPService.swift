@@ -1078,9 +1078,17 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                 guard let self else { throw FTPError.connectionFailed }
                 try await self.deleteFile(at: path)
             },
+            archiveFile: { [weak self] sourcePath, destinationPath in
+                guard let self else { throw FTPError.connectionFailed }
+                try await self.archiveFile(from: sourcePath, to: destinationPath)
+            },
             uploadFile: { [weak self] localURL, remotePath, progressHandler in
                 guard let self else { throw FTPError.connectionFailed }
                 try await self.uploadFile(localURL: localURL, remotePath: remotePath, progressHandler: progressHandler)
+            },
+            verifyUpload: { [weak self] localURL, remotePath in
+                guard let self else { throw FTPError.connectionFailed }
+                try await self.verifyUploadChecksum(localURL: localURL, remotePath: remotePath)
             },
             setCurrentFile: { [weak self] name in
                 Task { @MainActor in
@@ -1098,6 +1106,51 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                 try await self.uploadPhotoFile(localURL: localURL, remotePath: remotePath, fileName: fileName)
             }
         )
+    }
+
+    private func verifyUploadChecksum(localURL: URL, remotePath: String) async throws {
+        guard let ftp = ftpProvider else {
+            throw FTPError.connectionFailed
+        }
+
+        let temporaryURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("backupflow-verify-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: temporaryURL) }
+
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            ftp.copyItem(path: remotePath, toLocalURL: temporaryURL) { [weak self] error in
+                if let error {
+                    continuation.resume(throwing: self?.mapError(error) ?? FTPError.unknown(error))
+                } else {
+                    continuation.resume(returning: ())
+                }
+            }
+        }
+
+        let localChecksum = try BackupChecksum.sha256(of: localURL)
+        let remoteChecksum = try BackupChecksum.sha256(of: temporaryURL)
+        guard localChecksum == remoteChecksum else {
+            throw BackupIntegrityError.checksumMismatch(path: remotePath)
+        }
+    }
+
+    private func archiveFile(from sourcePath: String, to destinationPath: String) async throws {
+        guard let ftp = ftpProvider else {
+            throw FTPError.connectionFailed
+        }
+        let parentPath = (destinationPath as NSString).deletingLastPathComponent
+        if !parentPath.isEmpty && parentPath != "/" {
+            try await createDirectory(at: parentPath)
+        }
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            ftp.moveItem(path: sourcePath, to: destinationPath, overwrite: false) { [weak self] error in
+                if let error {
+                    continuation.resume(throwing: self?.mapError(error) ?? FTPError.unknown(error))
+                } else {
+                    continuation.resume(returning: ())
+                }
+            }
+        }
     }
     
     // FTP sunucusundan dosya sil
@@ -1191,7 +1244,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                 progressHandler: progressHandler
             )
             if !options.isDryRun {
-                try? await uploadManifest(syncResult: syncResult, remoteBasePath: "photos", options: options)
+                try await uploadManifest(syncResult: syncResult, remoteBasePath: "photos", options: options)
             }
         } else {
             // Directory sync backup - preserve source folder name
@@ -1200,7 +1253,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             let safeRemoteBase = normalizedRemotePath("/" + sourceFolderName)
             syncResult = try await syncUploadDirectory(localURL: sourceURL, remotePath: safeRemoteBase, options: options, progressHandler: progressHandler)
             if !options.isDryRun {
-                try? await uploadManifest(syncResult: syncResult, remoteBasePath: safeRemoteBase, options: options)
+                try await uploadManifest(syncResult: syncResult, remoteBasePath: safeRemoteBase, options: options)
             }
         }
         
@@ -1228,6 +1281,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
           "updatedFiles": \(syncResult.updatedFiles),
           "skippedFiles": \(syncResult.skippedFiles),
           "deletedFiles": \(syncResult.deletedFiles),
+          "verifiedFiles": \(syncResult.verifiedFiles),
           "totalBytes": \(syncResult.totalBytes),
           "deletionPolicy": "\(options.deletionPolicy.rawValue)",
           "checksumMode": "\(options.checksumMode.rawValue)"

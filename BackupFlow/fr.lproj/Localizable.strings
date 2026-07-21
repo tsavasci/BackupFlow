@@ -723,7 +723,7 @@
 "backup.require_wifi" = "Wi-Fi requis";
 "backup.require_external_power" = "Alimentation externe requise";
 "backup.use_allowed_time_window" = "Utiliser la plage horaire autorisée";
-"backup.archive_policy_warning" = "La suppression archivée n’est pas encore active pour les protocoles distants. Les fichiers orphelins seront conservés.";
+"backup.archive_policy_warning" = "Les fichiers distants orphelins seront déplacés vers un dossier .backupflow_archive daté.";
 "backup.preview.loading" = "Préparation de l’aperçu...";
 "backup.preview.new_files" = "Nouveaux fichiers";
 "backup.preview.updated_files" = "Fichiers mis à jour";

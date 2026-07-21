@@ -719,7 +719,7 @@
 "backup.require_wifi" = "Requer Wi-Fi";
 "backup.require_external_power" = "Requer energia externa";
 "backup.use_allowed_time_window" = "Usar janela de horário permitida";
-"backup.archive_policy_warning" = "Excluir arquivando ainda não está ativo para protocolos remotos. Arquivos órfãos serão mantidos.";
+"backup.archive_policy_warning" = "Arquivos remotos órfãos serão movidos para uma pasta .backupflow_archive com data.";
 "backup.preview.loading" = "Preparando prévia...";
 "backup.preview.new_files" = "Novos arquivos";
 "backup.preview.updated_files" = "Arquivos atualizados";

@@ -721,7 +721,7 @@
 "backup.require_wifi" = "Requiere Wi-Fi";
 "backup.require_external_power" = "Requiere alimentación externa";
 "backup.use_allowed_time_window" = "Usar intervalo horario permitido";
-"backup.archive_policy_warning" = "El archivado al borrar aún no está activo para protocolos remotos. Los archivos huérfanos se conservarán.";
+"backup.archive_policy_warning" = "Los archivos remotos huérfanos se moverán a una carpeta .backupflow_archive con fecha.";
 "backup.preview.loading" = "Preparando vista previa...";
 "backup.preview.new_files" = "Archivos nuevos";
 "backup.preview.updated_files" = "Archivos actualizados";

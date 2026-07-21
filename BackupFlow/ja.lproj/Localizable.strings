@@ -721,7 +721,7 @@
 "backup.require_wifi" = "Wi-Fiが必要";
 "backup.require_external_power" = "外部電源が必要";
 "backup.use_allowed_time_window" = "許可された時間帯を使用";
-"backup.archive_policy_warning" = "リモートプロトコルではアーカイブ削除はまだ有効ではありません。孤立ファイルはそのまま残ります。";
+"backup.archive_policy_warning" = "孤立したリモートファイルは、日付付きの .backupflow_archive フォルダに移動されます。";
 "backup.preview.loading" = "プレビューを準備中...";
 "backup.preview.new_files" = "新しいファイル";
 "backup.preview.updated_files" = "更新されるファイル";

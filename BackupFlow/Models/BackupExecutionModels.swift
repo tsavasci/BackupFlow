@@ -30,6 +30,14 @@ struct BackupExecutionOptions: Codable, Equatable {
             allowedEndTime: task.allowedEndTime
         )
     }
+
+    var performsRemoteMutations: Bool {
+        !isDryRun
+    }
+
+    func permitsPhotoOrphanDeletion(hasFullLibraryAccess: Bool, visibleAssetCount: Int) -> Bool {
+        deletionPolicy == .mirror && hasFullLibraryAccess && visibleAssetCount > 0
+    }
 }
 
 struct BackupPreviewResult: Codable, Equatable {
@@ -56,7 +64,7 @@ struct BackupPreviewResult: Codable, Equatable {
             newFiles: result.newFiles,
             updatedFiles: result.updatedFiles,
             skippedFiles: result.skippedFiles,
-            deletedFiles: result.deletedFiles,
+            deletedFiles: deletionPolicy == .mirror ? result.deletedFiles : 0,
             iCloudSkippedFiles: result.iCloudSkippedFiles,
             timedOutAssetReads: result.timedOutAssetReads,
             failedAssetReads: result.failedAssetReads,

@@ -11,6 +11,7 @@ struct FTPSyncResult {
     var timedOutAssetReads: Int = 0
     var failedAssetReads: Int = 0
     var deletedFiles: Int = 0
+    var verifiedFiles: Int = 0
     var totalBytes: Int64 = 0
 
     var totalProcessed: Int {
@@ -32,7 +33,9 @@ struct FTPSyncEngine {
     let isCancelled: () -> Bool
     let createDirectory: (String) async throws -> Void
     let deleteFile: (String) async throws -> Void
+    let archiveFile: (String, String) async throws -> Void
     let uploadFile: (URL, String, ((Double) -> Void)?) async throws -> Void
+    let verifyUpload: (URL, String) async throws -> Void
     let setCurrentFile: (String) -> Void
     let formatBytes: (Int64) -> String
     let mapError: (Error) -> FTPError
@@ -53,7 +56,7 @@ struct FTPSyncEngine {
 
         logger.info("Starting enhanced mirror sync: \(localPath) -> \(remotePath)")
 
-        if !remotePath.isEmpty {
+        if !options.isDryRun && !remotePath.isEmpty {
             try await createDirectory(remotePath)
         }
 
@@ -66,14 +69,16 @@ struct FTPSyncEngine {
         logger.info("Found \(remoteFileMap.count) remote files")
 
         var uploadedCount = 0, skippedCount = 0, failedCount = 0, deletedCount = 0
+        var archivedCount = 0
         var transferredBytes: Int64 = 0
+        let archiveRunIdentifier = BackupArchive.makeRunIdentifier()
 
         for (index, (relativePath, localFileURL)) in localFileMap.enumerated() {
             guard !isCancelled() else { break }
 
             let targetPath = remotePath.isEmpty ? relativePath : "\(remotePath)/\(relativePath)"
             let parentPath = (targetPath as NSString).deletingLastPathComponent
-            if !parentPath.isEmpty && parentPath != "/" {
+            if !options.isDryRun && !parentPath.isEmpty && parentPath != "/" {
                 try await createDirectory(parentPath)
             }
 
@@ -104,6 +109,10 @@ struct FTPSyncEngine {
                         let overallProgress = (Double(index) / Double(max(totalFiles, 1)) * 0.8) + (fileProgress * fileShare)
                         progressHandler?(min(max(overallProgress, 0.0), 0.8))
                     }
+                    if options.checksumMode == .verifyUploads {
+                        try await verifyUpload(localFileURL, targetPath)
+                        result.verifiedFiles += 1
+                    }
                 }
                 result.newFiles += 1
                 result.totalBytes += localSize
@@ -121,6 +130,10 @@ struct FTPSyncEngine {
                         let fileShare = 0.8 / Double(max(totalFiles, 1))
                         let overallProgress = (Double(index) / Double(max(totalFiles, 1)) * 0.8) + (fileProgress * fileShare)
                         progressHandler?(min(max(overallProgress, 0.0), 0.8))
+                    }
+                    if options.checksumMode == .verifyUploads {
+                        try await verifyUpload(localFileURL, targetPath)
+                        result.verifiedFiles += 1
                     }
                 }
                 result.updatedFiles += 1
@@ -141,15 +154,15 @@ struct FTPSyncEngine {
         logger.info("Checking for orphaned files to delete...")
         let localRelativePaths = Set(localFileMap.keys)
 
-        for (remotePath, _) in remoteFileMap {
+        for (remotePath, _) in remoteFileMap where !BackupArchive.isReserved(relativePath: remotePath) {
             if !localRelativePaths.contains(remotePath) {
                 let fullRemotePath = remoteBasePath == "/" ? "/\(remotePath)" : "\(remoteBasePath)/\(remotePath)"
-                if options.isDryRun {
-                    result.deletedFiles += 1
-                    deletedCount += 1
-                } else {
-                    switch options.deletionPolicy {
-                    case .mirror:
+                switch options.deletionPolicy {
+                case .mirror:
+                    if options.isDryRun {
+                        result.deletedFiles += 1
+                        deletedCount += 1
+                    } else {
                         do {
                             logger.info("Deleting orphaned file: \(remotePath)")
                             try await deleteFile(fullRemotePath)
@@ -159,10 +172,26 @@ struct FTPSyncEngine {
                         } catch {
                             logger.error("Failed to delete orphaned file \(remotePath): \(error.localizedDescription)")
                         }
-                    case .appendOnly:
-                        logger.info("Skipping orphan deletion because append-only policy is active: \(remotePath)")
-                    case .archive:
-                        logger.warning("Archive delete policy is not supported for FTP yet; orphan left untouched: \(remotePath)")
+                    }
+                case .appendOnly:
+                    logger.info("Skipping orphan deletion because append-only policy is active: \(remotePath)")
+                case .archive:
+                    if options.isDryRun {
+                        logger.info("Would archive orphaned file: \(remotePath)")
+                    } else {
+                        do {
+                            let archivePath = BackupArchive.destinationPath(
+                                basePath: remoteBasePath,
+                                runIdentifier: archiveRunIdentifier,
+                                relativePath: remotePath
+                            )
+                            try await archiveFile(fullRemotePath, archivePath)
+                            archivedCount += 1
+                            logger.info("Archived orphaned file: \(remotePath)")
+                        } catch {
+                            logger.error("Failed to archive orphaned file \(remotePath): \(error.localizedDescription)")
+                            throw error
+                        }
                     }
                 }
             }
@@ -176,6 +205,7 @@ struct FTPSyncEngine {
         debugLog("   🔄 Files updated: \(result.updatedFiles)")
         debugLog("   ⏭ Files skipped (identical): \(result.skippedFiles)")
         debugLog("   🗑 Orphaned files deleted: \(result.deletedFiles)")
+        debugLog("   📦 Orphaned files archived: \(archivedCount)")
         debugLog("   ❌ Failed operations: \(failedCount)")
         debugLog("   💾 Total data transferred: \(formatBytes(transferredBytes))")
 
@@ -212,6 +242,9 @@ struct FTPSyncEngine {
 
         for file in files {
             let relativePath = basePath.isEmpty ? file.name : "\(basePath)/\(file.name)"
+            if BackupArchive.isReserved(relativePath: relativePath) {
+                continue
+            }
             if file.isDirectory {
                 let subdirPath = path == "/" ? "/\(file.name)" : "\(path)/\(file.name)"
                 let subFiles = try await listAllFiles(at: subdirPath, relativeTo: relativePath)
@@ -307,11 +340,13 @@ struct FTPSyncEngine {
         debugLog("📸 BackupFlow: \(totalCount) medya dosyası bulundu")
 
         let photosDir = "photos"
-        do {
-            try await createDirectory(photosDir)
-            debugLog("📁 BackupFlow: Photos klasörü hazır: \(photosDir)")
-        } catch {
-            debugLog("⚠️ BackupFlow: Photos klasörü oluşturma hatası (devam edilecek): \(error)")
+        if !options.isDryRun {
+            do {
+                try await createDirectory(photosDir)
+                debugLog("📁 BackupFlow: Photos klasörü hazır: \(photosDir)")
+            } catch {
+                debugLog("⚠️ BackupFlow: Photos klasörü oluşturma hatası (devam edilecek): \(error)")
+            }
         }
 
         let existingFileMap = try await listAllFiles(at: photosDir)
@@ -389,6 +424,10 @@ struct FTPSyncEngine {
                 setCurrentFile("backup.current_file.uploading_file".localized(with: stableFileName))
                 if !options.isDryRun {
                     try await uploadPhotoFile(localURL, remotePath, stableFileName)
+                    if options.checksumMode == .verifyUploads {
+                        try await verifyUpload(localURL, remotePath)
+                        result.verifiedFiles += 1
+                    }
                 }
                 result.newFiles += 1
                 result.totalBytes += localSize
@@ -397,6 +436,10 @@ struct FTPSyncEngine {
                 setCurrentFile("backup.current_file.updating_file".localized(with: stableFileName))
                 if !options.isDryRun {
                     try await uploadPhotoFile(localURL, remotePath, stableFileName)
+                    if options.checksumMode == .verifyUploads {
+                        try await verifyUpload(localURL, remotePath)
+                        result.verifiedFiles += 1
+                    }
                 }
                 result.updatedFiles += 1
                 result.totalBytes += localSize
@@ -414,15 +457,24 @@ struct FTPSyncEngine {
         
         logger.info("Checking for orphaned photo files to delete...")
         let processedFiles = Set(assets.map { photoManager.generateFileName(for: $0) })
+        let canDeletePhotoOrphans = options.permitsPhotoOrphanDeletion(
+            hasFullLibraryAccess: photoManager.hasFullLibraryAccess,
+            visibleAssetCount: assets.count
+        )
 
-        for (remotePath, remoteFile) in existingFileMap {
+        if !canDeletePhotoOrphans && options.deletionPolicy == .mirror {
+            logger.warning("Skipping orphan photo deletion because full Photo Library access is unavailable or the visible library is empty.")
+        }
+
+        let archiveRunIdentifier = BackupArchive.makeRunIdentifier()
+        for (remotePath, remoteFile) in existingFileMap where !BackupArchive.isReserved(relativePath: remotePath) {
             if !processedFiles.contains(remoteFile.name) {
                 let fullRemotePath = "\(photosDir)/\(remotePath)"
-                if options.isDryRun {
-                    result.deletedFiles += 1
-                } else {
-                    switch options.deletionPolicy {
-                    case .mirror:
+                switch options.deletionPolicy {
+                case .mirror where canDeletePhotoOrphans:
+                    if options.isDryRun {
+                        result.deletedFiles += 1
+                    } else {
                         do {
                             try await deleteFile(fullRemotePath)
                             result.deletedFiles += 1
@@ -432,10 +484,27 @@ struct FTPSyncEngine {
                             debugLog("⚠️ BackupFlow: Fotoğraf silinemedi: \(remoteFile.name), hata: \(error)")
                             logger.error("Failed to delete orphaned photo \(remoteFile.name): \(error.localizedDescription)")
                         }
-                    case .appendOnly:
-                        logger.info("Skipping orphan photo deletion because append-only policy is active: \(remoteFile.name)")
-                    case .archive:
-                        logger.warning("Archive delete policy is not supported for FTP photos yet; orphan left untouched: \(remoteFile.name)")
+                    }
+                case .mirror:
+                    break
+                case .appendOnly:
+                    logger.info("Skipping orphan photo deletion because append-only policy is active: \(remoteFile.name)")
+                case .archive:
+                    if options.isDryRun {
+                        logger.info("Would archive orphaned photo: \(remoteFile.name)")
+                    } else {
+                        do {
+                            let archivePath = BackupArchive.destinationPath(
+                                basePath: photosDir,
+                                runIdentifier: archiveRunIdentifier,
+                                relativePath: remotePath
+                            )
+                            try await archiveFile(fullRemotePath, archivePath)
+                            logger.info("Archived orphaned photo: \(remoteFile.name)")
+                        } catch {
+                            logger.error("Failed to archive orphaned photo \(remoteFile.name): \(error.localizedDescription)")
+                            throw error
+                        }
                     }
                 }
             }

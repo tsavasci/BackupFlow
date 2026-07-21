@@ -721,7 +721,7 @@
 "backup.require_wifi" = "يتطلب Wi-Fi";
 "backup.require_external_power" = "يتطلب طاقة خارجية";
 "backup.use_allowed_time_window" = "استخدام نافذة الوقت المسموح بها";
-"backup.archive_policy_warning" = "الحذف مع الأرشفة غير مفعّل بعد للبروتوكولات البعيدة. ستبقى الملفات اليتيمة كما هي.";
+"backup.archive_policy_warning" = "سيتم نقل الملفات البعيدة اليتيمة إلى مجلد .backupflow_archive مؤرخ.";
 "backup.preview.loading" = "يتم تحضير المعاينة...";
 "backup.preview.new_files" = "ملفات جديدة";
 "backup.preview.updated_files" = "ملفات محدّثة";

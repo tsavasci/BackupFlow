@@ -723,7 +723,7 @@
 "backup.require_wifi" = "Wi-Fi 필요";
 "backup.require_external_power" = "외부 전원 필요";
 "backup.use_allowed_time_window" = "허용 시간대 사용";
-"backup.archive_policy_warning" = "원격 프로토콜에서는 보관 후 삭제가 아직 활성화되지 않았습니다. 고아 파일은 그대로 유지됩니다.";
+"backup.archive_policy_warning" = "고아 원격 파일은 날짜가 지정된 .backupflow_archive 폴더로 이동됩니다.";
 "backup.preview.loading" = "미리보기를 준비 중...";
 "backup.preview.new_files" = "새 파일";
 "backup.preview.updated_files" = "업데이트할 파일";

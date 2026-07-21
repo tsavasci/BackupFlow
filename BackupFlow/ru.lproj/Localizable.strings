@@ -721,7 +721,7 @@
 "backup.require_wifi" = "Требуется Wi-Fi";
 "backup.require_external_power" = "Требуется внешнее питание";
 "backup.use_allowed_time_window" = "Использовать разрешенное время";
-"backup.archive_policy_warning" = "Архивное удаление пока не активно для удаленных протоколов. Лишние файлы будут сохранены.";
+"backup.archive_policy_warning" = "Лишние удаленные файлы будут перемещены в датированную папку .backupflow_archive.";
 "backup.preview.loading" = "Подготовка предварительного просмотра...";
 "backup.preview.new_files" = "Новые файлы";
 "backup.preview.updated_files" = "Обновленные файлы";

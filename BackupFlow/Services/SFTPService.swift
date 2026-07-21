@@ -1,4 +1,5 @@
 import Foundation
+import Crypto
 import FilesProvider
 import OSLog
 #if canImport(UIKit)
@@ -387,6 +388,9 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             let files = try await listDirectory(at: currentPath, timeout: timeout)
             for file in files {
                 let relativePath = basePath.isEmpty ? file.name : "\(basePath)/\(file.name)"
+                if BackupArchive.isReserved(relativePath: relativePath) {
+                    continue
+                }
                 if file.isDirectory {
                     let subdirPath = currentPath == "/" ? "/\(file.name)" : "\(currentPath)/\(file.name)"
                     try await listAll(at: subdirPath, relativeTo: relativePath)
@@ -461,6 +465,10 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                 guard let self else { return }
                 try await self.deleteFile(at: path)
             },
+            archiveFile: { [weak self] sourcePath, destinationPath in
+                guard let self else { throw BackupServiceError.connectionFailed }
+                try await self.archiveFile(from: sourcePath, to: destinationPath)
+            },
             uploadFile: { [weak self] localURL, remotePath, expectedSize, skipRemoteStat, progressHandler in
                 guard let self else { return false }
                 return try await self.uploadFileWithRetry(
@@ -470,6 +478,10 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                     skipRemoteStat: skipRemoteStat,
                     progressHandler: progressHandler
                 )
+            },
+            verifyUpload: { [weak self] localURL, remotePath in
+                guard let self else { throw BackupServiceError.connectionFailed }
+                try await self.verifyUploadChecksum(localURL: localURL, remotePath: remotePath)
             },
             beginTransferBackgroundTask: { [weak self] in
                 self?.beginTransferBackgroundTask()
@@ -504,7 +516,7 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                 progressHandler: progressHandler
             )
             if !options.isDryRun {
-                try? await uploadManifest(syncResult: result, remoteBasePath: effectiveRemotePath, options: options)
+                try await uploadManifest(syncResult: result, remoteBasePath: effectiveRemotePath, options: options)
             }
             return result
         }
@@ -518,9 +530,43 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             progressHandler: progressHandler
         )
         if !options.isDryRun {
-            try? await uploadManifest(syncResult: result, remoteBasePath: effectiveRemotePath, options: options)
+            try await uploadManifest(syncResult: result, remoteBasePath: effectiveRemotePath, options: options)
         }
         return result
+    }
+
+    private func verifyUploadChecksum(localURL: URL, remotePath: String) async throws {
+        guard let sftp = currentSFTPClient() else {
+            throw makeSFTPError(.connection)
+        }
+
+        var remoteHasher = SHA256()
+        try await sftp.withFile(filePath: remotePath, flags: .read) { remoteFile in
+            var offset: UInt64 = 0
+            while true {
+                let buffer = try await remoteFile.read(from: offset, length: 256 * 1024)
+                guard buffer.readableBytes > 0 else { break }
+                remoteHasher.update(data: Data(buffer.readableBytesView))
+                offset += UInt64(buffer.readableBytes)
+            }
+        }
+
+        let localChecksum = try BackupChecksum.sha256(of: localURL)
+        let remoteChecksum = remoteHasher.finalize().map { String(format: "%02x", $0) }.joined()
+        guard localChecksum == remoteChecksum else {
+            throw BackupIntegrityError.checksumMismatch(path: remotePath)
+        }
+    }
+
+    private func archiveFile(from sourcePath: String, to destinationPath: String) async throws {
+        guard let sftp = currentSFTPClient() else {
+            throw makeSFTPError(.connection)
+        }
+        let parentPath = (destinationPath as NSString).deletingLastPathComponent
+        if !parentPath.isEmpty && parentPath != "/" {
+            try await createDirectory(at: parentPath)
+        }
+        try await sftp.rename(at: sourcePath, to: destinationPath)
     }
 
     private func uploadManifest(syncResult: FTPService.SyncResult, remoteBasePath: String, options: BackupExecutionOptions) async throws {
@@ -531,6 +577,7 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
           "updatedFiles": \(syncResult.updatedFiles),
           "skippedFiles": \(syncResult.skippedFiles),
           "deletedFiles": \(syncResult.deletedFiles),
+          "verifiedFiles": \(syncResult.verifiedFiles),
           "totalBytes": \(syncResult.totalBytes),
           "deletionPolicy": "\(options.deletionPolicy.rawValue)",
           "checksumMode": "\(options.checksumMode.rawValue)"
@@ -901,6 +948,7 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             throw makeSFTPError(.authentication)
         }
 
+        let hostKeyValidator = SFTPHostKeyValidator(host: host, port: port)
         do {
             await disconnectInternal()
 
@@ -908,7 +956,7 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                 host: host,
                 port: port,
                 authenticationMethod: { .passwordBased(username: username, password: password) },
-                hostKeyValidator: .acceptAnything()
+                hostKeyValidator: .custom(hostKeyValidator)
             )
             settings.algorithms = .all
             settings.connectTimeout = .seconds(20)
@@ -921,7 +969,11 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             throw classifySFTPError(error, defaultKind: .connection)
         }
 
-        let hostKeyResult = SFTPHostKeyResult(isNewHostKey: false, fingerprint: nil)
+        let validationOutcome = hostKeyValidator.outcome
+        let hostKeyResult = SFTPHostKeyResult(
+            isNewHostKey: validationOutcome?.isNewHostKey ?? false,
+            fingerprint: validationOutcome?.fingerprint
+        )
         if notifyOnNewHostKey, hostKeyResult.isNewHostKey {
             await sendHostKeyNotification(fingerprint: hostKeyResult.fingerprint)
         }

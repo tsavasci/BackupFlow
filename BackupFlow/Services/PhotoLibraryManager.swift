@@ -11,6 +11,10 @@ class PhotoLibraryManager: NSObject, ObservableObject {
     
     @Published var authorizationStatus: PHAuthorizationStatus = .notDetermined
     @Published var hasAccess: Bool = false
+
+    var hasFullLibraryAccess: Bool {
+        PHPhotoLibrary.authorizationStatus(for: .readWrite) == .authorized
+    }
     
     private override init() {
         super.init()
@@ -142,7 +146,9 @@ class PhotoLibraryManager: NSObject, ObservableObject {
     
     // MARK: - Backup Support Methods
     func getAllAssets(mediaType: MediaType) async throws -> [PHAsset] {
-        guard hasAccess else {
+        let currentStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        handleAuthorizationStatus(currentStatus)
+        guard currentStatus == .authorized || currentStatus == .limited else {
             throw NSError(domain: "PhotoLibraryManager", code: 1, userInfo: [NSLocalizedDescriptionKey: "error.photo_library.no_access".localized])
         }
         

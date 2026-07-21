@@ -717,7 +717,7 @@
 "backup.require_wifi" = "Require Wi-Fi";
 "backup.require_external_power" = "Require external power";
 "backup.use_allowed_time_window" = "Use allowed time window";
-"backup.archive_policy_warning" = "Archive delete is not active for remote protocols yet. Orphans will be left untouched.";
+"backup.archive_policy_warning" = "Orphaned remote files will be moved into a dated .backupflow_archive folder.";
 "backup.preview.loading" = "Preview is being prepared...";
 "backup.preview.new_files" = "New files";
 "backup.preview.updated_files" = "Updated files";

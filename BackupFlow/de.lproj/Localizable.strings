@@ -721,7 +721,7 @@
 "backup.require_wifi" = "Wi-Fi erforderlich";
 "backup.require_external_power" = "Externe Stromversorgung erforderlich";
 "backup.use_allowed_time_window" = "Erlaubtes Zeitfenster verwenden";
-"backup.archive_policy_warning" = "Löschen archivieren ist für Remote-Protokolle noch nicht aktiv. Verwaiste Dateien bleiben unverändert.";
+"backup.archive_policy_warning" = "Verwaiste Remote-Dateien werden in einen datierten .backupflow_archive-Ordner verschoben.";
 "backup.preview.loading" = "Vorschau wird vorbereitet...";
 "backup.preview.new_files" = "Neue Dateien";
 "backup.preview.updated_files" = "Aktualisierte Dateien";
