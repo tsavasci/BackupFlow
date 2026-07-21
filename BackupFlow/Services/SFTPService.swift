@@ -540,8 +540,8 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             throw makeSFTPError(.connection)
         }
 
-        var remoteHasher = SHA256()
-        try await sftp.withFile(filePath: remotePath, flags: .read) { remoteFile in
+        let remoteChecksum = try await sftp.withFile(filePath: remotePath, flags: .read) { remoteFile in
+            var remoteHasher = SHA256()
             var offset: UInt64 = 0
             while true {
                 let buffer = try await remoteFile.read(from: offset, length: 256 * 1024)
@@ -549,10 +549,10 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                 remoteHasher.update(data: Data(buffer.readableBytesView))
                 offset += UInt64(buffer.readableBytes)
             }
+            return remoteHasher.finalize().map { String(format: "%02x", $0) }.joined()
         }
 
         let localChecksum = try BackupChecksum.sha256(of: localURL)
-        let remoteChecksum = remoteHasher.finalize().map { String(format: "%02x", $0) }.joined()
         guard localChecksum == remoteChecksum else {
             throw BackupIntegrityError.checksumMismatch(path: remotePath)
         }
