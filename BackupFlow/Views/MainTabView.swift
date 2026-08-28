@@ -76,6 +76,24 @@ struct MainTabView: View {
             }
     }
 
+    private var pausedScheduledTask: BackupTask? {
+        tasks.first { task in
+            task.isEnabled && task.isPaused && task.frequency != .manual
+        }
+    }
+
+    private var heroActionIconName: String {
+        pausedScheduledTask == nil ? "play.fill" : "pause.fill"
+    }
+
+    private var heroActionColor: Color {
+        pausedScheduledTask == nil ? .green : .orange
+    }
+
+    private var heroActionAccessibilityLabel: String {
+        pausedScheduledTask == nil ? "dashboard.backup_now".localized : "task.status.paused".localized
+    }
+
     private var selectedServerName: String {
         tasks.first.map { "\($0.serverHost):\($0.serverPort)" } ?? "dashboard.no_server_selected".localized
     }
@@ -360,18 +378,22 @@ struct MainTabView: View {
 
                     Button {
                         if isBackingUp { return }
-                        showBackupSheet = true
+                        if let pausedScheduledTask {
+                            selectedTask = pausedScheduledTask
+                        } else {
+                            showBackupSheet = true
+                        }
                     } label: {
-                        Image(systemName: "play.fill")
+                        Image(systemName: heroActionIconName)
                             .font(.headline.weight(.bold))
                             .frame(width: 48, height: 48)
-                            .background(Color.green.opacity(0.92))
+                            .background(heroActionColor.opacity(0.92))
                             .foregroundStyle(.white)
                             .clipShape(Circle())
                             .shadow(color: .black.opacity(0.12), radius: 10, x: 0, y: 6)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("dashboard.backup_now".localized)
+                    .accessibilityLabel(heroActionAccessibilityLabel)
                     .layoutPriority(1)
                 }
             }
@@ -492,10 +514,15 @@ struct MainTabView: View {
                                 Label("backup.notification.action.start".localized, systemImage: "play.fill")
                             }
 
-                            Button {
-                                pauseOrCancelTask(task)
-                            } label: {
-                                Label("dashboard.action.pause".localized, systemImage: "pause.fill")
+                            if task.frequency != .manual {
+                                Button {
+                                    togglePause(for: task)
+                                } label: {
+                                    Label(
+                                        task.isPaused ? "task.resume.button".localized : "task.pause.button".localized,
+                                        systemImage: task.isPaused ? "play.circle" : "pause.fill"
+                                    )
+                                }
                             }
                         }
                     }
@@ -811,12 +838,14 @@ struct MainTabView: View {
         return name.isEmpty ? "backup" : name
     }
 
-    private func pauseOrCancelTask(_ task: BackupTask) {
-        if isTaskRunning(task) {
-            BackupScheduler.shared.cancelCurrentTask(for: task)
+    private func togglePause(for task: BackupTask) {
+        if task.isPaused {
+            BackupScheduler.shared.resumeTask(task)
         } else {
             BackupScheduler.shared.pauseTask(task)
         }
+
+        try? modelContext.save()
     }
 
     private func currentFileDisplayName(for task: BackupTask) -> String {
