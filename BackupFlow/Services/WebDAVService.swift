@@ -54,6 +54,8 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
     private var backgroundURLSession: URLSession?
     private var backgroundURLSessionCompletionHandler: (() -> Void)?
     private var currentUploadTask: URLSessionTask?
+    private var backgroundUploadContinuations: [Int: CheckedContinuation<Void, Error>] = [:]
+    private var backgroundUploadFileSizes: [Int: Int64] = [:]
     private lazy var backgroundSessionDelegate = WebDAVBackgroundSessionDelegate(
         logger: logger,
         allowSelfSigned: self.allowSelfSignedCertificates,
@@ -72,8 +74,20 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
             if let error = error {
                 self?.lastError = error
                 self?.logger.error("🌐 Background upload failed: \(error.localizedDescription)")
+                self?.finishBackgroundUpload(task: task, result: .failure(WebDAVErrorMapper.mapError(error)))
             } else {
                 self?.logger.info("🌐 Background upload completed: \(task.taskDescription ?? "")")
+                if let response = task.response as? HTTPURLResponse,
+                   !(200...299).contains(response.statusCode) {
+                    let error = NSError(
+                        domain: "WebDAVService",
+                        code: response.statusCode,
+                        userInfo: [NSLocalizedDescriptionKey: "error.webdav.upload_failed_http".localized(with: response.statusCode)]
+                    )
+                    self?.finishBackgroundUpload(task: task, result: .failure(WebDAVErrorMapper.mapError(error)))
+                } else {
+                    self?.finishBackgroundUpload(task: task, result: .success(()))
+                }
             }
         },
         onFinishEvents: { [weak self] in
@@ -443,7 +457,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
     
     /// Sync engine gibi "başarılı" sayılmadan önce gerçek tamamlanma bekleyen akışlar için.
     func uploadFileAwaitingCompletion(localURL: URL, remotePath: String, progressHandler: ((Double) -> Void)? = nil) async throws {
-        try await uploadFile(localURL: localURL, remotePath: remotePath, progressHandler: progressHandler, allowBackgroundSession: false, timeoutMultiplier: 1.0)
+        try await uploadFile(localURL: localURL, remotePath: remotePath, progressHandler: progressHandler, allowBackgroundSession: true, timeoutMultiplier: 1.0)
     }
     
     private func uploadFile(
@@ -671,32 +685,57 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         prepareCurrentUpload(localURL: localURL, progressHandler: progressHandler)
         self.logger.info("🌐 Enqueuing background PUT upload: \(request.url?.absoluteString ?? remotePath)")
 
-        // Enqueue background upload task from file (no in-memory buffering)
-        let task = session.uploadTask(with: request, fromFile: localURL)
-        self.currentUploadTask = task
-        
-        if let activeIdString = UserDefaults.standard.string(forKey: "ActiveBackupTaskId") {
-            struct _Meta: Codable { let taskId: String; let remotePath: String; let localFileName: String; let enqueuedAt: Date }
-            let meta = _Meta(taskId: activeIdString, remotePath: remotePath, localFileName: localURL.lastPathComponent, enqueuedAt: Date())
-            if let data = try? JSONEncoder().encode(meta), let json = String(data: data, encoding: .utf8) {
-                task.taskDescription = json
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            // Enqueue background upload task from file (no in-memory buffering)
+            let task = session.uploadTask(with: request, fromFile: localURL)
+            self.currentUploadTask = task
+            self.backgroundUploadContinuations[task.taskIdentifier] = continuation
+            self.backgroundUploadFileSizes[task.taskIdentifier] = currentFileTotalBytes
+
+            if let activeIdString = UserDefaults.standard.string(forKey: "ActiveBackupTaskId") {
+                struct _Meta: Codable { let taskId: String; let remotePath: String; let localFileName: String; let enqueuedAt: Date }
+                let meta = _Meta(taskId: activeIdString, remotePath: remotePath, localFileName: localURL.lastPathComponent, enqueuedAt: Date())
+                if let data = try? JSONEncoder().encode(meta), let json = String(data: data, encoding: .utf8) {
+                    task.taskDescription = json
+                } else {
+                    task.taskDescription = "WebDAVUpload:\(remotePath)"
+                }
             } else {
                 task.taskDescription = "WebDAVUpload:\(remotePath)"
             }
-        } else {
-            task.taskDescription = "WebDAVUpload:\(remotePath)"
-        }
-        
-        task.resume()
 
-        // Best-effort initial progress callback
-        progressHandler?(0.0)
+            task.resume()
+
+            // Best-effort initial progress callback
+            progressHandler?(0.0)
+        }
+    }
+
+    private func finishBackgroundUpload(task: URLSessionTask, result: Result<Void, Error>) {
+        let taskIdentifier = task.taskIdentifier
+        guard let continuation = backgroundUploadContinuations.removeValue(forKey: taskIdentifier) else {
+            return
+        }
+
+        let fileSize = backgroundUploadFileSizes.removeValue(forKey: taskIdentifier) ?? currentFileTotalBytes
+        switch result {
+        case .success:
+            updateCurrentUploadProgress(progress: 1.0, bytesSent: fileSize, totalBytes: fileSize)
+            continuation.resume()
+        case .failure(let error):
+            continuation.resume(throwing: error)
+        }
     }
 
     func cancelCurrentTask() {
         logger.info("WebDAV işlemi iptal ediliyor...")
         currentUploadTask?.cancel()
         currentUploadTask = nil
+        for (_, continuation) in backgroundUploadContinuations {
+            continuation.resume(throwing: BackupServiceError.cancelled)
+        }
+        backgroundUploadContinuations.removeAll()
+        backgroundUploadFileSizes.removeAll()
         backgroundURLSession?.getAllTasks { tasks in
             tasks.forEach { $0.cancel() }
         }

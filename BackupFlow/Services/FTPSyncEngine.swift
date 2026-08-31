@@ -48,7 +48,7 @@ struct FTPSyncEngine {
         progressHandler: ((Double) -> Void)? = nil
     ) async throws -> FTPSyncResult {
         guard !isCancelled() else {
-            throw FTPError.fileOperationFailed
+            throw BackupServiceError.cancelled
         }
 
         var result = FTPSyncResult()
@@ -56,8 +56,10 @@ struct FTPSyncEngine {
 
         logger.info("Starting enhanced mirror sync: \(localPath) -> \(remotePath)")
 
+        var ensuredDirectories = Set<String>()
         if !options.isDryRun && !remotePath.isEmpty {
             try await createDirectory(remotePath)
+            ensuredDirectories.insert(remotePath)
         }
 
         let localFileMap = try collectLocalFiles(from: localPath)
@@ -74,12 +76,16 @@ struct FTPSyncEngine {
         let archiveRunIdentifier = BackupArchive.makeRunIdentifier()
 
         for (index, (relativePath, localFileURL)) in localFileMap.enumerated() {
-            guard !isCancelled() else { break }
+            guard !isCancelled() else { throw BackupServiceError.cancelled }
 
             let targetPath = remotePath.isEmpty ? relativePath : "\(remotePath)/\(relativePath)"
             let parentPath = (targetPath as NSString).deletingLastPathComponent
-            if !options.isDryRun && !parentPath.isEmpty && parentPath != "/" {
+            if !options.isDryRun,
+               !parentPath.isEmpty,
+               parentPath != "/",
+               !ensuredDirectories.contains(parentPath) {
                 try await createDirectory(parentPath)
+                ensuredDirectories.insert(parentPath)
             }
 
             let resourceValues = try localFileURL.resourceValues(forKeys: [.fileSizeKey])
@@ -364,7 +370,7 @@ struct FTPSyncEngine {
         }
 
         for (index, asset) in assets.enumerated() {
-            guard !isCancelled() else { break }
+            guard !isCancelled() else { throw BackupServiceError.cancelled }
             
             let stableFileName = photoManager.generateFileName(for: asset)
 

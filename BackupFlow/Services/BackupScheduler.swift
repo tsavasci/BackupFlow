@@ -76,6 +76,8 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     
     private var lastRunAtByTask: [UUID: Date] = [:]
     private let minRunInterval: TimeInterval = 60 // en az 60 sn arayla çalıştır
+    private var activeBackgroundTaskID: UUID?
+    private var backgroundExpirationTaskIDs: Set<UUID> = []
     
     @Published private(set) var isProcessing = false
     
@@ -282,6 +284,33 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         resetCurrentFileProgress(for: task)
         
         debugLog("🚫 BackupFlow: Görev iptal edildi: \(task.displayName)")
+    }
+
+    /// Called by BGTask expiration handlers. The transfer must be cancelled before
+    /// iOS reclaims the execution window; the task is then retried by a later run.
+    public func cancelActiveBackgroundBackup() {
+        guard let taskID = activeBackgroundTaskID,
+              let container = Self.sharedModelContainer else { return }
+
+        let context = ModelContext(container)
+        let descriptor = FetchDescriptor<BackupTask>()
+        guard let tasks = try? context.fetch(descriptor),
+              let task = tasks.first(where: { $0.id == taskID }) else { return }
+
+        backgroundExpirationTaskIDs.insert(task.id)
+        switch task.backupType {
+        case .ftp:
+            FTPService.shared.cancelForBackgroundExpiration()
+        case .sftp:
+            SFTPService.shared.cancelCurrentTask()
+        case .webdav:
+            WebDAVService.shared.cancelCurrentTask()
+        }
+        task.backupStatus = .cancelled
+        task.lastError = BackupServiceError.cancelled.localizedDescription
+        task.nextRunTime = Date().addingTimeInterval(15 * 60)
+        try? context.save()
+        debugLog("⏱️ BGTaskScheduler: Süresi dolan aktif yedek iptal edildi: \(task.displayName)")
     }
     
     // MARK: - Timer Management
@@ -490,12 +519,16 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             
         } catch {
             if let backupError = error as? BackupServiceError, case .cancelled = backupError {
+                let expiredBySystem = backgroundExpirationTaskIDs.remove(task.id) != nil
+                    || (task.backupType == .ftp && FTPService.shared.consumeBackgroundExpiration())
                 task.backupStatus = .cancelled
                 task.lastError = backupError.localizedDescription
                 task.progress = 0.0
                 task.currentFile = nil
                 resetCurrentFileProgress(for: task)
-                task.nextRunTime = calculateNextRunTime(for: task)
+                task.nextRunTime = expiredBySystem
+                    ? Date().addingTimeInterval(15 * 60)
+                    : calculateNextRunTime(for: task)
                 
                 let duration = Date().timeIntervalSince(runStart)
                 await createBackupHistoryRecord(
@@ -507,7 +540,12 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                     failureCategory: .cancelled
                 )
                 
-                debugLog("⏸️ BackupFlow: Yedekleme yarıda kesildi: \(task.displayName)")
+                if expiredBySystem {
+                    scheduleProcessingTask()
+                    debugLog("⏱️ BackupFlow: Arka plan süresi dolduğu için yedekleme ertelendi: \(task.displayName)")
+                } else {
+                    debugLog("⏸️ BackupFlow: Yedekleme yarıda kesildi: \(task.displayName)")
+                }
                 return
             }
 
@@ -540,11 +578,10 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                     do { try context.save() }
                     catch { debugLog("❌ BackupFlow: nextRunTime kaydedilemedi (retry): \\ (error)") }
                 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                    Task {
-                        try? await self.performBackup(task: task)
-                    }
-                }
+                // Delayed dispatch does not run reliably while the app is
+                // suspended. Persist the retry and let BGTaskScheduler decide
+                // the next execution window.
+                scheduleProcessingTask()
                 return
             } else {
                 retryCount.removeValue(forKey: task.id)
@@ -815,15 +852,15 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         // Determine delay: attempt 1 -> 60s, attempt 2 -> 300s, attempt 3 -> finalize
         if nextAttempt == 1 {
             sendNoNetworkRetryNotification(task: task, attempt: nextAttempt, maxAttempts: maxAttempts, delaySeconds: 60)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 60) {
-                Task { try? await self.performBackup(task: task) }
-            }
+            task.nextRunTime = Date().addingTimeInterval(60)
+            if let context = task.modelContext { try? context.save() }
+            scheduleProcessingTask()
             return
         } else if nextAttempt == 2 {
             sendNoNetworkRetryNotification(task: task, attempt: nextAttempt, maxAttempts: maxAttempts, delaySeconds: 300)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 300) {
-                Task { try? await self.performBackup(task: task) }
-            }
+            task.nextRunTime = Date().addingTimeInterval(300)
+            if let context = task.modelContext { try? context.save() }
+            scheduleProcessingTask()
             return
         } else {
             // Third failure -> postpone 24 hours
@@ -1068,6 +1105,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         
         var anySuccess = false
         for taskToRun in dueTasks {
+            activeBackgroundTaskID = taskToRun.id
             
             // Check if it's an FTP task in the background and send a warning notification
             if taskToRun.backupType == .ftp {
@@ -1085,6 +1123,9 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                 debugLog("✅ BGTaskScheduler: Arka plan görevi başarıyla tamamlandı: \(taskToRun.displayName)")
             } catch {
                 debugLog("⚠️ BGTaskScheduler: Arka plan görevi başarısız -> \(taskToRun.displayName) - \(error)")
+            }
+            if activeBackgroundTaskID == taskToRun.id {
+                activeBackgroundTaskID = nil
             }
         }
         

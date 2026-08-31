@@ -36,9 +36,9 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     @Published private(set) var networkPermissionGranted = false
     private(set) var lastError: Error?
     
-    // Background session state tracking
+    // FTP uses a foreground URLSession stream internally. These values only describe
+    // the current iOS execution window; they do not represent a persistent session.
     @Published private(set) var isBackgroundUploading = false
-    private var backgroundSessionIdentifier: String?
     @Published private(set) var progress: Double = 0.0
     @Published private(set) var currentFile: String = ""
     @Published private(set) var currentFileBytesTransferred: Int64 = 0
@@ -50,7 +50,8 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     private var lastLoggedNetworkStatus: NWPath.Status?
     private var fastPhotoNameSkipEnabled: Bool {
         if UserDefaults.standard.object(forKey: "FTPFastPhotoNameSkipEnabled") == nil {
-            return true
+            // Name-only matching can silently skip a changed photo.
+            return false
         }
         return UserDefaults.standard.bool(forKey: "FTPFastPhotoNameSkipEnabled")
     }
@@ -58,6 +59,8 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     private let lock = NSLock()
     private var _ftpProvider: FTPFileProvider?
     private var _currentTask: Progress?
+    private var _currentTransferID: UUID?
+    private var _backgroundExpirationRequested = false
 
     private var ftpProvider: FTPFileProvider? {
         get { lock.withLock { _ftpProvider } }
@@ -74,6 +77,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     }
     
     private var isCancelled = false
+    private let partialFileMarker = ".backupflow-partial-"
     
     private func maskedURLString(_ url: URL) -> String {
         guard var comps = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return url.absoluteString }
@@ -111,7 +115,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         if networkPermissionGranted {
             return
         }
-        
+
         self.logger.info("FTP: Ağ izni bekleniyor... (İlk bağlantı için iOS izin isteyebilir)")
         
         // 10 saniye kadar bekle
@@ -182,10 +186,51 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     }
 
     func cancelCurrentTask() {
+        cancelCurrentTask(reason: "user")
+    }
+
+    func cancelForBackgroundExpiration() {
+        lock.withLock { _backgroundExpirationRequested = true }
+        cancelCurrentTask(reason: "background-expiration")
+    }
+
+    func consumeBackgroundExpiration() -> Bool {
+        lock.withLock {
+            let wasRequested = _backgroundExpirationRequested
+            _backgroundExpirationRequested = false
+            return wasRequested
+        }
+    }
+
+#if canImport(UIKit)
+    /// FTP cannot survive process termination. This only requests the short iOS
+    /// grace period when an already-running transfer moves to the background.
+    func updateBackgroundMode(isBackground: Bool) {
+        guard isBackground else {
+            backgroundTaskCoordinator.end()
+            Task { @MainActor in
+                self.isBackgroundUploading = false
+            }
+            return
+        }
+        guard currentTask != nil else { return }
+        backgroundTaskCoordinator.begin()
+        Task { @MainActor in
+            self.isBackgroundUploading = true
+        }
+    }
+#endif
+
+    private func cancelCurrentTask(reason: String) {
+        if reason != "background-expiration" {
+            lock.withLock { _backgroundExpirationRequested = false }
+        }
         logger.info("FTP işlemi iptal ediliyor...")
         isCancelled = true
         currentTask?.cancel()
         currentTask = nil
+        lock.withLock { _currentTransferID = nil }
+        logger.info("FTP transfer cancellation requested: \(reason, privacy: .public)")
         Task { @MainActor in
             self.currentFile = "backup.status.cancelled".localized
             self.progress = 0.0
@@ -253,20 +298,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                 logger.info("FTP: EPSV kullanımı etkinleştirildi")
             }
             
-            // Configure test provider based on app state
-            let isBackgroundMode: Bool = {
-                #if canImport(UIKit)
-                return UIApplication.shared.applicationState != .active
-                #else
-                return false
-                #endif
-            }()
-            if isBackgroundMode {
-                testProvider.serverTrustPolicy = .disableEvaluation
-                logger.info("⏱️ Test FTP provider configured for background mode")
-            } else {
-                logger.info("⏱️ Test FTP provider configured for foreground mode")
-            }
+            logger.info("Test FTP provider configured with standard stream session")
 
             return try await withThrowingTaskGroup(of: Bool.self) { group in
                 group.addTask {
@@ -319,7 +351,6 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         // Clear background session state
         Task { @MainActor in
             self.isBackgroundUploading = false
-            self.backgroundSessionIdentifier = nil
             self.progress = 0.0
             self.currentFile = ""
         }
@@ -417,22 +448,9 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                 logger.info("FTP: EPSV kullanımı etkinleştirildi")
             }
             
-            // Configure provider based on app state
-            let isBackgroundMode: Bool = {
-                #if canImport(UIKit)
-                return UIApplication.shared.applicationState != .active
-                #else
-                return false
-                #endif
-            }()
-            if isBackgroundMode {
-                // Background mode: Provider will use background session internally
-                provider.serverTrustPolicy = .disableEvaluation // More permissive for background
-                logger.info("⏱️ Anonymous FTP provider configured for background mode")
-            } else {
-                // Foreground mode: Use default configuration
-                logger.info("⏱️ Anonymous FTP provider configured for foreground mode")
-            }
+            // FTPFileProvider uses a non-persistent stream session on iOS. Do not
+            // weaken TLS validation or claim background-session support here.
+            logger.info("FTP provider configured with standard stream session")
             
             // Bağlantıyı test et
             try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
@@ -501,22 +519,9 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             logger.info("FTP: EPSV kullanımı etkinleştirildi")
         }
         
-        // Configure provider based on app state
-        let isBackgroundMode: Bool = {
-            #if canImport(UIKit)
-            return UIApplication.shared.applicationState != .active
-            #else
-            return false
-            #endif
-        }()
-        if isBackgroundMode {
-            // Background mode: Provider will use background session internally
-            provider.serverTrustPolicy = .disableEvaluation // More permissive for background
-            logger.info("⏱️ FTP provider configured for background mode")
-        } else {
-            // Foreground mode: Use default configuration
-            logger.info("⏱️ FTP provider configured for foreground mode")
-        }
+        // FTPFileProvider uses a non-persistent stream session on iOS. Do not
+        // weaken TLS validation or claim background-session support here.
+        logger.info("FTP provider configured with standard stream session")
         
         // Bağlantıyı test et
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
@@ -770,7 +775,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         guard !isCancelled else {
             debugLog("🛑 BackupFlow: İşlem iptal edildiği için yükleme iptal edildi")
             logger.info("İşlem iptal edildiği için yükleme iptal edildi")
-            throw FTPError.fileOperationFailed
+            throw BackupServiceError.cancelled
         }
         
         guard let ftp = ftpProvider else {
@@ -781,32 +786,46 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
 
         if Task.isCancelled {
             logger.info("İşlem iptal edildi (Task cancelled) - yükleme başlamadan")
-            throw FTPError.fileOperationFailed
+            throw BackupServiceError.cancelled
         }
         
-        let remotePath = normalizedRemotePath(remotePath)
-        
-        // Log timeout configuration for background/foreground mode
-        let isBackgroundMode: Bool = {
-            #if canImport(UIKit)
-            return UIApplication.shared.applicationState != .active
-            #else
-            return false
-            #endif
-        }()
-        if isBackgroundMode {
-            logger.info("⏱️ FTP using background mode (longer timeouts expected)")
-        } else {
-            logger.info("⏱️ FTP using foreground mode (normal timeouts)")
-        }
-        
-        // Mevcut görevi gereksiz yere iptal etme: sadece aktif ve devam eden bir görev varsa iptal et
+        let finalPath = normalizedRemotePath(remotePath)
+        let temporaryPath = temporaryRemotePath(for: finalPath)
+
+        // A sync is sequential, but a defensive cancellation prevents an older
+        // stream from writing after a new upload has taken ownership.
         if let existing = currentTask, !existing.isCancelled && !existing.isFinished {
             existing.cancel()
         }
-        
-        // Bu fonksiyon artık sadece yükleme yapar, dizin kontrolü veya oluşturma yapmaz.
-        // logger.info("Dosya yükleniyor: \(localURL.lastPathComponent) -> \(remotePath)")
+
+        try await uploadRawFile(
+            ftp: ftp,
+            localURL: localURL,
+            remotePath: temporaryPath,
+            progressHandler: progressHandler
+        )
+
+        guard !isCancelled, !Task.isCancelled else {
+            try? await deleteFile(at: temporaryPath)
+            throw BackupServiceError.cancelled
+        }
+
+        do {
+            try await moveFile(from: temporaryPath, to: finalPath)
+        } catch {
+            // The uploaded temp file is intentionally retained for this run's
+            // cleanup pass if the server rejects the final rename.
+            throw error
+        }
+    }
+
+    private func uploadRawFile(
+        ftp: FTPFileProvider,
+        localURL: URL,
+        remotePath: String,
+        progressHandler: ((Double) -> Void)? = nil
+    ) async throws {
+        let transferID = UUID()
 
         return try await withCheckedThrowingContinuation { [weak self] continuation in
             guard let self = self else {
@@ -814,74 +833,79 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                 return
             }
 
-            if let currentTask = self.currentTask {
-                self.cleanupTask(currentTask)
-            }
-
-            let progress = Progress(totalUnitCount: 100)
-            progress.completedUnitCount = 0
             Task { @MainActor in
                 self.prepareCurrentUpload(localURL: localURL)
             }
 
-            if let progressHandler = progressHandler {
-                let handlerKey = UnsafeRawPointer(Unmanaged.passUnretained(AssociatedKeys.progressHandler).toOpaque())
-                objc_setAssociatedObject(progress, handlerKey, progressHandler, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-
-                DispatchQueue.main.async {
-                    let observingKey = UnsafeRawPointer(Unmanaged.passUnretained(AssociatedKeys.isObserving).toOpaque())
-                    progress.addObserver(self, forKeyPath: #keyPath(Progress.fractionCompleted), options: [.new], context: nil)
-                    objc_setAssociatedObject(progress, observingKey, true, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-                }
-            }
-
-            self.currentTask = progress
-            
-            if self.isCancelled || Task.isCancelled {
-                continuation.resume(throwing: FTPError.fileOperationFailed)
+            guard !self.isCancelled, !Task.isCancelled else {
+                continuation.resume(throwing: BackupServiceError.cancelled)
                 return
             }
 
-            ftp.copyItem(localFile: localURL, to: remotePath) { [weak self] error in
-                guard let self = self else {
+            self.lock.withLock { self._currentTransferID = transferID }
+
+            let transferProgress = ftp.copyItem(localFile: localURL, to: remotePath) { [weak self] error in
+                guard let self else {
                     continuation.resume(throwing: FTPError.connectionFailed)
                     return
                 }
 
-                if let task = self.currentTask {
-                    self.cleanupTask(task)
-                    self.currentTask = nil
-                }
-
-                if Task.isCancelled || self.isCancelled {
-                    continuation.resume(throwing: FTPError.fileOperationFailed)
+                let isCurrentTransfer = self.lock.withLock { self._currentTransferID == transferID }
+                guard isCurrentTransfer else {
                     return
                 }
 
-                if let error = error {
+                let activeProgress = self.currentTask
+                if let task = activeProgress {
+                    self.cleanupTask(task)
+                }
+                self.currentTask = nil
+                self.lock.withLock { self._currentTransferID = nil }
+
+                if Task.isCancelled || self.isCancelled || activeProgress?.isCancelled == true {
+                    Task { @MainActor in
+                        self.currentFile = "backup.status.cancelled".localized
+                        self.progress = 0.0
+                    }
+                    continuation.resume(throwing: BackupServiceError.cancelled)
+                    return
+                }
+
+                if let error {
                     debugLog("❌ BackupFlow: Dosya yükleme hatası: \(error.localizedDescription)")
-                    // Clear progress state on error
                     Task { @MainActor in
                         self.currentFile = "backup.current_file.error".localized(with: error.localizedDescription)
                         self.progress = 0.0
                     }
                     continuation.resume(throwing: self.mapError(error))
                 } else {
-                    progress.completedUnitCount = 100
                     progressHandler?(1.0)
-                    debugLog("✅ BackupFlow: Dosya başarıyla yüklendi: \(remotePath)")
-                    // Update progress state on success
                     Task { @MainActor in
                         self.currentFile = "backup.current_file.completed_file".localized(with: localURL.lastPathComponent)
                         self.progress = 1.0
                     }
-                    if let task = self.currentTask {
-                        self.cleanupTask(task)
-                        self.currentTask = nil
-                    }
                     continuation.resume(returning: ())
                 }
             }
+
+            guard let transferProgress else {
+                self.lock.withLock { self._currentTransferID = nil }
+                continuation.resume(throwing: FTPError.fileOperationFailed)
+                return
+            }
+
+            if let progressHandler {
+                let handlerKey = UnsafeRawPointer(Unmanaged.passUnretained(AssociatedKeys.progressHandler).toOpaque())
+                objc_setAssociatedObject(transferProgress, handlerKey, progressHandler, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+
+                DispatchQueue.main.async {
+                    let observingKey = UnsafeRawPointer(Unmanaged.passUnretained(AssociatedKeys.isObserving).toOpaque())
+                    transferProgress.addObserver(self, forKeyPath: #keyPath(Progress.fractionCompleted), options: [.new], context: nil)
+                    objc_setAssociatedObject(transferProgress, observingKey, true, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+                }
+            }
+
+            self.currentTask = transferProgress
         }
     }
 
@@ -1152,6 +1176,65 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             }
         }
     }
+
+    private func moveFile(from sourcePath: String, to destinationPath: String) async throws {
+        guard let ftp = ftpProvider else {
+            throw FTPError.connectionFailed
+        }
+
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            ftp.moveItem(path: sourcePath, to: destinationPath, overwrite: true) { [weak self] error in
+                if let error {
+                    continuation.resume(throwing: self?.mapError(error) ?? FTPError.unknown(error))
+                } else {
+                    continuation.resume(returning: ())
+                }
+            }
+        }
+    }
+
+    private func temporaryRemotePath(for finalPath: String) -> String {
+        let normalized = normalizedRemotePath(finalPath)
+        return normalized + partialFileMarker + UUID().uuidString
+    }
+
+    private func cleanupStaleTemporaryFiles(at rootPath: String) async {
+        guard let ftp = ftpProvider else { return }
+
+        func visit(_ path: String) async {
+            let entries: [FileObject]
+            do {
+                entries = try await withCheckedThrowingContinuation { continuation in
+                    ftp.contentsOfDirectory(path: path) { files, error in
+                        if let error {
+                            continuation.resume(throwing: error)
+                        } else {
+                            continuation.resume(returning: files)
+                        }
+                    }
+                }
+            } catch {
+                return
+            }
+
+            for entry in entries {
+                guard !isCancelled else { return }
+                let childPath = normalizedRemotePath(path + "/" + entry.name)
+                if entry.isDirectory {
+                    await visit(childPath)
+                } else if entry.name.contains(partialFileMarker) {
+                    do {
+                        try await deleteFile(at: childPath)
+                        logger.info("Removed stale FTP partial file: \(childPath, privacy: .public)")
+                    } catch {
+                        logger.warning("Could not remove stale FTP partial file: \(childPath, privacy: .public)")
+                    }
+                }
+            }
+        }
+
+        await visit(normalizedRemotePath(rootPath))
+    }
     
     // FTP sunucusundan dosya sil
     func deleteFile(at path: String) async throws {
@@ -1192,8 +1275,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         
         debugLog("📡 BackupFlow: FTP senkronize yedekleme başlatılıyor - \(host):\(port)")
         
-        // Check if we're in background mode
-        let isBackgroundMode: Bool = {
+        let startedInBackground: Bool = {
             #if canImport(UIKit)
             return UIApplication.shared.applicationState != .active
             #else
@@ -1205,37 +1287,43 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             self?.logger.warning("FTP background time expired, cancelling transfer")
             self?.cancelCurrentTask()
         }
-        if isBackgroundMode {
+        let shouldProtectBackgroundTransfer = startedInBackground && !options.isDryRun
+        if shouldProtectBackgroundTransfer {
             backgroundTaskCoordinator.begin()
+            logger.info("📱 FTP background task protection enabled for transfer")
         }
         defer {
-            backgroundTaskCoordinator.end()
+            if shouldProtectBackgroundTransfer {
+                backgroundTaskCoordinator.end()
+            }
+            Task { @MainActor in
+                self.isBackgroundUploading = false
+            }
         }
 #endif
-        if isBackgroundMode {
-            // Background mode: Set up for background session
-            let backgroundId = "BackupFlow.FTP.Background.\(UUID().uuidString)"
+        // Connect to FTP server
+        let actualUsername = isAnonymous ? nil : username
+        let actualPassword = isAnonymous ? nil : password
+
+        try await connect(host: host, port: port, username: actualUsername, password: actualPassword)
+
+        if startedInBackground {
             await MainActor.run {
-                self.backgroundSessionIdentifier = backgroundId
                 self.isBackgroundUploading = true
             }
-            self.logger.info("📱 Background FTP session created: \(backgroundId)")
+            self.logger.info("📱 FTP is running in a limited iOS background window")
         } else {
             await MainActor.run {
                 self.isBackgroundUploading = false
             }
         }
         
-        // Connect to FTP server
-        let actualUsername = isAnonymous ? nil : username
-        let actualPassword = isAnonymous ? nil : password
-        
-        try await connect(host: host, port: port, username: actualUsername, password: actualPassword)
-        
         let syncResult: SyncResult
         
         if sourcePath == "PHOTOS_LIBRARY" {
             // Photo library sync backup
+            try? await createDirectory(at: "photos")
+            await cleanupStaleTemporaryFiles(at: "photos")
             let engine = try makeSyncEngine()
             syncResult = try await engine.syncBackupPhotoLibrary(
                 mediaType: mediaType,
@@ -1251,6 +1339,8 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             let sourceURL = URL(fileURLWithPath: sourcePath)
             let sourceFolderName = sourceURL.lastPathComponent
             let safeRemoteBase = normalizedRemotePath("/" + sourceFolderName)
+            try? await createDirectory(at: safeRemoteBase)
+            await cleanupStaleTemporaryFiles(at: safeRemoteBase)
             syncResult = try await syncUploadDirectory(localURL: sourceURL, remotePath: safeRemoteBase, options: options, progressHandler: progressHandler)
             if !options.isDryRun {
                 try await uploadManifest(syncResult: syncResult, remoteBasePath: safeRemoteBase, options: options)
@@ -1319,22 +1409,18 @@ final class FTPService: ObservableObject {
 private final class FTPBackgroundTaskCoordinator {
     private let lock = NSLock()
     private var taskID: UIBackgroundTaskIdentifier = .invalid
-    private var renewTimer: DispatchSourceTimer?
     var onExpiration: (() -> Void)?
-    private let renewInterval: TimeInterval = 25
 
     func begin() {
         lock.lock()
         endLocked()
         startTaskLocked()
-        startRenewTimerLocked()
         lock.unlock()
     }
 
     func end() {
         lock.lock()
         endLocked()
-        stopRenewTimerLocked()
         lock.unlock()
     }
 
@@ -1357,31 +1443,5 @@ private final class FTPBackgroundTaskCoordinator {
         }
     }
 
-    private func startRenewTimerLocked() {
-        stopRenewTimerLocked()
-        let timer = DispatchSource.makeTimerSource(queue: DispatchQueue.global(qos: .utility))
-        timer.schedule(deadline: .now() + renewInterval, repeating: renewInterval)
-        timer.setEventHandler { [weak self] in
-            self?.renew()
-        }
-        timer.resume()
-        renewTimer = timer
-    }
-
-    private func stopRenewTimerLocked() {
-        renewTimer?.cancel()
-        renewTimer = nil
-    }
-
-    private func renew() {
-        lock.lock()
-        guard taskID != .invalid else {
-            lock.unlock()
-            return
-        }
-        endLocked()
-        startTaskLocked()
-        lock.unlock()
-    }
 }
 #endif

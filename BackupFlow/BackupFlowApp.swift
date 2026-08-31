@@ -158,8 +158,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         task.expirationHandler = {
             // Clean up any unfinished work
             debugLog("⚠️ BGTaskScheduler: Görev süresi doluyor...")
-            debugLog("ℹ️ BGTaskScheduler: Upload işlemi devam ediyor, sistem iptal etse de network aktif kalacak")
-            // Görevi tamamlandı olarak işaretle; upload devam edebilir ama BGTask kapanmalı
+            debugLog("ℹ️ BGTaskScheduler: Aktif aktarım iptal edilerek sonraki çalışmaya ertelenecek")
+            Task { @MainActor in
+                BackupScheduler.shared.cancelActiveBackgroundBackup()
+            }
             complete(false)
         }
 
@@ -231,8 +233,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         
         task.expirationHandler = {
             debugLog("⚠️ BGTaskScheduler: İşlem süresi doluyor...")
-            debugLog("ℹ️ BGTaskScheduler: Upload devam ediyor, network bağlantısı korunuyor")
-            // Upload işlemi devam etsin, BGTask tamamlanmış sayılsın
+            debugLog("ℹ️ BGTaskScheduler: Aktif aktarım iptal edilerek sonraki çalışmaya ertelenecek")
+            Task { @MainActor in
+                BackupScheduler.shared.cancelActiveBackgroundBackup()
+            }
             if backgroundTaskID != .invalid {
                 UIApplication.shared.endBackgroundTask(backgroundTaskID)
                 backgroundTaskID = .invalid
@@ -242,6 +246,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
         backgroundTaskID = UIApplication.shared.beginBackgroundTask {
             debugLog("⚠️ Arka plan süresi doluyor, işlem sonlandırılıyor...")
+            Task { @MainActor in
+                BackupScheduler.shared.cancelActiveBackgroundBackup()
+            }
             if backgroundTaskID != .invalid {
                 UIApplication.shared.endBackgroundTask(backgroundTaskID)
                 backgroundTaskID = .invalid
@@ -362,9 +369,10 @@ struct BackupFlowApp: App {
         .onChange(of: scenePhase) { (oldPhase: ScenePhase, newPhase: ScenePhase) in
             if newPhase == .background {
                 WebDAVService.shared.updateBackgroundMode(isBackground: true)
+                FTPService.shared.updateBackgroundMode(isBackground: true)
                 if BackupScheduler.shared.isProcessing {
                     debugLog("⚠️ App moved to background. Active backup detected - keeping current process running.")
-                    debugLog("📱 Background URLSession will continue the upload process.")
+                    debugLog("📱 WebDAV may continue via background URLSession; FTP is limited to its current iOS execution window.")
                 } else {
                     debugLog("🔄 App moved to background. Scheduling processing task.")
                 }
@@ -373,6 +381,7 @@ struct BackupFlowApp: App {
             } else if newPhase == .active {
                 debugLog("📱 BackupFlow: App foreground'a geldi")
                 WebDAVService.shared.updateBackgroundMode(isBackground: false)
+                FTPService.shared.updateBackgroundMode(isBackground: false)
                 
                 // Missed timer kontrolü
                 Task {
