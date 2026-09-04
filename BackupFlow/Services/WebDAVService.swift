@@ -594,6 +594,12 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         remotePath: String,
         timeoutSeconds: TimeInterval
     ) async throws {
+        // Ensure parent directory exists before foreground upload
+        let parentPath_fg = (remotePath as NSString).deletingLastPathComponent
+        if !parentPath_fg.isEmpty && parentPath_fg != "/" {
+            try await ensureDirectoryExists(at: parentPath_fg)
+        }
+
         let request = try makeUploadRequest(remotePath: remotePath)
         let fileSize = currentFileTotalBytes
 
@@ -682,6 +688,12 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         remotePath: String,
         progressHandler: ((Double) -> Void)? = nil
     ) async throws {
+        // Ensure parent directory exists before enqueuing background upload
+        let parentPath_bg = (remotePath as NSString).deletingLastPathComponent
+        if !parentPath_bg.isEmpty && parentPath_bg != "/" {
+            try await ensureDirectoryExists(at: parentPath_bg)
+        }
+
         guard let session = backgroundURLSession else {
             throw BackupServiceError.connectionFailed
         }
@@ -1691,3 +1703,4 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
 }
 
 #endif
+

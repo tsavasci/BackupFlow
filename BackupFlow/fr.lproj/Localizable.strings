@@ -462,8 +462,8 @@
 "backup.notification.action.postpone_10" = "Reporter 10 minutes";
 "backup.notification.action.postpone_60" = "Reporter 1 heure";
 
-"backup.notification.wifi_required.title" = "WiFi Connection Required";
-"backup.notification.wifi_required.body" = "Backup for \"%@\" requires a WiFi connection.\n\nCurrent network: %@\n\nOptions:\n- Connect to a WiFi network\n- Allow cellular data usage in the settings";
+"backup.notification.wifi_required.title" = "Connexion WiFi requise";
+"backup.notification.wifi_required.body" = "La sauvegarde de \"%@\" nécessite une connexion WiFi.\n\nRéseau actuel : %@\n\nOptions :\n- Se connecter à un réseau WiFi\n- Autoriser les données mobiles dans les réglages";
 "backup.notification.action.open_settings" = "Ouvrir les paramètres";
 
 "backup.frequency_text.scheduled" = "planifié";
@@ -534,11 +534,11 @@
 "media_type.photos_and_videos" = "Photos et vidéos";
 
 "sftp.tofu_notice" = "La clé d’hôte SFTP sera approuvée lors de la première connexion (TOFU).";
-"sftp.hostkey_title" = "SFTP Security Warning";
-"sftp.hostkey_message" = "New host key trusted (TOFU). Fingerprint: %@";
+"sftp.hostkey_title" = "Avertissement de sécurité SFTP";
+"sftp.hostkey_message" = "Nouvelle clé d’hôte approuvée (TOFU). Empreinte : %@";
 
 
-"backup.status.interrupted" = "Interrupted";
+"backup.status.interrupted" = "Interrompue";
 
 "tasks.schedule_error_detail" = "mais la planification a échoué : %@";
 "tasks.save_error_detail" = "Erreur lors de l'enregistrement de la tâche : %@";
@@ -571,7 +571,7 @@
 "backup.error.cancelled" = "Opération interrompue";
 "backup.error.unexpected" = "Erreur inattendue : %@";
 
-"whats_new" = "What's New";
+"whats_new" = "Nouveautés";
 
 "backup.protocol.ftp" = "FTP";
 
@@ -613,8 +613,8 @@
 "dashboard.destination.root" = "Dossier racine";
 "dashboard.destination.auto" = "Auto : %@";
 "dashboard.used_date" = "Utilisé : %@";
-"dashboard.action.sync" = "Sync";
-"dashboard.action.pause" = "Pause";
+"dashboard.action.sync" = "Synchroniser";
+"dashboard.action.pause" = "Mettre en pause";
 "dashboard.action.files" = "Fichiers";
 "dashboard.storage_overview" = "Aperçu du stockage";
 "dashboard.used" = "Utilisé";
@@ -720,7 +720,7 @@
 "backup.every_hours" = "Toutes les %d heures";
 "backup.behavior" = "Comportement de sauvegarde";
 "backup.deletion_policy" = "Politique de suppression";
-"backup.checksum" = "Checksum";
+"backup.checksum" = "Somme de contrôle";
 "backup.require_wifi" = "Wi-Fi requis";
 "backup.require_external_power" = "Alimentation externe requise";
 "backup.use_allowed_time_window" = "Utiliser la plage horaire autorisée";

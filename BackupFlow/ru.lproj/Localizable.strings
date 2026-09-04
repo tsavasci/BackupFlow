@@ -460,8 +460,8 @@
 "backup.notification.action.postpone_10" = "Отложить на 10 минут";
 "backup.notification.action.postpone_60" = "Отложить на 1 час";
 
-"backup.notification.wifi_required.title" = "WiFi Connection Required";
-"backup.notification.wifi_required.body" = "Backup for \"%@\" requires a WiFi connection.\n\nCurrent network: %@\n\nOptions:\n- Connect to a WiFi network\n- Allow cellular data usage in the settings";
+"backup.notification.wifi_required.title" = "Требуется подключение к Wi-Fi";
+"backup.notification.wifi_required.body" = "Для резервного копирования \"%@\" требуется подключение к Wi-Fi.\n\nТекущая сеть: %@\n\nВарианты:\n- Подключиться к сети Wi-Fi\n- Разрешить использование мобильных данных в настройках";
 "backup.notification.action.open_settings" = "Открыть настройки";
 
 "backup.frequency_text.scheduled" = "запланировано";
@@ -532,11 +532,11 @@
 "media_type.photos_and_videos" = "Фотографии и видео";
 
 "sftp.tofu_notice" = "Ключ хоста SFTP будет принят как доверенный при первом подключении (TOFU).";
-"sftp.hostkey_title" = "SFTP Security Warning";
-"sftp.hostkey_message" = "New host key trusted (TOFU). Fingerprint: %@";
+"sftp.hostkey_title" = "Предупреждение безопасности SFTP";
+"sftp.hostkey_message" = "Новый ключ хоста принят как доверенный (TOFU). Отпечаток: %@";
 
 
-"backup.status.interrupted" = "Interrupted";
+"backup.status.interrupted" = "Прервано";
 
 "tasks.schedule_error_detail" = "но планирование не удалось: %@";
 "tasks.save_error_detail" = "Ошибка при сохранении задачи: %@";
@@ -569,7 +569,7 @@
 "backup.error.cancelled" = "Операция была прервана";
 "backup.error.unexpected" = "Неожиданная ошибка: %@";
 
-"whats_new" = "What's New";
+"whats_new" = "Что нового";
 
 "backup.protocol.ftp" = "FTP";
 

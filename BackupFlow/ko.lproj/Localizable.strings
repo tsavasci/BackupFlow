@@ -462,7 +462,7 @@
 "backup.notification.action.postpone_10" = "10분 연기";
 "backup.notification.action.postpone_60" = "1시간 연기";
 
-"backup.notification.wifi_required.title" = "WiFi Connection Required";
+"backup.notification.wifi_required.title" = "WiFi 연결 필요";
 "backup.notification.wifi_required.body" = "\"%@\" 백업에는 WiFi 연결이 필요합니다.\n\nCurrent network: %@\n\nOptions:\n• Connect to a WiFi network\n• Allow cellular data usage in the settings";
 "backup.notification.action.open_settings" = "설정 열기";
 
@@ -534,11 +534,11 @@
 "media_type.photos_and_videos" = "사진 및 동영상";
 
 "sftp.tofu_notice" = "SFTP 호스트 키는 첫 연결 시 신뢰됩니다(TOFU).";
-"sftp.hostkey_title" = "SFTP Security Warning";
-"sftp.hostkey_message" = "New host key trusted (TOFU). Fingerprint: %@";
+"sftp.hostkey_title" = "SFTP 보안 경고";
+"sftp.hostkey_message" = "새 호스트 키를 신뢰합니다(TOFU). 지문: %@";
 
 
-"backup.status.interrupted" = "Interrupted";
+"backup.status.interrupted" = "중단됨";
 
 "tasks.schedule_error_detail" = "하지만 예약에 실패했습니다: %@";
 "tasks.save_error_detail" = "작업 저장 오류: %@";
@@ -571,7 +571,7 @@
 "backup.error.cancelled" = "작업이 중단되었습니다";
 "backup.error.unexpected" = "예기치 않은 오류: %@";
 
-"whats_new" = "What's New";
+"whats_new" = "새로운 기능";
 
 "backup.protocol.ftp" = "FTP";
 
@@ -651,7 +651,7 @@
 "about.support.description" = "질문이나 제안이 있으신가요? 문의하실 수 있습니다.";
 "about.section.license" = "라이선스";
 "about.license.description" = "BackupFlow는 MIT 라이선스로 배포됩니다. 소프트웨어를 자유롭게 사용, 수정 및 배포할 수 있습니다.";
-"about.rights_reserved" = "All rights reserved.";
+"about.rights_reserved" = "모든 권리 보유.";
 "about.support.email_subject" = "BackupFlow 지원 요청";
 "about.support.email_app_version" = "앱 버전";
 "about.support.email_device" = "기기";

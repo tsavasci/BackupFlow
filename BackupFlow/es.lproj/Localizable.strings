@@ -461,8 +461,8 @@
 "backup.notification.action.postpone_10" = "Posponer 10 minutos";
 "backup.notification.action.postpone_60" = "Posponer 1 hora";
 
-"backup.notification.wifi_required.title" = "WiFi Connection Required";
-"backup.notification.wifi_required.body" = "Backup for \"%@\" requires a WiFi connection.\n\nCurrent network: %@\n\nOptions:\n- Connect to a WiFi network\n- Allow cellular data usage in the settings";
+"backup.notification.wifi_required.title" = "Se requiere conexión WiFi";
+"backup.notification.wifi_required.body" = "La copia de seguridad de \"%@\" requiere una conexión WiFi.\n\nRed actual: %@\n\nOpciones:\n- Conectarse a una red WiFi\n- Permitir el uso de datos móviles en Ajustes";
 "backup.notification.action.open_settings" = "Abrir Configuración";
 
 "backup.frequency_text.scheduled" = "programado";
@@ -532,11 +532,11 @@
 "media_type.photos_and_videos" = "Fotos y vídeos";
 
 "sftp.tofu_notice" = "Se confiará en la clave de host SFTP en la primera conexión (TOFU).";
-"sftp.hostkey_title" = "SFTP Security Warning";
-"sftp.hostkey_message" = "New host key trusted (TOFU). Fingerprint: %@";
+"sftp.hostkey_title" = "Advertencia de seguridad de SFTP";
+"sftp.hostkey_message" = "Nueva clave de host de confianza (TOFU). Huella digital: %@";
 
 
-"backup.status.interrupted" = "Interrupted";
+"backup.status.interrupted" = "Interrumpido";
 
 "tasks.schedule_error_detail" = "pero la programación falló: %@";
 "tasks.save_error_detail" = "Error al guardar la tarea: %@";
@@ -569,7 +569,7 @@
 "backup.error.cancelled" = "La operación fue interrumpida";
 "backup.error.unexpected" = "Error inesperado: %@";
 
-"whats_new" = "What's New";
+"whats_new" = "Novedades";
 
 "backup.protocol.ftp" = "FTP";
 

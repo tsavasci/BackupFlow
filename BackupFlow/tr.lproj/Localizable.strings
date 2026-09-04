@@ -509,8 +509,8 @@
 "media_type.photos_and_videos" = "Fotoğraflar ve Videolar";
 
 "sftp.tofu_notice" = "SFTP sunucu anahtarı ilk bağlantıda güvenilecek (TOFU).";
-"sftp.hostkey_title" = "SFTP Security Warning";
-"sftp.hostkey_message" = "New host key trusted (TOFU). Fingerprint: %@";
+"sftp.hostkey_title" = "SFTP Güvenlik Uyarısı";
+"sftp.hostkey_message" = "Yeni ana bilgisayar anahtarına güvenildi (TOFU). Parmak izi: %@";
 
 
 "backup.status.interrupted" = "Yarıda Kaldı";
@@ -546,7 +546,7 @@
 "backup.error.cancelled" = "İşlem yarıda kesildi";
 "backup.error.unexpected" = "Beklenmeyen bir hata oluştu: %@";
 
-"whats_new" = "What's New";
+"whats_new" = "Yenilikler";
 
 "backup.protocol.ftp" = "FTP";
 

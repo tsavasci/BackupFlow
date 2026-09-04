@@ -460,8 +460,8 @@
 "backup.notification.action.postpone_10" = "10分延期";
 "backup.notification.action.postpone_60" = "1時間延期";
 
-"backup.notification.wifi_required.title" = "WiFi Connection Required";
-"backup.notification.wifi_required.body" = "Backup for \"%@\" requires a WiFi connection.\n\nCurrent network: %@\n\nOptions:\n- Connect to a WiFi network\n- Allow cellular data usage in the settings";
+"backup.notification.wifi_required.title" = "WiFi接続が必要です";
+"backup.notification.wifi_required.body" = "\"%@\"のバックアップにはWiFi接続が必要です。\n\n現在のネットワーク: %@\n\nオプション:\n- WiFiネットワークに接続する\n- 設定でモバイルデータの使用を許可する";
 "backup.notification.action.open_settings" = "設定を開く";
 
 "backup.frequency_text.scheduled" = "予定済み";
@@ -501,7 +501,7 @@
 
 "about.version_build" = "バージョン %@ (ビルド %@)";
 "about.contact" = "連絡先";
-"about.rights_reserved" = "All rights reserved.";
+"about.rights_reserved" = "すべての権利を保有します。";
 
 "task.details.title" = "タスク詳細";
 
@@ -532,11 +532,11 @@
 "media_type.photos_and_videos" = "写真とビデオ";
 
 "sftp.tofu_notice" = "SFTPホスト鍵は初回接続時に信頼されます（TOFU）。";
-"sftp.hostkey_title" = "SFTP Security Warning";
-"sftp.hostkey_message" = "New host key trusted (TOFU). Fingerprint: %@";
+"sftp.hostkey_title" = "SFTPセキュリティ警告";
+"sftp.hostkey_message" = "新しいホストキーを信頼しました (TOFU)。フィンガープリント: %@";
 
 
-"backup.status.interrupted" = "Interrupted";
+"backup.status.interrupted" = "中断されました";
 
 "tasks.schedule_error_detail" = "しかしスケジュールに失敗しました: %@";
 "tasks.save_error_detail" = "タスクの保存中にエラー: %@";
@@ -569,7 +569,7 @@
 "backup.error.cancelled" = "操作が中断されました";
 "backup.error.unexpected" = "予期しないエラー: %@";
 
-"whats_new" = "What's New";
+"whats_new" = "新機能";
 
 "backup.protocol.ftp" = "FTP";
 

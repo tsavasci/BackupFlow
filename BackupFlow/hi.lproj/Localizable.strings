@@ -460,8 +460,8 @@
 "backup.notification.action.postpone_10" = "10 मिनट स्थगित करें";
 "backup.notification.action.postpone_60" = "1 घंटा स्थगित करें";
 
-"backup.notification.wifi_required.title" = "WiFi Connection Required";
-"backup.notification.wifi_required.body" = "Backup for \"%@\" requires a WiFi connection.\n\nCurrent network: %@\n\nOptions:\n- Connect to a WiFi network\n- Allow cellular data usage in the settings";
+"backup.notification.wifi_required.title" = "WiFi कनेक्शन आवश्यक है";
+"backup.notification.wifi_required.body" = "\"%@\" के बैकअप के लिए WiFi कनेक्शन आवश्यक है।\n\nवर्तमान नेटवर्क: %@\n\nविकल्प:\n- WiFi नेटवर्क से कनेक्ट करें\n- सेटिंग्स में मोबाइल डेटा उपयोग की अनुमति दें";
 "backup.notification.action.open_settings" = "सेटिंग्स खोलें";
 
 "backup.frequency_text.scheduled" = "निर्धारित";
@@ -532,11 +532,11 @@
 "media_type.photos_and_videos" = "फ़ोटो और वीडियो";
 
 "sftp.tofu_notice" = "SFTP होस्ट कुंजी पर पहले कनेक्शन पर भरोसा किया जाएगा (TOFU).";
-"sftp.hostkey_title" = "SFTP Security Warning";
-"sftp.hostkey_message" = "New host key trusted (TOFU). Fingerprint: %@";
+"sftp.hostkey_title" = "SFTP सुरक्षा चेतावनी";
+"sftp.hostkey_message" = "नई होस्ट कुंजी पर भरोसा किया गया (TOFU)। फ़िंगरप्रिंट: %@";
 
 
-"backup.status.interrupted" = "Interrupted";
+"backup.status.interrupted" = "बाधित";
 
 "tasks.schedule_error_detail" = "लेकिन शेड्यूलिंग विफल हुई: %@";
 "tasks.save_error_detail" = "टास्क सेव करने में त्रुटि: %@";
@@ -569,7 +569,7 @@
 "backup.error.cancelled" = "कार्य बाधित हो गया";
 "backup.error.unexpected" = "अप्रत्याशित त्रुटि: %@";
 
-"whats_new" = "What's New";
+"whats_new" = "नया क्या है";
 
 "backup.protocol.ftp" = "FTP";
 
@@ -649,7 +649,7 @@
 "about.support.description" = "कोई प्रश्न या सुझाव है? आप हमसे संपर्क कर सकते हैं।";
 "about.section.license" = "लाइसेंस";
 "about.license.description" = "BackupFlow MIT लाइसेंस के अंतर्गत वितरित किया जाता है। आप सॉफ़्टवेयर को स्वतंत्र रूप से उपयोग, संशोधित और वितरित कर सकते हैं।";
-"about.rights_reserved" = "All rights reserved.";
+"about.rights_reserved" = "सर्वाधिकार सुरक्षित।";
 "about.support.email_subject" = "BackupFlow सहायता अनुरोध";
 "about.support.email_app_version" = "ऐप संस्करण";
 "about.support.email_device" = "डिवाइस";

@@ -460,8 +460,8 @@
 "backup.notification.action.postpone_10" = "تأجيل 10 دقائق";
 "backup.notification.action.postpone_60" = "تأجيل ساعة واحدة";
 
-"backup.notification.wifi_required.title" = "WiFi Connection Required";
-"backup.notification.wifi_required.body" = "Backup for \"%@\" requires a WiFi connection.\n\nCurrent network: %@\n\nOptions:\n- Connect to a WiFi network\n- Allow cellular data usage in the settings";
+"backup.notification.wifi_required.title" = "مطلوب اتصال WiFi";
+"backup.notification.wifi_required.body" = "يتطلب النسخ الاحتياطي لـ \"%@\" اتصال WiFi.\n\nالشبكة الحالية: %@\n\nالخيارات:\n- الاتصال بشبكة WiFi\n- السماح باستخدام البيانات الخلوية من الإعدادات";
 "backup.notification.action.open_settings" = "فتح الإعدادات";
 
 "backup.frequency_text.scheduled" = "مجدول";
@@ -532,11 +532,11 @@
 
 
 "sftp.tofu_notice" = "سيتم الوثوق بمفتاح مضيف SFTP عند الاتصال الأول (TOFU).";
-"sftp.hostkey_title" = "SFTP Security Warning";
-"sftp.hostkey_message" = "New host key trusted (TOFU). Fingerprint: %@";
+"sftp.hostkey_title" = "تحذير أمان SFTP";
+"sftp.hostkey_message" = "تم الوثوق بمفتاح مضيف جديد (TOFU). البصمة: %@";
 
 
-"backup.status.interrupted" = "Interrupted";
+"backup.status.interrupted" = "تمت المقاطعة";
 
 "tasks.schedule_error_detail" = "لكن جدولة المهمة فشلت: %@";
 "tasks.save_error_detail" = "خطأ في حفظ المهمة: %@";
@@ -569,7 +569,7 @@
 "backup.error.cancelled" = "تمت مقاطعة العملية";
 "backup.error.unexpected" = "خطأ غير متوقع: %@";
 
-"whats_new" = "What's New";
+"whats_new" = "ما الجديد";
 
 "backup.protocol.ftp" = "FTP";
 
@@ -649,7 +649,7 @@
 "about.support.description" = "هل لديك أسئلة أو اقتراحات؟ يمكنك التواصل معنا.";
 "about.section.license" = "الترخيص";
 "about.license.description" = "يتم توزيع BackupFlow بموجب ترخيص MIT. يمكنك استخدام البرنامج وتعديله وتوزيعه بحرية.";
-"about.rights_reserved" = "All rights reserved.";
+"about.rights_reserved" = "جميع الحقوق محفوظة.";
 "about.support.email_subject" = "طلب دعم BackupFlow";
 "about.support.email_app_version" = "إصدار التطبيق";
 "about.support.email_device" = "الجهاز";

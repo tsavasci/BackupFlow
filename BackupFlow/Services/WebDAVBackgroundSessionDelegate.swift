@@ -1,5 +1,6 @@
 import Foundation
 import OSLog
+import CryptoKit
 
 final class WebDAVBackgroundSessionDelegate: NSObject, URLSessionDelegate, URLSessionTaskDelegate {
     private let logger: Logger
@@ -7,16 +8,22 @@ final class WebDAVBackgroundSessionDelegate: NSObject, URLSessionDelegate, URLSe
     private let onTaskProgress: ((URLSessionTask, Int64, Int64) -> Void)?
     private let onTaskComplete: ((URLSessionTask, Error?) -> Void)?
     private let allowSelfSigned: Bool
+    var credential: URLCredential?
+    var pinnedCertHashes: [String]?
 
     init(
         logger: Logger,
         allowSelfSigned: Bool = false,
+        credential: URLCredential? = nil,
+        pinnedCertHashes: [String]? = nil,
         onTaskProgress: ((URLSessionTask, Int64, Int64) -> Void)? = nil,
         onTaskComplete: ((URLSessionTask, Error?) -> Void)? = nil,
         onFinishEvents: @escaping () -> Void
     ) {
         self.logger = logger
         self.allowSelfSigned = allowSelfSigned
+        self.credential = credential
+        self.pinnedCertHashes = pinnedCertHashes
         self.onTaskProgress = onTaskProgress
         self.onTaskComplete = onTaskComplete
         self.onFinishEvents = onFinishEvents
@@ -53,19 +60,51 @@ final class WebDAVBackgroundSessionDelegate: NSObject, URLSessionDelegate, URLSe
         }
     }
 
+    private func leafCertificateSHA256Base64(from trust: SecTrust) -> String? {
+        if #available(iOS 15.0, macOS 12.0, *) {
+            guard let chain = SecTrustCopyCertificateChain(trust) as? [SecCertificate],
+                  let leaf = chain.first else { return nil }
+            let data = SecCertificateCopyData(leaf) as Data
+            let hash = SHA256.hash(data: data)
+            return Data(hash).base64EncodedString()
+        } else {
+            let count = SecTrustGetCertificateCount(trust)
+            guard count > 0, let cert = SecTrustGetCertificateAtIndex(trust, 0) else { return nil }
+            let data = SecCertificateCopyData(cert) as Data
+            let hash = SHA256.hash(data: data)
+            return Data(hash).base64EncodedString()
+        }
+    }
+
     func urlSession(
         _ session: URLSession,
         didReceive challenge: URLAuthenticationChallenge,
         completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
     ) {
-        // Handle Basic auth via headers or default handling
-        if challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodHTTPBasic {
-            completionHandler(.performDefaultHandling, nil)
+        // Handle Basic or Digest auth using stored credential if present
+        if challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodHTTPBasic ||
+            challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodHTTPDigest {
+            if let cred = self.credential {
+                completionHandler(.useCredential, cred)
+            } else {
+                completionHandler(.performDefaultHandling, nil)
+            }
             return
         }
         // Handle TLS server trust
         if challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
            let serverTrust = challenge.protectionSpace.serverTrust {
+            // If pinning is configured, validate against pinned hashes
+            if let pins = pinnedCertHashes, !pins.isEmpty, let serverHash = leafCertificateSHA256Base64(from: serverTrust) {
+                if pins.contains(serverHash) {
+                    completionHandler(.useCredential, URLCredential(trust: serverTrust))
+                } else {
+                    self.logger.error("🔒 TLS pinning failed: server certificate hash not in pinned set")
+                    completionHandler(.cancelAuthenticationChallenge, nil)
+                }
+                return
+            }
+            // No pinning configured: allow self-signed if permitted, otherwise default handling
             if allowSelfSigned {
                 completionHandler(.useCredential, URLCredential(trust: serverTrust))
             } else {
@@ -76,3 +115,4 @@ final class WebDAVBackgroundSessionDelegate: NSObject, URLSessionDelegate, URLSe
         completionHandler(.performDefaultHandling, nil)
     }
 }
+
