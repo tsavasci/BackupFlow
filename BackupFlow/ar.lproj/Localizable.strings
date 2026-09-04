@@ -558,6 +558,7 @@
 "backup.current_file.connecting_webdav" = "جارٍ الاتصال بخادم WebDAV...";
 "backup.current_file.connecting_webdav_host" = "جارٍ الاتصال بخادم WebDAV: %@";
 "backup.current_file.preparing" = "جارٍ تجهيز النسخ الاحتياطي...";
+"backup.current_file.scanning_library" = "جارٍ فحص مكتبة الصور...";
 "backup.current_file.connecting_sftp" = "جارٍ الاتصال بخادم SFTP...";
 "backup.error.invalid_webdav_host" = "عنوان خادم WebDAV غير صالح";
 

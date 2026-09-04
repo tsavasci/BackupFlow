@@ -558,6 +558,7 @@
 "backup.current_file.connecting_webdav" = "WebDAV सर्वर से कनेक्ट हो रहा है...";
 "backup.current_file.connecting_webdav_host" = "WebDAV सर्वर से कनेक्ट हो रहा है: %@";
 "backup.current_file.preparing" = "बैकअप तैयार किया जा रहा है...";
+"backup.current_file.scanning_library" = "फ़ोटो लाइब्रेरी स्कैन की जा रही है...";
 "backup.current_file.connecting_sftp" = "SFTP सर्वर से कनेक्ट हो रहा है...";
 "backup.error.invalid_webdav_host" = "WebDAV सर्वर पता अमान्य है";
 

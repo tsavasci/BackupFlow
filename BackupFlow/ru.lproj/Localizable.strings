@@ -558,6 +558,7 @@
 "backup.current_file.connecting_webdav" = "Подключение к серверу WebDAV...";
 "backup.current_file.connecting_webdav_host" = "Подключение к серверу WebDAV: %@";
 "backup.current_file.preparing" = "Подготовка резервной копии...";
+"backup.current_file.scanning_library" = "Сканирование фото-библиотеки...";
 "backup.current_file.connecting_sftp" = "Подключение к серверу SFTP...";
 "backup.error.invalid_webdav_host" = "Недействительный адрес сервера WebDAV";
 

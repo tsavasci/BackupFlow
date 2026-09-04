@@ -340,6 +340,7 @@ struct FTPSyncEngine {
         let photoManager = PhotoLibraryManager.shared
         var result = FTPSyncResult()
 
+        setCurrentFile("backup.current_file.scanning_library".localized)
         let assets = try await photoManager.getAllAssets(mediaType: mediaType)
         let totalCount = assets.count
 

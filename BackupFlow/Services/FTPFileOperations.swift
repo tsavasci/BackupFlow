@@ -78,8 +78,9 @@ struct FTPFileOperations {
                     logger.debug("Dizin bulunamadı: \(path)")
                     continuation.resume(returning: false)
                 } else if let error = error {
-                    if (error as NSError).domain == NSURLErrorDomain && (error as NSError).code == NSURLErrorNoPermissionsToReadFile {
-                        logger.warning("Dizin erişim izni yok, mevcut olarak kabul ediliyor: \(path) - \(error.localizedDescription)")
+                    let nsError = error as NSError
+                    if nsError.domain == NSURLErrorDomain && (nsError.code == NSURLErrorNoPermissionsToReadFile || nsError.code == NSURLErrorCannotCreateFile) {
+                        logger.warning("Dizin mevcut kabul ediliyor: \(path) - \(error.localizedDescription)")
                         continuation.resume(returning: true)
                     } else {
                         if isVerboseLoggingEnabled {

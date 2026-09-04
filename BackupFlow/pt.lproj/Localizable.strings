@@ -556,6 +556,7 @@
 "backup.current_file.connecting_webdav" = "Conectando ao servidor WebDAV...";
 "backup.current_file.connecting_webdav_host" = "Conectando ao servidor WebDAV: %@";
 "backup.current_file.preparing" = "Preparando backup...";
+"backup.current_file.scanning_library" = "Escaneando a biblioteca de fotos...";
 "backup.current_file.connecting_sftp" = "Conectando ao servidor SFTP...";
 "backup.error.invalid_webdav_host" = "Endereço do servidor WebDAV inválido";
 

@@ -64,6 +64,7 @@ final class BackupFlowTests: XCTestCase {
         let options = BackupExecutionOptions.forTask(task, isDryRun: true)
 
         XCTAssertFalse(options.performsRemoteMutations)
+        XCTAssertTrue(options.shouldSkipRemotePreparation)
     }
 
     func testPhotoOrphanDeletionRequiresFullAccessAndVisibleAssets() throws {
@@ -104,5 +105,29 @@ final class BackupFlowTests: XCTestCase {
         XCTAssertTrue(BackupArchive.isReserved(relativePath: ".backupflow_manifest.json"))
         XCTAssertTrue(BackupArchive.isReserved(relativePath: ".backupflow_archive/old/file.jpg"))
         XCTAssertFalse(BackupArchive.isReserved(relativePath: "albums/file.jpg"))
+    }
+
+    @MainActor
+    func testWebDAVBackgroundUploadIsEnabledForBackgroundExecution() async throws {
+        let service = WebDAVService.shared
+        service.updateBackgroundMode(isBackground: true)
+
+        XCTAssertTrue(service.isBackgroundUploading)
+        XCTAssertTrue(service.shouldUseBackgroundUploadSession(allowBackgroundSession: true))
+    }
+
+    @MainActor
+    func testFTPBackgroundUploadIsEnabledForBackgroundExecution() async throws {
+        let service = FTPService.shared
+        service.updateBackgroundMode(isBackground: true)
+
+        XCTAssertTrue(service.isBackgroundUploading)
+    }
+
+    func testBackupStatusScanningAndPreparingAreUserFriendly() throws {
+        XCTAssertFalse(BackupStatus.scanning.displayName.isEmpty)
+        XCTAssertFalse(BackupStatus.preparing.displayName.isEmpty)
+        XCTAssertNotEqual(BackupStatus.scanning.displayName, "backup.status.scanning")
+        XCTAssertNotEqual(BackupStatus.preparing.displayName, "backup.status.preparing")
     }
 }

@@ -203,21 +203,24 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     }
 
 #if canImport(UIKit)
-    /// FTP cannot survive process termination. This only requests the short iOS
-    /// grace period when an already-running transfer moves to the background.
+    /// FTP cannot survive process termination. The background flag must be set at
+    /// BGTask entry too, before a transfer has created a current Progress object.
+    @MainActor
     func updateBackgroundMode(isBackground: Bool) {
-        guard isBackground else {
+        let appInBackground = UIApplication.shared.applicationState != .active
+        let shouldUseBackgroundMode = isBackground || appInBackground
+
+        guard shouldUseBackgroundMode else {
             backgroundTaskCoordinator.end()
-            Task { @MainActor in
-                self.isBackgroundUploading = false
-            }
+            self.isBackgroundUploading = false
             return
         }
-        guard currentTask != nil else { return }
-        backgroundTaskCoordinator.begin()
-        Task { @MainActor in
-            self.isBackgroundUploading = true
+
+        if currentTask != nil || isBackground || appInBackground {
+            backgroundTaskCoordinator.begin()
         }
+
+        self.isBackgroundUploading = true
     }
 #endif
 
@@ -1301,6 +1304,12 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             }
         }
 #endif
+        if sourcePath == "PHOTOS_LIBRARY" || !sourcePath.isEmpty {
+            await MainActor.run {
+                self.currentFile = "backup.current_file.preparing".localized
+            }
+        }
+
         // Connect to FTP server
         let actualUsername = isAnonymous ? nil : username
         let actualPassword = isAnonymous ? nil : password
@@ -1319,11 +1328,16 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         }
         
         let syncResult: SyncResult
+        let shouldSkipRemotePreparation = options.shouldSkipRemotePreparation
         
         if sourcePath == "PHOTOS_LIBRARY" {
             // Photo library sync backup
-            try? await createDirectory(at: "photos")
-            await cleanupStaleTemporaryFiles(at: "photos")
+            if shouldSkipRemotePreparation {
+                logger.info("Preview mode: skipping FTP remote directory preparation for photo library")
+            } else {
+                try? await createDirectory(at: "photos")
+                await cleanupStaleTemporaryFiles(at: "photos")
+            }
             let engine = try makeSyncEngine()
             syncResult = try await engine.syncBackupPhotoLibrary(
                 mediaType: mediaType,
@@ -1339,8 +1353,12 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             let sourceURL = URL(fileURLWithPath: sourcePath)
             let sourceFolderName = sourceURL.lastPathComponent
             let safeRemoteBase = normalizedRemotePath("/" + sourceFolderName)
-            try? await createDirectory(at: safeRemoteBase)
-            await cleanupStaleTemporaryFiles(at: safeRemoteBase)
+            if shouldSkipRemotePreparation {
+                logger.info("Preview mode: skipping FTP remote directory preparation for \(safeRemoteBase)")
+            } else {
+                try? await createDirectory(at: safeRemoteBase)
+                await cleanupStaleTemporaryFiles(at: safeRemoteBase)
+            }
             syncResult = try await syncUploadDirectory(localURL: sourceURL, remotePath: safeRemoteBase, options: options, progressHandler: progressHandler)
             if !options.isDryRun {
                 try await uploadManifest(syncResult: syncResult, remoteBasePath: safeRemoteBase, options: options)

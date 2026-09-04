@@ -1184,7 +1184,8 @@ extension BackupScheduler {
     
     private func executeFTPBackup(task: BackupTask, startTime: Date, options: BackupExecutionOptions = .defaults) async throws -> FTPService.SyncResult {
         debugLog("📡 BackupFlow: FTP yedekleme başlatılıyor...")
-        task.backupStatus = .uploading
+        task.backupStatus = task.sourcePath == "PHOTOS_LIBRARY" ? .scanning : .preparing
+        task.currentFile = "backup.current_file.preparing".localized
         
         let ftpService = FTPService.shared
         

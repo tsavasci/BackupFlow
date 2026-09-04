@@ -557,6 +557,7 @@
 "backup.current_file.connecting_webdav" = "正在连接 WebDAV 服务器...";
 "backup.current_file.connecting_webdav_host" = "正在连接 WebDAV 服务器：%@";
 "backup.current_file.preparing" = "正在准备备份...";
+"backup.current_file.scanning_library" = "正在扫描照片库...";
 "backup.current_file.connecting_sftp" = "正在连接 SFTP 服务器...";
 "backup.error.invalid_webdav_host" = "WebDAV 服务器地址无效";
 

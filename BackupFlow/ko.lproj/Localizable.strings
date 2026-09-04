@@ -560,6 +560,7 @@
 "backup.current_file.connecting_webdav" = "WebDAV 서버에 연결 중...";
 "backup.current_file.connecting_webdav_host" = "WebDAV 서버에 연결 중: %@";
 "backup.current_file.preparing" = "백업 준비 중...";
+"backup.current_file.scanning_library" = "사진 라이브러리를 스캔하는 중...";
 "backup.current_file.connecting_sftp" = "SFTP 서버에 연결 중...";
 "backup.error.invalid_webdav_host" = "WebDAV 서버 주소가 올바르지 않습니다";
 

@@ -35,6 +35,10 @@ struct BackupExecutionOptions: Codable, Equatable {
         !isDryRun
     }
 
+    var shouldSkipRemotePreparation: Bool {
+        isDryRun
+    }
+
     func permitsPhotoOrphanDeletion(hasFullLibraryAccess: Bool, visibleAssetCount: Int) -> Bool {
         deletionPolicy == .mirror && hasFullLibraryAccess && visibleAssetCount > 0
     }

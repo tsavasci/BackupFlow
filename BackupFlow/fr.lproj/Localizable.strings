@@ -560,6 +560,7 @@
 "backup.current_file.connecting_webdav" = "Connexion au serveur WebDAV...";
 "backup.current_file.connecting_webdav_host" = "Connexion au serveur WebDAV : %@";
 "backup.current_file.preparing" = "Préparation de la sauvegarde...";
+"backup.current_file.scanning_library" = "Analyse de la photothèque...";
 "backup.current_file.connecting_sftp" = "Connexion au serveur SFTP...";
 "backup.error.invalid_webdav_host" = "Adresse du serveur WebDAV invalide";
 

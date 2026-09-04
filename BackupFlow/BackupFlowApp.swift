@@ -166,13 +166,19 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         }
 
         // Perform the backup in a background-safe way
+        Task { @MainActor in
+            WebDAVService.shared.updateBackgroundMode(isBackground: true)
+            FTPService.shared.updateBackgroundMode(isBackground: true)
+        }
         let startTime = Date()
         Task {
             debugLog("⏳ BGTaskScheduler: Yedekleme işlemi başlatılıyor...")
             
-            // Log available background time
-            let remainingTime = UIApplication.shared.backgroundTimeRemaining
-            let remainingText: String = remainingTime.isFinite ? String(format: "%.1f", remainingTime) : "∞"
+            // Log available background time on the main actor because it reads UIApplication state
+            let remainingText: String = await MainActor.run {
+                let remainingTime = UIApplication.shared.backgroundTimeRemaining
+                return remainingTime.isFinite ? String(format: "%.1f", remainingTime) : "∞"
+            }
             debugLog("   ⏳ Kalan arka plan süresi: \(remainingText) saniye")
             
             // Also check if any timers should have fired but didn't
@@ -229,6 +235,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         }
         
         // Start a background task to ensure we have enough time
+        Task { @MainActor in
+            WebDAVService.shared.updateBackgroundMode(isBackground: true)
+            FTPService.shared.updateBackgroundMode(isBackground: true)
+        }
         var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
         
         task.expirationHandler = {
@@ -236,10 +246,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             debugLog("ℹ️ BGTaskScheduler: Aktif aktarım iptal edilerek sonraki çalışmaya ertelenecek")
             Task { @MainActor in
                 BackupScheduler.shared.cancelActiveBackgroundBackup()
-            }
-            if backgroundTaskID != .invalid {
-                UIApplication.shared.endBackgroundTask(backgroundTaskID)
-                backgroundTaskID = .invalid
+                if backgroundTaskID != .invalid {
+                    UIApplication.shared.endBackgroundTask(backgroundTaskID)
+                    backgroundTaskID = .invalid
+                }
             }
             complete(false)
         }
@@ -248,10 +258,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             debugLog("⚠️ Arka plan süresi doluyor, işlem sonlandırılıyor...")
             Task { @MainActor in
                 BackupScheduler.shared.cancelActiveBackgroundBackup()
-            }
-            if backgroundTaskID != .invalid {
-                UIApplication.shared.endBackgroundTask(backgroundTaskID)
-                backgroundTaskID = .invalid
+                if backgroundTaskID != .invalid {
+                    UIApplication.shared.endBackgroundTask(backgroundTaskID)
+                    backgroundTaskID = .invalid
+                }
             }
             complete(false)
         }
@@ -260,9 +270,11 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         Task {
             debugLog("⏳ BGTaskScheduler: Uzun süreli yedekleme işlemi başlatılıyor...")
             
-            // Log available background time
-            let remainingTime = UIApplication.shared.backgroundTimeRemaining
-            let remainingText: String = remainingTime.isFinite ? String(format: "%.1f", remainingTime) : "∞"
+            // Log available background time on the main actor because it reads UIApplication state
+            let remainingText: String = await MainActor.run {
+                let remainingTime = UIApplication.shared.backgroundTimeRemaining
+                return remainingTime.isFinite ? String(format: "%.1f", remainingTime) : "∞"
+            }
             debugLog("   ⏳ Kalan arka plan süresi: \(remainingText) saniye")
             
             let success = await BackupScheduler.shared.executeBackgroundTask()
@@ -276,10 +288,12 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                 debugLog("⚠️ BGTaskScheduler: İşlem tamamlandı ancak yedekleme yapılamadı.")
             }
             
-            // End the background task
-            if backgroundTaskID != .invalid {
-                UIApplication.shared.endBackgroundTask(backgroundTaskID)
-                backgroundTaskID = .invalid
+            // End the background task on the main actor to avoid background-thread UIKit calls
+            await MainActor.run {
+                if backgroundTaskID != .invalid {
+                    UIApplication.shared.endBackgroundTask(backgroundTaskID)
+                    backgroundTaskID = .invalid
+                }
             }
             
             complete(success)

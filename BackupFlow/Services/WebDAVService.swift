@@ -111,10 +111,17 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         return UserDefaults.standard.bool(forKey: "WebDAVDeleteOrphans")
     }
     
+    @MainActor
     func updateBackgroundMode(isBackground: Bool) {
         self.isBackgroundUploading = isBackground
         // Not resetting progress/currentFile here to preserve UI continuity across foreground/background
         self.logger.info("📱 \(isBackground ? "Background" : "Foreground") upload mode enabled")
+    }
+
+    @MainActor
+    func shouldUseBackgroundUploadSession(allowBackgroundSession: Bool) -> Bool {
+        let appInBackground = UIApplication.shared.applicationState != .active
+        return allowBackgroundSession && (isBackgroundUploading || appInBackground) && backgroundURLSession != nil
     }
     
     @Published private(set) var isConnected = false
@@ -472,7 +479,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         }
         
         // Sync sırasında enqueue edip "başarılı" saymamak için background opsiyonel.
-        let useBackgroundSession = allowBackgroundSession && isBackgroundUploading && backgroundURLSession != nil
+        let useBackgroundSession = shouldUseBackgroundUploadSession(allowBackgroundSession: allowBackgroundSession)
         
         if useBackgroundSession {
             // Set current file for UI feedback only if empty to reduce UI flicker/resets

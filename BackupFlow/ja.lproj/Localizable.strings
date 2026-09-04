@@ -558,6 +558,7 @@
 "backup.current_file.connecting_webdav" = "WebDAVサーバーに接続中...";
 "backup.current_file.connecting_webdav_host" = "WebDAVサーバーに接続中: %@";
 "backup.current_file.preparing" = "バックアップを準備中...";
+"backup.current_file.scanning_library" = "フォトライブラリをスキャン中...";
 "backup.current_file.connecting_sftp" = "SFTPサーバーに接続中...";
 "backup.error.invalid_webdav_host" = "WebDAVサーバーのアドレスが無効です";
 
