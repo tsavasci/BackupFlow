@@ -68,7 +68,7 @@
 "battery.threshold_footer" = "Cihaz şarj oluyorsa veya tam doluysa bu eşik göz ardı edilir.";
 "battery.backup_conditions" = "Yedekleme Koşulları";
 "battery.condition.battery_level" = "Pil Seviyesi";
-"battery.condition.battery_subtitle" = "En az %%%d gerekli";
+"battery.condition.battery_subtitle" = "En az %d%% gerekli";
 "battery.condition.charging" = "Şarj Oluyor";
 "battery.condition.charging_subtitle" = "Cihaz şarj edilirken";
 "battery.condition.full" = "Pil Dolu";
@@ -77,7 +77,7 @@
 "battery.help.1" = "Düşük pil seviyesinde yedekleme yapılmaz";
 "battery.help.2" = "Şarj sırasında tüm yedeklemeler çalışır";
 "battery.help.3" = "Atlanan yedeklemeler için bildirim gönderilir";
-"battery.low_battery" = "Pil seviyesi düşük (%%%d), minimum %%%d gerekli";
+"battery.low_battery" = "Pil seviyesi düşük (%d%%), minimum %d%% gerekli";
 "settings.reset" = "Sıfırla";
 "settings.reset_confirm_title" = "Ayarları Sıfırla";
 "settings.reset_confirm_message" = "Tüm ayarlar varsayılan değerlerine sıfırlanacak. Devam etmek istiyor musunuz?";
@@ -216,7 +216,7 @@
 "backup.target_type" = "Hedef Tipi";
 "backup.server_address" = "Sunucu Adresi";
 "backup.port_default" = "Port (Varsayılan: 21)";
-"backup.port_webdav_default" = "Varsayılan: 80";
+"backup.port_webdav_default" = "Port (Varsayılan: 443)";
 "backup.anonymous_login" = "Anonim Giriş";
 "backup.username" = "Kullanıcı Adı";
 "backup.password" = "Şifre";
@@ -277,9 +277,6 @@
 "history.stats.total_size" = "Toplam Boyut";
 "history.stats.duration" = "Süre";
 "history.stats.date" = "Tarih";
-"history.duration.seconds" = "%.1f saniye";
-"history.duration.minutes" = "%.1f dakika";
-"history.duration.hours" = "%.1f saat";
 "day.names.sunday" = "Pazar";
 "day.names.monday" = "Pazartesi";
 "day.names.tuesday" = "Salı";

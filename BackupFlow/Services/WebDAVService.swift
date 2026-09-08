@@ -883,15 +883,15 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
                 localSize = exportedSize
             case .iCloudOnly:
                 result.iCloudSkippedFiles += 1
-                progressHandler(Double(index + 1) / Double(assets.count))
+                progressHandler(Double(index + 1) / Double(max(assets.count, 1)) * 0.8)
                 continue
             case .timedOut:
                 result.timedOutAssetReads += 1
-                progressHandler(Double(index + 1) / Double(assets.count))
+                progressHandler(Double(index + 1) / Double(max(assets.count, 1)) * 0.8)
                 continue
             case .unavailable:
                 result.failedAssetReads += 1
-                progressHandler(Double(index + 1) / Double(assets.count))
+                progressHandler(Double(index + 1) / Double(max(assets.count, 1)) * 0.8)
                 continue
             }
             defer { try? fileManager.removeItem(at: tempURL) }
@@ -902,7 +902,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
                 result.skippedFiles += 1
                 result.totalBytes += localSize
                 logger.debug("⏭️ Upload skipped (\(index + 1)/\(totalAssets)): \(fileName) (\(localSize) bytes)")
-                progressHandler(Double(index + 1) / Double(assets.count))
+                progressHandler(Double(index + 1) / Double(max(assets.count, 1)) * 0.8)
                 continue
             }
 
@@ -910,9 +910,9 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
                 logger.info("⬆️ Upload starting (\(index + 1)/\(totalAssets)): \(fileName) (\(localSize) bytes)")
                 if !options.isDryRun {
                     try await uploadFileAwaitingCompletion(localURL: tempURL, remotePath: remotePath) { fileProgress in
-                        let assetShare = 1.0 / Double(max(assets.count, 1))
-                        let overallProgress = (Double(index) / Double(max(assets.count, 1))) + (fileProgress * assetShare)
-                        progressHandler(min(max(overallProgress, 0.0), 1.0))
+                        let assetShare = 0.8 / Double(max(assets.count, 1))
+                        let overallProgress = (Double(index) / Double(max(assets.count, 1)) * 0.8) + (fileProgress * assetShare)
+                        progressHandler(min(max(overallProgress, 0.0), 0.8))
                     }
                     if options.checksumMode == .verifyUploads {
                         try await verifyUploadChecksum(localURL: tempURL, remotePath: remotePath)
@@ -928,7 +928,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
                     failedUploads += 1
                     logger.error("Upload failed (continuing): \(fileName) - \(error.localizedDescription)")
                 }
-                progressHandler(Double(index + 1) / Double(assets.count))
+                progressHandler(Double(index + 1) / Double(max(assets.count, 1)) * 0.8)
                 continue
             }
 
@@ -938,7 +938,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
                 result.newFiles += 1
             }
             result.totalBytes += localSize
-            progressHandler(Double(index + 1) / Double(assets.count))
+            progressHandler(Double(index + 1) / Double(max(assets.count, 1)) * 0.8)
         }
 
         if !options.isDryRun && !timedOutUploads.isEmpty {
@@ -1057,6 +1057,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
 
         if failedUploads > 0 {
             logger.warning("⚠️ Photo sync completed with \(failedUploads) failed/timeouted uploads")
+            progressHandler(1.0)
             throw BackupServiceError.fileOperationFailed
         }
 
@@ -1390,180 +1391,6 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
                 }
             }
         }
-    }
-    
-    private func uploadDirectory(localPath: String, remotePath: String, progressHandler: @escaping (Double) -> Void) async throws -> (filesUploaded: Int, filesSkipped: Int, filesFailed: Int, bytesTransferred: Int64) {
-        guard let provider = webdavProvider else {
-            self.logger.error("WebDAV provider not available")
-            throw BackupServiceError.connectionFailed
-        }
-        
-        self.logger.info("Uploading directory: \(localPath) -> \(remotePath)")
-        
-        // Ensure remote directory exists
-        try await ensureDirectoryExists(at: remotePath)
-        
-        let fileURLs = try fileManager.contentsOfDirectory(
-            at: URL(fileURLWithPath: localPath), 
-            includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey], 
-            options: [.skipsHiddenFiles]
-        )
-        
-        var uploaded = 0, skipped = 0, failed = 0
-        var transferred: Int64 = 0
-        
-        for (index, fileURL) in fileURLs.enumerated() {
-            let fileName = fileURL.lastPathComponent
-            let remoteFilePath = remotePath.isEmpty ? fileName : (remotePath as NSString).appendingPathComponent(fileName)
-            progressHandler(Double(index) / Double(fileURLs.count))
-            
-            let resourceValues = try fileURL.resourceValues(forKeys: [.isDirectoryKey, .fileSizeKey])
-            
-            if resourceValues.isDirectory == true {
-                // Handle directory
-                try await createDirectory(at: remoteFilePath)
-                let subResult = try await uploadDirectory(
-                    localPath: fileURL.path, 
-                    remotePath: remoteFilePath, 
-                    progressHandler: { _ in }
-                )
-                uploaded += subResult.filesUploaded
-                skipped += subResult.filesSkipped
-                failed += subResult.filesFailed
-                transferred += subResult.bytesTransferred
-            } else {
-                // Handle file
-                let size = Int64(resourceValues.fileSize ?? 0)
-                do {
-                    // Upload file
-                    self.logger.info("Uploading: \(fileURL.lastPathComponent) (\(ByteCountFormatter.string(fromByteCount: size, countStyle: .file)))")
-                    
-                    try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                        // Upload file directly from URL to reduce memory usage
-                        provider.copyItem(localFile: fileURL, to: remoteFilePath, overwrite: true) { error in
-                            if let error = error {
-                                self.logger.error("Failed to upload file: \(fileURL.lastPathComponent) - \(error.localizedDescription)")
-                                failed += 1
-                                continuation.resume(throwing: error)
-                            } else {
-                                self.logger.info("Successfully uploaded: \(fileURL.lastPathComponent) (\(ByteCountFormatter.string(fromByteCount: size, countStyle: .file)))")
-                                uploaded += 1
-                                transferred += size
-                                continuation.resume()
-                            }
-                        }
-                    }
-                } catch {
-                    self.logger.error("Failed to read file: \(fileURL.lastPathComponent) - \(error.localizedDescription)")
-                    failed += 1
-                }
-            }
-        }
-        return (uploaded, skipped, failed, transferred)
-    }
-    
-    private func backupPhotoLibrary(to destination: URL, mediaType: MediaType, progressHandler: @escaping (Double) -> Void) async throws -> Int {
-        let status = PHPhotoLibrary.authorizationStatus()
-        guard status == .authorized || status == .limited else {
-            throw BackupServiceError.authenticationFailed
-        }
-        
-        let fetchOptions = PHFetchOptions()
-        
-        // Metadata optimizasyonu - PHAsset özelliklerini önceden yükle
-        fetchOptions.includeAssetSourceTypes = [.typeUserLibrary, .typeCloudShared]
-        fetchOptions.includeHiddenAssets = false
-        
-        let fetchResult: PHFetchResult<PHAsset>
-        
-        switch mediaType {
-        case .photosOnly: 
-            fetchOptions.predicate = NSPredicate(format: "mediaType = %d", PHAssetMediaType.image.rawValue)
-            fetchResult = PHAsset.fetchAssets(with: .image, options: fetchOptions)
-        case .videosOnly: 
-            fetchOptions.predicate = NSPredicate(format: "mediaType = %d", PHAssetMediaType.video.rawValue)
-            fetchResult = PHAsset.fetchAssets(with: .video, options: fetchOptions)
-        case .photosAndVideos: 
-            fetchResult = PHAsset.fetchAssets(with: fetchOptions)
-        }
-        
-        let count = fetchResult.count
-        guard count > 0 else { return 0 }
-        try fileManager.createDirectory(at: destination, withIntermediateDirectories: true)
-        
-        let imageManager = PHImageManager.default()
-        var saved = 0
-        
-        for i in 0..<count {
-            let asset = fetchResult.object(at: i)
-            let progress = Double(i + 1) / Double(count)
-            progressHandler(progress)
-            
-            // Generate consistent filename like FTP service
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
-            let date = asset.creationDate ?? Date()
-            let dateString = dateFormatter.string(from: date)
-            
-            let fileExtension = asset.mediaType == .image ? "jpg" : "mp4"
-            let consistentFilename = "\(dateString)_\(String(i + 1).padding(toLength: 3, withPad: "0", startingAt: 0)).\(fileExtension)"
-            let fileURL = destination.appendingPathComponent(consistentFilename)
-            
-            if fileManager.fileExists(atPath: fileURL.path) { 
-                saved += 1
-                continue 
-            }
-            
-            if asset.mediaType == .image {
-                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                    // Performans için background thread'de çalıştır
-                    DispatchQueue.global(qos: .userInitiated).async {
-                        let options = PHImageRequestOptions()
-                        // Local-only mode: do not fetch image from iCloud.
-                        options.isNetworkAccessAllowed = false
-                        options.deliveryMode = .highQualityFormat
-                        options.resizeMode = .none
-                        options.isSynchronous = false
-                        
-                        imageManager.requestImageDataAndOrientation(for: asset, options: options) { data, _, _, _ in
-                            do {
-                                if let data = data {
-                                    try data.write(to: fileURL)
-                                    saved += 1
-                                }
-                                continuation.resume()
-                            } catch {
-                                self.logger.error("Failed to save image: \(error.localizedDescription)")
-                                continuation.resume(throwing: error)
-                            }
-                        }
-                    }
-                }
-            } else if asset.mediaType == .video {
-                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                    let resources = PHAssetResource.assetResources(for: asset)
-                    guard let videoResource = resources.first(where: { $0.type == .video || $0.type == .fullSizeVideo }) ?? resources.first else {
-                        continuation.resume()
-                        return
-                    }
-
-                    let requestOptions = PHAssetResourceRequestOptions()
-                    // Local-only mode: do not fetch video from iCloud.
-                    requestOptions.isNetworkAccessAllowed = false
-
-                    PHAssetResourceManager.default().writeData(for: videoResource, toFile: fileURL, options: requestOptions) { error in
-                        if let error = error {
-                            self.logger.error("Failed to write video resource: \(error.localizedDescription)")
-                            continuation.resume(throwing: error)
-                            return
-                        }
-                        saved += 1
-                        continuation.resume()
-                    }
-                }
-            }
-        }
-        return saved
     }
     
     // MARK: - Backup Implementation

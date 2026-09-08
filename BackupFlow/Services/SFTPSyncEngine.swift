@@ -225,9 +225,9 @@ struct SFTPSyncEngine {
                 continue
             }
             defer { try? FileManager.default.removeItem(at: tempURL) }
-            
-            let remotePath = "\(photosDir)/\(fileName)"
-            
+
+            let fileRemotePath = "\(photosDir)/\(fileName)"
+
             if let remoteSize = existingFileMap[fileName], remoteSize == localSize {
                 result.skippedFiles += 1
                 result.totalBytes += localSize
@@ -236,14 +236,14 @@ struct SFTPSyncEngine {
                     await markCheckpoint?(fileName)
                 }
             } else if existingFileMap[fileName] != nil {
-                let didUpload = options.isDryRun ? true : try await uploadFile(tempURL, remotePath, localSize, true) { fileProgress in
+                let didUpload = options.isDryRun ? true : try await uploadFile(tempURL, fileRemotePath, localSize, true) { fileProgress in
                     let assetShare = 1.0 / Double(max(totalCount, 1))
                     let overallProgress = (Double(index) / Double(max(totalCount, 1))) + (fileProgress * assetShare)
                     progressHandler?(min(max(overallProgress, 0.0), 1.0))
                 }
                 if didUpload {
                     if !options.isDryRun && options.checksumMode == .verifyUploads {
-                        try await verifyUpload(tempURL, remotePath)
+                        try await verifyUpload(tempURL, fileRemotePath)
                         result.verifiedFiles += 1
                     }
                     result.updatedFiles += 1
@@ -257,14 +257,14 @@ struct SFTPSyncEngine {
                     result.totalBytes += localSize
                 }
             } else {
-                let didUpload = options.isDryRun ? true : try await uploadFile(tempURL, remotePath, localSize, true) { fileProgress in
+                let didUpload = options.isDryRun ? true : try await uploadFile(tempURL, fileRemotePath, localSize, true) { fileProgress in
                     let assetShare = 1.0 / Double(max(totalCount, 1))
                     let overallProgress = (Double(index) / Double(max(totalCount, 1))) + (fileProgress * assetShare)
                     progressHandler?(min(max(overallProgress, 0.0), 1.0))
                 }
                 if didUpload {
                     if !options.isDryRun && options.checksumMode == .verifyUploads {
-                        try await verifyUpload(tempURL, remotePath)
+                        try await verifyUpload(tempURL, fileRemotePath)
                         result.verifiedFiles += 1
                     }
                     result.newFiles += 1
@@ -279,10 +279,11 @@ struct SFTPSyncEngine {
                 }
             }
             
-            let progress = Double(index + 1) / Double(max(totalCount, 1))
+            // Scale to 80% — leaves room for the deletion/archive phase below
+            let progress = Double(index + 1) / Double(max(totalCount, 1)) * 0.8
             progressHandler?(progress)
         }
-        
+
         let processedFiles = Set(assets.map { photoManager.generateFileName(for: $0) })
         let canDeletePhotoOrphans = options.permitsPhotoOrphanDeletion(
             hasFullLibraryAccess: photoManager.hasFullLibraryAccess,
@@ -338,10 +339,11 @@ struct SFTPSyncEngine {
         if !options.isDryRun {
             await clearCheckpoint?()
         }
-        
+
+        progressHandler?(1.0)
         return result
     }
-    
+
     private func collectLocalFiles(from localPath: String) throws -> [String: URL] {
         var fileMap: [String: URL] = [:]
         

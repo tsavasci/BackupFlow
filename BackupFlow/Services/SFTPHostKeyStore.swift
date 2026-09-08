@@ -61,6 +61,52 @@ final class SFTPHostKeyStore: @unchecked Sendable {
         return true
     }
 
+    /// Removes a stored host key so the next connection treats it as a new (unknown) host.
+    /// Call this when the user explicitly re-trusts a server after a key change.
+    func delete(host: String, port: Int) {
+        lock.lock()
+        defer { lock.unlock() }
+        let account = accountName(host: host, port: port)
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account
+        ]
+        SecItemDelete(query as CFDictionary)
+    }
+
+    /// Replaces the stored fingerprint for a host. Use when the user explicitly trusts a new key.
+    func update(fingerprint: String, host: String, port: Int) throws {
+        lock.lock()
+        defer { lock.unlock() }
+        let account = accountName(host: host, port: port)
+        guard let data = fingerprint.data(using: .utf8) else {
+            throw SFTPHostKeyValidationError.keychainFailure(errSecParam)
+        }
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account
+        ]
+        let attributes: [String: Any] = [kSecValueData as String: data]
+        let status = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
+        if status == errSecItemNotFound {
+            let addQuery: [String: Any] = [
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrService as String: service,
+                kSecAttrAccount as String: account,
+                kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+                kSecValueData as String: data
+            ]
+            let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
+            guard addStatus == errSecSuccess else {
+                throw SFTPHostKeyValidationError.keychainFailure(addStatus)
+            }
+        } else if status != errSecSuccess {
+            throw SFTPHostKeyValidationError.keychainFailure(status)
+        }
+    }
+
     private func fingerprintForAccount(_ account: String) -> String? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,

@@ -163,7 +163,6 @@
 "about.title" = "About BackupFlow";
 "about.version" = "Version";
 "about.build" = "Build";
-"about.description" = "Professional backup solution for iOS with FTP/WebDAV support";
 "about.developer" = "Developer";
 "about.website" = "Website";
 "about.support" = "Support";
@@ -274,9 +273,7 @@
 "history.stats.total_size" = "Total Size";
 "history.stats.duration" = "Duration";
 "history.stats.date" = "Date";
-"history.duration.seconds" = "%.1f seconds";
-"history.duration.minutes" = "%.1f minutes";
-"history.duration.hours" = "%.1f hours";
+
 
 "day.names.sunday" = "Sunday";
 "day.names.monday" = "Monday";

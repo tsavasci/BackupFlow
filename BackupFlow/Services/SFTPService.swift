@@ -220,7 +220,7 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     private func normalizedHost(_ rawHost: String) throws -> String {
         var host = rawHost.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !host.isEmpty else {
-            throw makeSFTPError(.connection, details: "Geçersiz SFTP sunucu adresi")
+            throw makeSFTPError(.connection)
         }
 
         if host.hasPrefix("http:/") && !host.hasPrefix("http://") {
@@ -258,14 +258,14 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         host = host.trimmingCharacters(in: CharacterSet(charactersIn: "/[] ").union(.whitespacesAndNewlines))
         let lowerHost = host.lowercased()
         if host.isEmpty || lowerHost == "http" || lowerHost == "https" || lowerHost == "sftp" || lowerHost == "ftp" {
-            throw makeSFTPError(.connection, details: "Geçersiz SFTP sunucu adresi: \(rawHost)")
+            throw makeSFTPError(.connection, details: rawHost)
         }
 
         var validation = URLComponents()
         validation.scheme = "sftp"
         validation.host = host
         guard validation.url != nil else {
-            throw makeSFTPError(.connection, details: "Geçersiz SFTP sunucu adresi: \(rawHost)")
+            throw makeSFTPError(.connection, details: rawHost)
         }
 
         return host
@@ -284,6 +284,20 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         return result ?? SFTPHostKeyResult(isNewHostKey: false, fingerprint: nil)
     }
     
+    /// Removes the stored host key fingerprint for the given server.
+    /// After calling this, the next connection will treat the server as newly seen (TOFU).
+    /// Use when the user explicitly wants to re-trust a server after a key change.
+    func clearTrustedHostKey(host: String, port: Int) throws {
+        let host = try normalizedHost(host)
+        SFTPHostKeyStore.shared.delete(host: host, port: port)
+    }
+
+    /// Replaces the stored host key fingerprint. Use when the user explicitly trusts a changed key.
+    func updateTrustedHostKey(fingerprint: String, host: String, port: Int) throws {
+        let host = try normalizedHost(host)
+        try SFTPHostKeyStore.shared.update(fingerprint: fingerprint, host: host, port: port)
+    }
+
     func connect(host: String, port: Int, username: String?, password: String?) async throws {
         let normalizedHost = try normalizedHost(host)
         if let username {
@@ -359,26 +373,44 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     }
 
     private func listDirectory(at path: String, timeout: TimeInterval?) async throws -> [FileObject] {
-        _ = timeout
         guard let sftp = currentSFTPClient() else {
             throw BackupServiceError.connectionFailed
         }
-        let entries = try await sftp.listDirectory(atPath: path)
-        let components = entries.flatMap(\.components).filter { $0.filename != "." && $0.filename != ".." }
-        let mapped: [FileObject] = components.map { item in
-            var values: [URLResourceKey: Any] = [:]
-            values[.nameKey] = item.filename
-            values[.pathKey] = item.filename
-            values[.fileSizeKey] = Int64(item.attributes.size ?? 0)
-            let permissions = item.attributes.permissions ?? 0
-            let isDirectory = (permissions & 0o170000) == 0o040000
-            values[.fileResourceTypeKey] = isDirectory ? URLFileResourceType.directory : URLFileResourceType.regular
-            let modified = item.attributes.accessModificationTime?.modificationTime
-            values[.contentModificationDateKey] = modified
-            values[.creationDateKey] = modified
-            return FileObject(allValues: values)
+
+        // Local function — avoids needing to name the Citadel entry type explicitly
+        func fetch() async throws -> [FileObject] {
+            let entries = try await sftp.listDirectory(atPath: path)
+            return entries.flatMap(\.components)
+                .filter { $0.filename != "." && $0.filename != ".." }
+                .map { item in
+                    var values: [URLResourceKey: Any] = [:]
+                    values[.nameKey] = item.filename
+                    values[.pathKey] = item.filename
+                    values[.fileSizeKey] = Int64(item.attributes.size ?? 0)
+                    let permissions = item.attributes.permissions ?? 0
+                    let isDirectory = (permissions & 0o170000) == 0o040000
+                    values[.fileResourceTypeKey] = isDirectory ? URLFileResourceType.directory : URLFileResourceType.regular
+                    let modified = item.attributes.accessModificationTime?.modificationTime
+                    values[.contentModificationDateKey] = modified
+                    values[.creationDateKey] = modified
+                    return FileObject(allValues: values)
+                }
         }
-        return mapped
+
+        guard let timeout else {
+            return try await fetch()
+        }
+
+        let timeoutError = makeSFTPError(.timeout)
+        return try await withThrowingTaskGroup(of: [FileObject].self) { group in
+            group.addTask { try await fetch() }
+            group.addTask {
+                try await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
+                throw timeoutError
+            }
+            defer { group.cancelAll() }
+            return try await group.next()!
+        }
     }
 
     private func prefetchRemoteFileMap(at path: String, timeout: TimeInterval) async throws -> [String: Int64] {
@@ -490,7 +522,7 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                 self?.endTransferBackgroundTask()
             },
             isCancelled: { [weak self] in
-                return self?.isCancelled ?? false
+                return self?.isCancelledState() ?? false
             },
             loadCheckpoint: { [weak self] in
                 guard let self else { return [] }

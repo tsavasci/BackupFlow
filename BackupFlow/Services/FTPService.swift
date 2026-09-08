@@ -57,6 +57,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     }
 
     private let lock = NSLock()
+    private let cancellationLock = NSLock()
     private var _ftpProvider: FTPFileProvider?
     private var _currentTask: Progress?
     private var _currentTransferID: UUID?
@@ -69,14 +70,18 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
 
     private var currentTask: Progress? {
         get { lock.withLock { _currentTask } }
-        set { 
+        set {
             lock.lock()
             _currentTask = newValue
             lock.unlock()
         }
     }
-    
-    private var isCancelled = false
+
+    private var _isCancelled = false
+    private var isCancelled: Bool {
+        get { cancellationLock.withLock { _isCancelled } }
+        set { cancellationLock.withLock { _isCancelled = newValue } }
+    }
     private let partialFileMarker = ".backupflow-partial-"
     
     private func maskedURLString(_ url: URL) -> String {
@@ -628,7 +633,6 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         isCancelled = false
         
         if isVerboseLoggingEnabled {
-            logger.info("Dosyalar yükleniyor: \(localURL.path)")
             logger.info("Dosyalar yükleniyor: \(localURL.path)")
         }
         

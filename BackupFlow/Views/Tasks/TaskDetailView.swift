@@ -13,15 +13,15 @@ struct TaskDetailView: View {
         self.task = task
     }
     
-    private var taskDateFormatter: DateFormatter = {
+    private static let taskDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "dd.MM.yyyy HH:mm"
-        formatter.locale = Locale.current  // Kullanıcının locale'i
-        formatter.timeZone = TimeZone.current  // Kullanıcının timezone'u
+        formatter.locale = Locale.current
+        formatter.timeZone = TimeZone.current
         return formatter
     }()
-    
-    private var fileSizeFormatter: ByteCountFormatter = {
+
+    private static let fileSizeFormatter: ByteCountFormatter = {
         let formatter = ByteCountFormatter()
         formatter.countStyle = .file
         formatter.allowsNonnumericFormatting = true
@@ -47,7 +47,7 @@ struct TaskDetailView: View {
                     LabeledContent("task.details.last_failure".localized, value: category.displayName)
                 }
                 if let nextRun = task.nextRunTime {
-                    LabeledContent("task.details.next_backup".localized, value: taskDateFormatter.string(from: nextRun))
+                    LabeledContent("task.details.next_backup".localized, value: Self.taskDateFormatter.string(from: nextRun))
                 }
             }
             .liquidListRow()
@@ -71,16 +71,16 @@ struct TaskDetailView: View {
                     ForEach(histories) { history in
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
-                                Text(taskDateFormatter.string(from: history.timestamp))
+                                Text(Self.taskDateFormatter.string(from: history.timestamp))
                                     .font(.subheadline)
                                 Spacer()
                                 Text(localizedHistoryStatus(history.status))
                                     .font(.caption)
-                                    .foregroundStyle(history.status.lowercased() == "completed" ? .green : .red)
+                                    .foregroundStyle(history.status == BackupStatus.completed.rawValue ? .green : .red)
                             }
                             
-                            if history.status.lowercased() == "completed" {
-                                Text("\(history.totalFiles)\("task.details.files_size".localized)\(fileSizeFormatter.string(fromByteCount: history.totalBytes))")
+                            if history.status == BackupStatus.completed.rawValue {
+                                Text("\(history.totalFiles)\("task.details.files_size".localized)\(Self.fileSizeFormatter.string(fromByteCount: history.totalBytes))")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                                 

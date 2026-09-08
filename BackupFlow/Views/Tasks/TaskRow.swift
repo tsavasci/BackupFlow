@@ -3,22 +3,22 @@ import SwiftData
 import UserNotifications
 
 struct TaskRow: View {
-    @State var task: BackupTask
+    @Bindable var task: BackupTask
     let onDelete: (BackupTask) -> Void
-    
+
     @State private var showCancelAlert = false
     @State private var showDetailsSheet = false
     @State private var showErrorSheet = false
-    
-    private var taskDateFormatter: DateFormatter = {
+
+    private static let taskDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "dd.MM.yyyy HH:mm"
-        formatter.locale = Locale.current  // Kullanıcının locale'i
-        formatter.timeZone = TimeZone.current  // Kullanıcının timezone'u
+        formatter.locale = Locale.current
+        formatter.timeZone = TimeZone.current
         return formatter
     }()
-    
-    private var fileSizeFormatter: ByteCountFormatter = {
+
+    private static let fileSizeFormatter: ByteCountFormatter = {
         let formatter = ByteCountFormatter()
         formatter.countStyle = .file
         formatter.allowsNonnumericFormatting = true
@@ -118,7 +118,7 @@ struct TaskRow: View {
                 
                 // İlerleme yüzdesi (sağ üstte)
                 if task.backupStatus == .uploading {
-                    Text("%\(Int(task.progress * 100))")
+                    Text("\(Int(task.progress * 100))%")
                         .font(.caption.bold())
                         .foregroundColor(.accentColor)
                 }
@@ -133,7 +133,7 @@ struct TaskRow: View {
                     Image(systemName: "clock")
                 }
                 if let nextRun = task.nextRunTime {
-                    Text("\("tasks.next_run".localized): \(taskDateFormatter.string(from: nextRun))")
+                    Text("\("tasks.next_run".localized): \(Self.taskDateFormatter.string(from: nextRun))")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -156,7 +156,7 @@ struct TaskRow: View {
                         Text("dashboard.last_backup".localized)
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        Text(taskDateFormatter.string(from: lastBackup))
+                        Text(Self.taskDateFormatter.string(from: lastBackup))
                             .font(.subheadline)
                     }
                     
@@ -276,7 +276,6 @@ struct TaskRow: View {
             
             if task.backupStatus == .uploading || task.backupStatus == .scanning || task.backupStatus == .preparing {
                 Button(role: .destructive, action: {
-                    task.backupStatus = .cancelled
                     showCancelAlert = true
                 }) {
                     Label("backup.cancel_backup_title".localized, systemImage: "xmark.circle.fill")
@@ -286,6 +285,7 @@ struct TaskRow: View {
         .alert("backup.cancel_backup_title".localized, isPresented: $showCancelAlert) {
             Button("alert.cancel".localized, role: .cancel) {}
             Button("backup.cancel_backup_confirm".localized, role: .destructive) {
+                task.backupStatus = .cancelled
                 BackupScheduler.shared.cancelCurrentTask(for: task)
             }
         } message: {

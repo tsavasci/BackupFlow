@@ -28,7 +28,7 @@ struct DashboardWidget: View {
     
     private var isLastBackupSuccess: Bool {
         guard let backup = lastBackup else { return false }
-        return backup.status.lowercased() == "completed"
+        return backup.status == BackupStatus.completed.rawValue
     }
     
     var body: some View {
@@ -63,7 +63,7 @@ struct DashboardWidget: View {
             }
             
             // Next Scheduled Task
-        if let nextTask = nextScheduledTask, let nextRun = nextTask.nextRunTime {
+            if let nextTask = nextScheduledTask, let nextRun = nextTask.nextRunTime {
                 HStack {
                     Image(systemName: "clock.arrow.circlepath")
                         .foregroundColor(.orange)

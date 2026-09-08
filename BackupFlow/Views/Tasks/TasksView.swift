@@ -514,7 +514,7 @@ struct TaskItemCard: View {
 
                             Spacer()
 
-                            Text("%\(Int(task.progress * 100))")
+                            Text("\(Int(task.progress * 100))%")
                                 .font(DesignSystem.Typography.caption1.weight(.semibold))
                                 .foregroundColor(task.backupStatus.color)
                         }

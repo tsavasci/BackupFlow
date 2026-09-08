@@ -382,7 +382,7 @@ struct FTPSyncEngine {
                 if isVerboseLoggingEnabled {
                     logger.debug("Fast-skip by name: \(stableFileName)")
                 }
-                let progress = Double(index + 1) / Double(totalCount)
+                let progress = Double(index + 1) / Double(max(totalCount, 1)) * 0.8
                 progressHandler?(progress)
                 continue
             }
@@ -453,12 +453,13 @@ struct FTPSyncEngine {
                 debugLog("🔄 BackupFlow: Güncellenmiş dosya yüklendi: \(stableFileName) (\(formatBytes(localSize)))")
             }
 
-            let progress = Double(index + 1) / Double(totalCount)
+            let progress = Double(index + 1) / Double(max(totalCount, 1)) * 0.8
             progressHandler?(progress)
         }
-        
+
         if hasLegacyNames {
             logger.warning("Skipping orphan deletion while legacy filenames exist to prevent accidental data loss.")
+            progressHandler?(1.0)
             return result
         }
         
@@ -517,6 +518,7 @@ struct FTPSyncEngine {
             }
         }
 
+        progressHandler?(1.0)
         return result
     }
 }
