@@ -257,9 +257,20 @@ struct MainTabView: View {
                 reduceMotion: reduceMotion
             )
 
-            Text(backupMessage)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+            HStack(alignment: .firstTextBaseline) {
+                Text(backupMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+
+                Spacer(minLength: 8)
+
+                if let activeTask, activeTask.transferSpeedBytesPerSecond > 1 {
+                    Text("dashboard.speed_per_second".localized(with: formatBytes(Int64(activeTask.transferSpeedBytesPerSecond))))
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+            }
 
             if let activeTask,
                activeTask.backupStatus == .uploading,
@@ -758,6 +769,13 @@ struct MainTabView: View {
     }
 
     private func startTaskNow(_ task: BackupTask) {
+        guard task.backupType != .ftp && task.backupType != .sftp else {
+            Task {
+                try? await BackupScheduler.shared.performBackup(task: task, bypassThrottle: true)
+            }
+            return
+        }
+
         previewTask = task
         previewResult = nil
         previewError = nil

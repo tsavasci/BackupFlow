@@ -178,11 +178,19 @@ struct TaskRow: View {
                         .progressViewStyle(.linear)
                         .tint(task.backupStatus.color)
                     
-                    if let currentFile = task.currentFile {
-                        Text(URL(fileURLWithPath: currentFile).lastPathComponent)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
+                    HStack(alignment: .firstTextBaseline) {
+                        if let currentFile = task.currentFile {
+                            Text(URL(fileURLWithPath: currentFile).lastPathComponent)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
+                        }
+                        Spacer()
+                        if task.backupStatus == .uploading && task.transferSpeedBytesPerSecond > 1 {
+                            Text("dashboard.speed_per_second".localized(with: Self.fileSizeFormatter.string(fromByteCount: Int64(task.transferSpeedBytesPerSecond))))
+                                .font(.caption.monospacedDigit())
+                                .foregroundColor(.accentColor)
+                        }
                     }
                 }
             }

@@ -205,6 +205,7 @@ struct BackupView: View {
     @State private var lastTestTapAt: Date? = nil
     @State private var showingFirstBackupPrompt = false
     @State private var firstBackupTaskToStart: BackupTask? = nil
+    @State private var startingToast: String? = nil
     @State private var showingSFTPHostKeyAlert = false
     @State private var sftpHostKeyAlertMessage = ""
     @State private var showingRemoteFolderPicker = false
@@ -615,6 +616,20 @@ struct BackupView: View {
                 .padding(.bottom, 36)
             }
         }
+        .overlay(alignment: .bottom) {
+            if let toast = startingToast {
+                Text(toast)
+                    .font(.subheadline.weight(.medium))
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Capsule())
+                    .shadow(radius: 8)
+                    .padding(.bottom, 60)
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
+        }
+        .animation(.easeInOut(duration: 0.3), value: startingToast)
         .navigationTitle("backup.new_backup".localized)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -1125,7 +1140,17 @@ struct BackupView: View {
                 sftpPassword = ""
                 sftpPath = ""
 
-                if isFirstTask {
+                let isNewFTPOrSFTP = editingTask == nil && (selectedTarget == .ftp || selectedTarget == .sftp)
+
+                if isNewFTPOrSFTP {
+                    let taskToRun = taskToSave
+                    startingToast = "tasks.run_started".localized
+                    Task {
+                        try? await Task.sleep(nanoseconds: 900_000_000)
+                        dismiss()
+                        try? await BackupScheduler.shared.performBackup(task: taskToRun, bypassThrottle: true)
+                    }
+                } else if isFirstTask {
                     firstBackupTaskToStart = taskToSave
                     showingFirstBackupPrompt = true
                 } else {

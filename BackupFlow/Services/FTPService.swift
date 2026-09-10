@@ -369,44 +369,49 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     // MARK: - BackupServiceProtocol Methods
     
     func connect(host: String, port: Int, username: String?, password: String?) async throws {
+        try await connectWithRetries(host: host, port: port, username: username, password: password, maxAttempts: FTPRetryPolicy().maxAttempts)
+    }
+
+    private func connectFastFail(host: String, port: Int, username: String?, password: String?) async throws {
+        try await connectWithRetries(host: host, port: port, username: username, password: password, maxAttempts: 1)
+    }
+
+    private func connectWithRetries(host: String, port: Int, username: String?, password: String?, maxAttempts: Int) async throws {
         let connectionInfo = try FTPConnectionBuilder.build(host: host, port: port)
         debugLog("📡 BackupFlow: FTPService - Bağlantı başlatılıyor: \(connectionInfo.displayHost):\(port)")
-        
+
         // Önce ağ iznini bekle
         try await waitForNetworkPermission()
-        
+
         // Önce mevcut bağlantıyı temizle
         disconnect()
-        
+
         if connectionInfo.host.isEmpty {
             debugLog("❌ BackupFlow: FTP sunucu adresi boş")
             logger.error("FTP sunucu adresi boş olamaz")
             throw FTPError.invalidURL
         }
-        
-        // Retry mantığı ile bağlantı kurma
+
         var lastError: Error?
         let retryPolicy = FTPRetryPolicy()
-        let maxRetries = retryPolicy.maxAttempts
-        
-        for attempt in 1...maxRetries {
+
+        for attempt in 1...maxAttempts {
             do {
                 try await performConnection(host: host, port: port, username: username, password: password, attempt: attempt)
                 debugLog("✅ BackupFlow: FTP bağlantısı başarıyla kuruldu!")
-                return // Başarılı, fonksiyondan çık
+                return
             } catch {
                 lastError = error
-                logger.warning("FTP bağlantı denemesi \(attempt)/\(maxRetries) başarısız: \(error.localizedDescription)")
-                
-                if attempt < maxRetries {
+                logger.warning("FTP bağlantı denemesi \(attempt)/\(maxAttempts) başarısız: \(error.localizedDescription)")
+
+                if attempt < maxAttempts {
                     let delaySeconds = retryPolicy.delayForAttempt(attempt)
                     logger.info("\(String(format: "%.1f", delaySeconds)) saniye bekleniyor...")
                     try await Task.sleep(nanoseconds: UInt64(delaySeconds * 1_000_000_000))
                 }
             }
         }
-        
-        // Tüm denemeler başarısız
+
         throw lastError ?? FTPError.connectionFailed
     }
     
@@ -1318,7 +1323,11 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         let actualUsername = isAnonymous ? nil : username
         let actualPassword = isAnonymous ? nil : password
 
-        try await connect(host: host, port: port, username: actualUsername, password: actualPassword)
+        if options.isDryRun {
+            try await connectFastFail(host: host, port: port, username: actualUsername, password: actualPassword)
+        } else {
+            try await connect(host: host, port: port, username: actualUsername, password: actualPassword)
+        }
 
         if startedInBackground {
             await MainActor.run {

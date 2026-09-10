@@ -310,6 +310,14 @@ struct TasksView: View {
     
     // MARK: - Helper Methods
     private func runNow(_ task: BackupTask) {
+        guard task.backupType != .ftp && task.backupType != .sftp else {
+            actionToast = "tasks.run_started".localized
+            Task {
+                try? await BackupScheduler.shared.performBackup(task: task, bypassThrottle: true)
+            }
+            return
+        }
+
         previewTask = task
         previewResult = nil
         previewError = nil
