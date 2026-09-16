@@ -7,11 +7,6 @@
 		<string>$(PRODUCT_BUNDLE_IDENTIFIER).backupTask</string>
 		<string>$(PRODUCT_BUNDLE_IDENTIFIER).processing</string>
 	</array>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>fetch</string>
-		<string>processing</string>
-	</array>
 	<key>CFBundleLocalizations</key>
 	<array>
 		<string>ar</string>
@@ -27,8 +22,6 @@
 		<string>tr</string>
 		<string>zh</string>
 	</array>
-	<key>CFBundleDevelopmentRegion</key>
-	<string>en</string>
 	<key>CFBundleLocalizedResources</key>
 	<array>
 		<string>ar</string>
@@ -61,22 +54,19 @@
 			</dict>
 		</dict>
 	</dict>
-	<key>UISupportsDocumentBrowser</key>
-	<true/>
 	<key>NSDocumentDirectory</key>
 	<true/>
-	<key>UIFileSharingEnabled</key>
-	<true/>
-	<key>LSSupportsOpeningDocumentsInPlace</key>
-	<true/>
-	<key>NSSupportsLiveActivities</key>
-	<true/>
-	<key>NSFileProviderPresenceUpdate</key>
-	<true/>
-	<key>NSFileProviderDomainUsageDescription</key>
-	<string>Bu uygulama, dosyalarınızı yedeklemek için iCloud Drive ve Files uygulamasındaki klasörlere erişim gerektirir.</string>
 	<key>NSDocumentsDirUsageDescription</key>
 	<string>Belgelerinizi yedeklemek için Belgeler klasörüne erişim gereklidir.</string>
+	<key>NSFileProviderPresenceUpdate</key>
+	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>processing</string>
+	</array>
+	<key>UIFileSharingEnabled</key>
+	<true/>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>

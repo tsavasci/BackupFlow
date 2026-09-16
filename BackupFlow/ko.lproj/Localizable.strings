@@ -545,6 +545,8 @@
 
 "backup.ftp_background_warning.title" = "FTP 백업 시작됨";
 "backup.ftp_background_warning.body" = "대용량 파일을 안정적으로 백업하려면 앱을 전면에 유지하세요.";
+"backup.sftp_background_warning.title" = "SFTP 백업 시작됨";
+"backup.sftp_background_warning.body" = "대용량 파일을 안정적으로 백업하려면 앱을 전면에 유지하세요.";
 "backup.network_unavailable.title" = "네트워크 연결 없음";
 "backup.network_unavailable.body" = "네트워크 연결 없음. 재시도 %d/%d.";
 "backup.network_unavailable.body_with_delay" = "네트워크 연결 없음. 재시도 %d/%d (%d분 후).";

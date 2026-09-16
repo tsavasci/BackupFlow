@@ -543,6 +543,8 @@
 
 "backup.ftp_background_warning.title" = "Copia FTP iniciada";
 "backup.ftp_background_warning.body" = "Para asegurar copias de archivos grandes, mantén la app en primer plano.";
+"backup.sftp_background_warning.title" = "Copia SFTP iniciada";
+"backup.sftp_background_warning.body" = "Para asegurar copias de archivos grandes, mantén la app en primer plano.";
 "backup.network_unavailable.title" = "Sin conexión de red";
 "backup.network_unavailable.body" = "Sin conexión de red. Reintento %d/%d.";
 "backup.network_unavailable.body_with_delay" = "Sin conexión de red. Reintento %d/%d (en %d min).";

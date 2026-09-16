@@ -542,6 +542,8 @@
 
 "backup.ftp_background_warning.title" = "FTP 备份已开始";
 "backup.ftp_background_warning.body" = "为确保大文件可靠备份，请保持应用在前台。";
+"backup.sftp_background_warning.title" = "SFTP 备份已开始";
+"backup.sftp_background_warning.body" = "为确保大文件可靠备份，请保持应用在前台。";
 "backup.network_unavailable.title" = "无网络连接";
 "backup.network_unavailable.body" = "无网络连接。将重试 %d/%d。";
 "backup.network_unavailable.body_with_delay" = "无网络连接。将重试 %d/%d（%d 分钟后）。";

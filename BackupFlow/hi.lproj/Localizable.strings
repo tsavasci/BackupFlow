@@ -543,6 +543,8 @@
 
 "backup.ftp_background_warning.title" = "FTP बैकअप शुरू हुआ";
 "backup.ftp_background_warning.body" = "बड़ी फ़ाइलों का बैकअप भरोसेमंद रखने के लिए ऐप को अग्रभूमि में रखें।";
+"backup.sftp_background_warning.title" = "SFTP बैकअप शुरू हुआ";
+"backup.sftp_background_warning.body" = "बड़ी फ़ाइलों का बैकअप भरोसेमंद रखने के लिए ऐप को अग्रभूमि में रखें।";
 "backup.network_unavailable.title" = "नेटवर्क कनेक्शन नहीं है";
 "backup.network_unavailable.body" = "नेटवर्क कनेक्शन नहीं है। पुनः प्रयास %d/%d।";
 "backup.network_unavailable.body_with_delay" = "नेटवर्क कनेक्शन नहीं है। पुनः प्रयास %d/%d (%d मिनट बाद)।";

@@ -537,6 +537,8 @@
 
 "backup.ftp_background_warning.title" = "FTP Backup Started";
 "backup.ftp_background_warning.body" = "To ensure large files back up reliably, keep the app in the foreground.";
+"backup.sftp_background_warning.title" = "SFTP Backup Started";
+"backup.sftp_background_warning.body" = "To ensure large files back up reliably, keep the app in the foreground.";
 "backup.network_unavailable.title" = "No Network Connection";
 "backup.network_unavailable.body" = "No network connection. Will retry %d/%d.";
 "backup.network_unavailable.body_with_delay" = "No network connection. Will retry %d/%d (%d min later).";

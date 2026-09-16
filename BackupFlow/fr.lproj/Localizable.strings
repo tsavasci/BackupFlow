@@ -545,6 +545,8 @@
 
 "backup.ftp_background_warning.title" = "Sauvegarde FTP démarrée";
 "backup.ftp_background_warning.body" = "Pour garantir la sauvegarde des gros fichiers, gardez l’app au premier plan.";
+"backup.sftp_background_warning.title" = "Sauvegarde SFTP démarrée";
+"backup.sftp_background_warning.body" = "Pour garantir la sauvegarde des gros fichiers, gardez l’app au premier plan.";
 "backup.network_unavailable.title" = "Aucune connexion réseau";
 "backup.network_unavailable.body" = "Aucune connexion réseau. Nouvelle tentative %d/%d.";
 "backup.network_unavailable.body_with_delay" = "Aucune connexion réseau. Nouvelle tentative %d/%d (dans %d min).";

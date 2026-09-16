@@ -543,6 +543,8 @@
 
 "backup.ftp_background_warning.title" = "FTPバックアップを開始しました";
 "backup.ftp_background_warning.body" = "大きなファイルを確実にバックアップするため、アプリを前面に保ってください。";
+"backup.sftp_background_warning.title" = "SFTPバックアップを開始しました";
+"backup.sftp_background_warning.body" = "大きなファイルを確実にバックアップするため、アプリを前面に保ってください。";
 "backup.network_unavailable.title" = "ネットワーク接続なし";
 "backup.network_unavailable.body" = "ネットワーク接続がありません。再試行 %d/%d。";
 "backup.network_unavailable.body_with_delay" = "ネットワーク接続がありません。再試行 %d/%d（%d分後）。";

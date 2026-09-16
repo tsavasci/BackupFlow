@@ -804,7 +804,30 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             }
         }
     }
-    
+
+    /// SFTP'nin arka planda çalışmasının limitleri hakkında uyarı bildirimi gönderir.
+    private func sendBackgroundSFTPWarningNotification() {
+        let content = UNMutableNotificationContent()
+        content.title = "backup.sftp_background_warning.title".localized
+        content.body = "backup.sftp_background_warning.body".localized
+        content.sound = .default
+
+        // identifier'ı sabit tutarak aynı anda birden fazla uyarının birikmesini önle
+        let request = UNNotificationRequest(
+            identifier: "sftp-background-warning",
+            content: content,
+            trigger: nil // Immediately
+        )
+
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                debugLog("❌ BackupFlow: SFTP uyarı bildirimi gönderilemedi: \(error.localizedDescription)")
+            } else {
+                debugLog("🔔 BackupFlow: SFTP arka plan uyarı bildirimi gönderildi.")
+            }
+        }
+    }
+
     /// Sends a no-network retry notification like: "Ağ bağlantısı yok. Tekrar denenecek 1/3"
     private func sendNoNetworkRetryNotification(task: BackupTask, attempt: Int, maxAttempts: Int, delaySeconds: TimeInterval) {
         let content = UNMutableNotificationContent()
@@ -1107,11 +1130,16 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         for taskToRun in dueTasks {
             activeBackgroundTaskID = taskToRun.id
             
-            // Check if it's an FTP task in the background and send a warning notification
-            if taskToRun.backupType == .ftp {
+            // Check if it's an FTP/SFTP task in the background and send a warning notification
+            // (both rely on a raw socket connection with no system-managed background transfer)
+            if taskToRun.backupType == .ftp || taskToRun.backupType == .sftp {
                 #if canImport(UIKit)
                 if UIApplication.shared.applicationState == .background {
-                    sendBackgroundFTPWarningNotification()
+                    if taskToRun.backupType == .ftp {
+                        sendBackgroundFTPWarningNotification()
+                    } else {
+                        sendBackgroundSFTPWarningNotification()
+                    }
                 }
                 #endif
             }

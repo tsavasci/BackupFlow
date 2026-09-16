@@ -543,6 +543,8 @@
 
 "backup.ftp_background_warning.title" = "FTP-Backup gestartet";
 "backup.ftp_background_warning.body" = "Damit große Dateien zuverlässig gesichert werden, bleibt die App im Vordergrund.";
+"backup.sftp_background_warning.title" = "SFTP-Backup gestartet";
+"backup.sftp_background_warning.body" = "Damit große Dateien zuverlässig gesichert werden, bleibt die App im Vordergrund.";
 "backup.network_unavailable.title" = "Keine Netzwerkverbindung";
 "backup.network_unavailable.body" = "Keine Netzwerkverbindung. Neuer Versuch %d/%d.";
 "backup.network_unavailable.body_with_delay" = "Keine Netzwerkverbindung. Neuer Versuch %d/%d (in %d Min.).";

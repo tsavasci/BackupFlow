@@ -543,6 +543,8 @@
 
 "backup.ftp_background_warning.title" = "بدأت النسخة الاحتياطية عبر FTP";
 "backup.ftp_background_warning.body" = "لضمان نسخ الملفات الكبيرة بشكل موثوق، أبقِ التطبيق في المقدمة.";
+"backup.sftp_background_warning.title" = "بدأت النسخة الاحتياطية عبر SFTP";
+"backup.sftp_background_warning.body" = "لضمان نسخ الملفات الكبيرة بشكل موثوق، أبقِ التطبيق في المقدمة.";
 "backup.network_unavailable.title" = "لا يوجد اتصال بالشبكة";
 "backup.network_unavailable.body" = "لا يوجد اتصال بالشبكة. ستتم إعادة المحاولة %d/%d.";
 "backup.network_unavailable.body_with_delay" = "لا يوجد اتصال بالشبكة. ستتم إعادة المحاولة %d/%d (بعد %d دقيقة).";

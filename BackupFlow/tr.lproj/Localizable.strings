@@ -517,6 +517,8 @@
 
 "backup.ftp_background_warning.title" = "FTP Yedekleme Başladı";
 "backup.ftp_background_warning.body" = "Büyük dosyaların sorunsuz yedeklenmesi için uygulamanın ön planda tutulması önerilir.";
+"backup.sftp_background_warning.title" = "SFTP Yedekleme Başladı";
+"backup.sftp_background_warning.body" = "Büyük dosyaların sorunsuz yedeklenmesi için uygulamanın ön planda tutulması önerilir.";
 "backup.network_unavailable.title" = "Ağ Bağlantısı Yok";
 "backup.network_unavailable.body" = "Ağ bağlantısı yok. Tekrar denenecek %d/%d.";
 "backup.network_unavailable.body_with_delay" = "Ağ bağlantısı yok. Tekrar denenecek %d/%d (%d dk sonra).";

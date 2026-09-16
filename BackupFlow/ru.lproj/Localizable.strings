@@ -543,6 +543,8 @@
 
 "backup.ftp_background_warning.title" = "Резервное копирование FTP начато";
 "backup.ftp_background_warning.body" = "Чтобы надежно сохранять большие файлы, держите приложение на переднем плане.";
+"backup.sftp_background_warning.title" = "Резервное копирование SFTP начато";
+"backup.sftp_background_warning.body" = "Чтобы надежно сохранять большие файлы, держите приложение на переднем плане.";
 "backup.network_unavailable.title" = "Нет сетевого подключения";
 "backup.network_unavailable.body" = "Нет сетевого подключения. Повтор %d/%d.";
 "backup.network_unavailable.body_with_delay" = "Нет сетевого подключения. Повтор %d/%d (через %d мин).";
