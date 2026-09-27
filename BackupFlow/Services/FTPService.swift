@@ -707,14 +707,21 @@ final class FTPService: NSObject, @unchecked Sendable {
 
             self.lock.withLock { self._currentTransferID = transferID }
 
+            // Resumed exactly once even if FilesProvider calls the completion again.
+            let pending = OneShotContinuation(continuation)
             let transferProgress = ftp.copyItem(localFile: localURL, to: remotePath) { [weak self] error in
+                guard let continuation = pending.claim() else { return }
                 guard let self else {
                     continuation.resume(throwing: FTPError.connectionFailed)
                     return
                 }
 
+                // A user cancel clears the current transfer ID before this callback runs;
+                // returning without resuming here left the whole backup hanging, so no
+                // "interrupted" history record was ever written.
                 let isCurrentTransfer = self.lock.withLock { self._currentTransferID == transferID }
                 guard isCurrentTransfer else {
+                    continuation.resume(throwing: BackupServiceError.cancelled)
                     return
                 }
 
@@ -753,7 +760,7 @@ final class FTPService: NSObject, @unchecked Sendable {
 
             guard let transferProgress else {
                 self.lock.withLock { self._currentTransferID = nil }
-                continuation.resume(throwing: FTPError.fileOperationFailed)
+                pending.claim()?.resume(throwing: FTPError.fileOperationFailed)
                 return
             }
 
