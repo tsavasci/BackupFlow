@@ -9,8 +9,10 @@ import XCTest
 
 final class BackupFlowUITestsLaunchTests: XCTestCase {
 
+    // A single launch is enough; running it for every language × orientation × appearance
+    // combination repeats this screenshot-only test dozens of times and slows the suite.
     override class var runsForEachTargetApplicationUIConfiguration: Bool {
-        true
+        false
     }
 
     override func setUpWithError() throws {
