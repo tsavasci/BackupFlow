@@ -14,6 +14,57 @@ struct MainTabView: View {
     private var tasks: [BackupTask] { queriedTasks.filter { $0.modelContext != nil } }
     private var history: [BackupHistory] { queriedHistory.filter { $0.modelContext != nil } }
 
+    /// Plain-value copy of a task for a saved-server row. After a reset SwiftUI renders
+    /// each row once more with its previous element (and reads its id to diff), so rows
+    /// must not hold the model itself: a snapshot never touches the deleted task.
+    private struct SavedServerRow: Identifiable {
+        let id: UUID
+        let displayName: String
+        let backupType: BackupType
+        let destinationText: String
+        let watermark: String
+        let lastBackupDate: Date?
+        let isScheduled: Bool
+        let isPaused: Bool
+        let isActive: Bool
+    }
+
+    private var savedServerRows: [SavedServerRow] {
+        let activeID = activeTask?.id
+        return tasks.prefix(5).map { task in
+            SavedServerRow(
+                id: task.id,
+                displayName: task.displayName,
+                backupType: task.backupType,
+                destinationText: serverDestinationText(for: task),
+                watermark: serverProtocolWatermark(for: task),
+                lastBackupDate: task.lastBackupDate,
+                isScheduled: task.frequency != .manual,
+                isPaused: task.isPaused,
+                isActive: task.id == activeID
+            )
+        }
+    }
+
+    /// Same reasoning as `SavedServerRow`: "reset all data" deletes history too.
+    private struct RecentBackupRow: Identifiable {
+        let id: PersistentIdentifier
+        let displayName: String?
+        let timestamp: Date
+        let status: String
+    }
+
+    private var recentBackupRows: [RecentBackupRow] {
+        history.prefix(3).map {
+            RecentBackupRow(id: $0.persistentModelID, displayName: $0.taskDisplayName, timestamp: $0.timestamp, status: $0.status)
+        }
+    }
+
+    /// Resolves a row back to its live task at the moment of an action.
+    private func liveTask(_ id: UUID) -> BackupTask? {
+        tasks.first { $0.id == id }
+    }
+
     @State private var showBackupSheet = false
     @State private var showHistory = false
     @State private var showSettings = false
@@ -482,19 +533,19 @@ struct MainTabView: View {
                     .padding(.vertical, 8)
             } else {
                 VStack(spacing: 8) {
-                    ForEach(tasks.prefix(5)) { task in
-                        let taskTheme = DashboardTheme.theme(for: task.backupType)
+                    ForEach(savedServerRows) { row in
+                        let taskTheme = DashboardTheme.theme(for: row.backupType)
                         HStack(alignment: .top, spacing: 12) {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(task.displayName)
+                                Text(row.displayName)
                                     .font(.subheadline.weight(.semibold))
                                     .foregroundStyle(.primary)
                                     .lineLimit(1)
-                                Text("dashboard.destination_format".localized(with: serverDestinationText(for: task)))
+                                Text("dashboard.destination_format".localized(with: row.destinationText))
                                     .font(.caption2)
                                     .foregroundStyle(.secondary)
                                     .lineLimit(1)
-                                if let lastUsed = task.lastBackupDate {
+                                if let lastUsed = row.lastBackupDate {
                                     Text("dashboard.used_date".localized(with: formatDate(lastUsed)))
                                         .font(.caption2)
                                         .foregroundStyle(.secondary)
@@ -503,7 +554,7 @@ struct MainTabView: View {
                             Spacer()
                             HStack(spacing: 8) {
                                 Button {
-                                    selectedTask = task
+                                    selectedTask = liveTask(row.id)
                                 } label: {
                                     Image(systemName: "square.and.pencil")
                                         .font(.caption2)
@@ -513,6 +564,7 @@ struct MainTabView: View {
                                 .accessibilityLabel("task.details.title".localized)
 
                                 Button {
+                                    guard let task = liveTask(row.id) else { return }
                                     taskToDelete = task
                                     showDeleteAlert = true
                                 } label: {
@@ -530,8 +582,8 @@ struct MainTabView: View {
                                 .fill(
                                     LinearGradient(
                                         colors: [
-                                            taskTheme.primary.opacity(task.id == activeTask?.id ? 0.34 : 0.24),
-                                            taskTheme.secondary.opacity(task.id == activeTask?.id ? 0.26 : 0.18),
+                                            taskTheme.primary.opacity(row.isActive ? 0.34 : 0.24),
+                                            taskTheme.secondary.opacity(row.isActive ? 0.26 : 0.18),
                                             Color(.systemBackground).opacity(0.38)
                                         ],
                                         startPoint: .topLeading,
@@ -539,9 +591,9 @@ struct MainTabView: View {
                                     )
                                 )
                                 .overlay(alignment: .bottomTrailing) {
-                                    Text(serverProtocolWatermark(for: task))
+                                    Text(row.watermark)
                                         .font(.system(size: 58, weight: .black, design: .rounded))
-                                        .foregroundStyle(taskTheme.primary.opacity(task.id == activeTask?.id ? 0.24 : 0.16))
+                                        .foregroundStyle(taskTheme.primary.opacity(row.isActive ? 0.24 : 0.16))
                                         .lineLimit(1)
                                         .minimumScaleFactor(0.72)
                                         .allowsTightening(true)
@@ -556,33 +608,33 @@ struct MainTabView: View {
                                 .stroke(
                                     LinearGradient(
                                         colors: [
-                                            taskTheme.primary.opacity(task.id == activeTask?.id ? 0.62 : 0.38),
-                                            taskTheme.secondary.opacity(task.id == activeTask?.id ? 0.48 : 0.28)
+                                            taskTheme.primary.opacity(row.isActive ? 0.62 : 0.38),
+                                            taskTheme.secondary.opacity(row.isActive ? 0.48 : 0.28)
                                         ],
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
                                     ),
-                                    lineWidth: task.id == activeTask?.id ? 1.2 : 0.8
+                                    lineWidth: row.isActive ? 1.2 : 0.8
                                 )
                         )
                         .contentShape(RoundedRectangle(cornerRadius: 12))
                         .onTapGesture {
-                            selectedTask = task
+                            selectedTask = liveTask(row.id)
                         }
                         .contextMenu {
                             Button {
-                                startTaskNow(task)
+                                if let task = liveTask(row.id) { startTaskNow(task) }
                             } label: {
                                 Label("backup.notification.action.start".localized, systemImage: "play.fill")
                             }
 
-                            if task.frequency != .manual {
+                            if row.isScheduled {
                                 Button {
-                                    togglePause(for: task)
+                                    if let task = liveTask(row.id) { togglePause(for: task) }
                                 } label: {
                                     Label(
-                                        task.isPaused ? "task.resume.button".localized : "task.pause.button".localized,
-                                        systemImage: task.isPaused ? "play.circle" : "pause.fill"
+                                        row.isPaused ? "task.resume.button".localized : "task.pause.button".localized,
+                                        systemImage: row.isPaused ? "play.circle" : "pause.fill"
                                     )
                                 }
                             }
@@ -717,7 +769,7 @@ struct MainTabView: View {
                             .fill(Color(.systemBackground).opacity(0.55))
                     )
                 } else {
-                    ForEach(history.prefix(3), id: \.persistentModelID) { record in
+                    ForEach(recentBackupRows) { record in
                         HStack(spacing: 12) {
                             ZStack {
                                 RoundedRectangle(cornerRadius: 14)
@@ -729,7 +781,7 @@ struct MainTabView: View {
                             .accessibilityHidden(true)
 
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(record.taskDisplayName ?? "dashboard.backup".localized)
+                                Text(record.displayName ?? "dashboard.backup".localized)
                                     .font(.subheadline.weight(.semibold))
                                     .lineLimit(1)
                                 Text(formatDate(record.timestamp))
