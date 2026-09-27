@@ -1,8 +1,4 @@
-"nav.tasks" = "Tâches";
-"nav.backup" = "Sauvegarde";
 "nav.history" = "Historique";
-"nav.settings" = "Paramètres";
-"nav.about" = "À propos";
 "settings.title" = "Paramètres";
 "settings.general" = "Général";
 "settings.history_retention" = "Rétention de l'historique (Jours)";
@@ -14,51 +10,11 @@
 "settings.version" = "Version";
 "settings.rate_app" = "Noter l'application";
 "settings.contact_support" = "Contacter le support";
-"settings.developer_settings" = "Paramètres développeur";
-"settings.advanced_settings" = "Paramètres avancés";
-"settings.ftp_connection_test" = "Test de connexion FTP";
 "settings.reset_all_data" = "Réinitialiser toutes les données";
-"language.selection" = "Langue";
-"language.system" = "Langue du système";
-"language.restart_required" = "Langue modifiée";
-"language.restart_message" = "L'application utilisera la nouvelle langue au prochain démarrage.";
-"alert.ok" = "OK";
 "alert.cancel" = "Annuler";
-"dashboard.title" = "Aperçu du statut";
-"dashboard.last_backup" = "Dernière sauvegarde";
-"dashboard.active_tasks" = "Tâches actives";
 "dashboard.next_task" = "Prochaine tâche";
 "dashboard.never" = "Jamais";
 "dashboard.overdue" = "En retard";
-"dashboard.in_days" = "Dans %d jours";
-"dashboard.in_hours" = "Dans %d heures";
-"dashboard.in_minutes" = "Dans %d minutes";
-"dashboard.soon" = "Très bientôt";
-"tasks.your_tasks" = "Vos tâches";
-"wifi.settings" = "Paramètres WiFi";
-"wifi.current_network" = "Réseau actuel";
-"wifi.status" = "Statut";
-"wifi.not_connected" = "Non connecté au WiFi";
-"wifi.network_not_allowed" = "Sauvegarde non autorisée sur ce réseau";
-"wifi.allowed_networks" = "Réseaux autorisés";
-"wifi.no_allowed_networks" = "Aucun réseau autorisé ajouté encore";
-"wifi.add_network" = "Ajouter un réseau";
-"wifi.remove" = "Supprimer";
-"wifi.current" = "Actuel";
-"wifi.help" = "Aide";
-"wifi.not_connected_status" = "Non connecté au WiFi";
-"wifi.unknown_network" = "Réseau inconnu";
-"wifi.network_name" = "Nom du réseau";
-"wifi.add" = "Ajouter";
-"wifi.remove_network" = "Supprimer le réseau";
-"wifi.add_network_message" = "Entrez le nom du réseau WiFi sur lequel vous voulez autoriser les sauvegardes.";
-"wifi.remove_network_message" = "Êtes-vous sûr de vouloir supprimer ce réseau de la liste autorisée ?";
-"wifi.allowed_networks_footer" = "Les sauvegardes ne s'exécuteront que sur ces réseaux. Si vide, les sauvegardes s'exécuteront sur n'importe quel réseau WiFi.";
-"wifi.help_1" = "Les sauvegardes ne s'exécutent que lorsque connecté au WiFi";
-"wifi.help_2" = "Ajoutez des réseaux spécifiques à la liste autorisée pour une meilleure sécurité";
-"wifi.help_3" = "Utilisez le bouton + pour ajouter rapidement votre réseau actuel";
-"backup.skipped.title" = "Sauvegarde ignorée";
-"backup.skipped.message" = "Tâche %@ ignorée : %@";
 "battery.settings" = "Paramètres de batterie";
 "battery.current_status" = "Statut actuel de la batterie";
 "battery.level" = "Niveau de batterie";
@@ -83,22 +39,13 @@
 "settings.reset_confirm_message" = "Tous les paramètres seront réinitialisés aux valeurs par défaut. Voulez-vous continuer ?";
 
 // Task Pause/Resume System
-"task.paused.notification.title" = "🎬 BackupFlow";
-"task.paused.notification.body" = "Tâche mise en pause : %@";
-"task.resumed.notification.title" = "🎬 BackupFlow";
-"task.resumed.notification.body" = "Planification de tâche redémarrée : %@";
 "task.pause.button" = "Mettre en pause la planification";
 "task.resume.button" = "Reprendre la planification";
 "task.status.paused" = "En pause";
 
 // Notification Actions
-"backup.notification.action.postpone" = "Reporter";
 
 // BackupScheduler Notifications
-"backup.paused.notification.title" = "Sauvegarde en pause";
-"backup.paused.notification.body" = "La tâche '%@' a été mise en pause.";
-"backup.resumed.notification.title" = "Sauvegarde reprise";
-"backup.resumed.notification.body" = "La tâche '%@' a été reprise.";
 "backup.scheduled.notification.title" = "🕐 Heure de sauvegarde !";
 "backup.scheduled.notification.body" = "La tâche '%@' est prête à s'exécuter. (%@)";
 "backup.scheduled.notification.local_cellular" = "\n\n📱 Utilisation des données cellulaires autorisée pour le serveur local.";
@@ -114,80 +61,22 @@
 "history.files.skipped" = "ignorés";
 
 // Progress Status Messages
-"progress.skipped" = "Ignoré";
-"progress.uploading" = "Téléchargement";
-"progress.downloading" = "Téléchargement";
-"progress.processing" = "Traitement";
-"progress.preparing" = "Préparation de la sauvegarde...";
-"progress.completed" = "Sauvegarde terminée";
 "battery.state.unknown" = "Inconnu";
 "battery.state.unplugged" = "Pas en charge";
 "battery.state.charging" = "En charge";
 "battery.state.full" = "Pleine";
-"tasks.create_task" = "Créer une tâche";
-"tasks.edit_task" = "Modifier la tâche";
-"tasks.task_name" = "Nom de la tâche";
-"tasks.source_path" = "Chemin source";
-"tasks.destination" = "Destination";
-"tasks.schedule" = "Planification";
-"tasks.enabled" = "Activé";
-"tasks.disabled" = "Désactivé";
-"tasks.last_run" = "Dernière exécution";
-"tasks.next_run" = "Prochaine exécution";
-"tasks.status" = "Statut";
 "tasks.delete" = "Supprimer";
-"tasks.save" = "Enregistrer";
-"tasks.cancel" = "Annuler";
 "tasks.delete_confirmation" = "Supprimer la tâche";
-"tasks.delete_message" = "Êtes-vous sûr de vouloir supprimer cette tâche ?";
-"schedule.daily" = "Quotidien";
-"schedule.weekly" = "Hebdomadaire";
-"schedule.monthly" = "Mensuel";
-"schedule.custom" = "Personnalisé";
-"ftp.server" = "Serveur";
-"ftp.port" = "Port";
-"ftp.username" = "Nom d'utilisateur";
-"ftp.password" = "Mot de passe";
-"ftp.path" = "Chemin distant";
-"ftp.test_connection" = "Tester la connexion";
-"ftp.connection_success" = "Connexion réussie";
-"ftp.connection_failed" = "Connexion échouée";
 "history.title" = "Historique des sauvegardes";
-"history.date" = "Date";
-"history.task" = "Tâche";
-"history.status" = "Statut";
-"history.size" = "Taille";
-"history.duration" = "Durée";
-"history.success" = "Succès";
-"history.failed" = "Échec";
 "history.no_history" = "Aucun historique de sauvegarde";
-"about.title" = "À propos de BackupFlow";
-"about.version" = "Version";
-"about.build" = "Build";
-"about.description" = "Solution de sauvegarde professionnelle pour iOS avec support FTP/WebDAV";
-"about.developer" = "Développeur";
-"about.website" = "Site web";
-"about.support" = "Support";
-"about.privacy" = "Politique de confidentialité";
-"about.terms" = "Conditions d'utilisation";
-"alert.info" = "Information";
-"alert.success" = "Succès";
 "alert.error" = "Erreur";
 "tasks.duplicate_error" = "Une tâche avec les mêmes paramètres existe déjà";
 "tasks.save_success" = "Tâche enregistrée avec succès";
 "tasks.scheduled" = "et planifiée";
-"tasks.schedule_error" = "mais une erreur s'est produite lors de la planification";
-"tasks.save_error" = "Erreur lors de l'enregistrement de la tâche";
-"backup.source_selection" = "Sélection de la source";
-"backup.select_folder" = "Sélectionnez le dossier à sauvegarder";
-"backup.photo_library" = "Sauvegarder la photothèque";
-"backup.media_type" = "Sélection du type de média";
-"backup.folder_selection" = "Sélection du dossier";
 "backup.or" = "ou";
 "backup.manual" = "Manuel";
 "backup.daily" = "Quotidien";
 "backup.weekly" = "Hebdomadaire";
-"backup.time" = "Heure";
 "backup.hour" = "Heure";
 "backup.minute" = "Minute";
 "backup.day" = "Jour";
@@ -195,13 +84,6 @@
 "backup.test_connection" = "Tester la connexion";
 "backup.new_backup" = "Nouvelle sauvegarde";
 "backup.clear" = "Effacer";
-"day.sunday" = "Dimanche";
-"day.monday" = "Lundi";
-"day.tuesday" = "Mardi";
-"day.wednesday" = "Mercredi";
-"day.thursday" = "Jeudi";
-"day.friday" = "Vendredi";
-"day.saturday" = "Samedi";
 "backup.connection_testing" = "Test de connexion en cours...";
 "backup.connection_success_ftp" = "Connexion FTP réussie !";
 "backup.connection_success_sftp" = "Connexion SFTP réussie !";
@@ -209,47 +91,21 @@
 "backup.connection_error" = "Erreur de connexion";
 "backup.fill_required_fields" = "Veuillez remplir les champs requis (Adresse du serveur et nom d'utilisateur/mot de passe)";
 "backup.webdav_credentials_required" = "Veuillez entrer l'URL du serveur WebDAV et les informations utilisateur";
-"backup.network_permission_check" = "Vérification des permissions réseau... (iOS peut demander une permission lors de la première utilisation)";
 "backup.source_required" = "Veuillez sélectionner une source (dossier ou photothèque)";
 "backup.photo_permission_required" = "Accès à la photothèque requis";
 "backup.invalid_folder" = "Chemin de dossier invalide. Veuillez réessayer.";
-"backup.new_task" = "Nouvelle sauvegarde";
 "backup.target_type" = "Type de destination";
 "backup.server_address" = "Adresse du serveur";
 "backup.port_default" = "Port (Par défaut: 21)";
 "backup.port_webdav_default" = "Port (Par défaut : 443)";
+"backup.port_sftp_default" = "Port (Par défaut : 22)";
 "backup.anonymous_login" = "Connexion anonyme";
 "backup.username" = "Nom d'utilisateur";
 "backup.password" = "Mot de passe";
 "backup.destination_folder" = "Dossier de destination";
-"backup.start_confirmation" = "Commencer la sauvegarde?";
-"backup.start" = "Commencer";
-"backup.pending_message" = "La tâche '%@' est en attente de démarrage depuis la notification.";
-"tasks.no_tasks" = "Aucune tâche";
-"tasks.create_first_task" = "Créez votre première tâche de sauvegarde pour commencer.";
 "tasks.delete_message_full" = "Êtes-vous sûr de vouloir supprimer cette tâche? Cette action ne peut pas être annulée.";
-"tasks.swipe_delete" = "Supprimer";
 
 // FTP Test et URLs WebDAV
-"ftp.test.connection_info" = "Informations de connexion FTP";
-"ftp.test.server_address" = "Adresse du serveur:";
-"ftp.test.port" = "Port:";
-"ftp.test.username" = "Nom d'utilisateur:";
-"ftp.test.password" = "Mot de passe:";
-"ftp.test.connection_test" = "Test de connexion FTP";
-"ftp.test.description" = "Ce test se connectera au serveur FTP et téléchargera un petit fichier de test.";
-"ftp.test.start_test" = "Commencer le test";
-"ftp.test.results" = "Résultats du test";
-"ftp.test.success_info" = "• Un test réussi indique que vous pouvez vous connecter au serveur FTP et télécharger des fichiers.";
-"ftp.test.error_info" = "• Si vous rencontrez une erreur, vérifiez vos paramètres FTP et votre connexion Internet.";
-"ftp.test.title" = "Test FTP";
-"ftp.test.completed" = "Test terminé";
-"ftp.test.completed_message" = "Test terminé.";
-"ftp.test.invalid_port" = "✗ Numéro de port invalide. Entrez une valeur entre 1-65535.";
-"ftp.test.starting" = "Démarrage du test";
-"ftp.test.starting_message" = "Démarrage du test de connexion FTP... (iOS peut demander une permission réseau lors de la première utilisation)";
-"ftp.test.success" = "✓ Test réussi ! Vous pouvez vous connecter au serveur FTP et télécharger des fichiers.";
-"ftp.test.failed" = "✗ Test échoué : ";
 
 // Task Details
 "task.details.general" = "Général";
@@ -289,15 +145,8 @@
 "day.names.thursday" = "Jeudi";
 "day.names.friday" = "Vendredi";
 "day.names.saturday" = "Samedi";
-"backup.select_folder_placeholder" = "Sélectionner un dossier...";
 "backup.select_time" = "Sélectionner l'heure";
-"backup.or_text" = "ou";
-"history.loading" = "Chargement...";
-"history.error_occurred" = "Erreur survenue : %@";
-"history.retry" = "Réessayer";
 "history.unknown" = "Inconnu";
-"history.anonymous_ftp" = "FTP anonyme";
-"history.user_prefix" = "Utilisateur : %@";
 // Backup Status Messages
 "backup.status.idle" = "Prêt";
 "backup.status.preparing" = "Préparation...";
@@ -306,85 +155,17 @@
 "backup.status.completed" = "Terminé";
 "backup.status.failed" = "Échoué";
 "backup.status.cancelled" = "Annulé";
-"error.unexpected" = "Erreur inattendue : %@";
-"error.authentication_failed" = "Échec de l'authentification utilisateur";
-"error.permission_denied" = "Accès refusé au fichier ou répertoire";
-"error.file_not_found" = "Fichier ou répertoire introuvable : %@";
-"error.directory_creation" = "Erreur inattendue lors de la création du répertoire : %@";
-"error.server_not_found" = "Serveur introuvable ou inaccessible";
-"history.media_type_prefix" = "Type de média : %@";
 
 // Appended new keys
-"common.close" = "Fermer";
-"task.general" = "Général";
-"task.next_run" = "Prochaine exécution";
-"task.port" = "Port";
-"task.recent_backups" = "Sauvegardes récentes";
-"task.schedule" = "Planification";
-"task.server" = "Serveur";
-"task.server_section" = "Infos serveur";
-"task.source" = "Source";
-"task.status" = "Statut";
-"task.user" = "Utilisateur";
 "history.backup_detail" = "Détail de la sauvegarde";
 // Cellular Data Settings
-"settings.allow_cellular" = "Autoriser l'utilisation des données cellulaires";
-"settings.cellular_warning" = "⚠️ L'utilisation des données cellulaires pour de gros fichiers peut engendrer des coûts supplémentaires.";
-"settings.wifi_only" = "ℹ️ Les sauvegardes ne se feront qu'en WiFi.";
 // Background Task Monitor
-"background_task_monitor.title" = "Moniteur de Tâches d'Arrière-plan";
-"background_task_monitor.refresh" = "Actualiser";
-"background_task_monitor.status" = "Statut des Tâches d'Arrière-plan";
-"background_task_monitor.subtitle" = "Coordination Timer et BGTaskScheduler";
-"background_task_monitor.status.processing" = "Traitement";
-"background_task_monitor.status.timer_active" = "Timer Actif";
-"background_task_monitor.status.standby" = "En Attente";
-"background_task_monitor.current_status" = "Statut Actuel";
-"background_task_monitor.timer_backup" = "Sauvegarde Timer";
-"background_task_monitor.processing" = "Traitement d'Arrière-plan";
-"background_task_monitor.active_bgtasks" = "BGTasks Actives";
-"background_task_monitor.active" = "Actif";
-"background_task_monitor.inactive" = "Inactif";
-"background_task_monitor.performance_overview" = "Aperçu des Performances";
-"background_task_monitor.bgtask_executions" = "Exécutions BGTask";
-"background_task_monitor.timer_executions" = "Exécutions Timer";
-"background_task_monitor.avg_bgtask_duration" = "Durée Moy. BGTask";
-"background_task_monitor.avg_timer_duration" = "Durée Moy. Timer";
-"background_task_monitor.average" = "Moyenne";
-"background_task_monitor.success_rates" = "Taux de Réussite";
-"background_task_monitor.execution_history" = "Historique d'Exécution";
-"background_task_monitor.last_method" = "Dernière Méthode";
-"background_task_monitor.last_execution" = "Dernière Exécution";
-"background_task_monitor.coordination_state" = "État de Coordination";
-"background_task_monitor.scheduled_timers" = "Timers Planifiés";
-"background_task_monitor.active_bgtask_ids" = "IDs BGTask Actives";
-"background_task_monitor.current_app_state" = "État Actuel de l'App";
-"background_task_monitor.advanced_metrics" = "Métriques Avancées";
-"background_task_monitor.app_state.active" = "Actif";
-"background_task_monitor.app_state.background" = "Arrière-plan";
-"background_task_monitor.app_state.inactive" = "Inactif";
-"background_task_monitor.app_state.unknown" = "Inconnu";
 
 // About View
-"about.license" = "Licence";
-"about.license_description" = "Cette application est fournie sous la licence MIT.";
-"about.all_rights_reserved" = "Tous droits réservés";
-"about.support_email_subject" = "Demande de support BackupFlow";
 
 // iOS Background Behavior Info
-"about.background_title" = "Comportement des sauvegardes en arrière-plan iOS";
-"about.background_description" = "iOS gère automatiquement les tâches en arrière-plan et les exécute en fonction des conditions suivantes:";
-"about.background_notification" = "Nous envoyons des notifications quand c'est le moment";
-"about.background_ios_decision" = "iOS s'exécute en arrière-plan quand il le juge approprié";
-"about.background_battery_check" = "L'état de la batterie et la connexion réseau sont vérifiés";
-"about.background_manual_start" = "Utilisez le bouton 'Démarrer maintenant' dans la notification pour une exécution garantie";
-"about.background_force_quit_warning" = "⚠️ Si vous forcez la fermeture de l'application (glisser vers le haut pour fermer), iOS n'exécutera pas les tâches en arrière-plan. Laissez-la simplement en arrière-plan.";
 
 // BackupView - Notification Guarantee
-"backup.notification_guarantee_title" = "Garantie de notification";
-"backup.notification_guarantee_desc" = "Nous vous enverrons une notification quand ce sera le moment";
-"backup.auto_start_title" = "Démarrage automatique";
-"backup.auto_start_desc" = "iOS gère automatiquement les tâches en arrière-plan (selon l'état de la batterie, du réseau et du système)";
 
 // History View
 "history.delete" = "Supprimer";
@@ -397,7 +178,6 @@
 "backup.default_task_name" = "Nouvelle sauvegarde";
 
 // BackupExecutionManager - Network Errors
-"backup.network_error.wifi_required" = "Connexion WiFi requise pour l'accès au serveur local (Actuellement: %@). Vous pouvez activer l'utilisation des données cellulaires dans les Paramètres.";
 
 // BackupNotificationManager - Frequency Text
 "backup.frequency_text.daily" = "quotidien";
@@ -405,82 +185,22 @@
 "backup.frequency_text.manual" = "manuel";
 
 // Task Schedule Notes
-"task.scheduled_task_note" = "Remarque: Lorsque vous recevez une notification pour les tâches planifiées, vous devez appuyer sur la notification pour ouvrir l'application et démarrer la sauvegarde.";
-"task.bgtime_required" = "Au moins 16 minutes doivent être sélectionnées pour les tâches en arrière-plan";
-"error.invalid_time_selection" = "Sélection de temps invalide";
-"error.minimum_bgtime_required" = "Un minimum de 16 minutes est requis pour les tâches en arrière-plan.\n\nL'heure sélectionnée est dans %d minutes. Veuillez sélectionner une heure au moins 16 minutes dans le futur.";
-"backup.auto_backup_how_title" = "Comment fonctionne la sauvegarde automatique?";
-"backup.guarantee_title" = "Pour garantie";
-"backup.start_from_notification_desc" = "Appuyez sur le bouton \"Démarrer maintenant\" dans la notification ou ouvrez l'application";
 
 // Task Schedule Notes
-"task.schedule_notes.title" = "⚠️ Important : Planification des sauvegardes";
-"task.schedule_notes.auto_backup" = "iOS gère les tâches en arrière-plan selon l'état de la batterie, du réseau et du système.";
-"task.schedule_notes.notification_guarantee" = "Nous vous garantissons l'envoi d'une notification quand ce sera le moment.";
-"task.schedule_notes.start_from_notification" = "Appuyez sur la notification ou ouvrez l'application pour démarrer la sauvegarde.";
-"task.schedule_notes.bgtime_required" = "Les tâches en arrière-plan iOS nécessitent au moins 16 minutes d'avance.";
 
 // WebDAV Test View
-"webdav.test.title" = "Test de Connexion WebDAV";
-"webdav.test.connection_info" = "Informations de Connexion";
-"webdav.test.server_address" = "Adresse du Serveur";
-"webdav.test.port" = "Port";
-"webdav.test.username" = "Nom d'utilisateur";
-"webdav.test.password" = "Mot de passe";
-"webdav.test.connection_test" = "Test de Connexion";
-"webdav.test.description" = "Testez si vous pouvez vous connecter à votre serveur WebDAV.";
-"webdav.test.start_test" = "Démarrer le Test";
-"webdav.test.results" = "Résultats";
-"webdav.test.success_info" = "✓ Succès : Connecté et authentifié au serveur.";
-"webdav.test.error_info" = "✗ Échec : Vérifiez les paramètres de votre serveur.";
-"webdav.test.https_info" = "🔒 Utilisez le commutateur HTTPS pour sélectionner HTTP ou HTTPS.";
-"webdav.test.completed" = "Test Terminé";
-"webdav.test.completed_message" = "Test de connexion terminé.";
-"webdav.test.invalid_port" = "✗ Numéro de port invalide. Doit être entre 1-65535.";
-"webdav.test.success" = "Connexion réussie !";
-"webdav.test.failed" = "Échec de la connexion :";
-"webdav.test.failed_generic" = "✗ Échec de la connexion. Vérifiez vos paramètres.";
-"webdav.test.starting" = "Démarrage du Test WebDAV";
-"webdav.test.starting_message" = "Connexion au serveur...";
-"settings.webdav_connection_test" = "Test de Connexion WebDAV";
 
 // Missing translations added from Turkish base
 "history.clear_confirmation" = "Êtes-vous sûr de vouloir supprimer tout l'historique?";
 "history.clear_confirmation_message" = "Cette opération ne peut pas être annulée.";
-"history.invalid_entry" = "Entrée non valide";
-"backup.use_https" = "Utiliser HTTPS";
-"backup.use_https_desc" = "Utilisez HTTPS pour une connexion sécurisée. Désactivez pour HTTP.";
-
-"notifications.disabled_warning_title" = "Notifications désactivées";
-"notifications.disabled_warning_body" = "Vous avez désactivé les notifications pour BackupFlow. Pour recevoir des rappels de sauvegarde et des mises à jour d'état, veuillez les activer dans l'application Paramètres.";
-"notifications.open_settings_button" = "Ouvrir les paramètres";
 
 // Missing Localization Keys
 "backup.notification.action.start" = "Commencer maintenant";
 
 // New Notification Actions (v1.1)
-"backup.notification.action.postpone_10" = "Reporter 10 minutes";
-"backup.notification.action.postpone_60" = "Reporter 1 heure";
 
-"backup.notification.wifi_required.title" = "Connexion WiFi requise";
-"backup.notification.wifi_required.body" = "La sauvegarde de \"%@\" nécessite une connexion WiFi.\n\nRéseau actuel : %@\n\nOptions :\n- Se connecter à un réseau WiFi\n- Autoriser les données mobiles dans les réglages";
-"backup.notification.action.open_settings" = "Ouvrir les paramètres";
-
-"backup.frequency_text.scheduled" = "planifié";
 "settings.language" = "Langue";
 "settings.language.system" = "Langue du système";
-"settings.language.turkish" = "Turc";
-"settings.language.english" = "Anglais";
-"settings.language.arabic" = "Arabe";
-"settings.language.chinese" = "Chinois";
-"settings.language.french" = "Français";
-"settings.language.german" = "Allemand";
-"settings.language.hindi" = "Hindi";
-"settings.language.japanese" = "Japonais";
-"settings.language.korean" = "Coréen";
-"settings.language.portuguese" = "Portugais";
-"settings.language.russian" = "Russe";
-"settings.language.spanish" = "Espagnol";
 "settings.require_external_power" = "Alimentation externe requise";
 "settings.require_external_power_note" = "Cette fonctionnalité nécessite une alimentation externe.";
 
@@ -501,32 +221,11 @@
 "backup.testing_network" = "Vérification du réseau…";
 "backup.connection_error_ftp" = "Erreur de connexion FTP : %@";
 
-"about.version_build" = "Version %@ (Build %@)";
-"about.contact" = "Contact";
-"about.rights_reserved" = "Tous droits réservés.";
-
 "task.details.title" = "Détails de la tâche";
 
-"backup.cancel_backup_title" = "Annuler la sauvegarde";
-"backup.cancel_backup_confirm" = "Annuler";
-"backup.cancel_backup_message" = "Êtes-vous sûr de vouloir annuler cette sauvegarde ?";
 // Additional localization keys to match Turkish base
 "backup.frequency" = "Fréquence";
 "backup.scheduling" = "Planification";
-"error.network_unavailable" = "Connexion réseau non disponible";
-"error.server_unreachable" = "Serveur inaccessible";
-"language.english" = "Anglais";
-"language.turkish" = "Turc";
-"language.german" = "Allemand";
-"language.french" = "Français";
-"language.spanish" = "Espagnol";
-"language.russian" = "Russe";
-"language.japanese" = "Japonais";
-"language.korean" = "Coréen";
-"language.portuguese" = "Portugais";
-"language.arabic" = "Arabe";
-"language.hindi" = "Hindi";
-"language.chinese" = "Chinois";
 "backup.server_url_example" = "URL du serveur (par exemple: https://example.com/dav)";
 "backup.destination_folder_optional" = "Dossier de destination (facultatif)";
 "media_type.photos_only" = "Photos uniquement";
@@ -536,7 +235,6 @@
 "sftp.tofu_notice" = "La clé d’hôte SFTP sera approuvée lors de la première connexion (TOFU).";
 "sftp.hostkey_title" = "Avertissement de sécurité SFTP";
 "sftp.hostkey_message" = "Nouvelle clé d’hôte approuvée (TOFU). Empreinte : %@";
-
 
 "backup.status.interrupted" = "Interrompue";
 
@@ -573,8 +271,6 @@
 "backup.error.cancelled" = "Opération interrompue";
 "backup.error.unexpected" = "Erreur inattendue : %@";
 
-"whats_new" = "Nouveautés";
-
 "backup.protocol.ftp" = "FTP";
 
 "backup.protocol.sftp" = "SFTP";
@@ -586,18 +282,8 @@
 "backup.current_file.updating_file" = "Mise à jour en cours : %@";
 "backup.photo_backup_include_icloud" = "Télécharger les éléments iCloud si nécessaire";
 "backup.photo_backup_include_icloud_hint" = "Recommandé pour une sauvegarde complète. Si désactivé, seuls les éléments multimédias déjà stockés sur l’appareil seront copiés.";
-"tasks.search_prompt" = "Rechercher des tâches...";
-"tasks.summary" = "Résumé";
-"tasks.no_search_results" = "Aucun résultat trouvé";
-"tasks.active" = "Actif";
-"tasks.scheduled_short" = "Planifié";
 "tasks.run_started" = "Tâche démarrée";
-"tasks.resumed_toast" = "Tâche reprise";
-"tasks.paused_toast" = "Tâche en pause";
-"tasks.source_not_set" = "Non défini";
 
-"common.please_wait" = "Veuillez patienter...";
-"dashboard.greeting" = "Bonjour";
 "dashboard.greeting.morning" = "Bonjour";
 "dashboard.greeting.afternoon" = "Bon après-midi";
 "dashboard.greeting.evening" = "Bonsoir";
@@ -616,8 +302,6 @@
 "dashboard.destination.auto" = "Auto : %@";
 "dashboard.used_date" = "Utilisé : %@";
 "dashboard.action.sync" = "Synchroniser";
-"dashboard.action.pause" = "Mettre en pause";
-"dashboard.action.files" = "Fichiers";
 "dashboard.storage_overview" = "Aperçu du stockage";
 "dashboard.used" = "Utilisé";
 "dashboard.of_value" = "sur %@";
@@ -632,7 +316,6 @@
 "dashboard.backup_completed" = "Sauvegarde terminée avec succès";
 "dashboard.ready_to_sync" = "Prêt à synchroniser";
 "dashboard.status.syncing" = "Synchronisation";
-"dashboard.status.connected" = "Connecté";
 "dashboard.status.active_task_count_one" = "%d tâche active";
 "dashboard.status.active_task_count_many" = "%d tâches actives";
 "dashboard.no_server_selected" = "Aucun serveur sélectionné";
@@ -640,23 +323,6 @@
 "dashboard.transfer_detail_with_speed" = "%@ / %@ · %@ · %@";
 "dashboard.transfer_detail" = "%@ / %@ · %@";
 
-"about.section.about" = "À propos";
-"about.description" = "BackupFlow sauvegarde automatiquement vos fichiers vers des serveurs FTP, SFTP et WebDAV. Une solution de sauvegarde sûre, rapide et fiable.";
-"about.features.title" = "Fonctionnalités";
-"about.feature.security" = "Chiffrement et connexion sécurisés";
-"about.feature.scheduled" = "Sauvegardes automatiques planifiées";
-"about.feature.fast_sync" = "Synchronisation de fichiers rapide et efficace";
-"about.feature.protocols" = "Prise en charge FTP, SFTP et WebDAV";
-"about.feature.smart_filtering" = "Filtrage intelligent des fichiers";
-"about.feature.history_stats" = "Historique et statistiques détaillés";
-"about.section.support" = "Assistance";
-"about.support.description" = "Vous avez des questions ou des suggestions ? Vous pouvez nous contacter.";
-"about.section.license" = "Licence";
-"about.license.description" = "BackupFlow est distribué sous licence MIT. Vous pouvez utiliser, modifier et distribuer librement le logiciel.";
-"about.rights_reserved" = "Tous droits réservés.";
-"about.support.email_subject" = "Demande d'assistance BackupFlow";
-"about.support.email_app_version" = "Version de l'app";
-"about.support.email_device" = "Appareil";
 "history.empty_description" = "L'historique des sauvegardes que vous lancez apparaîtra ici";
 "history.summary.completed" = "Terminées";
 "history.summary.failed" = "Échouées";
@@ -686,7 +352,6 @@
 "error.webdav.invalid_server_address" = "Adresse du serveur invalide. Utilisez un format comme 'http://192.168.1.1' ou '192.168.1.1'.";
 "error.webdav.invalid_url_created" = "URL invalide créée. Vérifiez l'adresse du serveur.";
 "error.photo_library.no_access" = "Aucune autorisation d'accès à la photothèque";
-"error.network.local_server_wifi_required" = "Une connexion WiFi est requise pour accéder au serveur local (Actuel : %@). Vous pouvez activer les données cellulaires dans Réglages.";
 "network.type.wifi" = "WiFi";
 "network.type.cellular" = "Cellulaire";
 "network.type.ethernet" = "Ethernet";

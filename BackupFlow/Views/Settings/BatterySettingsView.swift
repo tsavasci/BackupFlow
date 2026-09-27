@@ -12,6 +12,7 @@ struct BatterySettingsView: View {
                     Image(systemName: batteryManager.batteryIcon)
                         .foregroundColor(Color(batteryManager.batteryColor))
                         .font(.title2)
+                        .accessibilityHidden(true)
                     
                     VStack(alignment: .leading, spacing: 4) {
                         Text("battery.level".localized)
@@ -19,7 +20,8 @@ struct BatterySettingsView: View {
                             .foregroundColor(.secondary)
                         
                         HStack {
-                            Text("\(batteryManager.batteryPercentage)%")
+                            // Locale-aware percent: "%30" in Turkish, "30%" in English.
+                            Text((Double(batteryManager.batteryPercentage) / 100).formatted(.percent))
                                 .font(.headline)
                                 .fontWeight(.semibold)
                             
@@ -38,6 +40,7 @@ struct BatterySettingsView: View {
                     Circle()
                         .fill(batteryManager.shouldAllowBackup() ? Color.green : Color.red)
                         .frame(width: 12, height: 12)
+                        .accessibilityHidden(true)
                 }
                 .padding(.vertical, 4)
             }
@@ -49,7 +52,7 @@ struct BatterySettingsView: View {
                         Text("battery.minimum_level".localized)
                             .font(.headline)
                         Spacer()
-                        Text("\(Int(tempBatteryLevel))%")
+                        Text((tempBatteryLevel / 100).formatted(.percent))
                             .font(.headline)
                             .foregroundColor(.blue)
                     }
@@ -70,6 +73,7 @@ struct BatterySettingsView: View {
                         Image(systemName: "info.circle")
                             .foregroundColor(.blue)
                             .font(.caption)
+                            .accessibilityHidden(true)
                         
                         Text("battery.threshold_info".localized)
                             .font(.caption)
@@ -146,6 +150,7 @@ struct ConditionRow: View {
                 .foregroundColor(isActive ? .green : .gray)
                 .font(.title3)
                 .frame(width: 24)
+                .accessibilityHidden(true)
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
@@ -161,8 +166,13 @@ struct ConditionRow: View {
             
             Image(systemName: isActive ? "checkmark.circle.fill" : "xmark.circle")
                 .foregroundColor(isActive ? .green : .red)
+                .accessibilityHidden(true)
         }
         .padding(.vertical, 2)
+        // Read as one row; the check/cross state is conveyed via the selected trait
+        // instead of the icon names ("Kapat" for the cross).
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(isActive ? .isSelected : [])
     }
 }
 
@@ -176,6 +186,7 @@ struct BatteryHelpRow: View {
                 .foregroundColor(.blue)
                 .font(.body)
                 .frame(width: 20)
+                .accessibilityHidden(true)
             
             Text(text)
                 .font(.caption)

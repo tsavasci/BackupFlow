@@ -1,4 +1,3 @@
-#if os(iOS)
 
 import AVFoundation
 @preconcurrency import BackgroundTasks
@@ -11,9 +10,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 import UserNotifications
 
-#if canImport(UIKit)
 import UIKit
-#endif
 
 /// The type of network connection.
 enum NetworkType {
@@ -704,20 +701,6 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         }
     }
     
-    private func formatTimeInterval(_ interval: TimeInterval) -> String {
-        let hours = Int(interval) / 3600
-        let minutes = Int(interval) % 3600 / 60
-        let seconds = Int(interval) % 60
-        
-        if hours > 0 {
-            return "\(hours)sa \(minutes)dk \(seconds)sn"
-        } else if minutes > 0 {
-            return "\(minutes)dk \(seconds)sn"
-        } else {
-            return "\(seconds)sn"
-        }
-    }
-    
     // MARK: - Notifications
     private func setupNotifications() {
         // Delegate sadece burada atanır. İzin isteği AppDelegate tarafından yönetilir.
@@ -1041,11 +1024,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                     
                     // App state kontrol et
                     let isActive: Bool = {
-                        #if canImport(UIKit)
                         return UIApplication.shared.applicationState == .active
-                        #else
-                        return true
-                        #endif
                     }()
                     if isActive {
                         if let last = lastRunAtByTask[task.id], Date().timeIntervalSince(last) < minRunInterval {
@@ -1133,7 +1112,6 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             // Check if it's an FTP/SFTP task in the background and send a warning notification
             // (both rely on a raw socket connection with no system-managed background transfer)
             if taskToRun.backupType == .ftp || taskToRun.backupType == .sftp {
-                #if canImport(UIKit)
                 if UIApplication.shared.applicationState == .background {
                     if taskToRun.backupType == .ftp {
                         sendBackgroundFTPWarningNotification()
@@ -1141,7 +1119,6 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                         sendBackgroundSFTPWarningNotification()
                     }
                 }
-                #endif
             }
             
             debugLog("📱 BGTaskScheduler: Arka plan görevi başlatılıyor: \(taskToRun.displayName)")
@@ -1165,50 +1142,6 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
 
 // MARK: - Backup Execution
 extension BackupScheduler {
-    
-    private func executeBackup(task: BackupTask) async throws -> FTPService.SyncResult {
-        debugLog("🚀 BackupFlow: Yedekleme başlatılıyor: \(task.displayName) - \(task.backupType.rawValue)")
-        
-        // Network türü kontrolü - local server için WiFi gerekli (ayar kontrollü)
-        if isLocalServer(host: task.serverHost) && !task.allowCellularForLocalServer {
-            let networkType = await getCurrentNetworkType()
-            if networkType != .wifi {
-                let errorMessage = "error.network.local_server_wifi_required".localized(with: networkType.description)
-                debugLog("❌ BackupFlow: \(errorMessage)")
-                throw NSError(domain: "NetworkError", code: -1000, userInfo: [NSLocalizedDescriptionKey: errorMessage])
-            }
-            debugLog("✅ BackupFlow: WiFi bağlantısı tespit edildi, local server erişimi uygun")
-        } else if isLocalServer(host: task.serverHost) && task.allowCellularForLocalServer {
-            let networkType = await getCurrentNetworkType()
-            debugLog("⚠️ BackupFlow: Local server için hücresel veri kullanımına izin verildi (Şu anda: \(networkType.description))")
-        }
-        
-        task.backupStatus = .preparing
-        task.progress = 0.0
-        resetCurrentFileProgress(for: task)
-        let startTime = Date()
-        
-        do {
-            let syncResult: FTPService.SyncResult
-            let options = BackupExecutionOptions.forTask(task)
-            switch task.backupType {
-            case .ftp:
-                syncResult = try await executeFTPBackup(task: task, startTime: startTime, options: options)
-            case .sftp:
-                syncResult = try await executeSFTPBackup(task: task, startTime: startTime, options: options)
-            case .webdav:
-                syncResult = try await executeWebDAVBackup(task: task, startTime: startTime, options: options)
-            }
-            return syncResult
-        } catch {
-            task.backupStatus = .failed
-            task.lastBackupDate = Date()
-            task.currentFile = nil
-            resetCurrentFileProgress(for: task)
-            
-            throw error
-        }
-    }
     
     private func executeFTPBackup(task: BackupTask, startTime: Date, options: BackupExecutionOptions = .defaults) async throws -> FTPService.SyncResult {
         debugLog("📡 BackupFlow: FTP yedekleme başlatılıyor...")
@@ -1413,12 +1346,14 @@ extension BackupScheduler {
         }
 
         if options.requiresExternalPower {
-            #if canImport(UIKit)
             let batteryState = BatteryManager.shared.batteryState
             if batteryState != .charging && batteryState != .full {
                 return "backup.defer.external_power_required".localized
             }
-            #endif
+        }
+
+        if let batteryReason = BatteryManager.shared.getReasonForBlockedBackup() {
+            return batteryReason
         }
 
         if let start = options.allowedStartTime, let end = options.allowedEndTime, !isNowWithinAllowedWindow(start: start, end: end) {
@@ -1778,20 +1713,3 @@ extension BackupScheduler {
     }
 }
 
-#else
-
-import Foundation
-
-@MainActor
-final class BackupScheduler: NSObject, ObservableObject {
-    static let shared = BackupScheduler()
-    static var sharedModelContainer: Any?
-
-    func cancelAllBackgroundTasks() {}
-    func scheduleProcessingTask() {}
-    func scheduleAppRefresh() {}
-    func checkMissedTimers() async {}
-    func executeBackgroundTask() async -> Bool { false }
-}
-
-#endif

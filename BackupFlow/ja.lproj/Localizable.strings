@@ -1,8 +1,4 @@
-"nav.tasks" = "タスク";
-"nav.backup" = "バックアップ";
 "nav.history" = "履歴";
-"nav.settings" = "設定";
-"nav.about" = "概要";
 "settings.title" = "設定";
 "settings.general" = "一般";
 "settings.history_retention" = "履歴保持期間（日）";
@@ -14,51 +10,11 @@
 "settings.version" = "バージョン";
 "settings.rate_app" = "アプリを評価";
 "settings.contact_support" = "サポートに連絡";
-"settings.developer_settings" = "開発者設定";
-"settings.advanced_settings" = "詳細設定";
-"settings.ftp_connection_test" = "FTP接続テスト";
 "settings.reset_all_data" = "すべてのデータをリセット";
-"language.selection" = "言語";
-"language.system" = "システム言語";
-"language.restart_required" = "言語が変更されました";
-"language.restart_message" = "アプリは次回起動時に新しい言語を使用します。";
-"alert.ok" = "OK";
 "alert.cancel" = "キャンセル";
-"dashboard.title" = "ステータス概要";
-"dashboard.last_backup" = "最後のバックアップ";
-"dashboard.active_tasks" = "アクティブなタスク";
 "dashboard.next_task" = "次のタスク";
 "dashboard.never" = "なし";
 "dashboard.overdue" = "期限切れ";
-"dashboard.in_days" = "%d日後";
-"dashboard.in_hours" = "%d時間後";
-"dashboard.in_minutes" = "%d分後";
-"dashboard.soon" = "まもなく";
-"tasks.your_tasks" = "あなたのタスク";
-"wifi.settings" = "WiFi設定";
-"wifi.current_network" = "現在のネットワーク";
-"wifi.status" = "ステータス";
-"wifi.not_connected" = "WiFiに接続されていません";
-"wifi.network_not_allowed" = "このネットワークではバックアップが許可されていません";
-"wifi.allowed_networks" = "許可されたネットワーク";
-"wifi.no_allowed_networks" = "許可されたネットワークはまだ追加されていません";
-"wifi.add_network" = "ネットワークを追加";
-"wifi.remove" = "削除";
-"wifi.current" = "現在";
-"wifi.help" = "ヘルプ";
-"wifi.not_connected_status" = "WiFiに接続されていません";
-"wifi.unknown_network" = "不明なネットワーク";
-"wifi.network_name" = "ネットワーク名";
-"wifi.add" = "追加";
-"wifi.remove_network" = "ネットワークを削除";
-"wifi.add_network_message" = "バックアップを許可するWiFiネットワークの名前を入力してください。";
-"wifi.remove_network_message" = "このネットワークを許可リストから削除してもよろしいですか？";
-"wifi.allowed_networks_footer" = "バックアップはこれらのネットワークでのみ実行されます。空の場合、任意のWiFiネットワークでバックアップが実行されます。";
-"wifi.help_1" = "バックアップはWiFi接続時のみ実行されます";
-"wifi.help_2" = "セキュリティ向上のため、特定のネットワークを許可リストに追加してください";
-"wifi.help_3" = "現在のネットワークを素早く追加するには+ボタンを使用してください";
-"backup.skipped.title" = "バックアップをスキップ";
-"backup.skipped.message" = "%@タスクがスキップされました：%@";
 "battery.settings" = "バッテリー設定";
 "battery.current_status" = "現在のバッテリー状態";
 "battery.level" = "バッテリー残量";
@@ -83,22 +39,13 @@
 "settings.reset_confirm_message" = "すべての設定がデフォルト値にリセットされます。続行しますか？";
 
 // Task Pause/Resume System
-"task.paused.notification.title" = "🎬 BackupFlow";
-"task.paused.notification.body" = "タスクが一時停止されました：%@";
-"task.resumed.notification.title" = "🎬 BackupFlow";
-"task.resumed.notification.body" = "タスクスケジュールが再開されました：%@";
 "task.pause.button" = "スケジュールを一時停止";
 "task.resume.button" = "スケジュールを再開";
 "task.status.paused" = "一時停止中";
 
 // Notification Actions
-"backup.notification.action.postpone" = "後で";
 
 // BackupScheduler Notifications
-"backup.paused.notification.title" = "バックアップが一時停止されました";
-"backup.paused.notification.body" = "'%@' タスクが一時停止されました。";
-"backup.resumed.notification.title" = "バックアップが再開されました";
-"backup.resumed.notification.body" = "'%@' タスクが再開されました。";
 "backup.scheduled.notification.title" = "🕐 バックアップ時間です！";
 "backup.scheduled.notification.body" = "'%@' タスクの実行準備が整いました。(%@)";
 "backup.scheduled.notification.local_cellular" = "\n\n📱 ローカルサーバーでのモバイルデータ使用が許可されています。";
@@ -114,80 +61,22 @@
 "history.files.skipped" = "スキップ";
 
 // Progress Status Messages
-"progress.skipped" = "スキップ済み";
-"progress.uploading" = "アップロード中";
-"progress.downloading" = "ダウンロード中";
-"progress.processing" = "処理中";
-"progress.preparing" = "バックアップを準備中...";
-"progress.completed" = "バックアップ完了";
 "battery.state.unknown" = "不明";
 "battery.state.unplugged" = "充電していません";
 "battery.state.charging" = "充電中";
 "battery.state.full" = "満充電";
-"tasks.create_task" = "タスクを作成";
-"tasks.edit_task" = "タスクを編集";
-"tasks.task_name" = "タスク名";
-"tasks.source_path" = "ソースパス";
-"tasks.destination" = "宛先";
-"tasks.schedule" = "スケジュール";
-"tasks.enabled" = "有効";
-"tasks.disabled" = "無効";
-"tasks.last_run" = "最後の実行";
-"tasks.next_run" = "次の実行";
-"tasks.status" = "ステータス";
 "tasks.delete" = "削除";
-"tasks.save" = "保存";
-"tasks.cancel" = "キャンセル";
 "tasks.delete_confirmation" = "タスクを削除";
-"tasks.delete_message" = "このタスクを削除してもよろしいですか？";
-"schedule.daily" = "毎日";
-"schedule.weekly" = "毎週";
-"schedule.monthly" = "毎月";
-"schedule.custom" = "カスタム";
-"ftp.server" = "サーバー";
-"ftp.port" = "ポート";
-"ftp.username" = "ユーザー名";
-"ftp.password" = "パスワード";
-"ftp.path" = "リモートパス";
-"ftp.test_connection" = "接続をテスト";
-"ftp.connection_success" = "接続成功";
-"ftp.connection_failed" = "接続失敗";
 "history.title" = "バックアップ履歴";
-"history.date" = "日付";
-"history.task" = "タスク";
-"history.status" = "ステータス";
-"history.size" = "サイズ";
-"history.duration" = "期間";
-"history.success" = "成功";
-"history.failed" = "失敗";
 "history.no_history" = "バックアップ履歴がありません";
-"about.title" = "BackupFlowについて";
-"about.version" = "バージョン";
-"about.build" = "ビルド";
-"about.description" = "FTP/WebDAV対応のiOS用プロフェッショナルバックアップソリューション";
-"about.developer" = "開発者";
-"about.website" = "ウェブサイト";
-"about.support" = "サポート";
-"about.privacy" = "プライバシーポリシー";
-"about.terms" = "利用規約";
-"alert.info" = "情報";
-"alert.success" = "成功";
 "alert.error" = "エラー";
 "tasks.duplicate_error" = "同じ設定のタスクが既に存在します";
 "tasks.save_success" = "タスクが正常に保存されました";
 "tasks.scheduled" = "スケジュールされました";
-"tasks.schedule_error" = "しかし、スケジュール中にエラーが発生しました";
-"tasks.save_error" = "タスクの保存中にエラーが発生しました";
-"backup.source_selection" = "ソース選択";
-"backup.select_folder" = "バックアップするフォルダを選択";
-"backup.photo_library" = "フォトライブラリをバックアップ";
-"backup.media_type" = "メディアタイプ選択";
-"backup.folder_selection" = "フォルダ選択";
 "backup.or" = "または";
 "backup.manual" = "手動";
 "backup.daily" = "毎日";
 "backup.weekly" = "毎週";
-"backup.time" = "時間";
 "backup.hour" = "時間";
 "backup.minute" = "分";
 "backup.day" = "日";
@@ -195,13 +84,6 @@
 "backup.test_connection" = "接続をテスト";
 "backup.new_backup" = "新しいバックアップ";
 "backup.clear" = "クリア";
-"day.sunday" = "日曜日";
-"day.monday" = "月曜日";
-"day.tuesday" = "火曜日";
-"day.wednesday" = "水曜日";
-"day.thursday" = "木曜日";
-"day.friday" = "金曜日";
-"day.saturday" = "土曜日";
 "backup.connection_testing" = "接続をテスト中...";
 "backup.connection_success_ftp" = "FTP接続成功！";
 "backup.connection_success_sftp" = "SFTP接続成功！";
@@ -209,47 +91,21 @@
 "backup.connection_error" = "接続エラー";
 "backup.fill_required_fields" = "必須フィールドを入力してください（サーバーアドレスとユーザー名/パスワード）";
 "backup.webdav_credentials_required" = "WebDAVサーバーURLとユーザー情報を入力してください";
-"backup.network_permission_check" = "ネットワーク権限を確認中...（初回使用時、iOSが権限を要求する場合があります）";
 "backup.source_required" = "ソースを選択してください（フォルダまたはフォトライブラリ）";
 "backup.photo_permission_required" = "フォトライブラリアクセス権限が必要です";
 "backup.invalid_folder" = "無効なフォルダパス。再試行してください。";
-"backup.new_task" = "新しいバックアップ";
 "backup.target_type" = "ターゲットタイプ";
 "backup.server_address" = "サーバーアドレス";
 "backup.port_default" = "ポート (デフォルト: 21)";
 "backup.port_webdav_default" = "ポート（デフォルト：443）";
+"backup.port_sftp_default" = "ポート（デフォルト：22）";
 "backup.anonymous_login" = "匿名ログイン";
 "backup.username" = "ユーザー名";
 "backup.password" = "パスワード";
 "backup.destination_folder" = "宛先フォルダ";
-"backup.start_confirmation" = "バックアップを開始しますか?";
-"backup.start" = "開始";
-"backup.pending_message" = "'%@'タスクが通知から開始されるのを待機中です。";
-"tasks.no_tasks" = "タスクなし";
-"tasks.create_first_task" = "開始するには、最初のバックアップタスクを作成してください。";
 "tasks.delete_message_full" = "このタスクを削除してもよろしいですか? この操作は元に戻せません。";
-"tasks.swipe_delete" = "削除";
 
 // FTPテストとWebDAV URL
-"ftp.test.connection_info" = "FTP接続情報";
-"ftp.test.server_address" = "サーバーアドレス:";
-"ftp.test.port" = "ポート:";
-"ftp.test.username" = "ユーザー名:";
-"ftp.test.password" = "パスワード:";
-"ftp.test.connection_test" = "FTP接続テスト";
-"ftp.test.description" = "このテストはFTPサーバーに接続し、小さなテストファイルをアップロードします。";
-"ftp.test.start_test" = "テストを開始";
-"ftp.test.results" = "テスト結果";
-"ftp.test.success_info" = "• 成功したテストは、FTPサーバーに接続してファイルをアップロードできることを示しています。";
-"ftp.test.error_info" = "• エラーが発生した場合は、FTP設定とインターネット接続を確認してください。";
-"ftp.test.title" = "FTPテスト";
-"ftp.test.completed" = "テスト完了";
-"ftp.test.completed_message" = "テストが完了しました。";
-"ftp.test.invalid_port" = "✗ 無効なポート番号。1-65535の範囲で入力してください。";
-"ftp.test.starting" = "テスト開始中";
-"ftp.test.starting_message" = "FTP接続テストを開始中...（初回使用時、iOSがネットワーク権限を要求する場合があります）";
-"ftp.test.success" = "✓ テスト成功！FTPサーバーに接続してファイルをアップロードできました。";
-"ftp.test.failed" = "✗ テスト失敗：";
 
 // Task Details
 "task.details.general" = "一般";
@@ -289,15 +145,8 @@
 "day.names.thursday" = "木曜日";
 "day.names.friday" = "金曜日";
 "day.names.saturday" = "土曜日";
-"backup.select_folder_placeholder" = "フォルダを選択...";
 "backup.select_time" = "時間を選択";
-"backup.or_text" = "または";
-"history.loading" = "読み込み中...";
-"history.error_occurred" = "エラーが発生しました: %@";
-"history.retry" = "再試行";
 "history.unknown" = "不明";
-"history.anonymous_ftp" = "匿名FTP";
-"history.user_prefix" = "ユーザー: %@";
 // Backup Status Messages
 "backup.status.idle" = "準備完了";
 "backup.status.preparing" = "準備中...";
@@ -306,83 +155,15 @@
 "backup.status.completed" = "完了";
 "backup.status.failed" = "失敗";
 "backup.status.cancelled" = "キャンセル";
-"error.unexpected" = "予期しないエラーが発生しました: %@";
-"error.authentication_failed" = "ユーザー認証に失敗しました";
-"error.permission_denied" = "ファイルまたはディレクトリへのアクセス権限が拒否されました";
-"error.file_not_found" = "ファイルまたはディレクトリが見つかりません: %@";
-"error.directory_creation" = "ディレクトリ作成中に予期しないエラー: %@";
-"error.server_not_found" = "サーバーが見つからないかアクセスできません";
-"history.media_type_prefix" = "メディアタイプ: %@";
-"common.close" = "閉じる";
-"task.general" = "一般";
-"task.next_run" = "次の実行";
-"task.port" = "ポート";
-"task.recent_backups" = "最近のバックアップ";
-"task.schedule" = "スケジュール";
-"task.server" = "サーバー";
-"task.server_section" = "サーバー";
-"task.source" = "ソース";
-"task.status" = "ステータス";
-"task.user" = "ユーザー";
 "history.backup_detail" = "バックアップ詳細";
 // Cellular Data Settings
-"settings.allow_cellular" = "セルラーデータの使用を許可";
-"settings.cellular_warning" = "⚠️ 大きなファイルでのセルラーデータ使用は追加料金が発生する場合があります。";
-"settings.wifi_only" = "ℹ️ バックアップはWiFiでのみ実行されます。";
 // Background Task Monitor
-"background_task_monitor.title" = "バックグラウンドタスクモニター";
-"background_task_monitor.refresh" = "更新";
-"background_task_monitor.status" = "バックグラウンドタスクステータス";
-"background_task_monitor.subtitle" = "TimerとBGTaskSchedulerの連携";
-"background_task_monitor.status.processing" = "処理中";
-"background_task_monitor.status.timer_active" = "Timer有効";
-"background_task_monitor.status.standby" = "待機中";
-"background_task_monitor.current_status" = "現在のステータス";
-"background_task_monitor.timer_backup" = "Timerバックアップ";
-"background_task_monitor.processing" = "バックグラウンド処理";
-"background_task_monitor.active_bgtasks" = "アクティブなBGTask";
-"background_task_monitor.active" = "アクティブ";
-"background_task_monitor.inactive" = "非アクティブ";
-"background_task_monitor.performance_overview" = "パフォーマンス概要";
-"background_task_monitor.bgtask_executions" = "BGTask実行回数";
-"background_task_monitor.timer_executions" = "Timer実行回数";
-"background_task_monitor.avg_bgtask_duration" = "平均BGTask時間";
-"background_task_monitor.avg_timer_duration" = "平均Timer時間";
-"background_task_monitor.average" = "平均";
-"background_task_monitor.success_rates" = "成功率";
-"background_task_monitor.execution_history" = "実行履歴";
-"background_task_monitor.last_method" = "最後の方法";
-"background_task_monitor.last_execution" = "最後の実行";
-"background_task_monitor.coordination_state" = "連携状態";
-"background_task_monitor.scheduled_timers" = "スケジュール済みTimer";
-"background_task_monitor.active_bgtask_ids" = "アクティブなBGTask ID";
-"background_task_monitor.current_app_state" = "現在のアプリ状態";
-"background_task_monitor.advanced_metrics" = "詳細メトリクス";
-"background_task_monitor.app_state.active" = "アクティブ";
-"background_task_monitor.app_state.background" = "バックグラウンド";
-"background_task_monitor.app_state.inactive" = "非アクティブ";
-"background_task_monitor.app_state.unknown" = "不明";
 
 // About View
-"about.license" = "ライセンス";
-"about.license_description" = "このアプリケーションはMITライセンスの下で提供されています。";
-"about.all_rights_reserved" = "全著作権所有";
-"about.support_email_subject" = "BackupFlow サポートリクエスト";
 
 // iOS Background Behavior Info
-"about.background_title" = "iOSバックグラウンドバックアップ動作";
-"about.background_description" = "iOSはバックグラウンドタスクを自動的に管理し、以下の条件に基づいて実行します：";
-"about.background_notification" = "時間になったら通知を送信します";
-"about.background_ios_decision" = "iOSが適切と判断した場合にバックグラウンドで実行されます";
-"about.background_battery_check" = "バッテリー状態とネットワーク接続が確認されます";
-"about.background_manual_start" = "確実に実行するには、通知の「今すぐ開始」ボタンを使用してください";
-"about.background_force_quit_warning" = "⚠️ アプリを強制終了（上にスワイプして閉じる）すると、iOSはバックグラウンドタスクを実行しません。バックグラウンドに残しておくだけで十分です。";
 
 // BackupView - Notification Guarantee
-"backup.notification_guarantee_title" = "通知保証";
-"backup.notification_guarantee_desc" = "時間になったら通知を送信します";
-"backup.auto_start_title" = "自動開始";
-"backup.auto_start_desc" = "iOSはバックグラウンドタスクを自動的に管理します（バッテリー、ネットワーク、システムステータスに依存）";
 
 // History View
 "history.delete" = "削除";
@@ -395,7 +176,6 @@
 "backup.default_task_name" = "新しいバックアップ";
 
 // BackupExecutionManager - Network Errors
-"backup.network_error.wifi_required" = "ローカルサーバーアクセスにはWiFi接続が必要です（現在：%@）。設定でモバイルデータ使用を有効にできます。";
 
 // BackupNotificationManager - Frequency Text
 "backup.frequency_text.daily" = "毎日";
@@ -403,82 +183,22 @@
 "backup.frequency_text.manual" = "手動";
 
 // Task Schedule Notes
-"task.scheduled_task_note" = "注意：予定されたタスクの通知を受け取ったら、アプリを開いてバックアップを開始するために通知をタップする必要があります。";
-"task.bgtime_required" = "バックグラウンドタスクには少なくとも16分が必要です";
-"error.invalid_time_selection" = "無効な時間選択";
-"error.minimum_bgtime_required" = "バックグラウンドタスクには最低16分が必要です。\n\n選択された時間は%d分後です。16分以上先の時間を選択してください。";
-"backup.auto_backup_how_title" = "自動バックアップの仕組み";
-"backup.guarantee_title" = "保証のため";
-"backup.start_from_notification_desc" = "通知の「今すぐ開始」ボタンをタップするか、アプリを開く";
 
 // Task Schedule Notes
-"task.schedule_notes.title" = "⚠️ 重要：バックアップのスケジュール";
-"task.schedule_notes.auto_backup" = "iOSはバッテリー、ネットワーク、システムの状態に基づいてバックグラウンドタスクを管理します。";
-"task.schedule_notes.notification_guarantee" = "時間になったら必ず通知を送信することを保証します。";
-"task.schedule_notes.start_from_notification" = "通知をタップするか、アプリを開いてバックアップを開始してください。";
-"task.schedule_notes.bgtime_required" = "iOSのバックグラウンドタスクには少なくとも16分前の設定が必要です。";
 
 // WebDAV Test View
-"webdav.test.title" = "WebDAV接続テスト";
-"webdav.test.connection_info" = "接続情報";
-"webdav.test.server_address" = "サーバーアドレス";
-"webdav.test.port" = "ポート";
-"webdav.test.username" = "ユーザー名";
-"webdav.test.password" = "パスワード";
-"webdav.test.connection_test" = "接続テスト";
-"webdav.test.description" = "WebDAVサーバーに接続できるかテストします。";
-"webdav.test.start_test" = "テスト開始";
-"webdav.test.results" = "結果";
-"webdav.test.success_info" = "✓ 成功：サーバーに接続し、認証されました。";
-"webdav.test.error_info" = "✗ 失敗：サーバー設定を確認してください。";
-"webdav.test.https_info" = "🔒 HTTPSトグルを使用してHTTPまたはHTTPSを選択します。";
-"webdav.test.completed" = "テスト完了";
-"webdav.test.completed_message" = "接続テストが完了しました。";
-"webdav.test.invalid_port" = "✗ 無効なポート番号です。1〜65535の範囲である必要があります。";
-"webdav.test.success" = "接続成功！";
-"webdav.test.failed" = "接続失敗：";
-"webdav.test.failed_generic" = "✗ 接続に失敗しました。設定を確認してください。";
-"webdav.test.starting" = "WebDAVテスト開始";
-"webdav.test.starting_message" = "サーバーに接続しています...";
-"settings.webdav_connection_test" = "WebDAV接続テスト";
 
 // Missing translations added from Turkish base
 "history.clear_confirmation" = "すべての履歴を削除してもよろしいですか？";
 "history.clear_confirmation_message" = "この操作は元に戻せません。";
-"history.invalid_entry" = "無効なエントリ";
-"backup.use_https" = "HTTPSを使用";
-"backup.use_https_desc" = "安全な接続のためにHTTPSを使用します。HTTPの場合はオフにします。";
-
-"notifications.disabled_warning_title" = "通知が無効です";
-"notifications.disabled_warning_body" = "BackupFlowの通知を無効にしています。バックアップリマインダーとステータス更新を受け取るには、設定アプリで有効にしてください。";
-"notifications.open_settings_button" = "設定を開く";
 
 // Missing Localization Keys
 "backup.notification.action.start" = "今すぐ開始";
 
 // New Notification Actions (v1.1)
-"backup.notification.action.postpone_10" = "10分延期";
-"backup.notification.action.postpone_60" = "1時間延期";
 
-"backup.notification.wifi_required.title" = "WiFi接続が必要です";
-"backup.notification.wifi_required.body" = "\"%@\"のバックアップにはWiFi接続が必要です。\n\n現在のネットワーク: %@\n\nオプション:\n- WiFiネットワークに接続する\n- 設定でモバイルデータの使用を許可する";
-"backup.notification.action.open_settings" = "設定を開く";
-
-"backup.frequency_text.scheduled" = "予定済み";
 "settings.language" = "言語";
 "settings.language.system" = "システム言語";
-"settings.language.turkish" = "トルコ語";
-"settings.language.english" = "英語";
-"settings.language.arabic" = "アラビア語";
-"settings.language.chinese" = "中国語";
-"settings.language.french" = "フランス語";
-"settings.language.german" = "ドイツ語";
-"settings.language.hindi" = "ヒンディー語";
-"settings.language.japanese" = "日本語";
-"settings.language.korean" = "韓国語";
-"settings.language.portuguese" = "ポルトガル語";
-"settings.language.russian" = "ロシア語";
-"settings.language.spanish" = "スペイン語";
 "settings.require_external_power" = "外部電源が必要";
 "settings.require_external_power_note" = "この機能には外部電源が必要です。";
 
@@ -499,32 +219,11 @@
 "backup.testing_network" = "ネットワークを確認中…";
 "backup.connection_error_ftp" = "FTP接続エラー: %@";
 
-"about.version_build" = "バージョン %@ (ビルド %@)";
-"about.contact" = "連絡先";
-"about.rights_reserved" = "すべての権利を保有します。";
-
 "task.details.title" = "タスク詳細";
 
-"backup.cancel_backup_title" = "バックアップをキャンセル";
-"backup.cancel_backup_confirm" = "キャンセル";
-"backup.cancel_backup_message" = "このバックアップをキャンセルしますか？";
 // Additional localization keys to match Turkish base
 "backup.frequency" = "頻度";
 "backup.scheduling" = "スケジュール";
-"error.network_unavailable" = "ネットワーク接続が利用できません";
-"error.server_unreachable" = "サーバーに到達できません";
-"language.english" = "英語";
-"language.turkish" = "トルコ語";
-"language.german" = "ドイツ語";
-"language.french" = "フランス語";
-"language.spanish" = "スペイン語";
-"language.russian" = "ロシア語";
-"language.japanese" = "日本語";
-"language.korean" = "韓国語";
-"language.portuguese" = "ポルトガル語";
-"language.arabic" = "アラビア語";
-"language.hindi" = "ヒンディー語";
-"language.chinese" = "中国語";
 "backup.server_url_example" = "サーバーURL (例: https://example.com/dav)";
 "backup.destination_folder_optional" = "宛先フォルダ (オプション)";
 "media_type.photos_only" = "写真のみ";
@@ -534,7 +233,6 @@
 "sftp.tofu_notice" = "SFTPホスト鍵は初回接続時に信頼されます（TOFU）。";
 "sftp.hostkey_title" = "SFTPセキュリティ警告";
 "sftp.hostkey_message" = "新しいホストキーを信頼しました (TOFU)。フィンガープリント: %@";
-
 
 "backup.status.interrupted" = "中断されました";
 
@@ -571,8 +269,6 @@
 "backup.error.cancelled" = "操作が中断されました";
 "backup.error.unexpected" = "予期しないエラー: %@";
 
-"whats_new" = "新機能";
-
 "backup.protocol.ftp" = "FTP";
 
 "backup.protocol.sftp" = "SFTP";
@@ -584,18 +280,8 @@
 "backup.current_file.updating_file" = "更新中: %@";
 "backup.photo_backup_include_icloud" = "必要に応じてiCloud項目をダウンロード";
 "backup.photo_backup_include_icloud_hint" = "完全バックアップに推奨。オフにすると、端末に保存済みのメディアのみコピーされます。";
-"tasks.search_prompt" = "タスクを検索...";
-"tasks.summary" = "概要";
-"tasks.no_search_results" = "結果が見つかりません";
-"tasks.active" = "アクティブ";
-"tasks.scheduled_short" = "予定済み";
 "tasks.run_started" = "タスクを開始しました";
-"tasks.resumed_toast" = "タスクを再開しました";
-"tasks.paused_toast" = "タスクを一時停止しました";
-"tasks.source_not_set" = "未設定";
 
-"common.please_wait" = "しばらくお待ちください...";
-"dashboard.greeting" = "おはようございます";
 "dashboard.greeting.morning" = "おはようございます";
 "dashboard.greeting.afternoon" = "こんにちは";
 "dashboard.greeting.evening" = "こんばんは";
@@ -614,8 +300,6 @@
 "dashboard.destination.auto" = "自動: %@";
 "dashboard.used_date" = "使用: %@";
 "dashboard.action.sync" = "同期";
-"dashboard.action.pause" = "一時停止";
-"dashboard.action.files" = "ファイル";
 "dashboard.storage_overview" = "ストレージ概要";
 "dashboard.used" = "使用中";
 "dashboard.of_value" = "%@ 中";
@@ -630,7 +314,6 @@
 "dashboard.backup_completed" = "バックアップが正常に完了しました";
 "dashboard.ready_to_sync" = "同期準備完了";
 "dashboard.status.syncing" = "同期中";
-"dashboard.status.connected" = "接続済み";
 "dashboard.status.active_task_count_one" = "アクティブなタスク%d件";
 "dashboard.status.active_task_count_many" = "アクティブなタスク%d件";
 "dashboard.no_server_selected" = "サーバーが選択されていません";
@@ -638,23 +321,6 @@
 "dashboard.transfer_detail_with_speed" = "%@ / %@ · %@ · %@";
 "dashboard.transfer_detail" = "%@ / %@ · %@";
 
-"about.section.about" = "概要";
-"about.description" = "BackupFlow は、FTP、SFTP、WebDAV サーバーへファイルを自動的にバックアップするための、安全で高速かつ信頼性の高いバックアップソリューションです。";
-"about.features.title" = "機能";
-"about.feature.security" = "安全な暗号化と接続";
-"about.feature.scheduled" = "自動スケジュールバックアップ";
-"about.feature.fast_sync" = "高速で効率的なファイル同期";
-"about.feature.protocols" = "FTP、SFTP、WebDAV 対応";
-"about.feature.smart_filtering" = "スマートなファイルフィルタリング";
-"about.feature.history_stats" = "詳細な履歴と統計";
-"about.section.support" = "サポート";
-"about.support.description" = "質問や提案がありますか？お問い合わせいただけます。";
-"about.section.license" = "ライセンス";
-"about.license.description" = "BackupFlow は MIT ライセンスで配布されています。ソフトウェアを自由に使用、変更、配布できます。";
-"about.rights_reserved" = "All rights reserved.";
-"about.support.email_subject" = "BackupFlow サポートリクエスト";
-"about.support.email_app_version" = "アプリバージョン";
-"about.support.email_device" = "デバイス";
 "history.empty_description" = "開始したバックアップの履歴がここに表示されます";
 "history.summary.completed" = "完了";
 "history.summary.failed" = "失敗";
@@ -684,7 +350,6 @@
 "error.webdav.invalid_server_address" = "サーバーアドレスが無効です。'http://192.168.1.1' または '192.168.1.1' の形式で入力してください。";
 "error.webdav.invalid_url_created" = "無効な URL が作成されました。サーバーアドレスを確認してください。";
 "error.photo_library.no_access" = "写真ライブラリへのアクセス権限がありません";
-"error.network.local_server_wifi_required" = "ローカルサーバーへアクセスするには WiFi 接続が必要です（現在: %@）。設定でモバイルデータ通信の使用を有効にできます。";
 "network.type.wifi" = "WiFi";
 "network.type.cellular" = "モバイル通信";
 "network.type.ethernet" = "Ethernet";

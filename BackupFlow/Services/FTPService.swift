@@ -1,13 +1,10 @@
-#if canImport(FilesProvider)
 
 import Foundation
 import FilesProvider
 import OSLog
 import Network
 import Combine
-#if canImport(UIKit)
 import UIKit
-#endif
 
 // Key objects for associated objects
 private struct AssociatedKeys {
@@ -15,13 +12,11 @@ private struct AssociatedKeys {
     static let isObserving = NSObject()
 }
 
-final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
+final class FTPService: NSObject, @unchecked Sendable {
     static let shared = FTPService()
     private let logger = Logger(subsystem: "com.backupflow.app", category: "FTPService")
     private let isVerboseLoggingEnabled = false
-#if canImport(UIKit)
     private let backgroundTaskCoordinator = FTPBackgroundTaskCoordinator()
-#endif
     
     private func normalizedRemotePath(_ path: String) -> String {
         var p = path.replacingOccurrences(of: "\\", with: "/")
@@ -31,10 +26,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         return p
     }
     
-    // MARK: - BackupServiceProtocol Properties
-    @Published private(set) var isConnected = false
     @Published private(set) var networkPermissionGranted = false
-    private(set) var lastError: Error?
     
     // FTP uses a foreground URLSession stream internally. These values only describe
     // the current iOS execution window; they do not represent a persistent session.
@@ -207,27 +199,26 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         }
     }
 
-#if canImport(UIKit)
     /// FTP cannot survive process termination. The background flag must be set at
     /// BGTask entry too, before a transfer has created a current Progress object.
     @MainActor
     func updateBackgroundMode(isBackground: Bool) {
-        let appInBackground = UIApplication.shared.applicationState != .active
-        let shouldUseBackgroundMode = isBackground || appInBackground
-
-        guard shouldUseBackgroundMode else {
+        // The caller's flag is authoritative: on return to foreground the scene is
+        // already active while applicationState may still report .inactive.
+        guard isBackground else {
             backgroundTaskCoordinator.end()
             self.isBackgroundUploading = false
             return
         }
 
-        if currentTask != nil || isBackground || appInBackground {
+        // Only hold a UIKit background task while a transfer is actually running;
+        // syncBackup starts its own protection for transfers begun in the background.
+        if currentTask != nil {
             backgroundTaskCoordinator.begin()
         }
 
         self.isBackgroundUploading = true
     }
-#endif
 
     private func cancelCurrentTask(reason: String) {
         if reason != "background-expiration" {
@@ -366,7 +357,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         isCancelled = false
     }
     
-    // MARK: - BackupServiceProtocol Methods
+    // MARK: - Connection & File Operations
     
     func connect(host: String, port: Int, username: String?, password: String?) async throws {
         try await connectWithRetries(host: host, port: port, username: username, password: password, maxAttempts: FTPRetryPolicy().maxAttempts)
@@ -603,185 +594,6 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     }
     
     // Dosya değişip değişmediğini kontrol eder
-    private func shouldUploadFile(localURL: URL, remotePath: String) async throws -> Bool {
-        let localAttributes = try FileManager.default.attributesOfItem(atPath: localURL.path)
-        let localSize = (localAttributes[.size] as? NSNumber)?.int64Value ?? 0
-        
-        if let remoteSize = try await getRemoteFileInfo(at: remotePath) {
-            // Boyut aynı ise dosyayı atlayabiliriz
-            if remoteSize == localSize {
-                logger.info("Dosya zaten var ve aynı boyutta (\(localSize) bytes), atlanıyor: \(remotePath)")
-                return false
-            }
-            logger.info("Dosya boyutu farklı (Yerel: \(localSize) bytes, Uzak: \(remoteSize) bytes), yüklenecek: \(remotePath)")
-            return true
-        }
-        
-        // Hedef dosya yoksa yüklenmeli
-        logger.info("Yeni dosya, yüklenecek: \(remotePath)")
-        return true
-    }
-
-    func uploadDirectory(localURL: URL, remotePath: String = "", skipExisting: Bool = true, progressHandler: ((Double) -> Void)? = nil) async throws -> Int {
-        guard !isCancelled else {
-            logger.info("İşlem iptal edildiği için dosya yükleme iptal edildi")
-            throw FTPError.fileOperationFailed
-        }
-        
-        guard ftpProvider != nil else {
-            logger.error("FTP bağlantısı kurulamamış")
-            throw FTPError.connectionFailed
-        }
-        
-        // Mevcut görevi iptal et
-        currentTask?.cancel()
-        isCancelled = false
-        
-        if isVerboseLoggingEnabled {
-            logger.info("Dosyalar yükleniyor: \(localURL.path)")
-        }
-        
-        let fileManager = FileManager.default
-        var skippedCount = 0
-        
-        do {
-            let enumerator = fileManager.enumerator(at: localURL, includingPropertiesForKeys: [.isRegularFileKey, .fileSizeKey])
-            var totalSize: Int64 = 0
-            var files: [(URL, Int64)] = []
-            
-            // Önce tüm dosyaları ve boyutları topla
-            while let fileURL = enumerator?.nextObject() as? URL {
-                let resourceValues = try fileURL.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey])
-                if resourceValues.isRegularFile == true {
-                    let size = Int64(resourceValues.fileSize ?? 0)
-                    files.append((fileURL, size))
-                    totalSize += size
-                }
-            }
-            
-            guard !files.isEmpty else {
-                logger.warning("Yüklenecek dosya bulunamadı")
-                return 0
-            }
-            
-            logger.info("Toplam \(files.count) dosya bulundu, toplam boyut: \(totalSize) byte")
-            
-            // İlerleme için progress nesnesi oluştur
-            let overallProgress = Progress(totalUnitCount: totalSize)
-            let skipStart = CFAbsoluteTimeGetCurrent()
-            var remoteDirCache: [String: [String: Int64]] = [:]
-            self.currentTask = overallProgress
-            var processedSize: Int64 = 0
-            
-            // Her dosyayı işle
-            for (fileURL, fileSize) in files {
-                guard !isCancelled else {
-                    logger.info("İşlem iptal edildi")
-                    throw FTPError.fileOperationFailed
-                }
-                
-                if Task.isCancelled {
-                    logger.info("İşlem iptal edildi (Task cancelled)")
-                    throw FTPError.fileOperationFailed
-                }
-                
-                // Dosyanın FTP'deki hedef yolunu oluştur
-                // Kaynak URL'den baz klasörü çıkar
-                let relativePath = fileURL.path.replacingOccurrences(of: localURL.path, with: "")
-                let base = normalizedRemotePath(remotePath)
-                let rel = relativePath.hasPrefix("/") ? String(relativePath.dropFirst()) : relativePath
-                let targetPath = base == "/" ? "/" + rel : base + "/" + rel
-                
-                let parentPath = (targetPath as NSString).deletingLastPathComponent
-                
-                if skipExisting {
-                    // Fast skip using cached remote directory listing
-                    self.logger.debug("FTP LIST check for parent: \(parentPath)")
-                    if remoteDirCache[parentPath] == nil {
-                        self.logger.info("FTP LIST cache miss: \(parentPath)")
-                        do {
-                            let list = try await listFiles(in: parentPath)
-                            var dict: [String: Int64] = [:]
-                            for (name, size) in list {
-                                dict[name] = size
-                            }
-                            self.logger.info("FTP LIST loaded \(dict.count) files for \(parentPath)")
-                            remoteDirCache[parentPath] = dict
-                        } catch {
-                            self.logger.warning("FTP LIST failed for \(parentPath); proceeding without size hints")
-                            remoteDirCache[parentPath] = [:]
-                        }
-                    } else {
-                        self.logger.debug("FTP LIST cache hit: \(parentPath) (\(remoteDirCache[parentPath]?.count ?? 0) files)")
-                    }
-                    if let cachedFiles = remoteDirCache[parentPath] {
-                        let fileName = (targetPath as NSString).lastPathComponent
-                        let tenMB: Int64 = 10 * 1024 * 1024
-
-                        if fileSize > tenMB {
-                            // For files >10MB: skip if a file with the same name exists (ignore size)
-                            if cachedFiles[fileName] != nil {
-                                logger.info("Dosya adı zaten mevcut (>10MB, isim bazlı skip), atlanıyor: \(targetPath)")
-                                processedSize += fileSize
-                                overallProgress.completedUnitCount = processedSize
-                                skippedCount += 1
-                                if let handler = progressHandler {
-                                    await MainActor.run { handler(Double(processedSize) / Double(totalSize)) }
-                                }
-                                continue
-                            }
-                        } else {
-                            // For files <=10MB: require both name and size to match
-                            if let cachedSize = cachedFiles[fileName], cachedSize == fileSize {
-                                logger.info("Dosya zaten var ve aynı boyutta (<=10MB, isim+boyut), atlanıyor: \(targetPath)")
-                                processedSize += fileSize
-                                overallProgress.completedUnitCount = processedSize
-                                skippedCount += 1
-                                if let handler = progressHandler {
-                                    await MainActor.run { handler(Double(processedSize) / Double(totalSize)) }
-                                }
-                                continue
-                            }
-                        }
-                    }
-                }
-                
-                // Only ensure remote directory exists if we actually need to upload
-                if !parentPath.isEmpty && parentPath != "/" {
-                    do {
-                        try await createDirectory(at: parentPath)
-                    } catch {
-                        let nsError = error as NSError
-                        if (nsError.domain == NSURLErrorDomain && nsError.code == -3000) || (nsError.domain == NSCocoaErrorDomain && nsError.code == NSFileWriteFileExistsError) {
-                            self.logger.info("FTP: Directory already exists or not creatable (non-fatal): \(parentPath)")
-                        } else {
-                            throw error
-                        }
-                    }
-                }
-                
-                logger.info("Yükleniyor: \(relativePath)")
-                
-                try await uploadFile(localURL: fileURL, remotePath: targetPath) { _ in
-                    // Dosya bazlı ilerleme bilgisi
-                }
-                
-                processedSize += fileSize
-                overallProgress.completedUnitCount = processedSize
-                
-                if let handler = progressHandler {
-                    await MainActor.run { handler(Double(processedSize) / Double(totalSize)) }
-                }
-            }
-            let skipElapsed = CFAbsoluteTimeGetCurrent() - skipStart
-            self.logger.info("FTP: Skip decision pass completed in \(String(format: "%.3f", skipElapsed))s for \(files.count) files")
-        } catch {
-            logger.error("Yükleme hatası: \(error.localizedDescription)")
-            throw error
-        }
-        
-        return skippedCount
-    }
 
     func uploadFile(localURL: URL, remotePath: String, progressHandler: ((Double) -> Void)? = nil) async throws {
         guard !isCancelled else {
@@ -921,73 +733,6 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         }
     }
 
-    func downloadFile(remotePath: String, localURL: URL, progressHandler: ((Double) -> Void)? = nil) async throws {
-        guard let ftp = ftpProvider else {
-            throw FTPError.connectionFailed
-        }
-
-        if isCancelled || Task.isCancelled {
-            throw FTPError.fileOperationFailed
-        }
-
-        return try await withCheckedThrowingContinuation { [weak self] continuation in
-            guard let self = self else {
-                continuation.resume(throwing: FTPError.connectionFailed)
-                return
-            }
-
-            if let currentTask = self.currentTask {
-                self.cleanupTask(currentTask)
-            }
-
-            let progress = Progress(totalUnitCount: 100)
-            progress.completedUnitCount = 0
-
-            if let progressHandler = progressHandler {
-                let handlerKey = UnsafeRawPointer(Unmanaged.passUnretained(AssociatedKeys.progressHandler).toOpaque())
-                objc_setAssociatedObject(progress, handlerKey, progressHandler, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-
-                DispatchQueue.main.async {
-                    let observingKey = UnsafeRawPointer(Unmanaged.passUnretained(AssociatedKeys.isObserving).toOpaque())
-                    progress.addObserver(self, forKeyPath: #keyPath(Progress.fractionCompleted), options: [.new], context: nil)
-                    objc_setAssociatedObject(progress, observingKey, true, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-                }
-            }
-
-            self.currentTask = progress
-
-            if self.isCancelled || Task.isCancelled {
-                continuation.resume(throwing: FTPError.fileOperationFailed)
-                return
-            }
-
-            ftp.copyItem(path: remotePath, toLocalURL: localURL) { [weak self] error in
-                guard let self = self else {
-                    continuation.resume(throwing: FTPError.connectionFailed)
-                    return
-                }
-
-                if let task = self.currentTask {
-                    self.cleanupTask(task)
-                    self.currentTask = nil
-                }
-
-                if Task.isCancelled || self.isCancelled {
-                    continuation.resume(throwing: FTPError.fileOperationFailed)
-                    return
-                }
-
-                if let error = error {
-                    continuation.resume(throwing: self.mapError(error))
-                } else {
-                    progress.completedUnitCount = 100
-                    progressHandler?(1.0)
-                    continuation.resume(returning: ())
-                }
-            }
-        }
-    }
-
     func createDirectory(at path: String) async throws {
         guard let ftp = ftpProvider else {
             logger.error("Dizin oluşturulamadı: FTP bağlantısı yok")
@@ -1036,36 +781,6 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     }
     
     // Belirli bir klasördeki dosyaları listele (sadece dosyalar, alt klasörler değil)
-    func listFiles(in directory: String) async throws -> [(name: String, size: Int64)] {
-        guard let ftp = ftpProvider else {
-            throw FTPError.connectionFailed
-        }
-        
-        logger.info("FTP klasörü listeleniyor: \(directory)")
-        
-        return try await withCheckedThrowingContinuation { continuation in
-            ftp.contentsOfDirectory(path: directory) { files, error in
-                if let error = error {
-                    // Klasör yoksa boş liste döndür
-                    if (error as? URLError)?.code == .fileDoesNotExist {
-                        self.logger.info("FTP klasörü bulunamadı: \(directory)")
-                        continuation.resume(returning: [])
-                    } else {
-                        self.logger.error("FTP klasör listeleme hatası: \(error.localizedDescription)")
-                        continuation.resume(throwing: self.mapError(error))
-                    }
-                } else {
-                    // Sadece dosyaları filtrele ve isim + boyut çiftlerini döndür
-                    let fileList = files.compactMap { file -> (String, Int64)? in
-                        guard !file.isDirectory else { return nil }
-                        return (file.name, file.size)
-                    }
-                    self.logger.info("FTP klasöründe \(fileList.count) dosya bulundu")
-                    continuation.resume(returning: fileList)
-                }
-            }
-        }
-    }
     
     // MARK: - Enhanced File Management for Mirror Sync
     typealias SyncResult = FTPSyncResult
@@ -1288,13 +1003,8 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         debugLog("📡 BackupFlow: FTP senkronize yedekleme başlatılıyor - \(host):\(port)")
         
         let startedInBackground: Bool = {
-            #if canImport(UIKit)
             return UIApplication.shared.applicationState != .active
-            #else
-            return false
-            #endif
         }()
-#if canImport(UIKit)
         backgroundTaskCoordinator.onExpiration = { [weak self] in
             self?.logger.warning("FTP background time expired, cancelling transfer")
             self?.cancelCurrentTask()
@@ -1312,7 +1022,6 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                 self.isBackgroundUploading = false
             }
         }
-#endif
         if sourcePath == "PHOTOS_LIBRARY" || !sourcePath.isEmpty {
             await MainActor.run {
                 self.currentFile = "backup.current_file.preparing".localized
@@ -1424,19 +1133,7 @@ final class FTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     }
 }
 
-#else
 
-import Foundation
-
-@MainActor
-final class FTPService: ObservableObject {
-    static let shared = FTPService()
-    private init() {}
-}
-
-#endif
-
-#if canImport(UIKit)
 private final class FTPBackgroundTaskCoordinator {
     private let lock = NSLock()
     private var taskID: UIBackgroundTaskIdentifier = .invalid
@@ -1475,4 +1172,3 @@ private final class FTPBackgroundTaskCoordinator {
     }
 
 }
-#endif

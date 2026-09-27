@@ -2,19 +2,14 @@ import Foundation
 import Crypto
 import FilesProvider
 import OSLog
-#if canImport(UIKit)
 import UIKit
-#endif
-#if canImport(Network)
 import Network
-#endif
 
 struct SFTPHostKeyResult {
     let isNewHostKey: Bool
     let fingerprint: String?
 }
 
-#if canImport(Citadel)
 import Citadel
 import NIO
 import UserNotifications
@@ -152,7 +147,7 @@ private actor SFTPResumeCheckpointStore {
     }
 }
 
-final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
+final class SFTPService: NSObject, @unchecked Sendable {
     static let shared = SFTPService()
     private let logger = Logger(subsystem: "com.backupflow.app", category: "SFTPService")
     private let cancellationLock = NSLock()
@@ -163,8 +158,6 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     
     private var sshClient: SSHClient?
     private var sftpClient: SFTPClient?
-    private(set) var lastError: Error?
-    private(set) var isConnected = false
     private var _currentFile: String = ""
     private var _progress: Double = 0
     private var _currentFileBytesTransferred: Int64 = 0
@@ -172,19 +165,15 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     private var _transferSpeedBytesPerSecond: Double = 0
     private var lastProgressSample: (date: Date, bytes: Int64)?
     private var currentUploadProgressHandler: ((Double) -> Void)?
-#if canImport(UIKit)
     private let backgroundTaskCoordinator = SFTPBackgroundTaskCoordinator()
-#endif
     private let prefetchTimeoutSeconds: TimeInterval = 60
     private let resumeCheckpointStore = SFTPResumeCheckpointStore()
     
     private override init() {
         super.init()
-#if canImport(UIKit)
         backgroundTaskCoordinator.onExpiration = { [weak self] in
             self?.handleBackgroundExpiration()
         }
-#endif
     }
 
     var currentFile: String {
@@ -284,20 +273,6 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         return result ?? SFTPHostKeyResult(isNewHostKey: false, fingerprint: nil)
     }
     
-    /// Removes the stored host key fingerprint for the given server.
-    /// After calling this, the next connection will treat the server as newly seen (TOFU).
-    /// Use when the user explicitly wants to re-trust a server after a key change.
-    func clearTrustedHostKey(host: String, port: Int) throws {
-        let host = try normalizedHost(host)
-        SFTPHostKeyStore.shared.delete(host: host, port: port)
-    }
-
-    /// Replaces the stored host key fingerprint. Use when the user explicitly trusts a changed key.
-    func updateTrustedHostKey(fingerprint: String, host: String, port: Int) throws {
-        let host = try normalizedHost(host)
-        try SFTPHostKeyStore.shared.update(fingerprint: fingerprint, host: host, port: port)
-    }
-
     func connect(host: String, port: Int, username: String?, password: String?) async throws {
         let normalizedHost = try normalizedHost(host)
         if let username {
@@ -713,7 +688,6 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
         stateLock.lock()
         sshClient = ssh
         sftpClient = sftp
-        isConnected = (ssh?.isConnected == true) && (sftp?.isActive == true)
         stateLock.unlock()
     }
 
@@ -739,7 +713,6 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
             let currentSFTP = sftpClient
             sshClient = nil
             sftpClient = nil
-            isConnected = false
             return (currentSSH, currentSFTP)
         }
 
@@ -933,7 +906,6 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     }
 
     private func waitForReachable(timeout: TimeInterval) async {
-#if canImport(Network)
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             let monitor = NWPathMonitor()
             let queue = DispatchQueue(label: "com.backupflow.sftp.reachability")
@@ -959,10 +931,6 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
                 }
             }
         }
-#else
-        let nanos = UInt64(timeout * 1_000_000_000)
-        try? await Task.sleep(nanoseconds: nanos)
-#endif
     }
 
     private func connectInternal(
@@ -1014,17 +982,13 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     }
 
     private func beginTransferBackgroundTask() {
-#if canImport(UIKit)
         logger.info("SFTP background task started for transfer")
         backgroundTaskCoordinator.begin()
-#endif
     }
 
     private func endTransferBackgroundTask() {
-#if canImport(UIKit)
         logger.info("SFTP background task ended for transfer")
         backgroundTaskCoordinator.end()
-#endif
     }
 
     private func handleBackgroundExpiration() {
@@ -1078,7 +1042,6 @@ final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
     }
 }
 
-#if canImport(UIKit)
 private final class SFTPBackgroundTaskCoordinator {
     private let lock = NSLock()
     private var taskID: UIBackgroundTaskIdentifier = .invalid
@@ -1147,9 +1110,7 @@ private final class SFTPBackgroundTaskCoordinator {
         lock.unlock()
     }
 }
-#endif
 
-#if canImport(Network)
 private final class VoidResumptionManager: @unchecked Sendable {
     private let lock = NSLock()
     private var continuation: CheckedContinuation<Void, Never>?
@@ -1170,63 +1131,4 @@ private final class VoidResumptionManager: @unchecked Sendable {
         return false
     }
 }
-#endif
 
-#else
-
-final class SFTPService: NSObject, @unchecked Sendable, BackupServiceProtocol {
-    static let shared = SFTPService()
-    private(set) var isConnected = false
-    private(set) var lastError: Error?
-    private let unavailableError = NSError(
-        domain: "SFTPUnavailable",
-        code: -1,
-        userInfo: [NSLocalizedDescriptionKey: "error.sftp.unavailable".localized]
-    )
-    
-    private override init() {
-        super.init()
-    }
-    
-    func testConnection(host: String, port: Int, username: String, password: String) async throws -> SFTPHostKeyResult {
-        throw unavailableError
-    }
-    
-    func connect(host: String, port: Int, username: String?, password: String?) async throws {
-        throw unavailableError
-    }
-
-    
-    func uploadFile(localURL: URL, remotePath: String, progressHandler: ((Double) -> Void)?) async throws {
-        throw unavailableError
-    }
-    
-    func createDirectory(at path: String) async throws {
-        throw unavailableError
-    }
-    
-    func listDirectory(at path: String) async throws -> [FileObject] {
-        throw unavailableError
-    }
-    
-    func deleteFile(at path: String) async throws {
-        throw unavailableError
-    }
-    
-    func disconnect() {}
-    
-    func performBackup(
-        host: String,
-        port: Int,
-        username: String,
-        password: String,
-        sourcePath: String,
-        destinationPath: String,
-        mediaType: MediaType,
-        progressHandler: ((Double) -> Void)?
-    ) async throws -> FTPService.SyncResult {
-        throw unavailableError
-    }
-}
-
-#endif

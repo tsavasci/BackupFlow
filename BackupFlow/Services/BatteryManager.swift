@@ -1,4 +1,3 @@
-#if canImport(UIKit)
 import UIKit
 import Combine
 import Foundation
@@ -50,6 +49,8 @@ class BatteryManager: ObservableObject {
     }
 
     func shouldAllowBackup() -> Bool {
+        // batteryLevel is -1 when the state is unknown (e.g. Simulator); don't block on missing data.
+        guard batteryState != .unknown, batteryLevel >= 0 else { return true }
         let batteryPercentage = Int(batteryLevel * 100)
         return batteryPercentage >= minimumBatteryLevel ||
                batteryState == .charging ||
@@ -58,7 +59,6 @@ class BatteryManager: ObservableObject {
     
     func getReasonForBlockedBackup() -> String? {
         if !shouldAllowBackup() {
-            let batteryPercentage = Int(batteryLevel * 100)
             return String(format: "battery.low_battery".localized, batteryPercentage, minimumBatteryLevel)
         }
         return nil
@@ -78,7 +78,7 @@ class BatteryManager: ObservableObject {
     }
     
     var batteryPercentage: Int {
-        Int(batteryLevel * 100)
+        max(0, Int(batteryLevel * 100))
     }
     
     var batteryStateDescription: String {
@@ -137,45 +137,3 @@ class BatteryManager: ObservableObject {
         }
     }
 }
-
-#else
-
-import Combine
-import Foundation
-
-@MainActor
-class BatteryManager: ObservableObject {
-    static let shared = BatteryManager()
-    
-    @Published var batteryLevel: Float = 1.0
-    @Published var minimumBatteryLevel: Int = 30
-    
-    private init() {
-        loadSettings()
-    }
-    
-    func shouldAllowBackup() -> Bool { true }
-    
-    func getReasonForBlockedBackup() -> String? { nil }
-    
-    func setMinimumBatteryLevel(_ level: Int) {
-        minimumBatteryLevel = max(1, min(100, level))
-        saveSettings()
-    }
-    
-    private func loadSettings() {
-        minimumBatteryLevel = UserDefaults.standard.object(forKey: "minimumBatteryLevel") as? Int ?? 30
-    }
-    
-    private func saveSettings() {
-        UserDefaults.standard.set(minimumBatteryLevel, forKey: "minimumBatteryLevel")
-    }
-    
-    var batteryPercentage: Int { 100 }
-    
-    var batteryStateDescription: String { "battery.state.unknown".localized }
-    
-    var batteryIcon: String { "battery.100" }
-}
-
-#endif

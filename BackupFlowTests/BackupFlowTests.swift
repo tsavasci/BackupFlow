@@ -124,6 +124,15 @@ final class BackupFlowTests: XCTestCase {
         XCTAssertTrue(service.isBackgroundUploading)
     }
 
+    @MainActor
+    func testFTPBackgroundModeIsClearedOnForeground() async throws {
+        let service = FTPService.shared
+        service.updateBackgroundMode(isBackground: true)
+        service.updateBackgroundMode(isBackground: false)
+
+        XCTAssertFalse(service.isBackgroundUploading)
+    }
+
     func testBackupStatusScanningAndPreparingAreUserFriendly() throws {
         XCTAssertFalse(BackupStatus.scanning.displayName.isEmpty)
         XCTAssertFalse(BackupStatus.preparing.displayName.isEmpty)

@@ -3,11 +3,10 @@ import SwiftUI
 
 struct HistoryView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
     @Query(sort: [SortDescriptor(\BackupHistory.timestamp, order: .reverse)]) private var history: [BackupHistory]
     
-    @State private var isLoading = false
-    @State private var loadError: Error?
-    @State private var selectedFilterStatus: String? = nil
+    @State private var showingClearConfirmation = false
     
     var body: some View {
         NavigationStack {
@@ -19,65 +18,34 @@ struct HistoryView: View {
                     .navigationTitle("history.title".localized)
                     .navigationBarTitleDisplayMode(.large)
                     .toolbar {
-                        #if os(iOS)
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("task.details.close".localized) { dismiss() }
+                        }
                         ToolbarItem(placement: .navigationBarTrailing) { clearHistoryButton }
-                        #else
-                        ToolbarItem { clearHistoryButton }
-                        #endif
                     }
             }
         }
-        .onAppear {
-            loadHistory()
+        .alert("history.clear_confirmation".localized, isPresented: $showingClearConfirmation) {
+            Button("alert.cancel".localized, role: .cancel) {}
+            Button("history.delete_all".localized, role: .destructive) {
+                clearHistory()
+            }
+        } message: {
+            Text("history.clear_confirmation_message".localized)
         }
     }
     
     @ViewBuilder
     private var historyContent: some View {
-        if isLoading {
-            ModernLoadingView()
-        } else if let error = loadError {
-            errorView(error: error)
-        } else if history.isEmpty {
+        if history.isEmpty {
             ModernEmptyState(
                 icon: "clock.arrow.circlepath",
                 title: "history.no_history".localized,
-                description: "history.empty_description".localized,
-                action: nil,
-                actionLabel: nil
+                description: "history.empty_description".localized
             )
         } else {
             historyListView
         }
-    }
-    
-    private func errorView(error: Error) -> some View {
-        VStack(spacing: DesignSystem.Spacing.large) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 48))
-                .foregroundColor(.red)
-            
-            Text("history.error_occurred".localized)
-                .font(DesignSystem.Typography.title3)
-                .fontWeight(.semibold)
-            
-            Text(error.localizedDescription)
-                .font(DesignSystem.Typography.body)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-            
-            ModernButton(
-                title: "history.retry".localized,
-                icon: "arrow.clockwise",
-                style: .primary,
-                action: loadHistory
-            )
-            .padding(.horizontal, DesignSystem.Spacing.base)
-            
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(DesignSystem.Spacing.base)
     }
     
     private var historyListView: some View {
@@ -138,18 +106,12 @@ struct HistoryView: View {
     }
     private var clearHistoryButton: some View {
         Button(role: .destructive) {
-            clearHistory()
+            showingClearConfirmation = true
         } label: {
             Image(systemName: "trash.fill")
         }
+        .accessibilityLabel("history.delete_all".localized)
         .disabled(history.isEmpty)
-    }
-    
-    private func loadHistory() {
-        isLoading = true
-        loadError = nil
-        // SwiftData sorguları otomatik olduğu için ek iş yapılmıyor
-        isLoading = false
     }
     
     private func deleteItem(_ item: BackupHistory) {
@@ -159,24 +121,13 @@ struct HistoryView: View {
         }
     }
     
-    private func deleteItems(offsets: IndexSet) {
-        for index in offsets {
-            guard index < history.count else { continue }
-            modelContext.delete(history[index])
-        }
-        try? modelContext.save()
-    }
-    
     private func clearHistory() {
-        isLoading = true
         do {
             try modelContext.delete(model: BackupHistory.self)
             try modelContext.save()
         } catch {
             debugLog("Geçmiş temizlenirken hata oluştu: \(error)")
         }
-        isLoading = false
-        loadHistory()
     }
     
     private func formatFileSize(_ bytes: Int64) -> String {

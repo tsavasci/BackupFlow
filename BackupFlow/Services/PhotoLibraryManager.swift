@@ -21,13 +21,6 @@ class PhotoLibraryManager: NSObject, ObservableObject {
         checkAuthorizationStatus()
     }
     
-    enum AssetDataFetchResult {
-        case success(Data)
-        case iCloudOnly
-        case timedOut
-        case unavailable
-    }
-
     enum AssetFileExportResult {
         case success(url: URL, size: Int64)
         case iCloudOnly
@@ -36,31 +29,17 @@ class PhotoLibraryManager: NSObject, ObservableObject {
     }
     
     func requestAuthorization(completion: ((Bool) -> Void)? = nil) {
-        if #available(iOS 14, *) {
-            PHPhotoLibrary.requestAuthorization(for: .readWrite) { status in
-                DispatchQueue.main.async {
-                    self.handleAuthorizationStatus(status)
-                    completion?(status == .authorized || status == .limited)
-                }
-            }
-        } else {
-            PHPhotoLibrary.requestAuthorization { status in
-                DispatchQueue.main.async {
-                    self.handleAuthorizationStatus(status)
-                    completion?(status == .authorized)
-                }
+        PHPhotoLibrary.requestAuthorization(for: .readWrite) { status in
+            DispatchQueue.main.async {
+                self.handleAuthorizationStatus(status)
+                completion?(status == .authorized || status == .limited)
             }
         }
     }
     
     func checkAuthorizationStatus() {
-        if #available(iOS 14, *) {
-            let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
-            handleAuthorizationStatus(status)
-        } else {
-            let status = PHPhotoLibrary.authorizationStatus()
-            handleAuthorizationStatus(status)
-        }
+        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        handleAuthorizationStatus(status)
     }
     
     private func handleAuthorizationStatus(_ status: PHAuthorizationStatus) {
@@ -78,69 +57,6 @@ class PhotoLibraryManager: NSObject, ObservableObject {
         @unknown default:
             self.hasAccess = false
             logger.error("Bilinmeyen izin durumu: \(status.rawValue)")
-        }
-    }
-    
-    func fetchAllPhotos(completion: @escaping ([PHAsset]) -> Void) {
-        fetchAllMedia(includePhotos: true, includeVideos: false, completion: completion)
-    }
-    
-    func fetchAllVideos(completion: @escaping ([PHAsset]) -> Void) {
-        fetchAllMedia(includePhotos: false, includeVideos: true, completion: completion)
-    }
-    
-    func fetchAllMedia(includePhotos: Bool = true, includeVideos: Bool = true, completion: @escaping ([PHAsset]) -> Void) {
-        guard hasAccess else {
-            logger.warning("Fotoğraf kütüphanesine erişim yok")
-            completion([])
-            return
-        }
-        
-        let fetchOptions = PHFetchOptions()
-        fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
-        
-        var allAssets: [PHAsset] = []
-        
-        // Fetch photos if requested
-        if includePhotos {
-            let photoFetchResult = PHAsset.fetchAssets(with: .image, options: fetchOptions)
-            photoFetchResult.enumerateObjects { (asset, _, _) in
-                allAssets.append(asset)
-            }
-        }
-        
-        // Fetch videos if requested  
-        if includeVideos {
-            let videoFetchResult = PHAsset.fetchAssets(with: .video, options: fetchOptions)
-            videoFetchResult.enumerateObjects { (asset, _, _) in
-                allAssets.append(asset)
-            }
-        }
-        
-        // Sort by creation date (newest first)
-        allAssets.sort { (asset1, asset2) in
-            guard let date1 = asset1.creationDate, let date2 = asset2.creationDate else {
-                return false
-            }
-            return date1 > date2
-        }
-        
-        logger.info("\(allAssets.count) adet medya dosyası bulundu (fotoğraf: \(includePhotos), video: \(includeVideos))")
-        completion(allAssets)
-    }
-    
-    func saveImageToLibrary(_ image: UIImage, completion: @escaping (Bool, Error?) -> Void) {
-        PHPhotoLibrary.shared().performChanges({
-            PHAssetChangeRequest.creationRequestForAsset(from: image)
-        }) { (success, error) in
-            DispatchQueue.main.async {
-                if success {
-                    self.logger.info("Fotoğraf başarıyla kaydedildi")
-                } else if let error = error {
-                    self.logger.error("Fotoğraf kaydedilemedi: \(error.localizedDescription)")
-                }
-                completion(success, error)
-            }
         }
     }
     
@@ -182,137 +98,6 @@ class PhotoLibraryManager: NSObject, ObservableObject {
         return assets
     }
     
-    func getAssetData(asset: PHAsset, allowNetworkAccess: Bool = false) async throws -> Data? {
-        let result = await getAssetDataWithStatus(asset: asset, allowNetworkAccess: allowNetworkAccess)
-        switch result {
-        case .success(let data):
-            return data
-        case .iCloudOnly, .timedOut, .unavailable:
-            return nil
-        }
-    }
-    
-    func getAssetDataWithStatus(asset: PHAsset, allowNetworkAccess: Bool = false) async -> AssetDataFetchResult {
-        return await withCheckedContinuation { continuation in
-            // FIGSANDBOX uyarılarını azaltmak için opportunistic delivery kullan
-            // .highQualityFormat iCloud'dan indirme zorlayabilir - foreground/background geçişlerde sorun oluşturabilir
-            let options = PHImageRequestOptions()
-            options.isSynchronous = false
-            options.isNetworkAccessAllowed = allowNetworkAccess
-            options.deliveryMode = .highQualityFormat // Prefer highest quality
-            options.resizeMode = .none
-            options.version = .current
-            
-            if asset.mediaType == .image {
-                let resumeLock = NSLock()
-                var didResume = false
-                func tryResume(_ result: AssetDataFetchResult) -> Bool {
-                    resumeLock.lock()
-                    defer { resumeLock.unlock() }
-                    if didResume { return false }
-                    didResume = true
-                    continuation.resume(returning: result)
-                    return true
-                }
-
-                Task {
-                    try? await Task.sleep(nanoseconds: 45_000_000_000)
-                    if tryResume(.timedOut) {
-                        self.logger.warning("⚠️ Fotoğraf okuma zaman aşımı: \(asset.localIdentifier.prefix(8))")
-                    }
-                }
-
-                // PHImageRequestOptions'ı main thread'de kullan
-                PHImageManager.default().requestImageDataAndOrientation(for: asset, options: options) { data, uti, orientation, info in
-                    // Eğer yerel varlık bulunamazsa, iCloud'dan indir (opsiyonel)
-                    if let data = data, !data.isEmpty {
-                        self.logger.debug("✓ Fotoğraf verisi yerel olarak alındı: \(asset.localIdentifier.prefix(8))")
-                        _ = tryResume(.success(data))
-                    } else if let isInCloud = info?[PHImageResultIsInCloudKey] as? NSNumber, isInCloud.boolValue {
-                        if allowNetworkAccess {
-                            self.logger.warning("⚠️ Fotoğraf iCloud'dan alınamadı, atlandı")
-                            _ = tryResume(.unavailable)
-                        } else {
-                            self.logger.warning("⚠️ Fotoğraf iCloud-only (local değil) - yedeklemede atlandı")
-                            _ = tryResume(.iCloudOnly)
-                        }
-                    } else {
-                        _ = tryResume(.unavailable)
-                    }
-                }
-            } else if asset.mediaType == .video {
-                let resumeLock = NSLock()
-                var didResume = false
-                func tryResume(_ result: AssetDataFetchResult) -> Bool {
-                    resumeLock.lock()
-                    defer { resumeLock.unlock() }
-                    if didResume { return false }
-                    didResume = true
-                    continuation.resume(returning: result)
-                    return true
-                }
-
-                let tempRoot = FileManager.default.temporaryDirectory.appendingPathComponent("backupflow_exports", isDirectory: true)
-                try? FileManager.default.createDirectory(at: tempRoot, withIntermediateDirectories: true)
-                Task {
-                    try? await Task.sleep(nanoseconds: 90_000_000_000)
-                    if tryResume(.timedOut) {
-                        self.logger.warning("⚠️ Video okuma zaman aşımı: \(asset.localIdentifier.prefix(8))")
-                    }
-                }
-                
-                // Avoid metadata fetch on main queue for video resources.
-                DispatchQueue.global(qos: .utility).async {
-                    let resources = PHAssetResource.assetResources(for: asset)
-                    let preferredVideoResource = resources.first(where: { resource in
-                        resource.type == .video || resource.type == .fullSizeVideo
-                    })
-                    guard let videoResource = preferredVideoResource ?? resources.first else {
-                        _ = tryResume(.unavailable)
-                        return
-                    }
-
-                    let ext = (videoResource.originalFilename as NSString).pathExtension
-                    let finalExt = ext.isEmpty ? "mov" : ext
-                    let tempURL = tempRoot.appendingPathComponent("video_\(UUID().uuidString).\(finalExt)")
-                    if FileManager.default.fileExists(atPath: tempURL.path) {
-                        try? FileManager.default.removeItem(at: tempURL)
-                    }
-
-                    let requestOptions = PHAssetResourceRequestOptions()
-                    requestOptions.isNetworkAccessAllowed = allowNetworkAccess
-
-                    PHAssetResourceManager.default().writeData(for: videoResource, toFile: tempURL, options: requestOptions) { error in
-                        defer { try? FileManager.default.removeItem(at: tempURL) }
-
-                        if let error = error {
-                            let nsError = error as NSError
-                            if !allowNetworkAccess, nsError.domain == "PHPhotosErrorDomain", (nsError.code == 3164 || nsError.code == 3169) {
-                                self.logger.warning("⚠️ Video iCloud-only (local değil) - yedeklemede atlandı")
-                                _ = tryResume(.iCloudOnly)
-                            } else {
-                                self.logger.warning("⚠️ Video verisi alınamadı, atlandı: \(error.localizedDescription)")
-                                _ = tryResume(.unavailable)
-                            }
-                            return
-                        }
-
-                        do {
-                            let data = try Data(contentsOf: tempURL)
-                            self.logger.debug("✓ Video verisi alındı: \(asset.localIdentifier.prefix(8))")
-                            _ = tryResume(.success(data))
-                        } catch {
-                            self.logger.warning("⚠️ Video verisi okunamadı, atlandı: \(error.localizedDescription)")
-                            _ = tryResume(.unavailable)
-                        }
-                    }
-                }
-            } else {
-                continuation.resume(returning: .unavailable)
-            }
-        }
-    }
-
     func exportAssetToTemporaryFile(asset: PHAsset, fileName: String, allowNetworkAccess: Bool = false) async -> AssetFileExportResult {
         let tempRoot = FileManager.default.temporaryDirectory.appendingPathComponent("backupflow_exports", isDirectory: true)
         do {
@@ -420,95 +205,5 @@ class PhotoLibraryManager: NSObject, ObservableObject {
         let idFragment = String(sanitizedIdentifier.prefix(12))
         
         return "\(dateString)_\(idFragment).\(fileExtension)"
-    }
-}
-
-// MARK: - Photo Picker for SwiftUI
-@available(iOS 14, *)
-struct PhotoPicker: UIViewControllerRepresentable {
-    @Environment(\.presentationMode) private var presentationMode
-    let onSelect: ([PHAsset]) -> Void
-    let includePhotos: Bool
-    let includeVideos: Bool
-    
-    init(onSelect: @escaping ([PHAsset]) -> Void, includePhotos: Bool = true, includeVideos: Bool = false) {
-        self.onSelect = onSelect
-        self.includePhotos = includePhotos
-        self.includeVideos = includeVideos
-    }
-    
-    func makeUIViewController(context: Context) -> PHPickerViewController {
-        var configuration = PHPickerConfiguration()
-        
-        // Set filter based on what media types to include
-        if includePhotos && includeVideos {
-            configuration.filter = PHPickerFilter.any(of: [.images, .videos])
-        } else if includePhotos {
-            configuration.filter = .images
-        } else if includeVideos {
-            configuration.filter = .videos
-        } else {
-            configuration.filter = .images // Default fallback
-        }
-        
-        configuration.selectionLimit = 0 // 0 means unlimited
-        configuration.preferredAssetRepresentationMode = .current
-        
-        let picker = PHPickerViewController(configuration: configuration)
-        picker.delegate = context.coordinator
-        return picker
-    }
-    
-    func updateUIViewController(_ uiViewController: PHPickerViewController, context: Context) {}
-    
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-    
-    class Coordinator: NSObject, PHPickerViewControllerDelegate {
-        private let parent: PhotoPicker
-        
-        init(_ parent: PhotoPicker) {
-            self.parent = parent
-        }
-        
-        func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
-            parent.presentationMode.wrappedValue.dismiss()
-            
-            guard !results.isEmpty else {
-                parent.onSelect([])
-                return
-            }
-            
-            var assets: [PHAsset] = []
-            let group = DispatchGroup()
-            
-            for result in results {
-                group.enter()
-                
-                // Get the PHAsset for the selected photo
-                if let assetId = result.assetIdentifier {
-                    let fetchResult = PHAsset.fetchAssets(withLocalIdentifiers: [assetId], options: nil)
-                    if let asset = fetchResult.firstObject {
-                        assets.append(asset)
-                    }
-                    group.leave()
-                } else {
-                    // Fallback for when assetIdentifier is not available
-                    result.itemProvider.loadObject(ofClass: UIImage.self) { (object, error) in
-                        if let _ = object as? UIImage {
-                            // We can't get the PHAsset directly, so we'll create a temporary one
-                            // This is a limitation - we can't get the original PHAsset without the identifier
-                            // In a real app, you might want to handle this case differently
-                        }
-                        group.leave()
-                    }
-                }
-            }
-            
-            group.notify(queue: .main) {
-                self.parent.onSelect(assets)
-            }
-        }
     }
 }

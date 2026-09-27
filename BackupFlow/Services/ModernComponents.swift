@@ -1,109 +1,5 @@
 import SwiftUI
 
-// MARK: - Modern Button
-
-struct ModernButton: View {
-    let title: String
-    let icon: String?
-    let style: ButtonStyle
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: DesignSystem.Spacing.small) {
-                if let icon = icon {
-                    Image(systemName: icon)
-                        .font(.system(size: 16, weight: .semibold))
-                }
-                Text(title)
-                    .font(DesignSystem.Typography.callout)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: DesignSystem.Dimensions.buttonHeight)
-            .foregroundColor(style.foregroundColor)
-            .background(style.backgroundColor)
-            .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.large, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.large, style: .continuous)
-                    .stroke(style.borderColor, lineWidth: style.borderWidth)
-            )
-            .withSmallShadow()
-        }
-    }
-    
-    enum ButtonStyle {
-        case primary
-        case secondary
-        case tertiary
-        case destructive
-        case success
-        
-        var backgroundColor: Color {
-            switch self {
-            case .primary: return DesignSystem.Colors.primary
-            case .secondary: return Color.gray.opacity(0.1)
-            case .tertiary: return Color.clear
-            case .destructive: return DesignSystem.Colors.error
-            case .success: return DesignSystem.Colors.success
-            }
-        }
-        
-        var foregroundColor: Color {
-            switch self {
-            case .primary, .destructive, .success: return .white
-            case .secondary: return .primary
-            case .tertiary: return DesignSystem.Colors.primary
-            }
-        }
-        
-        var borderColor: Color {
-            switch self {
-            case .tertiary: return DesignSystem.Colors.primary.opacity(0.3)
-            case .secondary: return DesignSystem.Colors.border
-            default: return .clear
-            }
-        }
-        
-        var borderWidth: CGFloat {
-            switch self {
-            case .tertiary, .secondary: return 1.5
-            default: return 0
-            }
-        }
-    }
-}
-
-// MARK: - Modern Small Button
-
-struct ModernSmallButton: View {
-    let title: String
-    let icon: String?
-    let style: ModernButton.ButtonStyle
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: DesignSystem.Spacing.extraSmall) {
-                if let icon = icon {
-                    Image(systemName: icon)
-                        .font(.system(size: 14, weight: .semibold))
-                }
-                Text(title)
-                    .font(DesignSystem.Typography.footnote)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: DesignSystem.Dimensions.smallButtonHeight)
-            .foregroundColor(style.foregroundColor)
-            .background(style.backgroundColor)
-            .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium, style: .continuous)
-                    .stroke(style.borderColor, lineWidth: style.borderWidth)
-            )
-        }
-    }
-}
-
 // MARK: - Modern Card
 
 struct ModernCard<Content: View>: View {
@@ -141,59 +37,6 @@ struct ModernCard<Content: View>: View {
             )
             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             .withSmallShadow()
-    }
-}
-
-// MARK: - Modern Text Field
-
-struct ModernTextField: View {
-    let placeholder: String
-    let icon: String?
-    @Binding var text: String
-    var errorMessage: String?
-    var isSecure: Bool = false
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.small) {
-            HStack(spacing: DesignSystem.Spacing.small) {
-                if let icon = icon {
-                    Image(systemName: icon)
-                        .foregroundColor(DesignSystem.Colors.primary)
-                        .frame(width: 20)
-                }
-                
-                if isSecure {
-                    SecureField(placeholder, text: $text)
-                        .font(DesignSystem.Typography.body)
-                } else {
-                    TextField(placeholder, text: $text)
-                        .font(DesignSystem.Typography.body)
-                }
-            }
-            .padding(.horizontal, DesignSystem.Spacing.base)
-            .padding(.vertical, DesignSystem.Spacing.medium)
-            .background(
-                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium, style: .continuous)
-                    .fill(Color.gray.opacity(0.05))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium, style: .continuous)
-                            .stroke(
-                                errorMessage != nil ? DesignSystem.Colors.error : DesignSystem.Colors.border,
-                                lineWidth: 1.5
-                            )
-                    )
-            )
-            
-            if let errorMessage = errorMessage {
-                HStack(spacing: DesignSystem.Spacing.small) {
-                    Image(systemName: "exclamationmark.circle.fill")
-                        .font(.system(size: 12))
-                    Text(errorMessage)
-                        .font(DesignSystem.Typography.caption2)
-                }
-                .foregroundColor(DesignSystem.Colors.error)
-            }
-        }
     }
 }
 
@@ -243,51 +86,12 @@ struct ModernProgressBar: View {
     }
 }
 
-// MARK: - Modern Loading View
-
-struct ModernLoadingView: View {
-    @State private var isAnimating = false
-    
-    var body: some View {
-        VStack(spacing: DesignSystem.Spacing.large) {
-            ZStack {
-                Circle()
-                    .stroke(Color.gray.opacity(0.1), lineWidth: 8)
-                    .frame(width: 60, height: 60)
-                
-                Circle()
-                    .trim(from: 0, to: 0.7)
-                    .stroke(
-                        DesignSystem.Colors.primaryGradient,
-                        style: StrokeStyle(lineWidth: 8, lineCap: .round)
-                    )
-                    .frame(width: 60, height: 60)
-                    .rotationEffect(.degrees(isAnimating ? 360 : 0))
-                    .animation(
-                        SwiftUI.Animation.linear(duration: 1).repeatForever(autoreverses: false),
-                        value: isAnimating
-                    )
-            }
-            
-            Text("common.please_wait".localized)
-                .font(DesignSystem.Typography.subheadline)
-                .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onAppear {
-            isAnimating = true
-        }
-    }
-}
-
 // MARK: - Modern Empty State
 
 struct ModernEmptyState: View {
     let icon: String
     let title: String
     let description: String
-    let action: (() -> Void)?
-    let actionLabel: String?
     
     var body: some View {
         VStack(spacing: DesignSystem.Spacing.large) {
@@ -305,16 +109,6 @@ struct ModernEmptyState: View {
                     .font(DesignSystem.Typography.body)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
-            }
-            
-            if let action = action, let actionLabel = actionLabel {
-                ModernButton(
-                    title: actionLabel,
-                    icon: "plus.circle.fill",
-                    style: .primary,
-                    action: action
-                )
-                .padding(.horizontal, DesignSystem.Spacing.large)
             }
             
             Spacer()
@@ -420,19 +214,3 @@ struct StatCard: View {
         }
     }
 }
-
-// MARK: - Previews
-
-#if DEBUG
-struct ModernButton_Preview: PreviewProvider {
-    static var previews: some View {
-        VStack(spacing: 16) {
-            ModernButton(title: "Primary", icon: "checkmark", style: .primary, action: {})
-            ModernButton(title: "Secondary", icon: "arrowshape.right", style: .secondary, action: {})
-            ModernButton(title: "Destructive", icon: "trash", style: .destructive, action: {})
-        }
-        .padding()
-        .preferredColorScheme(.dark)
-    }
-}
-#endif

@@ -1,8 +1,4 @@
-"nav.tasks" = "المهام";
-"nav.backup" = "النسخ الاحتياطي";
 "nav.history" = "السجل";
-"nav.settings" = "الإعدادات";
-"nav.about" = "حول";
 "settings.title" = "الإعدادات";
 "settings.general" = "عام";
 "settings.history_retention" = "الاحتفاظ بالسجل (أيام)";
@@ -14,51 +10,11 @@
 "settings.version" = "الإصدار";
 "settings.rate_app" = "تقييم التطبيق";
 "settings.contact_support" = "اتصل بالدعم";
-"settings.developer_settings" = "إعدادات المطور";
-"settings.advanced_settings" = "الإعدادات المتقدمة";
-"settings.ftp_connection_test" = "اختبار اتصال FTP";
 "settings.reset_all_data" = "إعادة تعيين جميع البيانات";
-"language.selection" = "اللغة";
-"language.system" = "لغة النظام";
-"language.restart_required" = "تم تغيير اللغة";
-"language.restart_message" = "سيستخدم التطبيق اللغة الجديدة عند الإطلاق التالي.";
-"alert.ok" = "موافق";
 "alert.cancel" = "إلغاء";
-"dashboard.title" = "نظرة عامة على الحالة";
-"dashboard.last_backup" = "آخر نسخة احتياطية";
-"dashboard.active_tasks" = "المهام النشطة";
 "dashboard.next_task" = "المهمة التالية";
 "dashboard.never" = "أبداً";
 "dashboard.overdue" = "متأخر";
-"dashboard.in_days" = "خلال %d أيام";
-"dashboard.in_hours" = "خلال %d ساعات";
-"dashboard.in_minutes" = "خلال %d دقائق";
-"dashboard.soon" = "قريباً جداً";
-"tasks.your_tasks" = "مهامك";
-"wifi.settings" = "إعدادات WiFi";
-"wifi.current_network" = "الشبكة الحالية";
-"wifi.status" = "الحالة";
-"wifi.not_connected" = "غير متصل بـ WiFi";
-"wifi.network_not_allowed" = "النسخ الاحتياطي غير مسموح على هذه الشبكة";
-"wifi.allowed_networks" = "الشبكات المسموح بها";
-"wifi.no_allowed_networks" = "لم يتم إضافة شبكات مسموح بها بعد";
-"wifi.add_network" = "إضافة شبكة";
-"wifi.remove" = "إزالة";
-"wifi.current" = "حالي";
-"wifi.help" = "مساعدة";
-"wifi.not_connected_status" = "غير متصل بـ WiFi";
-"wifi.unknown_network" = "شبكة غير معروفة";
-"wifi.network_name" = "اسم الشبكة";
-"wifi.add" = "إضافة";
-"wifi.remove_network" = "إزالة الشبكة";
-"wifi.add_network_message" = "أدخل اسم شبكة WiFi التي تريد السماح بالنسخ الاحتياطي عليها.";
-"wifi.remove_network_message" = "هل أنت متأكد من إزالة هذه الشبكة من القائمة المسموح بها؟";
-"wifi.allowed_networks_footer" = "سيتم تشغيل النسخ الاحتياطي فقط على هذه الشبكات. إذا كانت فارغة، سيتم تشغيل النسخ الاحتياطي على أي شبكة WiFi.";
-"wifi.help_1" = "يعمل النسخ الاحتياطي فقط عند الاتصال بـ WiFi";
-"wifi.help_2" = "أضف شبكات معينة إلى القائمة المسموح بها لمزيد من الأمان";
-"wifi.help_3" = "استخدم زر + لإضافة شبكتك الحالية بسرعة";
-"backup.skipped.title" = "تم تخطي النسخ الاحتياطي";
-"backup.skipped.message" = "تم تخطي مهمة %@: %@";
 "battery.settings" = "إعدادات البطارية";
 "battery.current_status" = "حالة البطارية الحالية";
 "battery.level" = "مستوى البطارية";
@@ -82,22 +38,13 @@
 "settings.reset_confirm_title" = "إعادة تعيين الإعدادات";
 "settings.reset_confirm_message" = "سيتم إعادة تعيين جميع الإعدادات إلى القيم الافتراضية. هل تريد المتابعة؟";
 // Task Pause/Resume System
-"task.paused.notification.title" = "🎬 BackupFlow";
-"task.paused.notification.body" = "المهمة متوقفة: %@";
-"task.resumed.notification.title" = "🎬 BackupFlow";
-"task.resumed.notification.body" = "تم استئناف جدولة المهمة: %@";
 "task.pause.button" = "إيقاف الجدولة";
 "task.resume.button" = "استئناف الجدولة";
 "task.status.paused" = "متوقف";
 
 // Notification Actions
-"backup.notification.action.postpone" = "تأجيل";
 
 // BackupScheduler Notifications
-"backup.paused.notification.title" = "النسخ الاحتياطي متوقف";
-"backup.paused.notification.body" = "تم إيقاف مهمة '%@'.";
-"backup.resumed.notification.title" = "تم استئناف النسخ الاحتياطي";
-"backup.resumed.notification.body" = "تم استئناف مهمة '%@'.";
 "backup.scheduled.notification.title" = "🕐 وقت النسخ الاحتياطي!";
 "backup.scheduled.notification.body" = "مهمة '%@' جاهزة للتشغيل. (%@)";
 "backup.scheduled.notification.local_cellular" = "\n\n📱 مسموح باستخدام البيانات الخلوية للخادم المحلي.";
@@ -113,80 +60,22 @@
 "history.files.skipped" = "متخطى";
 
 // Progress Status Messages
-"progress.skipped" = "متخطى";
-"progress.uploading" = "جاري الرفع";
-"progress.downloading" = "جاري التنزيل";
-"progress.processing" = "جاري المعالجة";
-"progress.preparing" = "جاري تحضير النسخ الاحتياطي...";
-"progress.completed" = "اكتمل النسخ الاحتياطي";
 "battery.state.unknown" = "غير معروف";
 "battery.state.unplugged" = "غير قيد الشحن";
 "battery.state.charging" = "قيد الشحن";
 "battery.state.full" = "ممتلئ";
-"tasks.create_task" = "إنشاء مهمة";
-"tasks.edit_task" = "تعديل المهمة";
-"tasks.task_name" = "اسم المهمة";
-"tasks.source_path" = "مسار المصدر";
-"tasks.destination" = "الوجهة";
-"tasks.schedule" = "الجدول";
-"tasks.enabled" = "مفعّل";
-"tasks.disabled" = "معطّل";
-"tasks.last_run" = "آخر تشغيل";
-"tasks.next_run" = "التشغيل التالي";
-"tasks.status" = "الحالة";
 "tasks.delete" = "حذف";
-"tasks.save" = "حفظ";
-"tasks.cancel" = "إلغاء";
 "tasks.delete_confirmation" = "حذف المهمة";
-"tasks.delete_message" = "هل أنت متأكد من حذف هذه المهمة؟";
-"schedule.daily" = "يومياً";
-"schedule.weekly" = "أسبوعياً";
-"schedule.monthly" = "شهرياً";
-"schedule.custom" = "مخصص";
-"ftp.server" = "الخادم";
-"ftp.port" = "المنفذ";
-"ftp.username" = "اسم المستخدم";
-"ftp.password" = "كلمة المرور";
-"ftp.path" = "المسار البعيد";
-"ftp.test_connection" = "اختبار الاتصال";
-"ftp.connection_success" = "نجح الاتصال";
-"ftp.connection_failed" = "فشل الاتصال";
 "history.title" = "سجل النسخ الاحتياطي";
-"history.date" = "التاريخ";
-"history.task" = "المهمة";
-"history.status" = "الحالة";
-"history.size" = "الحجم";
-"history.duration" = "المدة";
-"history.success" = "نجح";
-"history.failed" = "فشل";
 "history.no_history" = "لا يوجد سجل نسخ احتياطي متاح";
-"about.title" = "حول BackupFlow";
-"about.version" = "الإصدار";
-"about.build" = "البناء";
-"about.description" = "حل النسخ الاحتياطي الاحترافي لـ iOS مع دعم FTP/WebDAV";
-"about.developer" = "المطور";
-"about.website" = "الموقع الإلكتروني";
-"about.support" = "الدعم";
-"about.privacy" = "سياسة الخصوصية";
-"about.terms" = "شروط الخدمة";
-"alert.info" = "معلومات";
-"alert.success" = "نجح";
 "alert.error" = "خطأ";
 "tasks.duplicate_error" = "توجد مهمة بنفس الإعدادات بالفعل";
 "tasks.save_success" = "تم حفظ المهمة بنجاح";
 "tasks.scheduled" = "وتمت جدولتها";
-"tasks.schedule_error" = "لكن فشلت الجدولة";
-"tasks.save_error" = "خطأ في حفظ المهمة";
-"backup.source_selection" = "اختيار المصدر";
-"backup.select_folder" = "حدد مجلداً للنسخ الاحتياطي";
-"backup.photo_library" = "نسخ احتياطي لمكتبة الصور";
-"backup.media_type" = "اختيار نوع الوسائط";
-"backup.folder_selection" = "اختيار المجلد";
 "backup.or" = "أو";
 "backup.manual" = "يدوي";
 "backup.daily" = "يومياً";
 "backup.weekly" = "أسبوعياً";
-"backup.time" = "الوقت";
 "backup.hour" = "ساعة";
 "backup.minute" = "دقيقة";
 "backup.day" = "يوم";
@@ -194,13 +83,6 @@
 "backup.test_connection" = "اختبار الاتصال";
 "backup.new_backup" = "نسخة احتياطية جديدة";
 "backup.clear" = "مسح";
-"day.sunday" = "الأحد";
-"day.monday" = "الاثنين";
-"day.tuesday" = "الثلاثاء";
-"day.wednesday" = "الأربعاء";
-"day.thursday" = "الخميس";
-"day.friday" = "الجمعة";
-"day.saturday" = "السبت";
 "backup.connection_testing" = "جاري اختبار الاتصال...";
 "backup.connection_success_ftp" = "نجح اتصال FTP!";
 "backup.connection_success_sftp" = "نجح اتصال SFTP!";
@@ -208,47 +90,21 @@
 "backup.connection_error" = "خطأ في الاتصال";
 "backup.fill_required_fields" = "يرجى ملء الحقول المطلوبة (عنوان الخادم واسم المستخدم/كلمة المرور)";
 "backup.webdav_credentials_required" = "يرجى إدخال عنوان خادم WebDAV وبيانات اعتماد المستخدم";
-"backup.network_permission_check" = "جاري التحقق من إذن الشبكة... (قد يطلب iOS الإذن عند الاستخدام الأول)";
 "backup.source_required" = "يرجى تحديد مصدر (مجلد أو مكتبة الصور)";
 "backup.photo_permission_required" = "مطلوب الوصول إلى مكتبة الصور";
 "backup.invalid_folder" = "مسار مجلد غير صالح. يرجى المحاولة مرة أخرى.";
-"backup.new_task" = "نسخة احتياطية جديدة";
 "backup.target_type" = "نوع الهدف";
 "backup.server_address" = "عنوان الخادم";
 "backup.port_default" = "المنفذ (الافتراضي: 21)";
 "backup.port_webdav_default" = "المنفذ (الافتراضي: 443)";
+"backup.port_sftp_default" = "المنفذ (الافتراضي: 22)";
 "backup.anonymous_login" = "تسجيل دخول مجهول";
 "backup.username" = "اسم المستخدم";
 "backup.password" = "كلمة المرور";
 "backup.destination_folder" = "مجلد الوجهة";
-"backup.start_confirmation" = "بدء النسخ الاحتياطي؟";
-"backup.start" = "ابدأ";
-"backup.pending_message" = "مهمة '%@' في انتظار البدء من الإشعار.";
-"tasks.no_tasks" = "لا توجد مهام";
-"tasks.create_first_task" = "أنشئ مهمة النسخ الاحتياطي الأولى للبدء.";
 "tasks.delete_message_full" = "هل أنت متأكد من أنك تريد حذف هذه المهمة؟ لا يمكن التراجع عن هذا الإجراء.";
-"tasks.swipe_delete" = "حذف";
 
 // اختبار FTP وعناوين URL WebDAV
-"ftp.test.connection_info" = "معلومات اتصال FTP";
-"ftp.test.server_address" = "عنوان الخادم:";
-"ftp.test.port" = "المنفذ:";
-"ftp.test.username" = "اسم المستخدم:";
-"ftp.test.password" = "كلمة المرور:";
-"ftp.test.connection_test" = "اختبار اتصال FTP";
-"ftp.test.description" = "سيتصل هذا الاختبار بخادم FTP ويرفع ملف اختبار صغير.";
-"ftp.test.start_test" = "ابدأ الاختبار";
-"ftp.test.results" = "نتائج الاختبار";
-"ftp.test.success_info" = "• يشير الاختبار الناجح إلى أنه يمكنك الاتصال بخادم FTP وتحميل الملفات.";
-"ftp.test.error_info" = "• إذا حصلت على خطأ، تحقق من إعدادات FTP واتصالك بالإنترنت.";
-"ftp.test.title" = "اختبار FTP";
-"ftp.test.completed" = "اكتمل الاختبار";
-"ftp.test.completed_message" = "اكتمل الاختبار.";
-"ftp.test.invalid_port" = "✗ رقم منفذ غير صالح. أدخل قيمة بين 1-65535.";
-"ftp.test.starting" = "بدء الاختبار";
-"ftp.test.starting_message" = "جاري بدء اختبار اتصال FTP... (قد يطلب iOS إذن الشبكة عند الاستخدام الأول)";
-"ftp.test.success" = "✓ نجح الاختبار! يمكنك الاتصال بخادم FTP ورفع الملفات.";
-"ftp.test.failed" = "✗ فشل الاختبار: ";
 
 // Task Details
 "task.details.general" = "عام";
@@ -289,15 +145,8 @@
 "day.names.friday" = "الجمعة";
 "day.names.saturday" = "السبت";
 
-"backup.select_folder_placeholder" = "حدد المجلد...";
 "backup.select_time" = "حدد الوقت";
-"backup.or_text" = "أو";
-"history.loading" = "جاري التحميل...";
-"history.error_occurred" = "حدث خطأ: %@";
-"history.retry" = "إعادة المحاولة";
 "history.unknown" = "غير معروف";
-"history.anonymous_ftp" = "FTP مجهول";
-"history.user_prefix" = "المستخدم: %@";
 // Backup Status Messages
 "backup.status.idle" = "جاهز";
 "backup.status.preparing" = "جاري التحضير...";
@@ -306,85 +155,17 @@
 "backup.status.completed" = "مكتمل";
 "backup.status.failed" = "فشل";
 "backup.status.cancelled" = "تم الإلغاء";
-"error.unexpected" = "حدث خطأ غير متوقع: %@";
-"error.authentication_failed" = "فشلت مصادقة المستخدم";
-"error.permission_denied" = "تم رفض إذن الوصول إلى الملف أو الدليل";
-"error.file_not_found" = "لم يتم العثور على الملف أو الدليل: %@";
-"error.directory_creation" = "خطأ غير متوقع أثناء إنشاء الدليل: %@";
-"error.server_not_found" = "لم يتم العثور على الخادم أو لا يمكن الوصول إليه";
-"history.media_type_prefix" = "نوع الوسائط: %@";
 
 // Appended new keys
-"common.close" = "إغلاق";
-"task.general" = "عام";
-"task.next_run" = "التشغيل التالي";
-"task.port" = "المنفذ";
-"task.recent_backups" = "النسخ الاحتياطية الأخيرة";
-"task.schedule" = "الجدول الزمني";
-"task.server" = "الخادم";
-"task.server_section" = "معلومات الخادم";
-"task.source" = "المصدر";
-"task.status" = "الحالة";
-"task.user" = "المستخدم";
 "history.backup_detail" = "تفاصيل النسخ الاحتياطي";
 // Cellular Data Settings
-"settings.allow_cellular" = "السماح باستخدام البيانات الخلوية";
-"settings.cellular_warning" = "⚠️ قد يؤدي استخدام البيانات الخلوية للملفات الكبيرة إلى تكاليف إضافية.";
-"settings.wifi_only" = "ℹ️ سيتم إجراء النسخ الاحتياطي عبر WiFi فقط.";
 // Background Task Monitor
-"background_task_monitor.title" = "مراقب المهام الخلفية";
-"background_task_monitor.refresh" = "تحديث";
-"background_task_monitor.status" = "حالة المهمة الخلفية";
-"background_task_monitor.subtitle" = "تنسيق المؤقت و BGTaskScheduler";
-"background_task_monitor.status.processing" = "جاري المعالجة";
-"background_task_monitor.status.timer_active" = "المؤقت نشط";
-"background_task_monitor.status.standby" = "في وضع الاستعداد";
-"background_task_monitor.current_status" = "الحالة الحالية";
-"background_task_monitor.timer_backup" = "النسخ الاحتياطي بالمؤقت";
-"background_task_monitor.processing" = "المعالجة الخلفية";
-"background_task_monitor.active_bgtasks" = "BGTasks النشطة";
-"background_task_monitor.active" = "نشط";
-"background_task_monitor.inactive" = "غير نشط";
-"background_task_monitor.performance_overview" = "نظرة عامة على الأداء";
-"background_task_monitor.bgtask_executions" = "تنفيذات BGTask";
-"background_task_monitor.timer_executions" = "تنفيذات المؤقت";
-"background_task_monitor.avg_bgtask_duration" = "متوسط مدة BGTask";
-"background_task_monitor.avg_timer_duration" = "متوسط مدة المؤقت";
-"background_task_monitor.average" = "المتوسط";
-"background_task_monitor.success_rates" = "معدلات النجاح";
-"background_task_monitor.execution_history" = "سجل التنفيذ";
-"background_task_monitor.last_method" = "آخر طريقة";
-"background_task_monitor.last_execution" = "آخر تنفيذ";
-"background_task_monitor.coordination_state" = "حالة التنسيق";
-"background_task_monitor.scheduled_timers" = "المؤقتات المجدولة";
-"background_task_monitor.active_bgtask_ids" = "معرفات BGTask النشطة";
-"background_task_monitor.current_app_state" = "حالة التطبيق الحالية";
-"background_task_monitor.advanced_metrics" = "المقاييس المتقدمة";
-"background_task_monitor.app_state.active" = "نشط";
-"background_task_monitor.app_state.background" = "خلفية";
-"background_task_monitor.app_state.inactive" = "غير نشط";
-"background_task_monitor.app_state.unknown" = "غير معروف";
 
 // About View
-"about.license" = "الترخيص";
-"about.license_description" = "يتم توفير هذا التطبيق بموجب ترخيص MIT.";
-"about.all_rights_reserved" = "جميع الحقوق محفوظة";
-"about.support_email_subject" = "طلب دعم BackupFlow";
 
 // iOS Background Behavior Info
-"about.background_title" = "سلوك النسخ الاحتياطي في الخلفية لنظام iOS";
-"about.background_description" = "يدير iOS المهام الخلفية تلقائياً ويشغلها بناءً على الشروط التالية:";
-"about.background_notification" = "نرسل إشعارات عندما يحين الوقت";
-"about.background_ios_decision" = "يعمل iOS في الخلفية عندما يرى ذلك مناسباً";
-"about.background_battery_check" = "يتم فحص حالة البطارية واتصال الشبكة";
-"about.background_manual_start" = "استخدم زر 'ابدأ الآن' في الإشعار لضمان التنفيذ";
-"about.background_force_quit_warning" = "⚠️ إذا أجبرت إغلاق التطبيق (التمرير لأعلى للإغلاق)، فلن يقوم iOS بتشغيل المهام الخلفية. فقط اتركه في الخلفية.";
 
 // BackupView - Notification Guarantee
-"backup.notification_guarantee_title" = "ضمان الإشعار";
-"backup.notification_guarantee_desc" = "سنرسل لك إشعاراً عندما يحين الوقت";
-"backup.auto_start_title" = "البدء التلقائي";
-"backup.auto_start_desc" = "يدير iOS المهام الخلفية تلقائياً (اعتماداً على حالة البطارية والشبكة والنظام)";
 
 // History View
 "history.delete" = "حذف";
@@ -397,7 +178,6 @@
 "backup.default_task_name" = "نسخة احتياطية جديدة";
 
 // BackupExecutionManager - Network Errors
-"backup.network_error.wifi_required" = "اتصال WiFi مطلوب للوصول إلى الخادم المحلي (حالياً: %@). يمكنك تفعيل استخدام البيانات الخلوية من الإعدادات.";
 
 // BackupNotificationManager - Frequency Text
 "backup.frequency_text.daily" = "يومي";
@@ -405,80 +185,20 @@
 "backup.frequency_text.manual" = "يدوي";
 
 // Task Schedule Notes
-"task.scheduled_task_note" = "ملاحظة: عندما تتلقى إشعاراً للمهام المجدولة، تحتاج إلى النقر على الإشعار لفتح التطبيق وبدء النسخ الاحتياطي.";
-"task.bgtime_required" = "المهام الخلفية تتطلب 16 دقيقة على الأقل";
-"error.invalid_time_selection" = "اختيار وقت غير صالح";
-"error.minimum_bgtime_required" = "المهام الخلفية تتطلب 16 دقيقة على الأقل.\n\nالوقت المحدد بعد %d دقيقة من الآن. يرجى اختيار وقت بعد 16 دقيقة على الأقل.";
-"backup.auto_backup_how_title" = "كيف يعمل النسخ الاحتياطي التلقائي؟";
-"backup.guarantee_title" = "للضمان";
-"backup.start_from_notification_desc" = "انقر على زر \"ابدأ الآن\" في الإشعار أو افتح التطبيق";
-"task.schedule_notes.title" = "⚠️ مهم: جدولة النسخ الاحتياطي";
-"task.schedule_notes.auto_backup" = "يدير iOS مهام الخلفية بناءً على مستوى البطارية واتصال الشبكة وحالة النظام.";
-"task.schedule_notes.notification_guarantee" = "نضمن لك إرسال إشعار عندما يحين الوقت.";
-"task.schedule_notes.start_from_notification" = "انقر على الإشعار أو افتح التطبيق لبدء النسخ الاحتياطي.";
-"task.schedule_notes.bgtime_required" = "يجب اختيار ما لا يقل عن 16 دقيقة لاحقاً لمهام الخلفية في iOS.";
 
 // WebDAV Test View
-"webdav.test.title" = "اختبار اتصال WebDAV";
-"webdav.test.connection_info" = "معلومات الاتصال";
-"webdav.test.server_address" = "عنوان الخادم";
-"webdav.test.port" = "المنفذ";
-"webdav.test.username" = "اسم المستخدم";
-"webdav.test.password" = "كلمة المرور";
-"webdav.test.connection_test" = "اختبار الاتصال";
-"webdav.test.description" = "اختبر ما إذا كان يمكنك الاتصال بخادم WebDAV الخاص بك.";
-"webdav.test.start_test" = "بدء الاختبار";
-"webdav.test.results" = "النتائج";
-"webdav.test.success_info" = "✓ نجح: تم الاتصال والمصادقة على الخادم.";
-"webdav.test.error_info" = "✗ فشل: تحقق من إعدادات الخادم الخاص بك.";
-"webdav.test.https_info" = "🔒 استخدم مفتاح HTTPS لاختيار HTTP أو HTTPS.";
-"webdav.test.completed" = "اكتمل الاختبار";
-"webdav.test.completed_message" = "اكتمل اختبار الاتصال.";
-"webdav.test.invalid_port" = "✗ رقم منفذ غير صالح. يجب أن يكون بين 1-65535.";
-"webdav.test.success" = "نجح الاتصال!";
-"webdav.test.failed" = "فشل الاتصال:";
-"webdav.test.failed_generic" = "✗ فشل الاتصال. تحقق من إعداداتك.";
-"webdav.test.starting" = "بدء اختبار WebDAV";
-"webdav.test.starting_message" = "جاري الاتصال بالخادم...";
-"settings.webdav_connection_test" = "اختبار اتصال WebDAV";
 
 // Missing translations added from Turkish base
 "history.clear_confirmation" = "هل أنت متأكد أنك تريد حذف كل السجل؟";
 "history.clear_confirmation_message" = "لا يمكن التراجع عن هذه العملية.";
-"history.invalid_entry" = "إدخال غير صالح";
-"backup.use_https" = "استخدام HTTPS";
-"backup.use_https_desc" = "استخدم HTTPS للاتصال الآمن. أغلقه لـ HTTP.";
-
-"notifications.disabled_warning_title" = "الإشعارات معطلة";
-"notifications.disabled_warning_body" = "لقد قمت بتعطيل الإشعارات لـ BackupFlow. لتلقي تذكيرات النسخ الاحتياطية وتحديثات الحالة، يرجى تفعيلها في تطبيق الإعدادات.";
-"notifications.open_settings_button" = "فتح الإعدادات";
 
 // Missing Localization Keys
 "backup.notification.action.start" = "ابدأ الآن";
 
 // New Notification Actions (v1.1)
-"backup.notification.action.postpone_10" = "تأجيل 10 دقائق";
-"backup.notification.action.postpone_60" = "تأجيل ساعة واحدة";
 
-"backup.notification.wifi_required.title" = "مطلوب اتصال WiFi";
-"backup.notification.wifi_required.body" = "يتطلب النسخ الاحتياطي لـ \"%@\" اتصال WiFi.\n\nالشبكة الحالية: %@\n\nالخيارات:\n- الاتصال بشبكة WiFi\n- السماح باستخدام البيانات الخلوية من الإعدادات";
-"backup.notification.action.open_settings" = "فتح الإعدادات";
-
-"backup.frequency_text.scheduled" = "مجدول";
 "settings.language" = "اللغة";
 "settings.language.system" = "لغة النظام";
-"settings.language.turkish" = "التركية";
-"settings.language.english" = "الإنجليزية";
-"settings.language.arabic" = "العربية";
-"settings.language.chinese" = "الصينية";
-"settings.language.french" = "الفرنسية";
-"settings.language.german" = "الألمانية";
-"settings.language.hindi" = "الهندية";
-"settings.language.japanese" = "اليابانية";
-"settings.language.korean" = "الكورية";
-"settings.language.portuguese" = "البرتغالية";
-"settings.language.russian" = "الروسية";
-"settings.language.spanish" = "الإسبانية";
 "settings.require_external_power" = "يتطلب طاقة خارجية";
 "settings.require_external_power_note" = "تتطلب هذه الميزة طاقة خارجية.";
 
@@ -499,42 +219,19 @@
 "backup.testing_network" = "جارٍ التحقق من الشبكة…";
 "backup.connection_error_ftp" = "خطأ اتصال FTP: %@";
 
-"about.version_build" = "الإصدار %@ (البنية %@)";
-"about.contact" = "اتصال";
-"about.rights_reserved" = "جميع الحقوق محفوظة.";
-
 "task.details.title" = "تفاصيل المهمة";
-"backup.cancel_backup_title" = "إلغاء النسخ الاحتياطي";
-"backup.cancel_backup_confirm" = "إلغاء";
-"backup.cancel_backup_message" = "هل أنت متأكد أنك تريد إلغاء هذا النسخ الاحتياطي؟";
 // Additional localization keys to match Turkish base
 "backup.frequency" = "التكرار";
 "backup.scheduling" = "الجدولة";
-"error.network_unavailable" = "الاتصال بالشبكة غير متاح";
-"error.server_unreachable" = "الخادم غير قابل للوصول";
-"language.english" = "الإنجليزية";
-"language.turkish" = "التركية";
-"language.german" = "الألمانية";
-"language.french" = "الفرنسية";
-"language.spanish" = "الإسبانية";
-"language.russian" = "الروسية";
-"language.japanese" = "اليابانية";
-"language.korean" = "الكورية";
-"language.portuguese" = "البرتغالية";
-"language.arabic" = "العربية";
-"language.hindi" = "الهندية";
-"language.chinese" = "الصينية";
 "backup.server_url_example" = "عنوان URL للخادم (مثال: https://example.com/dav)";
 "backup.destination_folder_optional" = "مجلد الوجهة (اختياري)";
 "media_type.photos_only" = "الصور فقط";
 "media_type.videos_only" = "مقاطع الفيديو فقط";
 "media_type.photos_and_videos" = "الصور ومقاطع الفيديو";
 
-
 "sftp.tofu_notice" = "سيتم الوثوق بمفتاح مضيف SFTP عند الاتصال الأول (TOFU).";
 "sftp.hostkey_title" = "تحذير أمان SFTP";
 "sftp.hostkey_message" = "تم الوثوق بمفتاح مضيف جديد (TOFU). البصمة: %@";
-
 
 "backup.status.interrupted" = "تمت المقاطعة";
 
@@ -571,8 +268,6 @@
 "backup.error.cancelled" = "تمت مقاطعة العملية";
 "backup.error.unexpected" = "خطأ غير متوقع: %@";
 
-"whats_new" = "ما الجديد";
-
 "backup.protocol.ftp" = "FTP";
 
 "backup.protocol.sftp" = "SFTP";
@@ -584,18 +279,8 @@
 "backup.current_file.updating_file" = "جارٍ التحديث: %@";
 "backup.photo_backup_include_icloud" = "تنزيل عناصر iCloud عند الحاجة";
 "backup.photo_backup_include_icloud_hint" = "موصى به للنسخ الاحتياطي الكامل. عند إيقافه، سيتم نسخ الوسائط المخزنة على الجهاز فقط.";
-"tasks.search_prompt" = "ابحث في المهام...";
-"tasks.summary" = "الملخص";
-"tasks.no_search_results" = "لم يتم العثور على نتائج";
-"tasks.active" = "نشط";
-"tasks.scheduled_short" = "مجدولة";
 "tasks.run_started" = "تم بدء المهمة";
-"tasks.resumed_toast" = "تم استئناف المهمة";
-"tasks.paused_toast" = "تم إيقاف المهمة مؤقتاً";
-"tasks.source_not_set" = "غير محدد";
 
-"common.please_wait" = "يرجى الانتظار...";
-"dashboard.greeting" = "صباح الخير";
 "dashboard.greeting.morning" = "صباح الخير";
 "dashboard.greeting.afternoon" = "مساء الخير";
 "dashboard.greeting.evening" = "مساء الخير";
@@ -614,8 +299,6 @@
 "dashboard.destination.auto" = "تلقائي: %@";
 "dashboard.used_date" = "استُخدم: %@";
 "dashboard.action.sync" = "مزامنة";
-"dashboard.action.pause" = "إيقاف مؤقت";
-"dashboard.action.files" = "الملفات";
 "dashboard.storage_overview" = "نظرة عامة على التخزين";
 "dashboard.used" = "مستخدم";
 "dashboard.of_value" = "من %@";
@@ -630,7 +313,6 @@
 "dashboard.backup_completed" = "اكتمل النسخ الاحتياطي بنجاح";
 "dashboard.ready_to_sync" = "جاهز للمزامنة";
 "dashboard.status.syncing" = "جارٍ المزامنة";
-"dashboard.status.connected" = "متصل";
 "dashboard.status.active_task_count_one" = "%d مهمة نشطة";
 "dashboard.status.active_task_count_many" = "%d مهام نشطة";
 "dashboard.no_server_selected" = "لم يتم اختيار خادم";
@@ -638,23 +320,6 @@
 "dashboard.transfer_detail_with_speed" = "%@ / %@ · %@ · %@";
 "dashboard.transfer_detail" = "%@ / %@ · %@";
 
-"about.section.about" = "حول";
-"about.description" = "تم تصميم BackupFlow لنسخ ملفاتك احتياطيًا تلقائيًا إلى خوادم FTP و SFTP و WebDAV. حل نسخ احتياطي آمن وسريع وموثوق.";
-"about.features.title" = "الميزات";
-"about.feature.security" = "تشفير واتصال آمنان";
-"about.feature.scheduled" = "نسخ احتياطية تلقائية مجدولة";
-"about.feature.fast_sync" = "مزامنة ملفات سريعة وفعالة";
-"about.feature.protocols" = "دعم FTP و SFTP و WebDAV";
-"about.feature.smart_filtering" = "تصفية ذكية للملفات";
-"about.feature.history_stats" = "سجل وإحصاءات تفصيلية";
-"about.section.support" = "الدعم";
-"about.support.description" = "هل لديك أسئلة أو اقتراحات؟ يمكنك التواصل معنا.";
-"about.section.license" = "الترخيص";
-"about.license.description" = "يتم توزيع BackupFlow بموجب ترخيص MIT. يمكنك استخدام البرنامج وتعديله وتوزيعه بحرية.";
-"about.rights_reserved" = "جميع الحقوق محفوظة.";
-"about.support.email_subject" = "طلب دعم BackupFlow";
-"about.support.email_app_version" = "إصدار التطبيق";
-"about.support.email_device" = "الجهاز";
 "history.empty_description" = "سيظهر هنا سجل النسخ الاحتياطية التي تبدأها";
 "history.summary.completed" = "مكتمل";
 "history.summary.failed" = "فشل";
@@ -684,7 +349,6 @@
 "error.webdav.invalid_server_address" = "عنوان الخادم غير صالح. أدخله بتنسيق مثل 'http://192.168.1.1' أو '192.168.1.1'.";
 "error.webdav.invalid_url_created" = "تم إنشاء عنوان URL غير صالح. تحقق من عنوان الخادم.";
 "error.photo_library.no_access" = "لا يوجد إذن للوصول إلى مكتبة الصور";
-"error.network.local_server_wifi_required" = "يتطلب الوصول إلى الخادم المحلي اتصال WiFi (الحالي: %@). يمكنك تفعيل استخدام البيانات الخلوية من الإعدادات.";
 "network.type.wifi" = "WiFi";
 "network.type.cellular" = "خلوي";
 "network.type.ethernet" = "Ethernet";

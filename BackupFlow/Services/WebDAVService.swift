@@ -1,4 +1,3 @@
-#if canImport(FilesProvider)
 
 import Foundation
 import FilesProvider
@@ -6,48 +5,16 @@ import OSLog
 import Combine
 @preconcurrency import Photos
 import Network
-#if canImport(UIKit)
 import UIKit
-#endif
 
 @MainActor
-final class TelemetryReporter: ObservableObject {
-    static let shared = TelemetryReporter()
-    private let logger = Logger(subsystem: "com.backupflow.app", category: "Telemetry")
-
-    private var lastEventTimestamps: [String: Date] = [:]
-    private var minIntervalByKey: [String: TimeInterval] = [:]
-
-    private init() {}
-
-    func retryOccurred(error: Error, attempt: Int, delay: TimeInterval) {
-        guard shouldEmit(key: "retry") else { return }
-        #if DEBUG
-        logger.debug("Telemetry: retryOccurred attempt=\(attempt), delay=\(String(format: "%.2f", delay))s, error=\(error.localizedDescription)")
-        #endif
-    }
-
-    private func shouldEmit(key: String) -> Bool {
-        if let minInterval = minIntervalByKey[key], let last = lastEventTimestamps[key] {
-            if Date().timeIntervalSince(last) < minInterval {
-                return false
-            }
-        }
-        lastEventTimestamps[key] = Date()
-        return true
-    }
-}
-
-@MainActor
-final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate {
+final class WebDAVService: NSObject, FileProviderDelegate {
     // MARK: - Properties
     static let shared = WebDAVService()
     private let logger = Logger(subsystem: "com.backupflow.app", category: "WebDAVService")
     private let fileManager = FileManager.default
     private let temporaryExportRootName = "backupflow_exports"
     private let photoLibraryManager = PhotoLibraryManager.shared
-    private let backgroundUploader = WebDAVBackgroundUploader(logger: Logger(subsystem: "com.backupflow.app", category: "WebDAVService"))
-    
     private var webdavProvider: WebDAVFileProvider?
     private var currentBaseURL: URL?
     private var currentCredential: URLCredential?
@@ -97,19 +64,12 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
             }
         }
     )
-    private var cancellables = Set<AnyCancellable>()
     private let lock = NSLock()
     private var lastLoggedNetworkStatus: NWPath.Status?
     
     // Background session state tracking
     @Published private(set) var isBackgroundUploading = false
 
-    private var deleteOrphansEnabled: Bool {
-        if UserDefaults.standard.object(forKey: "WebDAVDeleteOrphans") == nil {
-            return true // default enabled
-        }
-        return UserDefaults.standard.bool(forKey: "WebDAVDeleteOrphans")
-    }
     
     @MainActor
     func updateBackgroundMode(isBackground: Bool) {
@@ -160,7 +120,6 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
                     if isVerboseLoggingEnabled {
                         self.logger.warning("Retryable error on attempt \(attempt)/\(attempts): \(error.localizedDescription). Waiting \(String(format: "%.2f", delay))s before retry...")
                     }
-                    TelemetryReporter.shared.retryOccurred(error: error, attempt: attempt, delay: delay)
                     try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
                 }
             }
@@ -280,7 +239,7 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         }
     }
     
-    // MARK: - BackupServiceProtocol
+    // MARK: - Connection & File Operations
     func connect(host: String, port: Int, username: String?, password: String?) async throws {
         // Önce ağ iznini bekle
         try await waitForNetworkPermission()
@@ -1120,31 +1079,6 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
         // Do not reset progress/currentFile here to avoid UI resets during transient reconnects
     }
     
-    /// Tests different common WebDAV paths to find the correct endpoint
-    func findWebDAVPath(host: String, port: Int, username: String?, password: String?) async -> String? {
-        let commonPaths = ["", "/webdav", "/dav", "/storage", "/usb", "/share"]
-        
-        for path in commonPaths {
-            self.logger.info("Testing WebDAV path: \(path.isEmpty ? "/" : path)")
-            
-            do {
-                let testHost = path.isEmpty ? host : host + path
-                try await connect(host: testHost, port: port, username: username, password: password)
-                
-                // If we get here, the connection was successful
-                self.logger.info("WebDAV path found: \(path.isEmpty ? "/" : path)")
-                disconnect()
-                return path.isEmpty ? "/" : path
-            } catch {
-                self.logger.debug("WebDAV path failed: \(path.isEmpty ? "/" : path) - \(error.localizedDescription)")
-                disconnect()
-            }
-        }
-        
-        self.logger.error("No working WebDAV path found")
-        return nil
-    }
-    
     /// Tests the WebDAV connection and authentication
     func testConnection(host: String, port: Int, username: String?, password: String?) async -> Bool {
         self.logger.info("Starting WebDAV connection test: \(host):\(port)")
@@ -1529,5 +1463,4 @@ final class WebDAVService: NSObject, BackupServiceProtocol, FileProviderDelegate
     }
 }
 
-#endif
 

@@ -1,8 +1,4 @@
-"nav.tasks" = "कार्य";
-"nav.backup" = "बैकअप";
 "nav.history" = "इतिहास";
-"nav.settings" = "सेटिंग्स";
-"nav.about" = "के बारे में";
 "settings.title" = "सेटिंग्स";
 "settings.general" = "सामान्य";
 "settings.history_retention" = "इतिहास अवधारण (दिन)";
@@ -14,51 +10,11 @@
 "settings.version" = "संस्करण";
 "settings.rate_app" = "ऐप को रेट करें";
 "settings.contact_support" = "सहायता से संपर्क करें";
-"settings.developer_settings" = "डेवलपर सेटिंग्स";
-"settings.advanced_settings" = "उन्नत सेटिंग्स";
-"settings.ftp_connection_test" = "FTP कनेक्शन टेस्ट";
 "settings.reset_all_data" = "सभी डेटा रीसेट करें";
-"language.selection" = "भाषा";
-"language.system" = "सिस्टम भाषा";
-"language.restart_required" = "भाषा बदल गई";
-"language.restart_message" = "अगली लॉन्च पर ऐप नई भाषा का उपयोग करेगा।";
-"alert.ok" = "ठीक है";
 "alert.cancel" = "रद्द करें";
-"dashboard.title" = "स्थिति अवलोकन";
-"dashboard.last_backup" = "अंतिम बैकअप";
-"dashboard.active_tasks" = "सक्रिय कार्य";
 "dashboard.next_task" = "अगला कार्य";
 "dashboard.never" = "कभी नहीं";
 "dashboard.overdue" = "विलंबित";
-"dashboard.in_days" = "%d दिनों में";
-"dashboard.in_hours" = "%d घंटों में";
-"dashboard.in_minutes" = "%d मिनटों में";
-"dashboard.soon" = "बहुत जल्द";
-"tasks.your_tasks" = "आपके कार्य";
-"wifi.settings" = "WiFi सेटिंग्स";
-"wifi.current_network" = "वर्तमान नेटवर्क";
-"wifi.status" = "स्थिति";
-"wifi.not_connected" = "WiFi से कनेक्ट नहीं है";
-"wifi.network_not_allowed" = "इस नेटवर्क पर बैकअप की अनुमति नहीं है";
-"wifi.allowed_networks" = "अनुमत नेटवर्क";
-"wifi.no_allowed_networks" = "अभी तक कोई अनुमत नेटवर्क नहीं जोड़ा गया";
-"wifi.add_network" = "नेटवर्क जोड़ें";
-"wifi.remove" = "हटाएं";
-"wifi.current" = "वर्तमान";
-"wifi.help" = "मदद";
-"wifi.not_connected_status" = "WiFi से कनेक्ट नहीं है";
-"wifi.unknown_network" = "अज्ञात नेटवर्क";
-"wifi.network_name" = "नेटवर्क नाम";
-"wifi.add" = "जोड़ें";
-"wifi.remove_network" = "नेटवर्क हटाएं";
-"wifi.add_network_message" = "उस WiFi नेटवर्क का नाम दर्ज करें जिस पर आप बैकअप की अनुमति देना चाहते हैं।";
-"wifi.remove_network_message" = "क्या आप वाकई इस नेटवर्क को अनुमत सूची से हटाना चाहते हैं?";
-"wifi.allowed_networks_footer" = "बैकअप केवल इन नेटवर्क पर चलेंगे। यदि खाली है, तो बैकअप किसी भी WiFi नेटवर्क पर चलेंगे।";
-"wifi.help_1" = "बैकअप केवल WiFi से कनेक्ट होने पर चलते हैं";
-"wifi.help_2" = "बेहतर सुरक्षा के लिए अनुमत सूची में विशिष्ट नेटवर्क जोड़ें";
-"wifi.help_3" = "अपने वर्तमान नेटवर्क को जल्दी से जोड़ने के लिए + बटन का उपयोग करें";
-"backup.skipped.title" = "बैकअप छोड़ा गया";
-"backup.skipped.message" = "%@ कार्य छोड़ा गया: %@";
 "battery.settings" = "बैटरी सेटिंग्स";
 "battery.current_status" = "वर्तमान बैटरी स्थिति";
 "battery.level" = "बैटरी स्तर";
@@ -82,22 +38,13 @@
 "settings.reset_confirm_title" = "सेटिंग्स रीसेट करें";
 "settings.reset_confirm_message" = "सभी सेटिंग्स डिफ़ॉल्ट मानों पर रीसेट हो जाएंगी। क्या आप जारी रखना चाहते हैं?";
 // Task Pause/Resume System
-"task.paused.notification.title" = "🎬 BackupFlow";
-"task.paused.notification.body" = "कार्य रोका गया: %@";
-"task.resumed.notification.title" = "🎬 BackupFlow";
-"task.resumed.notification.body" = "कार्य शेड्यूलिंग फिर से शुरू: %@";
 "task.pause.button" = "शेड्यूलिंग रोकें";
 "task.resume.button" = "शेड्यूलिंग फिर से शुरू करें";
 "task.status.paused" = "रोका गया";
 
 // Notification Actions
-"backup.notification.action.postpone" = "स्थगित करें";
 
 // BackupScheduler Notifications
-"backup.paused.notification.title" = "बैकअप रोका गया";
-"backup.paused.notification.body" = "'%@' कार्य रोक दिया गया है।";
-"backup.resumed.notification.title" = "बैकअप फिर से शुरू";
-"backup.resumed.notification.body" = "'%@' कार्य फिर से शुरू किया गया है।";
 "backup.scheduled.notification.title" = "🕐 बैकअप का समय!";
 "backup.scheduled.notification.body" = "'%@' कार्य चलाने के लिए तैयार है। (%@)";
 "backup.scheduled.notification.local_cellular" = "\n\n📱 स्थानीय सर्वर के लिए सेलुलर डेटा उपयोग की अनुमति है।";
@@ -113,80 +60,22 @@
 "history.files.skipped" = "छोड़ा गया";
 
 // Progress Status Messages
-"progress.skipped" = "छोड़ा गया";
-"progress.uploading" = "अपलोड हो रहा है";
-"progress.downloading" = "डाउनलोड हो रहा है";
-"progress.processing" = "प्रोसेस हो रहा है";
-"progress.preparing" = "बैकअप तैयार किया जा रहा है...";
-"progress.completed" = "बैकअप पूर्ण";
 "battery.state.unknown" = "अज्ञात";
 "battery.state.unplugged" = "चार्ज नहीं हो रहा";
 "battery.state.charging" = "चार्ज हो रहा है";
 "battery.state.full" = "पूर्ण";
-"tasks.create_task" = "कार्य बनाएं";
-"tasks.edit_task" = "कार्य संपादित करें";
-"tasks.task_name" = "कार्य नाम";
-"tasks.source_path" = "स्रोत पथ";
-"tasks.destination" = "गंतव्य";
-"tasks.schedule" = "शेड्यूल";
-"tasks.enabled" = "सक्षम";
-"tasks.disabled" = "अक्षम";
-"tasks.last_run" = "अंतिम रन";
-"tasks.next_run" = "अगला रन";
-"tasks.status" = "स्थिति";
 "tasks.delete" = "हटाएं";
-"tasks.save" = "सहेजें";
-"tasks.cancel" = "रद्द करें";
 "tasks.delete_confirmation" = "कार्य हटाएं";
-"tasks.delete_message" = "क्या आप वाकई इस कार्य को हटाना चाहते हैं?";
-"schedule.daily" = "दैनिक";
-"schedule.weekly" = "साप्ताहिक";
-"schedule.monthly" = "मासिक";
-"schedule.custom" = "कस्टम";
-"ftp.server" = "सर्वर";
-"ftp.port" = "पोर्ट";
-"ftp.username" = "उपयोगकर्ता नाम";
-"ftp.password" = "पासवर्ड";
-"ftp.path" = "रिमोट पथ";
-"ftp.test_connection" = "कनेक्शन टेस्ट करें";
-"ftp.connection_success" = "कनेक्शन सफल";
-"ftp.connection_failed" = "कनेक्शन विफल";
 "history.title" = "बैकअप इतिहास";
-"history.date" = "तारीख";
-"history.task" = "कार्य";
-"history.status" = "स्थिति";
-"history.size" = "आकार";
-"history.duration" = "अवधि";
-"history.success" = "सफल";
-"history.failed" = "विफल";
 "history.no_history" = "कोई बैकअप इतिहास उपलब्ध नहीं";
-"about.title" = "BackupFlow के बारे में";
-"about.version" = "संस्करण";
-"about.build" = "बिल्ड";
-"about.description" = "FTP/WebDAV समर्थन के साथ iOS के लिए पेशेवर बैकअप समाधान";
-"about.developer" = "डेवलपर";
-"about.website" = "वेबसाइट";
-"about.support" = "सहायता";
-"about.privacy" = "गोपनीयता नीति";
-"about.terms" = "सेवा की शर्तें";
-"alert.info" = "जानकारी";
-"alert.success" = "सफल";
 "alert.error" = "त्रुटि";
 "tasks.duplicate_error" = "समान सेटिंग्स वाला कार्य पहले से मौजूद है";
 "tasks.save_success" = "कार्य सफलतापूर्वक सहेजा गया";
 "tasks.scheduled" = "और शेड्यूल किया गया";
-"tasks.schedule_error" = "लेकिन शेड्यूलिंग विफल";
-"tasks.save_error" = "कार्य सहेजने में त्रुटि";
-"backup.source_selection" = "स्रोत चयन";
-"backup.select_folder" = "बैकअप के लिए एक फ़ोल्डर चुनें";
-"backup.photo_library" = "फोटो लाइब्रेरी बैकअप";
-"backup.media_type" = "मीडिया प्रकार चयन";
-"backup.folder_selection" = "फ़ोल्डर चयन";
 "backup.or" = "या";
 "backup.manual" = "मैनुअल";
 "backup.daily" = "दैनिक";
 "backup.weekly" = "साप्ताहिक";
-"backup.time" = "समय";
 "backup.hour" = "घंटा";
 "backup.minute" = "मिनट";
 "backup.day" = "दिन";
@@ -194,13 +83,6 @@
 "backup.test_connection" = "कनेक्शन टेस्ट करें";
 "backup.new_backup" = "नया बैकअप";
 "backup.clear" = "साफ़ करें";
-"day.sunday" = "रविवार";
-"day.monday" = "सोमवार";
-"day.tuesday" = "मंगलवार";
-"day.wednesday" = "बुधवार";
-"day.thursday" = "गुरुवार";
-"day.friday" = "शुक्रवार";
-"day.saturday" = "शनिवार";
 "backup.connection_testing" = "कनेक्शन टेस्ट किया जा रहा है...";
 "backup.connection_success_ftp" = "FTP कनेक्शन सफल!";
 "backup.connection_success_sftp" = "SFTP कनेक्शन सफल!";
@@ -208,47 +90,21 @@
 "backup.connection_error" = "कनेक्शन त्रुटि";
 "backup.fill_required_fields" = "कृपया आवश्यक फ़ील्ड भरें (सर्वर पता और उपयोगकर्ता नाम/पासवर्ड)";
 "backup.webdav_credentials_required" = "कृपया WebDAV सर्वर URL और उपयोगकर्ता क्रेडेंशियल दर्ज करें";
-"backup.network_permission_check" = "नेटवर्क अनुमति की जाँच की जा रही है... (पहले उपयोग पर iOS अनुमति का अनुरोध कर सकता है)";
 "backup.source_required" = "कृपया एक स्रोत चुनें (फ़ोल्डर या फोटो लाइब्रेरी)";
 "backup.photo_permission_required" = "फोटो लाइब्रेरी एक्सेस आवश्यक है";
 "backup.invalid_folder" = "अमान्य फ़ोल्डर पथ। कृपया फिर से प्रयास करें।";
-"backup.new_task" = "नया बैकअप";
 "backup.target_type" = "लक्ष्य प्रकार";
 "backup.server_address" = "सर्वर पता";
 "backup.port_default" = "पोर्ट (डिफ़ॉल्ट: 21)";
 "backup.port_webdav_default" = "पोर्ट (डिफ़ॉल्ट: 443)";
+"backup.port_sftp_default" = "पोर्ट (डिफ़ॉल्ट: 22)";
 "backup.anonymous_login" = "अनाम लॉगिन";
 "backup.username" = "उपयोगकर्ता नाम";
 "backup.password" = "पासवर्ड";
 "backup.destination_folder" = "गंतव्य फ़ोल्डर";
-"backup.start_confirmation" = "बैकअप शुरू करें?";
-"backup.start" = "शुरू करें";
-"backup.pending_message" = "'%@' कार्य सूचना से शुरू होने की प्रतीक्षा कर रहा है।";
-"tasks.no_tasks" = "कोई कार्य नहीं";
-"tasks.create_first_task" = "शुरुआत करने के लिए अपना पहला बैकअप कार्य बनाएं।";
 "tasks.delete_message_full" = "क्या आप वाकई इस कार्य को हटाना चाहते हैं? यह कार्रवाई अपरिवर्तनीय है।";
-"tasks.swipe_delete" = "हटाएं";
 
 // FTP परीक्षण और WebDAV URL
-"ftp.test.connection_info" = "FTP कनेक्शन जानकारी";
-"ftp.test.server_address" = "सर्वर पता:";
-"ftp.test.port" = "पोर्ट:";
-"ftp.test.username" = "उपयोगकर्ता नाम:";
-"ftp.test.password" = "पासवर्ड:";
-"ftp.test.connection_test" = "FTP कनेक्शन परीक्षण";
-"ftp.test.description" = "यह परीक्षण FTP सर्वर से जुड़ेगा और एक छोटी परीक्षण फ़ाइल अपलोड करेगा।";
-"ftp.test.start_test" = "परीक्षण शुरू करें";
-"ftp.test.results" = "परीक्षण परिणाम";
-"ftp.test.success_info" = "• एक सफल परीक्षण दर्शाता है कि आप FTP सर्वर से जुड़ सकते हैं और फ़ाइलें अपलोड कर सकते हैं।";
-"ftp.test.error_info" = "• यदि आपको कोई त्रुटि मिलती है, तो अपनी FTP सेटिंग्स और इंटरनेट कनेक्शन की जांच करें।";
-"ftp.test.title" = "FTP परीक्षण";
-"ftp.test.completed" = "परीक्षण पूर्ण";
-"ftp.test.completed_message" = "परीक्षण पूर्ण।";
-"ftp.test.invalid_port" = "✗ अमान्य पोर्ट नंबर। 1-65535 के बीच मान दर्ज करें।";
-"ftp.test.starting" = "टेस्ट शुरू हो रहा है";
-"ftp.test.starting_message" = "FTP कनेक्शन टेस्ट शुरू हो रहा है... (पहले उपयोग पर iOS नेटवर्क अनुमति का अनुरोध कर सकता है)";
-"ftp.test.success" = "✓ टेस्ट सफल! आप FTP सर्वर से कनेक्ट कर सकते हैं और फ़ाइलें अपलोड कर सकते हैं।";
-"ftp.test.failed" = "✗ टेस्ट विफल: ";
 
 // Task Details
 "task.details.general" = "सामान्य";
@@ -289,15 +145,8 @@
 "day.names.friday" = "शुक्रवार";
 "day.names.saturday" = "शनिवार";
 
-"backup.select_folder_placeholder" = "फ़ोल्डर चुनें...";
 "backup.select_time" = "समय चुनें";
-"backup.or_text" = "या";
-"history.loading" = "लोड हो रहा है...";
-"history.error_occurred" = "त्रुटि हुई: %@";
-"history.retry" = "पुनः प्रयास करें";
 "history.unknown" = "अज्ञात";
-"history.anonymous_ftp" = "अनाम FTP";
-"history.user_prefix" = "उपयोगकर्ता: %@";
 // Backup Status Messages
 "backup.status.idle" = "तैयार";
 "backup.status.preparing" = "तैयारी की जा रही है...";
@@ -306,85 +155,17 @@
 "backup.status.completed" = "पूर्ण";
 "backup.status.failed" = "विफल";
 "backup.status.cancelled" = "रद्द किया गया";
-"error.unexpected" = "अप्रत्याशित त्रुटि हुई: %@";
-"error.authentication_failed" = "उपयोगकर्ता प्रमाणीकरण विफल";
-"error.permission_denied" = "फ़ाइल या निर्देशिका एक्सेस अनुमति अस्वीकृत";
-"error.file_not_found" = "फ़ाइल या निर्देशिका नहीं मिली: %@";
-"error.directory_creation" = "निर्देशिका बनाते समय अप्रत्याशित त्रुटि: %@";
-"error.server_not_found" = "सर्वर नहीं मिला या पहुँच योग्य नहीं है";
-"history.media_type_prefix" = "मीडिया प्रकार: %@";
 
 // Appended new keys
-"common.close" = "बंद करें";
-"task.general" = "सामान्य";
-"task.next_run" = "अगला रन";
-"task.port" = "पोर्ट";
-"task.recent_backups" = "हाल के बैकअप";
-"task.schedule" = "अनुसूची";
-"task.server" = "सर्वर";
-"task.server_section" = "सर्वर जानकारी";
-"task.source" = "स्रोत";
-"task.status" = "स्थिति";
-"task.user" = "उपयोगकर्ता";
 "history.backup_detail" = "बैकअप विवरण";
 // Cellular Data Settings
-"settings.allow_cellular" = "सेलुलर डेटा उपयोग की अनुमति दें";
-"settings.cellular_warning" = "⚠️ बड़ी फ़ाइलों के लिए सेलुलर डेटा का उपयोग अतिरिक्त लागत ला सकता है।";
-"settings.wifi_only" = "ℹ️ बैकअप केवल WiFi पर होंगे।";
 // Background Task Monitor
-"background_task_monitor.title" = "बैकग्राउंड टास्क मॉनिटर";
-"background_task_monitor.refresh" = "रिफ्रेश करें";
-"background_task_monitor.status" = "बैकग्राउंड टास्क स्थिति";
-"background_task_monitor.subtitle" = "टाइमर और BGTaskScheduler समन्वय";
-"background_task_monitor.status.processing" = "प्रोसेस हो रहा है";
-"background_task_monitor.status.timer_active" = "टाइमर सक्रिय";
-"background_task_monitor.status.standby" = "स्टैंडबाय";
-"background_task_monitor.current_status" = "वर्तमान स्थिति";
-"background_task_monitor.timer_backup" = "टाइमर बैकअप";
-"background_task_monitor.processing" = "बैकग्राउंड प्रोसेसिंग";
-"background_task_monitor.active_bgtasks" = "सक्रिय BGTasks";
-"background_task_monitor.active" = "सक्रिय";
-"background_task_monitor.inactive" = "निष्क्रिय";
-"background_task_monitor.performance_overview" = "प्रदर्शन अवलोकन";
-"background_task_monitor.bgtask_executions" = "BGTask निष्पादन";
-"background_task_monitor.timer_executions" = "टाइमर निष्पादन";
-"background_task_monitor.avg_bgtask_duration" = "औसत BGTask अवधि";
-"background_task_monitor.avg_timer_duration" = "औसत टाइमर अवधि";
-"background_task_monitor.average" = "औसत";
-"background_task_monitor.success_rates" = "सफलता दरें";
-"background_task_monitor.execution_history" = "निष्पादन इतिहास";
-"background_task_monitor.last_method" = "अंतिम विधि";
-"background_task_monitor.last_execution" = "अंतिम निष्पादन";
-"background_task_monitor.coordination_state" = "समन्वय स्थिति";
-"background_task_monitor.scheduled_timers" = "निर्धारित टाइमर";
-"background_task_monitor.active_bgtask_ids" = "सक्रिय BGTask ID";
-"background_task_monitor.current_app_state" = "वर्तमान ऐप स्थिति";
-"background_task_monitor.advanced_metrics" = "उन्नत मेट्रिक्स";
-"background_task_monitor.app_state.active" = "सक्रिय";
-"background_task_monitor.app_state.background" = "पृष्ठभूमि";
-"background_task_monitor.app_state.inactive" = "निष्क्रिय";
-"background_task_monitor.app_state.unknown" = "अज्ञात";
 
 // About View
-"about.license" = "लाइसेंस";
-"about.license_description" = "यह एप्लिकेशन MIT लाइसेंस के तहत प्रदान किया गया है।";
-"about.all_rights_reserved" = "सभी अधिकार सुरक्षित";
-"about.support_email_subject" = "BackupFlow समर्थन अनुरोध";
 
 // iOS Background Behavior Info
-"about.background_title" = "iOS बैकग्राउंड बैकअप व्यवहार";
-"about.background_description" = "iOS स्वचालित रूप से बैकग्राउंड कार्यों को प्रबंधित करता है और निम्नलिखित शर्तों के आधार पर उन्हें चलाता है:";
-"about.background_notification" = "समय आने पर हम सूचनाएं भेजते हैं";
-"about.background_ios_decision" = "iOS उचित समझने पर बैकग्राउंड में चलता है";
-"about.background_battery_check" = "बैटरी स्थिति और नेटवर्क कनेक्शन की जांच की जाती है";
-"about.background_manual_start" = "गारंटीकृत निष्पादन के लिए सूचना में 'अभी शुरू करें' बटन का उपयोग करें";
-"about.background_force_quit_warning" = "⚠️ यदि आप ऐप को बलपूर्वक बंद करते हैं (बंद करने के लिए ऊपर स्वाइप करें), तो iOS बैकग्राउंड कार्य नहीं चलाएगा। बस इसे बैकग्राउंड में छोड़ दें।";
 
 // BackupView - Notification Guarantee
-"backup.notification_guarantee_title" = "सूचना गारंटी";
-"backup.notification_guarantee_desc" = "समय आने पर हम आपको सूचना भेजेंगे";
-"backup.auto_start_title" = "स्वचालित प्रारंभ";
-"backup.auto_start_desc" = "iOS स्वचालित रूप से बैकग्राउंड कार्यों को प्रबंधित करता है (बैटरी, नेटवर्क और सिस्टम स्थिति पर निर्भर)";
 
 // History View
 "history.delete" = "हटाएं";
@@ -397,88 +178,27 @@
 "backup.default_task_name" = "नया बैकअप";
 
 // BackupExecutionManager - Network Errors
-"backup.network_error.wifi_required" = "स्थानीय सर्वर एक्सेस के लिए WiFi कनेक्शन आवश्यक है (वर्तमान में: %@)। आप सेटिंग्स से सेलुलर डेटा उपयोग सक्षम कर सकते हैं।";
 
 // BackupNotificationManager - Frequency Text
 "backup.frequency_text.daily" = "दैनिक";
 "backup.frequency_text.weekly" = "साप्ताहिक";
 "backup.frequency_text.manual" = "मैनुअल";
-"task.scheduled_task_note" = "नोट: निर्धारित कार्यों के लिए, जब अधिसूचना आए, तो ऐप खोलने और बैकअप शुरू करने के लिए अधिसूचना पर टैप करना होगा।";
-"task.bgtime_required" = "पृष्ठभूमि कार्यों के लिए कम से कम 16 मिनट बाद चुना जाना चाहिए";
-"error.invalid_time_selection" = "अमान्य समय चयन";
-"error.minimum_bgtime_required" = "पृष्ठभूमि कार्यों के लिए न्यूनतम 16 मिनट आवश्यक हैं।\n\nचयनित समय %d मिनट में है। कृपया कम से कम 16 मिनट बाद का समय चुनें।";
-"backup.auto_backup_how_title" = "स्वचालित बैकअप कैसे काम करता है?";
-"backup.guarantee_title" = "गारंटी के लिए";
-"backup.start_from_notification_desc" = "अधिसूचना में \"अभी शुरू करें\" बटन पर टैप करें या ऐप खोलें";
 
 // Task Schedule Notes
-"task.schedule_notes.title" = "⚠️ महत्वपूर्ण: बैकअप शेड्यूलिंग";
-"task.schedule_notes.auto_backup" = "iOS बैटरी, नेटवर्क और सिस्टम स्थिति के आधार पर बैकग्राउंड कार्यों का प्रबंधन करता है।";
-"task.schedule_notes.notification_guarantee" = "हम समय आने पर आपको सूचना भेजने की गारंटी देते हैं।";
-"task.schedule_notes.start_from_notification" = "बैकअप शुरू करने के लिए सूचना पर टैप करें या ऐप खोलें।";
-"task.schedule_notes.bgtime_required" = "iOS बैकग्राउंड कार्यों के लिए कम से कम 16 मिनट का समय आवश्यक है।";
 
 // WebDAV Test View
-"webdav.test.title" = "WebDAV कनेक्शन परीक्षण";
-"webdav.test.connection_info" = "कनेक्शन जानकारी";
-"webdav.test.server_address" = "सर्वर पता";
-"webdav.test.port" = "पोर्ट";
-"webdav.test.username" = "उपयोगकर्ता नाम";
-"webdav.test.password" = "पासवर्ड";
-"webdav.test.connection_test" = "कनेक्शन परीक्षण";
-"webdav.test.description" = "परीक्षण करें कि क्या आप अपने WebDAV सर्वर से कनेक्ट कर सकते हैं।";
-"webdav.test.start_test" = "परीक्षण प्रारंभ करें";
-"webdav.test.results" = "परिणाम";
-"webdav.test.success_info" = "✓ सफलता: सर्वर से कनेक्ट और प्रमाणित।";
-"webdav.test.error_info" = "✗ विफल: अपनी सर्वर सेटिंग्स जांचें।";
-"webdav.test.https_info" = "🔒 HTTP या HTTPS चुनने के लिए HTTPS टॉगल का उपयोग करें।";
-"webdav.test.completed" = "परीक्षण पूर्ण";
-"webdav.test.completed_message" = "कनेक्शन परीक्षण पूर्ण।";
-"webdav.test.invalid_port" = "✗ अमान्य पोर्ट नंबर। 1-65535 के बीच होना चाहिए।";
-"webdav.test.success" = "कनेक्शन सफल!";
-"webdav.test.failed" = "कनेक्शन विफल:";
-"webdav.test.failed_generic" = "✗ कनेक्शन विफल। अपनी सेटिंग्स जांचें।";
-"webdav.test.starting" = "WebDAV परीक्षण शुरू हो रहा है";
-"webdav.test.starting_message" = "सर्वर से कनेक्ट हो रहा है...";
-"settings.webdav_connection_test" = "WebDAV कनेक्शन परीक्षण";
 
 // Missing translations added from Turkish base
 "history.clear_confirmation" = "क्या आप वाकई पूरा इतिहास हटाना चाहते हैं?";
 "history.clear_confirmation_message" = "यह क्रिया वापस नहीं की जा सकती।";
-"history.invalid_entry" = "अमान्य प्रविष्टि";
-"backup.use_https" = "HTTPS का उपयोग करें";
-"backup.use_https_desc" = "सुरक्षित कनेक्शन के लिए HTTPS का उपयोग करें। HTTP के लिए बंद करें।";
-
-"notifications.disabled_warning_title" = "सूचनाएं अक्षम";
-"notifications.disabled_warning_body" = "आपने BackupFlow के लिए सूचनाएं अक्षम कर दी हैं। बैकअप अनुस्मारक और स्थिति अपडेट प्राप्त करने के लिए, कृपया सेटिंग्स ऐप में उन्हें सक्षम करें।";
-"notifications.open_settings_button" = "सेटिंग्स खोलें";
 
 // Missing Localization Keys
 "backup.notification.action.start" = "अभी शुरू करें";
 
 // New Notification Actions (v1.1)
-"backup.notification.action.postpone_10" = "10 मिनट स्थगित करें";
-"backup.notification.action.postpone_60" = "1 घंटा स्थगित करें";
 
-"backup.notification.wifi_required.title" = "WiFi कनेक्शन आवश्यक है";
-"backup.notification.wifi_required.body" = "\"%@\" के बैकअप के लिए WiFi कनेक्शन आवश्यक है।\n\nवर्तमान नेटवर्क: %@\n\nविकल्प:\n- WiFi नेटवर्क से कनेक्ट करें\n- सेटिंग्स में मोबाइल डेटा उपयोग की अनुमति दें";
-"backup.notification.action.open_settings" = "सेटिंग्स खोलें";
-
-"backup.frequency_text.scheduled" = "निर्धारित";
 "settings.language" = "भाषा";
 "settings.language.system" = "सिस्टम भाषा";
-"settings.language.turkish" = "तुर्की";
-"settings.language.english" = "अंग्रेज़ी";
-"settings.language.arabic" = "अरबी";
-"settings.language.chinese" = "चीनी";
-"settings.language.french" = "फ्रेंच";
-"settings.language.german" = "जर्मन";
-"settings.language.hindi" = "हिंदी";
-"settings.language.japanese" = "जापानी";
-"settings.language.korean" = "कोरियाई";
-"settings.language.portuguese" = "पुर्तगाली";
-"settings.language.russian" = "रूसी";
-"settings.language.spanish" = "स्पेनिश";
 "settings.require_external_power" = "बाहरी बिजली आवश्यक";
 "settings.require_external_power_note" = "इस सुविधा के लिए बाहरी बिजली आवश्यक है।";
 
@@ -499,32 +219,11 @@
 "backup.testing_network" = "नेटवर्क जाँच रहे हैं…";
 "backup.connection_error_ftp" = "FTP कनेक्शन त्रुटि: %@";
 
-"about.version_build" = "संस्करण %@ (बिल्ड %@)";
-"about.contact" = "संपर्क";
-"about.rights_reserved" = "सभी अधिकार सुरक्षित।";
-
 "task.details.title" = "कार्य विवरण";
 
-"backup.cancel_backup_title" = "बैकअप रद्द करें";
-"backup.cancel_backup_confirm" = "रद्द करें";
-"backup.cancel_backup_message" = "क्या आप वाकई इस बैकअप को रद्द करना चाहते हैं?";
 // Additional localization keys to match Turkish base
 "backup.frequency" = "आवृत्ति";
 "backup.scheduling" = "शेड्यूलिंग";
-"error.network_unavailable" = "नेटवर्क कनेक्शन उपलब्ध नहीं";
-"error.server_unreachable" = "सर्वर तक पहुंचना असंभव";
-"language.english" = "अंग्रेजी";
-"language.turkish" = "तुर्की";
-"language.german" = "जर्मन";
-"language.french" = "फ्रेंच";
-"language.spanish" = "स्पेनिश";
-"language.russian" = "रूसी";
-"language.japanese" = "जापानी";
-"language.korean" = "कोरियाई";
-"language.portuguese" = "पुर्तगाली";
-"language.arabic" = "अरबी";
-"language.hindi" = "हिंदी";
-"language.chinese" = "चीनी";
 "backup.server_url_example" = "सर्वर URL (जैसे: https://example.com/dav)";
 "backup.destination_folder_optional" = "गंतव्य फ़ोल्डर (वैकल्पिक)";
 "media_type.photos_only" = "केवल फ़ोटो";
@@ -534,7 +233,6 @@
 "sftp.tofu_notice" = "SFTP होस्ट कुंजी पर पहले कनेक्शन पर भरोसा किया जाएगा (TOFU).";
 "sftp.hostkey_title" = "SFTP सुरक्षा चेतावनी";
 "sftp.hostkey_message" = "नई होस्ट कुंजी पर भरोसा किया गया (TOFU)। फ़िंगरप्रिंट: %@";
-
 
 "backup.status.interrupted" = "बाधित";
 
@@ -571,8 +269,6 @@
 "backup.error.cancelled" = "कार्य बाधित हो गया";
 "backup.error.unexpected" = "अप्रत्याशित त्रुटि: %@";
 
-"whats_new" = "नया क्या है";
-
 "backup.protocol.ftp" = "FTP";
 
 "backup.protocol.sftp" = "SFTP";
@@ -584,18 +280,8 @@
 "backup.current_file.updating_file" = "अपडेट हो रहा है: %@";
 "backup.photo_backup_include_icloud" = "आवश्यक होने पर iCloud आइटम डाउनलोड करें";
 "backup.photo_backup_include_icloud_hint" = "पूर्ण बैकअप के लिए अनुशंसित। इसे बंद करने पर केवल डिवाइस में पहले से संग्रहीत मीडिया कॉपी होगा।";
-"tasks.search_prompt" = "कार्य खोजें...";
-"tasks.summary" = "सारांश";
-"tasks.no_search_results" = "कोई परिणाम नहीं मिला";
-"tasks.active" = "सक्रिय";
-"tasks.scheduled_short" = "निर्धारित";
 "tasks.run_started" = "कार्य शुरू हुआ";
-"tasks.resumed_toast" = "कार्य फिर शुरू हुआ";
-"tasks.paused_toast" = "कार्य रोका गया";
-"tasks.source_not_set" = "सेट नहीं है";
 
-"common.please_wait" = "कृपया प्रतीक्षा करें...";
-"dashboard.greeting" = "सुप्रभात";
 "dashboard.greeting.morning" = "सुप्रभात";
 "dashboard.greeting.afternoon" = "नमस्कार";
 "dashboard.greeting.evening" = "शुभ संध्या";
@@ -614,8 +300,6 @@
 "dashboard.destination.auto" = "स्वचालित: %@";
 "dashboard.used_date" = "उपयोग: %@";
 "dashboard.action.sync" = "सिंक";
-"dashboard.action.pause" = "रोकें";
-"dashboard.action.files" = "फ़ाइलें";
 "dashboard.storage_overview" = "स्टोरेज अवलोकन";
 "dashboard.used" = "उपयोग";
 "dashboard.of_value" = "%@ में से";
@@ -630,7 +314,6 @@
 "dashboard.backup_completed" = "बैकअप सफलतापूर्वक पूरा हुआ";
 "dashboard.ready_to_sync" = "सिंक के लिए तैयार";
 "dashboard.status.syncing" = "सिंक हो रहा है";
-"dashboard.status.connected" = "कनेक्टेड";
 "dashboard.status.active_task_count_one" = "%d सक्रिय कार्य";
 "dashboard.status.active_task_count_many" = "%d सक्रिय कार्य";
 "dashboard.no_server_selected" = "कोई सर्वर चयनित नहीं";
@@ -638,23 +321,6 @@
 "dashboard.transfer_detail_with_speed" = "%@ / %@ · %@ · %@";
 "dashboard.transfer_detail" = "%@ / %@ · %@";
 
-"about.section.about" = "परिचय";
-"about.description" = "BackupFlow आपकी फ़ाइलों को FTP, SFTP और WebDAV सर्वरों पर अपने आप बैकअप करने के लिए बनाया गया है। यह सुरक्षित, तेज़ और भरोसेमंद बैकअप समाधान है।";
-"about.features.title" = "सुविधाएँ";
-"about.feature.security" = "सुरक्षित एन्क्रिप्शन और कनेक्शन";
-"about.feature.scheduled" = "स्वचालित निर्धारित बैकअप";
-"about.feature.fast_sync" = "तेज़ और प्रभावी फ़ाइल सिंक्रोनाइज़ेशन";
-"about.feature.protocols" = "FTP, SFTP और WebDAV समर्थन";
-"about.feature.smart_filtering" = "स्मार्ट फ़ाइल फ़िल्टरिंग";
-"about.feature.history_stats" = "विस्तृत इतिहास और आँकड़े";
-"about.section.support" = "सहायता";
-"about.support.description" = "कोई प्रश्न या सुझाव है? आप हमसे संपर्क कर सकते हैं।";
-"about.section.license" = "लाइसेंस";
-"about.license.description" = "BackupFlow MIT लाइसेंस के अंतर्गत वितरित किया जाता है। आप सॉफ़्टवेयर को स्वतंत्र रूप से उपयोग, संशोधित और वितरित कर सकते हैं।";
-"about.rights_reserved" = "सर्वाधिकार सुरक्षित।";
-"about.support.email_subject" = "BackupFlow सहायता अनुरोध";
-"about.support.email_app_version" = "ऐप संस्करण";
-"about.support.email_device" = "डिवाइस";
 "history.empty_description" = "आपके शुरू किए गए बैकअप का इतिहास यहाँ दिखाई देगा";
 "history.summary.completed" = "पूर्ण";
 "history.summary.failed" = "विफल";
@@ -684,7 +350,6 @@
 "error.webdav.invalid_server_address" = "अमान्य सर्वर पता। इसे 'http://192.168.1.1' या '192.168.1.1' जैसे प्रारूप में दर्ज करें।";
 "error.webdav.invalid_url_created" = "अमान्य URL बनाया गया। कृपया सर्वर पता जाँचें।";
 "error.photo_library.no_access" = "फ़ोटो लाइब्रेरी तक पहुँच की अनुमति नहीं है";
-"error.network.local_server_wifi_required" = "स्थानीय सर्वर पहुँच के लिए WiFi कनेक्शन आवश्यक है (वर्तमान: %@)। आप सेटिंग्स में सेल्युलर डेटा उपयोग सक्षम कर सकते हैं।";
 "network.type.wifi" = "WiFi";
 "network.type.cellular" = "सेल्युलर";
 "network.type.ethernet" = "Ethernet";

@@ -6,19 +6,11 @@ struct DocumentPicker: UIViewControllerRepresentable {
     var onDismiss: () -> Void = {}
     
     private var bookmarkCreationOptions: URL.BookmarkCreationOptions {
-        #if os(iOS)
         return [.minimalBookmark]
-        #else
-        return [.withSecurityScope]
-        #endif
     }
     
     private var bookmarkResolutionOptions: URL.BookmarkResolutionOptions {
-        #if os(iOS)
         return []
-        #else
-        return [.withSecurityScope]
-        #endif
     }
     
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {

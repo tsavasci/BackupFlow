@@ -25,7 +25,6 @@ struct LiquidTheme {
 }
 
 // Alias for modern design system
-typealias AppTheme = DesignSystem
 
 private struct LiquidBackgroundModifier: ViewModifier {
     @Environment(\.colorScheme) private var colorScheme
@@ -58,35 +57,6 @@ private struct LiquidBackgroundModifier: ViewModifier {
     }
 }
 
-private struct LiquidCardModifier: ViewModifier {
-    @Environment(\.colorScheme) private var colorScheme
-    let cornerRadius: CGFloat
-
-    private var shadowColor: Color {
-        colorScheme == .dark ? Color.black.opacity(0.22) : Color.black.opacity(0.06)
-    }
-
-    private var fillMaterial: Material {
-        .ultraThinMaterial
-    }
-
-    func body(content: Content) -> some View {
-        content
-            .background(
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(fillMaterial)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .stroke(
-                                colorScheme == .dark ? LiquidTheme.subtleStroke : LiquidTheme.cardStroke,
-                                lineWidth: colorScheme == .dark ? 0.8 : 1
-                            )
-                    )
-            )
-            .shadow(color: shadowColor, radius: colorScheme == .dark ? 8 : 5, x: 0, y: colorScheme == .dark ? 4 : 2)
-    }
-}
-
 private struct LiquidListRowModifier: ViewModifier {
     @Environment(\.colorScheme) private var colorScheme
     let cornerRadius: CGFloat
@@ -109,25 +79,10 @@ private struct LiquidListRowModifier: ViewModifier {
 // MARK: - View Modifiers
 
 extension View {
-    /// Applies the default navigation styling
-    func withNavigationStyle() -> some View {
-        self.navigationBarTitleDisplayMode(.inline)
-            .navigationBarBackButtonHidden(false)
-    }
     
-    /// Applies the default background color
-    func appBackground() -> some View {
-        self.background(Color(.systemGroupedBackground))
-    }
-
     /// Applies the liquid background gradient
     func liquidBackground() -> some View {
         self.modifier(LiquidBackgroundModifier())
-    }
-
-    /// Applies a liquid card style with glass effect
-    func liquidCard(cornerRadius: CGFloat = LiquidTheme.cardCornerRadius) -> some View {
-        self.modifier(LiquidCardModifier(cornerRadius: cornerRadius))
     }
 
     /// Applies a liquid list row background
@@ -135,11 +90,6 @@ extension View {
         self.modifier(LiquidListRowModifier(cornerRadius: cornerRadius))
     }
 
-    /// Applies a liquid section header style
-    func liquidSectionHeader() -> some View {
-        self.font(.caption)
-            .foregroundStyle(.secondary)
-    }
 }
 
 // MARK: - Preview Providers

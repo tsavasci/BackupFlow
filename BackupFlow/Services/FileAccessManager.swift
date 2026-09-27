@@ -4,23 +4,15 @@ import os.log
 /// Manages file access permissions for File Provider Storage and security scoped bookmarks
 class FileAccessManager {
     static let shared = FileAccessManager()
-    private let logger = Logger(subsystem: "com.example.BackupFlow", category: "FileAccessManager")
+    private let logger = Logger(subsystem: "com.backupflow.app", category: "FileAccessManager")
     private let userDefaults = UserDefaults.standard
     
     private var bookmarkCreationOptions: URL.BookmarkCreationOptions {
-        #if os(iOS)
         return [.minimalBookmark]
-        #else
-        return [.withSecurityScope]
-        #endif
     }
     
     private var bookmarkResolutionOptions: URL.BookmarkResolutionOptions {
-        #if os(iOS)
         return []
-        #else
-        return [.withSecurityScope]
-        #endif
     }
     
     private init() {}
@@ -66,40 +58,6 @@ class FileAccessManager {
             userDefaults.removeObject(forKey: "bookmark_\(key)")
             return nil
         }
-    }
-    
-    /// Check if a path needs security scoped access and attempt to start it
-    func startSecurityScopedAccess(for path: String) -> (url: URL?, accessStarted: Bool) {
-        // Check if this is a File Provider path
-        if path.contains("File Provider Storage") {
-            logger.info("🔐 Detected File Provider Storage path, attempting bookmark resolution...")
-            
-            // Try to load bookmark for this exact path
-            if let bookmarkURL = loadBookmark(for: path) {
-                logger.info("🔐 Found bookmark for path: \(bookmarkURL.path)")
-                // In iOS, File Provider access is handled through Document Picker permissions
-                // We don't need to explicitly start security scoped access for bookmarked URLs
-                let started = bookmarkURL.startAccessingSecurityScopedResource()
-                return (bookmarkURL, started)
-            } else {
-                logger.warning("🔐 No bookmark found for File Provider path: \(path)")
-                // Fallback to direct URL - but this likely won't work for File Provider
-                let url = URL(fileURLWithPath: path)
-                logger.warning("🔐 Using fallback URL, access may be limited")
-                return (url, false)
-            }
-        }
-        
-        // For regular file system paths, no special access needed
-        return (URL(fileURLWithPath: path), false)
-    }
-    
-    /// Stop security scoped access for a URL (iOS specific handling)
-    func stopSecurityScopedAccess(for url: URL) {
-        // In iOS File Provider context, we don't need to explicitly stop security scoped access
-        // The access is managed through the Document Picker permissions
-        url.stopAccessingSecurityScopedResource()
-        logger.info("🔐 File access cleanup for: \(url.lastPathComponent)")
     }
     
     /// Try to access File Provider files using NSFileCoordinator

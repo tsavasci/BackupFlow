@@ -61,19 +61,11 @@ final class WebDAVBackgroundSessionDelegate: NSObject, URLSessionDelegate, URLSe
     }
 
     private func leafCertificateSHA256Base64(from trust: SecTrust) -> String? {
-        if #available(iOS 15.0, macOS 12.0, *) {
-            guard let chain = SecTrustCopyCertificateChain(trust) as? [SecCertificate],
-                  let leaf = chain.first else { return nil }
-            let data = SecCertificateCopyData(leaf) as Data
-            let hash = SHA256.hash(data: data)
-            return Data(hash).base64EncodedString()
-        } else {
-            let count = SecTrustGetCertificateCount(trust)
-            guard count > 0, let cert = SecTrustGetCertificateAtIndex(trust, 0) else { return nil }
-            let data = SecCertificateCopyData(cert) as Data
-            let hash = SHA256.hash(data: data)
-            return Data(hash).base64EncodedString()
-        }
+        guard let chain = SecTrustCopyCertificateChain(trust) as? [SecCertificate],
+              let leaf = chain.first else { return nil }
+        let data = SecCertificateCopyData(leaf) as Data
+        let hash = SHA256.hash(data: data)
+        return Data(hash).base64EncodedString()
     }
 
     func urlSession(

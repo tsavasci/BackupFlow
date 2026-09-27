@@ -1,8 +1,4 @@
-"nav.tasks" = "작업";
-"nav.backup" = "백업";
 "nav.history" = "기록";
-"nav.settings" = "설정";
-"nav.about" = "정보";
 "settings.title" = "설정";
 "settings.general" = "일반";
 "settings.history_retention" = "기록 보관 기간 (일)";
@@ -14,51 +10,11 @@
 "settings.version" = "버전";
 "settings.rate_app" = "앱 평가하기";
 "settings.contact_support" = "지원 문의";
-"settings.developer_settings" = "개발자 설정";
-"settings.advanced_settings" = "고급 설정";
-"settings.ftp_connection_test" = "FTP 연결 테스트";
 "settings.reset_all_data" = "모든 데이터 초기화";
-"language.selection" = "언어";
-"language.system" = "시스템 언어";
-"language.restart_required" = "언어 변경됨";
-"language.restart_message" = "앱이 다음 실행 시 새 언어를 사용합니다.";
-"alert.ok" = "확인";
 "alert.cancel" = "취소";
-"dashboard.title" = "상태 개요";
-"dashboard.last_backup" = "마지막 백업";
-"dashboard.active_tasks" = "활성 작업";
 "dashboard.next_task" = "다음 작업";
 "dashboard.never" = "안 함";
 "dashboard.overdue" = "지연됨";
-"dashboard.in_days" = "%d일 후";
-"dashboard.in_hours" = "%d시간 후";
-"dashboard.in_minutes" = "%d분 후";
-"dashboard.soon" = "곧";
-"tasks.your_tasks" = "내 작업";
-"wifi.settings" = "WiFi 설정";
-"wifi.current_network" = "현재 네트워크";
-"wifi.status" = "상태";
-"wifi.not_connected" = "WiFi에 연결되지 않음";
-"wifi.network_not_allowed" = "이 네트워크에서는 백업이 허용되지 않습니다";
-"wifi.allowed_networks" = "허용된 네트워크";
-"wifi.no_allowed_networks" = "아직 허용된 네트워크가 없습니다";
-"wifi.add_network" = "네트워크 추가";
-"wifi.remove" = "제거";
-"wifi.current" = "현재";
-"wifi.help" = "도움말";
-"wifi.not_connected_status" = "WiFi에 연결되지 않음";
-"wifi.unknown_network" = "알 수 없는 네트워크";
-"wifi.network_name" = "네트워크 이름";
-"wifi.add" = "추가";
-"wifi.remove_network" = "네트워크 제거";
-"wifi.add_network_message" = "백업을 허용할 WiFi 네트워크 이름을 입력하세요.";
-"wifi.remove_network_message" = "허용 목록에서 이 네트워크를 제거하시겠습니까?";
-"wifi.allowed_networks_footer" = "백업은 이러한 네트워크에서만 실행됩니다. 비어 있으면 모든 WiFi 네트워크에서 백업이 실행됩니다.";
-"wifi.help_1" = "백업은 WiFi에 연결된 경우에만 실행됩니다";
-"wifi.help_2" = "보안 강화를 위해 허용 목록에 특정 네트워크 추가";
-"wifi.help_3" = "+ 버튼을 사용하여 현재 네트워크를 빠르게 추가";
-"backup.skipped.title" = "백업 건너뜀";
-"backup.skipped.message" = "%@ 작업 건너뜀: %@";
 "battery.settings" = "배터리 설정";
 "battery.current_status" = "현재 배터리 상태";
 "battery.level" = "배터리 잔량";
@@ -82,22 +38,13 @@
 "settings.reset_confirm_title" = "설정 초기화";
 "settings.reset_confirm_message" = "모든 설정이 기본값으로 초기화됩니다. 계속하시겠습니까?";
 // Task Pause/Resume System
-"task.paused.notification.title" = "🎬 BackupFlow";
-"task.paused.notification.body" = "작업 일시 중지됨: %@";
-"task.resumed.notification.title" = "🎬 BackupFlow";
-"task.resumed.notification.body" = "작업 예약 재개됨: %@";
 "task.pause.button" = "예약 일시 중지";
 "task.resume.button" = "예약 재개";
 "task.status.paused" = "일시 중지됨";
 
 // Notification Actions
-"backup.notification.action.postpone" = "연기";
 
 // BackupScheduler Notifications
-"backup.paused.notification.title" = "백업 일시 중지됨";
-"backup.paused.notification.body" = "'%@' 작업이 일시 중지되었습니다.";
-"backup.resumed.notification.title" = "백업 재개됨";
-"backup.resumed.notification.body" = "'%@' 작업이 재개되었습니다.";
 "backup.scheduled.notification.title" = "🕐 백업 시간!";
 "backup.scheduled.notification.body" = "'%@' 작업이 실행 준비되었습니다. (%@)";
 "backup.scheduled.notification.local_cellular" = "\n\n📱 로컬 서버에 대한 셀룰러 데이터 사용이 허용되었습니다.";
@@ -113,80 +60,22 @@
 "history.files.skipped" = "건너뜀";
 
 // Progress Status Messages
-"progress.skipped" = "건너뜀";
-"progress.uploading" = "업로드 중";
-"progress.downloading" = "다운로드 중";
-"progress.processing" = "처리 중";
-"progress.preparing" = "백업 준비 중...";
-"progress.completed" = "백업 완료";
 "battery.state.unknown" = "알 수 없음";
 "battery.state.unplugged" = "충전 안 함";
 "battery.state.charging" = "충전 중";
 "battery.state.full" = "가득 찼음";
-"tasks.create_task" = "작업 만들기";
-"tasks.edit_task" = "작업 편집";
-"tasks.task_name" = "작업 이름";
-"tasks.source_path" = "소스 경로";
-"tasks.destination" = "대상";
-"tasks.schedule" = "일정";
-"tasks.enabled" = "활성화됨";
-"tasks.disabled" = "비활성화됨";
-"tasks.last_run" = "마지막 실행";
-"tasks.next_run" = "다음 실행";
-"tasks.status" = "상태";
 "tasks.delete" = "삭제";
-"tasks.save" = "저장";
-"tasks.cancel" = "취소";
 "tasks.delete_confirmation" = "작업 삭제";
-"tasks.delete_message" = "이 작업을 삭제하시겠습니까?";
-"schedule.daily" = "매일";
-"schedule.weekly" = "매주";
-"schedule.monthly" = "매월";
-"schedule.custom" = "사용자 지정";
-"ftp.server" = "서버";
-"ftp.port" = "포트";
-"ftp.username" = "사용자 이름";
-"ftp.password" = "비밀번호";
-"ftp.path" = "원격 경로";
-"ftp.test_connection" = "연결 테스트";
-"ftp.connection_success" = "연결 성공";
-"ftp.connection_failed" = "연결 실패";
 "history.title" = "백업 기록";
-"history.date" = "날짜";
-"history.task" = "작업";
-"history.status" = "상태";
-"history.size" = "크기";
-"history.duration" = "기간";
-"history.success" = "성공";
-"history.failed" = "실패";
 "history.no_history" = "백업 기록이 없습니다";
-"about.title" = "BackupFlow 정보";
-"about.version" = "버전";
-"about.build" = "빌드";
-"about.description" = "FTP/WebDAV를 지원하는 iOS용 전문 백업 솔루션";
-"about.developer" = "개발자";
-"about.website" = "웹사이트";
-"about.support" = "지원";
-"about.privacy" = "개인정보 보호정책";
-"about.terms" = "서비스 약관";
-"alert.info" = "정보";
-"alert.success" = "성공";
 "alert.error" = "오류";
 "tasks.duplicate_error" = "동일한 설정의 작업이 이미 존재합니다";
 "tasks.save_success" = "작업이 성공적으로 저장되었습니다";
 "tasks.scheduled" = "및 예약됨";
-"tasks.schedule_error" = "하지만 예약 실패";
-"tasks.save_error" = "작업 저장 중 오류 발생";
-"backup.source_selection" = "소스 선택";
-"backup.select_folder" = "백업할 폴더 선택";
-"backup.photo_library" = "사진 라이브러리 백업";
-"backup.media_type" = "미디어 유형 선택";
-"backup.folder_selection" = "폴더 선택";
 "backup.or" = "또는";
 "backup.manual" = "수동";
 "backup.daily" = "매일";
 "backup.weekly" = "매주";
-"backup.time" = "시간";
 "backup.hour" = "시간";
 "backup.minute" = "분";
 "backup.day" = "일";
@@ -194,13 +83,6 @@
 "backup.test_connection" = "연결 테스트";
 "backup.new_backup" = "새 백업";
 "backup.clear" = "지우기";
-"day.sunday" = "일요일";
-"day.monday" = "월요일";
-"day.tuesday" = "화요일";
-"day.wednesday" = "수요일";
-"day.thursday" = "목요일";
-"day.friday" = "금요일";
-"day.saturday" = "토요일";
 "backup.connection_testing" = "연결 테스트 중...";
 "backup.connection_success_ftp" = "FTP 연결 성공!";
 "backup.connection_success_sftp" = "SFTP 연결 성공!";
@@ -208,47 +90,21 @@
 "backup.connection_error" = "연결 오류";
 "backup.fill_required_fields" = "필수 필드를 입력하세요 (서버 주소 및 사용자 이름/비밀번호)";
 "backup.webdav_credentials_required" = "WebDAV 서버 URL 및 사용자 자격 증명을 입력하세요";
-"backup.network_permission_check" = "네트워크 권한 확인 중... (처음 사용 시 iOS에서 권한을 요청할 수 있습니다)";
 "backup.source_required" = "소스를 선택하세요 (폴더 또는 사진 라이브러리)";
 "backup.photo_permission_required" = "사진 라이브러리 액세스가 필요합니다";
 "backup.invalid_folder" = "잘못된 폴더 경로입니다. 다시 시도하세요.";
-"backup.new_task" = "새 백업";
 "backup.target_type" = "대상 유형";
 "backup.server_address" = "서버 주소";
 "backup.port_default" = "포트 (기본값: 21)";
 "backup.port_webdav_default" = "포트 (기본값: 443)";
+"backup.port_sftp_default" = "포트 (기본값: 22)";
 "backup.anonymous_login" = "익명 로그인";
 "backup.username" = "사용자 이름";
 "backup.password" = "비밀번호";
 "backup.destination_folder" = "대상 폴더";
-"backup.start_confirmation" = "백업을 시작하시겠습니까?";
-"backup.start" = "시작";
-"backup.pending_message" = "'%@' 작업이 알림에서 시작되기를 기다리고 있습니다.";
-"tasks.no_tasks" = "작업 없음";
-"tasks.create_first_task" = "시작하려면 첫 번째 백업 작업을 만드세요.";
 "tasks.delete_message_full" = "이 작업을 삭제하시겠습니까? 이 작업은 실행 취소할 수 없습니다.";
-"tasks.swipe_delete" = "삭제";
 
 // FTP 테스트 및 WebDAV URL
-"ftp.test.connection_info" = "FTP 연결 정보";
-"ftp.test.server_address" = "서버 주소:";
-"ftp.test.port" = "포트:";
-"ftp.test.username" = "사용자 이름:";
-"ftp.test.password" = "비밀번호:";
-"ftp.test.connection_test" = "FTP 연결 테스트";
-"ftp.test.description" = "이 테스트는 FTP 서버에 연결하고 작은 테스트 파일을 업로드합니다.";
-"ftp.test.start_test" = "테스트 시작";
-"ftp.test.results" = "테스트 결과";
-"ftp.test.success_info" = "• 성공적인 테스트는 FTP 서버에 연결하고 파일을 업로드할 수 있음을 나타냅니다.";
-"ftp.test.error_info" = "• 오류가 발생하면 FTP 설정 및 인터넷 연결을 확인하세요.";
-"ftp.test.title" = "FTP 테스트";
-"ftp.test.completed" = "테스트 완료";
-"ftp.test.completed_message" = "테스트가 완료되었습니다.";
-"ftp.test.invalid_port" = "✗ 잘못된 포트 번호입니다. 1-65535 사이의 값을 입력하세요.";
-"ftp.test.starting" = "테스트 시작";
-"ftp.test.starting_message" = "FTP 연결 테스트 시작 중... (처음 사용 시 iOS에서 네트워크 권한을 요청할 수 있습니다)";
-"ftp.test.success" = "✓ 테스트 성공! FTP 서버에 연결하고 파일을 업로드할 수 있습니다.";
-"ftp.test.failed" = "✗ 테스트 실패: ";
 
 // Task Details
 "task.details.general" = "일반";
@@ -289,15 +145,8 @@
 "day.names.friday" = "금요일";
 "day.names.saturday" = "토요일";
 
-"backup.select_folder_placeholder" = "폴더 선택...";
 "backup.select_time" = "시간 선택";
-"backup.or_text" = "또는";
-"history.loading" = "로딩 중...";
-"history.error_occurred" = "오류 발생: %@";
-"history.retry" = "재시도";
 "history.unknown" = "알 수 없음";
-"history.anonymous_ftp" = "익명 FTP";
-"history.user_prefix" = "사용자: %@";
 // Backup Status Messages
 "backup.status.idle" = "준비됨";
 "backup.status.preparing" = "준비 중...";
@@ -306,85 +155,17 @@
 "backup.status.completed" = "완료됨";
 "backup.status.failed" = "실패";
 "backup.status.cancelled" = "취소됨";
-"error.unexpected" = "예기치 않은 오류 발생: %@";
-"error.authentication_failed" = "사용자 인증 실패";
-"error.permission_denied" = "파일 또는 디렉토리 액세스 권한이 거부되었습니다";
-"error.file_not_found" = "파일 또는 디렉토리를 찾을 수 없음: %@";
-"error.directory_creation" = "디렉토리 생성 중 예기치 않은 오류: %@";
-"error.server_not_found" = "서버를 찾을 수 없거나 액세스할 수 없습니다";
-"history.media_type_prefix" = "미디어 유형: %@";
 
 // Appended new keys
-"common.close" = "닫기";
-"task.general" = "일반";
-"task.next_run" = "다음 실행";
-"task.port" = "포트";
-"task.recent_backups" = "최근 백업";
-"task.schedule" = "일정";
-"task.server" = "서버";
-"task.server_section" = "서버 정보";
-"task.source" = "소스";
-"task.status" = "상태";
-"task.user" = "사용자";
 "history.backup_detail" = "백업 세부 정보";
 // Cellular Data Settings
-"settings.allow_cellular" = "셀룰러 데이터 사용 허용";
-"settings.cellular_warning" = "⚠️ 대용량 파일에 셀룰러 데이터를 사용하면 추가 비용이 발생할 수 있습니다.";
-"settings.wifi_only" = "ℹ️ 백업은 WiFi를 통해서만 수행됩니다.";
 // Background Task Monitor
-"background_task_monitor.title" = "백그라운드 작업 모니터";
-"background_task_monitor.refresh" = "새로 고침";
-"background_task_monitor.status" = "백그라운드 작업 상태";
-"background_task_monitor.subtitle" = "타이머 및 BGTaskScheduler 조정";
-"background_task_monitor.status.processing" = "처리 중";
-"background_task_monitor.status.timer_active" = "타이머 활성";
-"background_task_monitor.status.standby" = "대기";
-"background_task_monitor.current_status" = "현재 상태";
-"background_task_monitor.timer_backup" = "타이머 백업";
-"background_task_monitor.processing" = "백그라운드 처리";
-"background_task_monitor.active_bgtasks" = "활성 BGTask";
-"background_task_monitor.active" = "활성";
-"background_task_monitor.inactive" = "비활성";
-"background_task_monitor.performance_overview" = "성능 개요";
-"background_task_monitor.bgtask_executions" = "BGTask 실행";
-"background_task_monitor.timer_executions" = "타이머 실행";
-"background_task_monitor.avg_bgtask_duration" = "평균 BGTask 기간";
-"background_task_monitor.avg_timer_duration" = "평균 타이머 기간";
-"background_task_monitor.average" = "평균";
-"background_task_monitor.success_rates" = "성공률";
-"background_task_monitor.execution_history" = "실행 기록";
-"background_task_monitor.last_method" = "마지막 방법";
-"background_task_monitor.last_execution" = "마지막 실행";
-"background_task_monitor.coordination_state" = "조정 상태";
-"background_task_monitor.scheduled_timers" = "예약된 타이머";
-"background_task_monitor.active_bgtask_ids" = "활성 BGTask ID";
-"background_task_monitor.current_app_state" = "현재 앱 상태";
-"background_task_monitor.advanced_metrics" = "고급 메트릭";
-"background_task_monitor.app_state.active" = "활성";
-"background_task_monitor.app_state.background" = "백그라운드";
-"background_task_monitor.app_state.inactive" = "비활성";
-"background_task_monitor.app_state.unknown" = "알 수 없음";
 
 // About View
-"about.license" = "라이선스";
-"about.license_description" = "이 애플리케이션은 MIT 라이선스에 따라 제공됩니다.";
-"about.all_rights_reserved" = "모든 권리 보유";
-"about.support_email_subject" = "BackupFlow 지원 요청";
 
 // iOS Background Behavior Info
-"about.background_title" = "iOS 백그라운드 백업 동작";
-"about.background_description" = "iOS는 백그라운드 작업을 자동으로 관리하며 다음 조건에 따라 실행합니다:";
-"about.background_notification" = "시간이 되면 알림을 보냅니다";
-"about.background_ios_decision" = "iOS가 적절하다고 판단할 때 백그라운드에서 실행됩니다";
-"about.background_battery_check" = "배터리 상태 및 네트워크 연결이 확인됩니다";
-"about.background_manual_start" = "확실한 실행을 위해 알림의 '지금 시작' 버튼을 사용하세요";
-"about.background_force_quit_warning" = "⚠️ 앱을 강제 종료(위로 스와이프하여 닫기)하면 iOS는 백그라운드 작업을 실행하지 않습니다. 백그라운드에 그냥 두면 됩니다.";
 
 // BackupView - Notification Guarantee
-"backup.notification_guarantee_title" = "알림 보장";
-"backup.notification_guarantee_desc" = "시간이 되면 알림을 보내드립니다";
-"backup.auto_start_title" = "자동 시작";
-"backup.auto_start_desc" = "iOS는 백그라운드 작업을 자동으로 관리합니다(배터리, 네트워크 및 시스템 상태에 따라)";
 
 // History View
 "history.delete" = "삭제";
@@ -397,7 +178,6 @@
 "backup.default_task_name" = "새 백업";
 
 // BackupExecutionManager - Network Errors
-"backup.network_error.wifi_required" = "로컬 서버 액세스에 WiFi 연결이 필요합니다(현재: %@). 설정에서 셀룰러 데이터 사용을 활성화할 수 있습니다.";
 
 // BackupNotificationManager - Frequency Text
 "backup.frequency_text.daily" = "매일";
@@ -405,82 +185,22 @@
 "backup.frequency_text.manual" = "수동";
 
 // Task Schedule Notes
-"task.scheduled_task_note" = "참고: 예약된 작업에 대한 알림을 받으면 앱을 열고 백업을 시작하기 위해 알림을 탭해야 합니다.";
-"task.bgtime_required" = "백그라운드 작업에는 최소 16분이 필요합니다";
-"error.invalid_time_selection" = "잘못된 시간 선택";
-"error.minimum_bgtime_required" = "백그라운드 작업에는 최소 16분이 필요합니다.\n\n선택한 시간이 %d분 후입니다. 최소 16분 이후의 시간을 선택해 주세요.";
-"backup.auto_backup_how_title" = "자동 백업 작동 방식";
-"backup.guarantee_title" = "보장을 위해";
-"backup.start_from_notification_desc" = "알림의 \"지금 시작\" 버튼을 탭하거나 앱을 엽니다";
 
 // Task Schedule Notes
-"task.schedule_notes.title" = "⚠️ 중요: 백업 스케줄링";
-"task.schedule_notes.auto_backup" = "iOS는 배터리, 네트워크 및 시스템 상태에 따라 백그라운드 작업을 관리합니다.";
-"task.schedule_notes.notification_guarantee" = "시간이 되면 반드시 알림을 보내드릴 것을 약속드립니다.";
-"task.schedule_notes.start_from_notification" = "백업을 시작하려면 알림을 탭하거나 앱을 열어주세요.";
-"task.schedule_notes.bgtime_required" = "iOS 백그라운드 작업은 최소 16분 이상의 시간이 필요합니다.";
 
 // WebDAV Test View
-"webdav.test.title" = "WebDAV 연결 테스트";
-"webdav.test.connection_info" = "연결 정보";
-"webdav.test.server_address" = "서버 주소";
-"webdav.test.port" = "포트";
-"webdav.test.username" = "사용자 이름";
-"webdav.test.password" = "비밀번호";
-"webdav.test.connection_test" = "연결 테스트";
-"webdav.test.description" = "WebDAV 서버에 연결할 수 있는지 테스트합니다.";
-"webdav.test.start_test" = "테스트 시작";
-"webdav.test.results" = "결과";
-"webdav.test.success_info" = "✓ 성공: 서버에 연결되고 인증되었습니다.";
-"webdav.test.error_info" = "✗ 실패: 서버 설정을 확인하세요.";
-"webdav.test.https_info" = "🔒 HTTPS 토글을 사용하여 HTTP 또는 HTTPS를 선택하세요.";
-"webdav.test.completed" = "테스트 완료";
-"webdav.test.completed_message" = "연결 테스트가 완료되었습니다.";
-"webdav.test.invalid_port" = "✗ 잘못된 포트 번호입니다. 1-65535 사이여야 합니다.";
-"webdav.test.success" = "연결 성공!";
-"webdav.test.failed" = "연결 실패:";
-"webdav.test.failed_generic" = "✗ 연결에 실패했습니다. 설정을 확인하세요.";
-"webdav.test.starting" = "WebDAV 테스트 시작";
-"webdav.test.starting_message" = "서버에 연결 중...";
-"settings.webdav_connection_test" = "WebDAV 연결 테스트";
 
 // Missing translations added from Turkish base
 "history.clear_confirmation" = "모든 기록을 삭제하시겠습니까?";
 "history.clear_confirmation_message" = "이 작업은 취소할 수 없습니다.";
-"history.invalid_entry" = "잘못된 항목";
-"backup.use_https" = "HTTPS 사용";
-"backup.use_https_desc" = "보안 연결을 위해 HTTPS를 사용합니다. HTTP의 경우 끕니다.";
-
-"notifications.disabled_warning_title" = "알림이 비활성화됨";
-"notifications.disabled_warning_body" = "BackupFlow의 알림을 비활성화했습니다. 백업 미리 알림 및 상태 업데이트를 받으려면 설정 앱에서 활성화하세요.";
-"notifications.open_settings_button" = "설정 열기";
 
 // Missing Localization Keys
 "backup.notification.action.start" = "지금 시작";
 
 // New Notification Actions (v1.1)
-"backup.notification.action.postpone_10" = "10분 연기";
-"backup.notification.action.postpone_60" = "1시간 연기";
 
-"backup.notification.wifi_required.title" = "WiFi 연결 필요";
-"backup.notification.wifi_required.body" = "\"%@\" 백업에는 WiFi 연결이 필요합니다.\n\nCurrent network: %@\n\nOptions:\n• Connect to a WiFi network\n• Allow cellular data usage in the settings";
-"backup.notification.action.open_settings" = "설정 열기";
-
-"backup.frequency_text.scheduled" = "예약됨";
 "settings.language" = "언어";
 "settings.language.system" = "시스템 언어";
-"settings.language.turkish" = "터키어";
-"settings.language.english" = "영어";
-"settings.language.arabic" = "아랍어";
-"settings.language.chinese" = "중국어";
-"settings.language.french" = "프랑스어";
-"settings.language.german" = "독일어";
-"settings.language.hindi" = "힌디어";
-"settings.language.japanese" = "일본어";
-"settings.language.korean" = "한국어";
-"settings.language.portuguese" = "포르투갈어";
-"settings.language.russian" = "러시아어";
-"settings.language.spanish" = "스페인어";
 "settings.require_external_power" = "외부 전원이 필요함";
 "settings.require_external_power_note" = "이 기능에는 외부 전원이 필요합니다.";
 
@@ -501,32 +221,11 @@
 "backup.testing_network" = "네트워크 확인 중…";
 "backup.connection_error_ftp" = "FTP 연결 오류: %@";
 
-"about.version_build" = "버전 %@ (빌드 %@)";
-"about.contact" = "연락처";
-"about.rights_reserved" = "모든 권리 보유.";
-
 "task.details.title" = "작업 세부 정보";
 
-"backup.cancel_backup_title" = "백업 취소";
-"backup.cancel_backup_confirm" = "취소";
-"backup.cancel_backup_message" = "이 백업을 취소하시겠습니까?";
 // Additional localization keys to match Turkish base
 "backup.frequency" = "빈도";
 "backup.scheduling" = "스케줄링";
-"error.network_unavailable" = "네트워크 연결을 사용할 수 없습니다";
-"error.server_unreachable" = "서버에 도달할 수 없습니다";
-"language.english" = "영어";
-"language.turkish" = "터키어";
-"language.german" = "독일어";
-"language.french" = "프랑스어";
-"language.spanish" = "스페인어";
-"language.russian" = "러시아어";
-"language.japanese" = "일본어";
-"language.korean" = "한국어";
-"language.portuguese" = "포르투갈어";
-"language.arabic" = "아랍어";
-"language.hindi" = "힌디어";
-"language.chinese" = "중국어";
 "backup.server_url_example" = "서버 URL (예: https://example.com/dav)";
 "backup.destination_folder_optional" = "대상 폴더 (선택 사항)";
 "media_type.photos_only" = "사진만";
@@ -536,7 +235,6 @@
 "sftp.tofu_notice" = "SFTP 호스트 키는 첫 연결 시 신뢰됩니다(TOFU).";
 "sftp.hostkey_title" = "SFTP 보안 경고";
 "sftp.hostkey_message" = "새 호스트 키를 신뢰합니다(TOFU). 지문: %@";
-
 
 "backup.status.interrupted" = "중단됨";
 
@@ -573,8 +271,6 @@
 "backup.error.cancelled" = "작업이 중단되었습니다";
 "backup.error.unexpected" = "예기치 않은 오류: %@";
 
-"whats_new" = "새로운 기능";
-
 "backup.protocol.ftp" = "FTP";
 
 "backup.protocol.sftp" = "SFTP";
@@ -586,18 +282,8 @@
 "backup.current_file.updating_file" = "업데이트 중: %@";
 "backup.photo_backup_include_icloud" = "필요한 경우 iCloud 항목 다운로드";
 "backup.photo_backup_include_icloud_hint" = "전체 백업에 권장됩니다. 끄면 기기에 이미 저장된 미디어만 복사됩니다.";
-"tasks.search_prompt" = "작업 검색...";
-"tasks.summary" = "요약";
-"tasks.no_search_results" = "결과를 찾을 수 없음";
-"tasks.active" = "활성";
-"tasks.scheduled_short" = "예약됨";
 "tasks.run_started" = "작업 시작됨";
-"tasks.resumed_toast" = "작업 재개됨";
-"tasks.paused_toast" = "작업 일시 중지됨";
-"tasks.source_not_set" = "설정되지 않음";
 
-"common.please_wait" = "잠시 기다려 주세요...";
-"dashboard.greeting" = "좋은 아침입니다";
 "dashboard.greeting.morning" = "좋은 아침입니다";
 "dashboard.greeting.afternoon" = "좋은 오후입니다";
 "dashboard.greeting.evening" = "좋은 저녁입니다";
@@ -616,8 +302,6 @@
 "dashboard.destination.auto" = "자동: %@";
 "dashboard.used_date" = "사용: %@";
 "dashboard.action.sync" = "동기화";
-"dashboard.action.pause" = "일시 정지";
-"dashboard.action.files" = "파일";
 "dashboard.storage_overview" = "저장 공간 개요";
 "dashboard.used" = "사용됨";
 "dashboard.of_value" = "%@ 중";
@@ -632,7 +316,6 @@
 "dashboard.backup_completed" = "백업이 성공적으로 완료되었습니다";
 "dashboard.ready_to_sync" = "동기화 준비됨";
 "dashboard.status.syncing" = "동기화 중";
-"dashboard.status.connected" = "연결됨";
 "dashboard.status.active_task_count_one" = "활성 작업 %d개";
 "dashboard.status.active_task_count_many" = "활성 작업 %d개";
 "dashboard.no_server_selected" = "선택된 서버 없음";
@@ -640,23 +323,6 @@
 "dashboard.transfer_detail_with_speed" = "%@ / %@ · %@ · %@";
 "dashboard.transfer_detail" = "%@ / %@ · %@";
 
-"about.section.about" = "정보";
-"about.description" = "BackupFlow는 파일을 FTP, SFTP 및 WebDAV 서버에 자동으로 백업하도록 설계된 안전하고 빠르며 신뢰할 수 있는 백업 솔루션입니다.";
-"about.features.title" = "기능";
-"about.feature.security" = "안전한 암호화 및 연결";
-"about.feature.scheduled" = "자동 예약 백업";
-"about.feature.fast_sync" = "빠르고 효율적인 파일 동기화";
-"about.feature.protocols" = "FTP, SFTP 및 WebDAV 지원";
-"about.feature.smart_filtering" = "스마트 파일 필터링";
-"about.feature.history_stats" = "자세한 기록 및 통계";
-"about.section.support" = "지원";
-"about.support.description" = "질문이나 제안이 있으신가요? 문의하실 수 있습니다.";
-"about.section.license" = "라이선스";
-"about.license.description" = "BackupFlow는 MIT 라이선스로 배포됩니다. 소프트웨어를 자유롭게 사용, 수정 및 배포할 수 있습니다.";
-"about.rights_reserved" = "모든 권리 보유.";
-"about.support.email_subject" = "BackupFlow 지원 요청";
-"about.support.email_app_version" = "앱 버전";
-"about.support.email_device" = "기기";
 "history.empty_description" = "시작한 백업 기록이 여기에 표시됩니다";
 "history.summary.completed" = "완료됨";
 "history.summary.failed" = "실패";
@@ -686,7 +352,6 @@
 "error.webdav.invalid_server_address" = "잘못된 서버 주소입니다. 'http://192.168.1.1' 또는 '192.168.1.1' 형식으로 입력하세요.";
 "error.webdav.invalid_url_created" = "잘못된 URL이 생성되었습니다. 서버 주소를 확인하세요.";
 "error.photo_library.no_access" = "사진 보관함에 접근할 권한이 없습니다";
-"error.network.local_server_wifi_required" = "로컬 서버 접근에는 WiFi 연결이 필요합니다(현재: %@). 설정에서 셀룰러 데이터 사용을 활성화할 수 있습니다.";
 "network.type.wifi" = "WiFi";
 "network.type.cellular" = "셀룰러";
 "network.type.ethernet" = "Ethernet";

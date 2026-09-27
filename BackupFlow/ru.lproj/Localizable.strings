@@ -1,8 +1,4 @@
-"nav.tasks" = "Задачи";
-"nav.backup" = "Резервное копирование";
 "nav.history" = "История";
-"nav.settings" = "Настройки";
-"nav.about" = "О программе";
 "settings.title" = "Настройки";
 "settings.general" = "Общие";
 "settings.history_retention" = "Хранение истории (дни)";
@@ -14,51 +10,11 @@
 "settings.version" = "Версия";
 "settings.rate_app" = "Оценить приложение";
 "settings.contact_support" = "Связаться с поддержкой";
-"settings.developer_settings" = "Настройки разработчика";
-"settings.advanced_settings" = "Расширенные настройки";
-"settings.ftp_connection_test" = "Тест FTP соединения";
 "settings.reset_all_data" = "Сбросить все данные";
-"language.selection" = "Язык";
-"language.system" = "Язык системы";
-"language.restart_required" = "Язык изменён";
-"language.restart_message" = "Приложение будет использовать новый язык при следующем запуске.";
-"alert.ok" = "OK";
 "alert.cancel" = "Отмена";
-"dashboard.title" = "Обзор статуса";
-"dashboard.last_backup" = "Последняя резервная копия";
-"dashboard.active_tasks" = "Активные задачи";
 "dashboard.next_task" = "Следующая задача";
 "dashboard.never" = "Никогда";
 "dashboard.overdue" = "Просрочено";
-"dashboard.in_days" = "Через %d дн.";
-"dashboard.in_hours" = "Через %d ч.";
-"dashboard.in_minutes" = "Через %d мин.";
-"dashboard.soon" = "Очень скоро";
-"tasks.your_tasks" = "Ваши задачи";
-"wifi.settings" = "Настройки WiFi";
-"wifi.current_network" = "Текущая сеть";
-"wifi.status" = "Статус";
-"wifi.not_connected" = "Не подключено к WiFi";
-"wifi.network_not_allowed" = "Резервное копирование не разрешено в этой сети";
-"wifi.allowed_networks" = "Разрешённые сети";
-"wifi.no_allowed_networks" = "Разрешённые сети ещё не добавлены";
-"wifi.add_network" = "Добавить сеть";
-"wifi.remove" = "Удалить";
-"wifi.current" = "Текущая";
-"wifi.help" = "Справка";
-"wifi.not_connected_status" = "Не подключено к WiFi";
-"wifi.unknown_network" = "Неизвестная сеть";
-"wifi.network_name" = "Имя сети";
-"wifi.add" = "Добавить";
-"wifi.remove_network" = "Удалить сеть";
-"wifi.add_network_message" = "Введите имя WiFi сети, в которой вы хотите разрешить резервное копирование.";
-"wifi.remove_network_message" = "Вы уверены, что хотите удалить эту сеть из списка разрешённых?";
-"wifi.allowed_networks_footer" = "Резервное копирование будет выполняться только в этих сетях. Если список пуст, резервное копирование будет выполняться в любой WiFi сети.";
-"wifi.help_1" = "Резервное копирование выполняется только при подключении к WiFi";
-"wifi.help_2" = "Добавьте определённые сети в список разрешённых для большей безопасности";
-"wifi.help_3" = "Используйте кнопку +, чтобы быстро добавить текущую сеть";
-"backup.skipped.title" = "Резервное копирование пропущено";
-"backup.skipped.message" = "Задача %@ пропущена: %@";
 "battery.settings" = "Настройки батареи";
 "battery.current_status" = "Текущий статус батареи";
 "battery.level" = "Уровень батареи";
@@ -82,22 +38,13 @@
 "settings.reset_confirm_title" = "Сбросить настройки";
 "settings.reset_confirm_message" = "Все настройки будут сброшены до значений по умолчанию. Продолжить?";
 // Task Pause/Resume System
-"task.paused.notification.title" = "🎬 BackupFlow";
-"task.paused.notification.body" = "Задача приостановлена: %@";
-"task.resumed.notification.title" = "🎬 BackupFlow";
-"task.resumed.notification.body" = "Планирование задачи возобновлено: %@";
 "task.pause.button" = "Приостановить планирование";
 "task.resume.button" = "Возобновить планирование";
 "task.status.paused" = "Приостановлено";
 
 // Notification Actions
-"backup.notification.action.postpone" = "Отложить";
 
 // BackupScheduler Notifications
-"backup.paused.notification.title" = "Резервное копирование приостановлено";
-"backup.paused.notification.body" = "Задача '%@' была приостановлена.";
-"backup.resumed.notification.title" = "Резервное копирование возобновлено";
-"backup.resumed.notification.body" = "Задача '%@' была возобновлена.";
 "backup.scheduled.notification.title" = "🕐 Время резервного копирования!";
 "backup.scheduled.notification.body" = "Задача '%@' готова к выполнению. (%@)";
 "backup.scheduled.notification.local_cellular" = "\n\n📱 Использование мобильных данных разрешено для локального сервера.";
@@ -113,80 +60,22 @@
 "history.files.skipped" = "пропущено";
 
 // Progress Status Messages
-"progress.skipped" = "Пропущено";
-"progress.uploading" = "Загрузка";
-"progress.downloading" = "Скачивание";
-"progress.processing" = "Обработка";
-"progress.preparing" = "Подготовка резервной копии...";
-"progress.completed" = "Резервное копирование завершено";
 "battery.state.unknown" = "Неизвестно";
 "battery.state.unplugged" = "Не заряжается";
 "battery.state.charging" = "Зарядка";
 "battery.state.full" = "Полная";
-"tasks.create_task" = "Создать задачу";
-"tasks.edit_task" = "Редактировать задачу";
-"tasks.task_name" = "Имя задачи";
-"tasks.source_path" = "Исходный путь";
-"tasks.destination" = "Назначение";
-"tasks.schedule" = "Расписание";
-"tasks.enabled" = "Включено";
-"tasks.disabled" = "Отключено";
-"tasks.last_run" = "Последний запуск";
-"tasks.next_run" = "Следующий запуск";
-"tasks.status" = "Статус";
 "tasks.delete" = "Удалить";
-"tasks.save" = "Сохранить";
-"tasks.cancel" = "Отмена";
 "tasks.delete_confirmation" = "Удалить задачу";
-"tasks.delete_message" = "Вы уверены, что хотите удалить эту задачу?";
-"schedule.daily" = "Ежедневно";
-"schedule.weekly" = "Еженедельно";
-"schedule.monthly" = "Ежемесячно";
-"schedule.custom" = "Настроить";
-"ftp.server" = "Сервер";
-"ftp.port" = "Порт";
-"ftp.username" = "Имя пользователя";
-"ftp.password" = "Пароль";
-"ftp.path" = "Удалённый путь";
-"ftp.test_connection" = "Проверить соединение";
-"ftp.connection_success" = "Соединение успешно";
-"ftp.connection_failed" = "Соединение не удалось";
 "history.title" = "История резервного копирования";
-"history.date" = "Дата";
-"history.task" = "Задача";
-"history.status" = "Статус";
-"history.size" = "Размер";
-"history.duration" = "Длительность";
-"history.success" = "Успешно";
-"history.failed" = "Не удалось";
 "history.no_history" = "История резервного копирования отсутствует";
-"about.title" = "О BackupFlow";
-"about.version" = "Версия";
-"about.build" = "Сборка";
-"about.description" = "Профессиональное решение для резервного копирования на iOS с поддержкой FTP/WebDAV";
-"about.developer" = "Разработчик";
-"about.website" = "Веб-сайт";
-"about.support" = "Поддержка";
-"about.privacy" = "Политика конфиденциальности";
-"about.terms" = "Условия использования";
-"alert.info" = "Информация";
-"alert.success" = "Успешно";
 "alert.error" = "Ошибка";
 "tasks.duplicate_error" = "Задача с такими же настройками уже существует";
 "tasks.save_success" = "Задача успешно сохранена";
 "tasks.scheduled" = "и запланирована";
-"tasks.schedule_error" = "но планирование не удалось";
-"tasks.save_error" = "Ошибка сохранения задачи";
-"backup.source_selection" = "Выбор источника";
-"backup.select_folder" = "Выберите папку для резервного копирования";
-"backup.photo_library" = "Резервное копирование фотобиблиотеки";
-"backup.media_type" = "Выбор типа медиа";
-"backup.folder_selection" = "Выбор папки";
 "backup.or" = "или";
 "backup.manual" = "Вручную";
 "backup.daily" = "Ежедневно";
 "backup.weekly" = "Еженедельно";
-"backup.time" = "Время";
 "backup.hour" = "Час";
 "backup.minute" = "Минута";
 "backup.day" = "День";
@@ -194,13 +83,6 @@
 "backup.test_connection" = "Проверить соединение";
 "backup.new_backup" = "Новая резервная копия";
 "backup.clear" = "Очистить";
-"day.sunday" = "Воскресенье";
-"day.monday" = "Понедельник";
-"day.tuesday" = "Вторник";
-"day.wednesday" = "Среда";
-"day.thursday" = "Четверг";
-"day.friday" = "Пятница";
-"day.saturday" = "Суббота";
 "backup.connection_testing" = "Проверка соединения...";
 "backup.connection_success_ftp" = "FTP соединение успешно!";
 "backup.connection_success_sftp" = "SFTP соединение успешно!";
@@ -208,48 +90,22 @@
 "backup.connection_error" = "Ошибка соединения";
 "backup.fill_required_fields" = "Пожалуйста, заполните обязательные поля (адрес сервера и имя пользователя/пароль)";
 "backup.webdav_credentials_required" = "Пожалуйста, введите URL WebDAV сервера и учётные данные пользователя";
-"backup.network_permission_check" = "Проверка разрешения сети... (iOS может запросить разрешение при первом использовании)";
 "backup.source_required" = "Пожалуйста, выберите источник (папку или фотобиблиотеку)";
 "backup.photo_permission_required" = "Требуется доступ к фотобиблиотеке";
 "backup.invalid_folder" = "Неверный путь к папке. Пожалуйста, попробуйте снова.";
-"backup.new_task" = "Новая резервная копия";
 "backup.target_type" = "Тип целевого назначения";
 "backup.server_address" = "Адрес сервера";
 "backup.port_default" = "Порт (по умолчанию: 21)";
 "backup.port_webdav_default" = "Порт (по умолчанию: 443)";
+"backup.port_sftp_default" = "Порт (по умолчанию: 22)";
 "backup.anonymous_login" = "Анонимный вход";
 "backup.username" = "Имя пользователя";
 "backup.password" = "Пароль";
 "backup.destination_folder" = "Папка назначения";
-"backup.start_confirmation" = "Начать резервное копирование?";
-"backup.start" = "Начать";
 // Backup Status Messages
-"backup.pending_message" = "Задача '%@' ожидает запуска из уведомления.";
-"tasks.no_tasks" = "Нет задач";
-"tasks.create_first_task" = "Создайте свою первую задачу резервного копирования для начала.";
 "tasks.delete_message_full" = "Вы уверены, что хотите удалить эту задачу? Это действие невозможно отменить.";
-"tasks.swipe_delete" = "Удалить";
 
 // Тест FTP и URL WebDAV
-"ftp.test.connection_info" = "Информация о подключении FTP";
-"ftp.test.server_address" = "Адрес сервера:";
-"ftp.test.port" = "Порт:";
-"ftp.test.username" = "Имя пользователя:";
-"ftp.test.password" = "Пароль:";
-"ftp.test.connection_test" = "Тест подключения FTP";
-"ftp.test.description" = "Этот тест подключится к серверу FTP и загрузит небольшой тестовый файл.";
-"ftp.test.start_test" = "Начать тест";
-"ftp.test.results" = "Результаты теста";
-"ftp.test.success_info" = "• Успешный тест показывает, что вы можете подключиться к серверу FTP и загружать файлы.";
-"ftp.test.error_info" = "• Если вы получите ошибку, проверьте параметры FTP и подключение к Интернету.";
-"ftp.test.title" = "Тест FTP";
-"ftp.test.completed" = "Тест завершен";
-"ftp.test.completed_message" = "Тест завершен.";
-"ftp.test.invalid_port" = "✗ Неверный номер порта. Введите значение от 1 до 65535.";
-"ftp.test.starting" = "Запуск теста";
-"ftp.test.starting_message" = "Запуск теста FTP соединения... (iOS может запросить разрешение сети при первом использовании)";
-"ftp.test.success" = "✓ Тест успешен! Вы можете подключиться к FTP серверу и загружать файлы.";
-"ftp.test.failed" = "✗ Тест не удался: ";
 
 // Task Details
 "task.details.general" = "Общие";
@@ -290,15 +146,8 @@
 "day.names.friday" = "Пятница";
 "day.names.saturday" = "Суббота";
 
-"backup.select_folder_placeholder" = "Выбрать папку...";
 "backup.select_time" = "Выбрать время";
-"backup.or_text" = "или";
-"history.loading" = "Загрузка...";
-"history.error_occurred" = "Произошла ошибка: %@";
-"history.retry" = "Повторить";
 "history.unknown" = "Неизвестно";
-"history.anonymous_ftp" = "Анонимный FTP";
-"history.user_prefix" = "Пользователь: %@";
 "backup.status.idle" = "Готово";
 "backup.status.preparing" = "Подготовка...";
 "backup.status.scanning" = "Сканирование файлов...";
@@ -306,85 +155,17 @@
 "backup.status.completed" = "Завершено";
 "backup.status.failed" = "Не удалось";
 "backup.status.cancelled" = "Отменено";
-"error.unexpected" = "Произошла непредвиденная ошибка: %@";
-"error.authentication_failed" = "Ошибка аутентификации пользователя";
-"error.permission_denied" = "Отказано в доступе к файлу или каталогу";
-"error.file_not_found" = "Файл или каталог не найден: %@";
-"error.directory_creation" = "Непредвиденная ошибка при создании каталога: %@";
-"error.server_not_found" = "Сервер не найден или недоступен";
-"history.media_type_prefix" = "Тип медиа: %@";
 
 // Appended new keys
-"common.close" = "Закрыть";
-"task.general" = "Общие";
-"task.next_run" = "Следующий запуск";
-"task.port" = "Порт";
-"task.recent_backups" = "Недавние резервные копии";
-"task.schedule" = "Расписание";
-"task.server" = "Сервер";
-"task.server_section" = "Информация о сервере";
-"task.source" = "Источник";
-"task.status" = "Статус";
-"task.user" = "Пользователь";
 "history.backup_detail" = "Детали резервной копии";
 // Cellular Data Settings
-"settings.allow_cellular" = "Разрешить использование мобильных данных";
-"settings.cellular_warning" = "⚠️ Использование мобильных данных для больших файлов может привести к дополнительным расходам.";
-"settings.wifi_only" = "ℹ️ Резервное копирование будет выполняться только через WiFi.";
 // Background Task Monitor
-"background_task_monitor.title" = "Монитор фоновых задач";
-"background_task_monitor.refresh" = "Обновить";
-"background_task_monitor.status" = "Статус фоновой задачи";
-"background_task_monitor.subtitle" = "Координация таймера и BGTaskScheduler";
-"background_task_monitor.status.processing" = "Обработка";
-"background_task_monitor.status.timer_active" = "Таймер активен";
-"background_task_monitor.status.standby" = "Режим ожидания";
-"background_task_monitor.current_status" = "Текущий статус";
-"background_task_monitor.timer_backup" = "Резервная копия таймера";
-"background_task_monitor.processing" = "Фоновая обработка";
-"background_task_monitor.active_bgtasks" = "Активные BGTasks";
-"background_task_monitor.active" = "Активно";
-"background_task_monitor.inactive" = "Неактивно";
-"background_task_monitor.performance_overview" = "Обзор производительности";
-"background_task_monitor.bgtask_executions" = "Выполнения BGTask";
-"background_task_monitor.timer_executions" = "Выполнения таймера";
-"background_task_monitor.avg_bgtask_duration" = "Средняя длительность BGTask";
-"background_task_monitor.avg_timer_duration" = "Средняя длительность таймера";
-"background_task_monitor.average" = "Среднее";
-"background_task_monitor.success_rates" = "Показатели успеха";
-"background_task_monitor.execution_history" = "История выполнения";
-"background_task_monitor.last_method" = "Последний метод";
-"background_task_monitor.last_execution" = "Последнее выполнение";
-"background_task_monitor.coordination_state" = "Состояние координации";
-"background_task_monitor.scheduled_timers" = "Запланированные таймеры";
-"background_task_monitor.active_bgtask_ids" = "ID активных BGTask";
-"background_task_monitor.current_app_state" = "Текущее состояние приложения";
-"background_task_monitor.advanced_metrics" = "Расширенные метрики";
-"background_task_monitor.app_state.active" = "Активно";
-"background_task_monitor.app_state.background" = "Фоновый режим";
-"background_task_monitor.app_state.inactive" = "Неактивно";
-"background_task_monitor.app_state.unknown" = "Неизвестно";
 
 // About View
-"about.license" = "Лицензия";
-"about.license_description" = "Это приложение предоставляется по лицензии MIT.";
-"about.all_rights_reserved" = "Все права защищены";
-"about.support_email_subject" = "Запрос на поддержку BackupFlow";
 
 // iOS Background Behavior Info
-"about.background_title" = "Поведение фонового резервного копирования iOS";
-"about.background_description" = "iOS автоматически управляет фоновыми задачами и выполняет их на основе следующих условий:";
-"about.background_notification" = "Мы отправим уведомление, когда придет время";
-"about.background_ios_decision" = "iOS выполняется в фоновом режиме, когда считает это целесообразным";
-"about.background_battery_check" = "Проверяется состояние батареи и сетевое подключение";
-"about.background_manual_start" = "Используйте кнопку 'Начать сейчас' в уведомлении для гарантированного выполнения";
-"about.background_force_quit_warning" = "⚠️ Если вы принудительно закроете приложение (проведите вверх для закрытия), iOS не будет выполнять фоновые задачи. Просто оставьте его в фоновом режиме.";
 
 // BackupView - Notification Guarantee
-"backup.notification_guarantee_title" = "Гарантия уведомления";
-"backup.notification_guarantee_desc" = "Мы отправим вам уведомление, когда придет время";
-"backup.auto_start_title" = "Автоматический запуск";
-"backup.auto_start_desc" = "iOS автоматически управляет фоновыми задачами (в зависимости от состояния батареи, сети и системы)";
 
 // History View
 "history.delete" = "Удалить";
@@ -397,7 +178,6 @@
 "backup.default_task_name" = "Новое резервное копирование";
 
 // BackupExecutionManager - Network Errors
-"backup.network_error.wifi_required" = "Требуется WiFi соединение для доступа к локальному серверу (Сейчас: %@). Вы можете включить использование мобильных данных в Настройках.";
 
 // BackupNotificationManager - Frequency Text
 "backup.frequency_text.daily" = "ежедневно";
@@ -405,80 +185,20 @@
 "backup.frequency_text.manual" = "вручную";
 
 // Task Schedule Notes
-"task.scheduled_task_note" = "Примечание: Когда вы получаете уведомление для запланированных задач, вам необходимо нажать на уведомление, чтобы открыть приложение и начать резервное копирование.";
-"task.bgtime_required" = "Для фоновых задач требуется не менее 16 минут";
-"error.invalid_time_selection" = "Недопустимый выбор времени";
-"error.minimum_bgtime_required" = "Для фоновых задач требуется минимум 16 минут.\n\nВыбранное время через %d минут. Пожалуйста, выберите время как минимум через 16 минут.";
-"backup.auto_backup_how_title" = "Как работает автоматическое резервное копирование?";
-"backup.guarantee_title" = "Для гарантии";
-"backup.start_from_notification_desc" = "Нажмите кнопку \"Начать сейчас\" в уведомлении или откройте приложение";
-"task.schedule_notes.title" = "⚠️ Важно: Планирование резервного копирования";
-"task.schedule_notes.auto_backup" = "iOS управляет фоновыми задачами на основе текущего уровня заряда батареи, сетевого подключения и состояния системы.";
-"task.schedule_notes.notification_guarantee" = "Мы гарантируем, что отправим вам уведомление, когда придет время.";
-"task.schedule_notes.start_from_notification" = "Нажмите на уведомление или откройте приложение, чтобы начать резервное копирование.";
-"task.schedule_notes.bgtime_required" = "Для фоновых задач iOS необходимо выбрать не менее 16 минут позже.";
 
 // WebDAV Test View
-"webdav.test.title" = "Тест соединения WebDAV";
-"webdav.test.connection_info" = "Информация о соединении";
-"webdav.test.server_address" = "Адрес сервера";
-"webdav.test.port" = "Порт";
-"webdav.test.username" = "Имя пользователя";
-"webdav.test.password" = "Пароль";
-"webdav.test.connection_test" = "Тест соединения";
-"webdav.test.description" = "Проверьте, можете ли вы подключиться к серверу WebDAV.";
-"webdav.test.start_test" = "Начать тест";
-"webdav.test.results" = "Результаты";
-"webdav.test.success_info" = "✓ Успех: Подключено и аутентифицировано на сервере.";
-"webdav.test.error_info" = "✗ Неудача: Проверьте настройки сервера.";
-"webdav.test.https_info" = "🔒 Используйте переключатель HTTPS для выбора HTTP или HTTPS.";
-"webdav.test.completed" = "Тест завершен";
-"webdav.test.completed_message" = "Тест соединения завершен.";
-"webdav.test.invalid_port" = "✗ Недопустимый номер порта. Должен быть между 1-65535.";
-"webdav.test.success" = "Соединение успешно!";
-"webdav.test.failed" = "Соединение не удалось:";
-"webdav.test.failed_generic" = "✗ Соединение не удалось. Проверьте настройки.";
-"webdav.test.starting" = "Запуск теста WebDAV";
-"webdav.test.starting_message" = "Подключение к серверу...";
-"settings.webdav_connection_test" = "Тест соединения WebDAV";
 
 // Missing translations added from Turkish base
 "history.clear_confirmation" = "Вы уверены, что хотите удалить всю историю?";
 "history.clear_confirmation_message" = "Эту операцию нельзя отменить.";
-"history.invalid_entry" = "Недействительная запись";
-"backup.use_https" = "Использовать HTTPS";
-"backup.use_https_desc" = "Используйте HTTPS для безопасного соединения. Отключите для HTTP.";
-
-"notifications.disabled_warning_title" = "Уведомления отключены";
-"notifications.disabled_warning_body" = "Вы отключили уведомления для BackupFlow. Чтобы получать напоминания о резервной копии и обновления статуса, включите их в приложении Параметры.";
-"notifications.open_settings_button" = "Открыть настройки";
 
 // Missing Localization Keys
 "backup.notification.action.start" = "Начать сейчас";
 
 // New Notification Actions (v1.1)
-"backup.notification.action.postpone_10" = "Отложить на 10 минут";
-"backup.notification.action.postpone_60" = "Отложить на 1 час";
 
-"backup.notification.wifi_required.title" = "Требуется подключение к Wi-Fi";
-"backup.notification.wifi_required.body" = "Для резервного копирования \"%@\" требуется подключение к Wi-Fi.\n\nТекущая сеть: %@\n\nВарианты:\n- Подключиться к сети Wi-Fi\n- Разрешить использование мобильных данных в настройках";
-"backup.notification.action.open_settings" = "Открыть настройки";
-
-"backup.frequency_text.scheduled" = "запланировано";
 "settings.language" = "Язык";
 "settings.language.system" = "Язык системы";
-"settings.language.turkish" = "Турецкий";
-"settings.language.english" = "Английский";
-"settings.language.arabic" = "Арабский";
-"settings.language.chinese" = "Китайский";
-"settings.language.french" = "Французский";
-"settings.language.german" = "Немецкий";
-"settings.language.hindi" = "Хинди";
-"settings.language.japanese" = "Японский";
-"settings.language.korean" = "Корейский";
-"settings.language.portuguese" = "Португальский";
-"settings.language.russian" = "Русский";
-"settings.language.spanish" = "Испанский";
 "settings.require_external_power" = "Требуется внешнее питание";
 "settings.require_external_power_note" = "Эта функция требует внешнего питания.";
 
@@ -499,32 +219,11 @@
 "backup.testing_network" = "Проверка сети…";
 "backup.connection_error_ftp" = "Ошибка подключения FTP: %@";
 
-"about.version_build" = "Версия %@ (Сборка %@)";
-"about.contact" = "Контакты";
-"about.rights_reserved" = "Все права защищены.";
-
 "task.details.title" = "Детали задачи";
 
-"backup.cancel_backup_title" = "Отменить резервное копирование";
-"backup.cancel_backup_confirm" = "Отменить";
-"backup.cancel_backup_message" = "Вы уверены, что хотите отменить это резервное копирование?";
 // Additional localization keys to match Turkish base
 "backup.frequency" = "Частота";
 "backup.scheduling" = "Расписание";
-"error.network_unavailable" = "Сетевое соединение недоступно";
-"error.server_unreachable" = "Сервер недоступен";
-"language.english" = "Английский";
-"language.turkish" = "Турецкий";
-"language.german" = "Немецкий";
-"language.french" = "Французский";
-"language.spanish" = "Испанский";
-"language.russian" = "Русский";
-"language.japanese" = "Японский";
-"language.korean" = "Корейский";
-"language.portuguese" = "Португальский";
-"language.arabic" = "Арабский";
-"language.hindi" = "Хинди";
-"language.chinese" = "Китайский";
 "backup.server_url_example" = "URL сервера (например: https://example.com/dav)";
 "backup.destination_folder_optional" = "Папка назначения (необязательно)";
 "media_type.photos_only" = "Только фотографии";
@@ -534,7 +233,6 @@
 "sftp.tofu_notice" = "Ключ хоста SFTP будет принят как доверенный при первом подключении (TOFU).";
 "sftp.hostkey_title" = "Предупреждение безопасности SFTP";
 "sftp.hostkey_message" = "Новый ключ хоста принят как доверенный (TOFU). Отпечаток: %@";
-
 
 "backup.status.interrupted" = "Прервано";
 
@@ -571,8 +269,6 @@
 "backup.error.cancelled" = "Операция была прервана";
 "backup.error.unexpected" = "Неожиданная ошибка: %@";
 
-"whats_new" = "Что нового";
-
 "backup.protocol.ftp" = "FTP";
 
 "backup.protocol.sftp" = "SFTP";
@@ -584,18 +280,8 @@
 "backup.current_file.updating_file" = "Обновляется: %@";
 "backup.photo_backup_include_icloud" = "Загружать элементы iCloud при необходимости";
 "backup.photo_backup_include_icloud_hint" = "Рекомендуется для полного резервного копирования. Если выключить, будут копироваться только медиафайлы, уже сохранённые на устройстве.";
-"tasks.search_prompt" = "Поиск задач...";
-"tasks.summary" = "Сводка";
-"tasks.no_search_results" = "Ничего не найдено";
-"tasks.active" = "Активно";
-"tasks.scheduled_short" = "Запланировано";
 "tasks.run_started" = "Задача запущена";
-"tasks.resumed_toast" = "Задача возобновлена";
-"tasks.paused_toast" = "Задача приостановлена";
-"tasks.source_not_set" = "Не задано";
 
-"common.please_wait" = "Пожалуйста, подождите...";
-"dashboard.greeting" = "Доброе утро";
 "dashboard.greeting.morning" = "Доброе утро";
 "dashboard.greeting.afternoon" = "Добрый день";
 "dashboard.greeting.evening" = "Добрый вечер";
@@ -614,8 +300,6 @@
 "dashboard.destination.auto" = "Авто: %@";
 "dashboard.used_date" = "Использовано: %@";
 "dashboard.action.sync" = "Синхр.";
-"dashboard.action.pause" = "Пауза";
-"dashboard.action.files" = "Файлы";
 "dashboard.storage_overview" = "Обзор хранилища";
 "dashboard.used" = "Использовано";
 "dashboard.of_value" = "из %@";
@@ -630,7 +314,6 @@
 "dashboard.backup_completed" = "Резервное копирование успешно завершено";
 "dashboard.ready_to_sync" = "Готово к синхронизации";
 "dashboard.status.syncing" = "Синхронизация";
-"dashboard.status.connected" = "Подключено";
 "dashboard.status.active_task_count_one" = "%d активная задача";
 "dashboard.status.active_task_count_many" = "%d активных задач";
 "dashboard.no_server_selected" = "Сервер не выбран";
@@ -638,23 +321,6 @@
 "dashboard.transfer_detail_with_speed" = "%@ / %@ · %@ · %@";
 "dashboard.transfer_detail" = "%@ / %@ · %@";
 
-"about.section.about" = "О приложении";
-"about.description" = "BackupFlow автоматически создает резервные копии файлов на серверах FTP, SFTP и WebDAV. Безопасное, быстрое и надежное решение для резервного копирования.";
-"about.features.title" = "Возможности";
-"about.feature.security" = "Безопасное шифрование и подключение";
-"about.feature.scheduled" = "Автоматические резервные копии по расписанию";
-"about.feature.fast_sync" = "Быстрая и эффективная синхронизация файлов";
-"about.feature.protocols" = "Поддержка FTP, SFTP и WebDAV";
-"about.feature.smart_filtering" = "Умная фильтрация файлов";
-"about.feature.history_stats" = "Подробная история и статистика";
-"about.section.support" = "Поддержка";
-"about.support.description" = "Есть вопросы или предложения? Вы можете связаться с нами.";
-"about.section.license" = "Лицензия";
-"about.license.description" = "BackupFlow распространяется по лицензии MIT. Вы можете свободно использовать, изменять и распространять программу.";
-"about.rights_reserved" = "Все права защищены.";
-"about.support.email_subject" = "Запрос поддержки BackupFlow";
-"about.support.email_app_version" = "Версия приложения";
-"about.support.email_device" = "Устройство";
 "history.empty_description" = "Здесь появится история запущенных резервных копий";
 "history.summary.completed" = "Завершено";
 "history.summary.failed" = "Ошибки";
@@ -684,7 +350,6 @@
 "error.webdav.invalid_server_address" = "Недопустимый адрес сервера. Используйте формат вроде 'http://192.168.1.1' или '192.168.1.1'.";
 "error.webdav.invalid_url_created" = "Создан недопустимый URL. Проверьте адрес сервера.";
 "error.photo_library.no_access" = "Нет разрешения на доступ к медиатеке";
-"error.network.local_server_wifi_required" = "Для доступа к локальному серверу требуется WiFi (Сейчас: %@). Использование сотовых данных можно включить в настройках.";
 "network.type.wifi" = "WiFi";
 "network.type.cellular" = "Сотовая сеть";
 "network.type.ethernet" = "Ethernet";

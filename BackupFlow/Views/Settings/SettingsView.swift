@@ -2,14 +2,12 @@ import Foundation
 import SwiftUI
 import SwiftData
 import StoreKit
-#if canImport(UIKit)
 import UIKit
-#endif
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.requestReview) private var requestReview
-    @State private var isTesting = false
+    @Environment(\.dismiss) private var dismiss
     @State private var showingResetAlert = false
     @AppStorage("keepHistoryDays") private var keepHistoryDays = 30
     @AppStorage("selectedLanguageCode") private var selectedLanguageCode = "system"
@@ -44,7 +42,7 @@ struct SettingsView: View {
     
     var body: some View {
         Form {
-            Section(header: Text("settings.general".localized)) {
+            Section {
                 Picker("settings.history_retention".localized, selection: $keepHistoryDays) {
                     Text("settings.7_days".localized).tag(7)
                     Text("settings.30_days".localized).tag(30)
@@ -52,9 +50,17 @@ struct SettingsView: View {
                     Text("settings.unlimited".localized).tag(0)
                 }
                 Toggle("settings.require_external_power".localized, isOn: $requireExternalPower)
+            } header: {
+                Text("settings.general".localized)
+            } footer: {
                 Text("settings.require_external_power_note".localized)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+            }
+            .liquidListRow()
+
+            Section {
+                NavigationLink("battery.settings".localized) {
+                    BatterySettingsView()
+                }
             }
             .liquidListRow()
             
@@ -105,6 +111,12 @@ struct SettingsView: View {
             .liquidListRow()
         }
         .navigationTitle("settings.title".localized)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("task.details.close".localized) { dismiss() }
+                    .accessibilityIdentifier("sheet.close")
+            }
+        }
         .scrollContentBackground(.hidden)
         .liquidBackground()
         .onAppear {
@@ -127,27 +139,7 @@ struct SettingsView: View {
     }
     
     private func openAppStoreReview() {
-        #if canImport(UIKit)
-        if #available(iOS 14.0, *) {
-            // This uses the modern SwiftUI approach which is preferred.
-            // It automatically finds the correct scene.
-            requestReview()
-            debugLog("📱 BackupFlow: requestReview() çağrıldı (iOS 14+)")
-        } else {
-            // Fallback for iOS 13.
-            SKStoreReviewController.requestReview()
-            debugLog("📱 BackupFlow: SKStoreReviewController.requestReview() çağrıldı (iOS 13)")
-        }
-        #elseif os(macOS)
-        if #available(macOS 11.0, *) {
-            requestReview()
-            debugLog("🖥️ BackupFlow: requestReview() çağrıldı (macOS 11+)")
-        } else {
-            // Fallback for macOS 10.14, 10.15.
-            SKStoreReviewController.requestReview()
-            debugLog("🖥️ BackupFlow: SKStoreReviewController.requestReview() çağrıldı (eski macOS)")
-        }
-        #endif
+        requestReview()
     }
     
     private func openSupportEmail() {
@@ -155,13 +147,8 @@ struct SettingsView: View {
         let subject = "BackupFlow Support Request"
         let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
         let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
-        #if canImport(UIKit)
         let deviceModel = UIDevice.current.model
         let osVersion = UIDevice.current.systemVersion
-        #else
-        let deviceModel = "Unknown"
-        let osVersion = ProcessInfo.processInfo.operatingSystemVersionString
-        #endif
         
         let body = """
         
@@ -181,7 +168,6 @@ struct SettingsView: View {
             return
         }
 
-        #if canImport(UIKit)
         if UIApplication.shared.canOpenURL(url) {
             UIApplication.shared.open(url)
             debugLog("📧 BackupFlow: Destek email'i açılıyor")
@@ -190,9 +176,6 @@ struct SettingsView: View {
             UIPasteboard.general.string = email
             debugLog("📋 BackupFlow: Email adresi kopyalandı: \(email)")
         }
-        #else
-        debugLog("📧 BackupFlow: Mail URL: \(mailtoURL)")
-        #endif
     }
     
     
@@ -222,9 +205,6 @@ struct SettingsView: View {
                 
                 // Reset app storage values to defaults
                 keepHistoryDays = 30
-                
-                // Dil sıfırlama kaldırıldı - Uygulama sadece Türkçe
-                
             } catch {
                 debugLog("❌ BackupFlow: Veri silme hatası: \(error)")
             }

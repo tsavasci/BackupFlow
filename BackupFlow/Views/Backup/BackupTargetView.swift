@@ -75,7 +75,7 @@ struct BackupTargetView: View {
                         .textContentType(.URL)
                         .keyboardType(.URL)
 
-                    TextField("backup.port_default".localized, text: $sftpPort)
+                    TextField("backup.port_sftp_default".localized, text: $sftpPort)
                         .keyboardType(.numberPad)
 
                     TextField("backup.username".localized, text: $sftpUsername)
@@ -104,7 +104,7 @@ struct BackupTargetView: View {
                         .textContentType(.URL)
                         .keyboardType(.URL)
 
-                    TextField("backup.port_default".localized, text: $webdavPort)
+                    TextField("backup.port_webdav_default".localized, text: $webdavPort)
                         .keyboardType(.numberPad)
 
                     TextField("backup.username".localized, text: $webdavUsername)

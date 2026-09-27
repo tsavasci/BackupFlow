@@ -139,71 +139,19 @@ struct ShadowModifier: ViewModifier {
 }
 
 extension View {
-    func withShadow(_ shadow: DesignSystem.Shadow) -> some View {
-        self.modifier(ShadowModifier(shadow: shadow))
-    }
     
     func withSmallShadow() -> some View {
         self.modifier(ShadowModifier(shadow: DesignSystem.Shadows.small))
     }
     
-    func withMediumShadow() -> some View {
-        self.modifier(ShadowModifier(shadow: DesignSystem.Shadows.medium))
-    }
-    
-    func withLargeShadow() -> some View {
-        self.modifier(ShadowModifier(shadow: DesignSystem.Shadows.large))
-    }
 }
 
 // MARK: - Shimmer Animation
 
-struct ShimmerModifier: ViewModifier {
-    @State private var isShimmering = false
-    
-    func body(content: Content) -> some View {
-        content
-            .overlay(
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        .clear,
-                        .white.opacity(0.3),
-                        .clear
-                    ]),
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-                .offset(x: isShimmering ? 400 : -400)
-                .animation(
-                    SwiftUI.Animation.linear(duration: 1.5).repeatForever(autoreverses: false),
-                    value: isShimmering
-                )
-            )
-            .onAppear {
-                isShimmering = true
-            }
-    }
-}
-
 extension View {
-    func shimmer() -> some View {
-        self.modifier(ShimmerModifier())
-    }
 }
 
 // MARK: - Blur View Modifier
 
-struct BlurModifier: ViewModifier {
-    let radius: CGFloat
-    
-    func body(content: Content) -> some View {
-        content
-            .blur(radius: radius)
-    }
-}
-
 extension View {
-    func blurred(_ radius: CGFloat = 3) -> some View {
-        self.modifier(BlurModifier(radius: radius))
-    }
 }

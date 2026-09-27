@@ -103,7 +103,15 @@ struct MainTabView: View {
     }
 
     private var totalBackupCount: Int {
-        activeTask != nil ? 100 : max(history.first?.totalFiles ?? tasks.count, 1)
+        activeTask != nil ? 100 : (history.first?.totalFiles ?? 0)
+    }
+
+    /// Hero headline: avoid claiming "safe & synced" before any backup has run
+    /// or when the latest run did not complete.
+    private var heroHeadline: String {
+        if isBackingUp { return "dashboard.backing_up_now".localized }
+        guard let latest = history.first else { return "dashboard.ready_to_sync".localized }
+        return latest.status == "completed" ? "dashboard.safe_synced".localized : localizedStatus(latest.status)
     }
 
     private var dashboardTheme: DashboardTheme {
@@ -151,6 +159,21 @@ struct MainTabView: View {
                 .padding(.top, 14)
                 .padding(.bottom, 48)
             }
+            .modifier(HideTopScrollEdgeEffect())
+
+            // Opaque strip over the top safe area so scrolled content doesn't
+            // collide with the status bar. A sibling layer (not a ScrollView
+            // overlay) so the system scroll edge effect can't draw over it.
+            // A zero-height view pinned to the top of the safe area whose background
+            // extends up into it, i.e. exactly the status bar's height.
+            VStack(spacing: 0) {
+                Color.clear
+                    .frame(height: 0)
+                    .background(Color(.systemBackground).ignoresSafeArea(edges: .top))
+                Spacer()
+            }
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
         }
         .sheet(isPresented: $showBackupSheet) {
             NavigationStack {
@@ -209,13 +232,15 @@ struct MainTabView: View {
                     .foregroundStyle(.secondary)
                 Text("dashboard.backup_hub".localized)
                     .font(.title2.weight(.bold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
             }
 
             Spacer()
 
             HStack(spacing: 8) {
                 Capsule()
-                    .fill(statusDotColor.opacity(0.12))
+                    .fill(statusDotColor)
                     .frame(width: 10, height: 10)
 
                 Text(lastConnectionStatus)
@@ -237,6 +262,8 @@ struct MainTabView: View {
                     .clipShape(Circle())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("settings.title".localized)
+            .accessibilityIdentifier("dashboard.settings")
         }
     }
 
@@ -372,7 +399,7 @@ struct MainTabView: View {
 
                 HStack(alignment: .bottom, spacing: 10) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(isBackingUp ? "dashboard.backing_up_now".localized : "dashboard.safe_synced".localized)
+                        Text(heroHeadline)
                             .font(.title.weight(.bold))
                             .foregroundStyle(.white)
                             .lineLimit(2)
@@ -422,6 +449,7 @@ struct MainTabView: View {
                 Button("dashboard.add".localized) {
                     showBackupSheet = true
                 }
+                .accessibilityIdentifier("dashboard.add")
                 .font(.subheadline)
                 .foregroundStyle(dashboardTheme.primary)
             }
@@ -461,6 +489,7 @@ struct MainTabView: View {
                                         .foregroundStyle(taskTheme.primary)
                                 }
                                 .buttonStyle(.plain)
+                                .accessibilityLabel("task.details.title".localized)
 
                                 Button {
                                     taskToDelete = task
@@ -471,6 +500,7 @@ struct MainTabView: View {
                                         .foregroundStyle(.red)
                                 }
                                 .buttonStyle(.plain)
+                                .accessibilityLabel("tasks.delete".localized)
                             }
                         }
                         .padding(12)
@@ -548,6 +578,8 @@ struct MainTabView: View {
         let total = max(completed + failed, 1)
         let successRate = Int((Double(completed) / Double(total)) * 100)
         let consecutiveFailures = tasks.map(\.consecutiveFailureCount).max() ?? 0
+        // With no runs yet, show neutral, empty bars instead of a "healthy" state.
+        let hasRuns = completed + failed > 0
         let averageDuration = history.isEmpty ? 0 : history.reduce(0) { $0 + $1.duration } / Double(history.count)
 
         return VStack(alignment: .leading, spacing: 12) {
@@ -559,15 +591,15 @@ struct MainTabView: View {
                     title: "dashboard.health.success".localized,
                     value: "\(successRate)%",
                     subtitle: "dashboard.health.runs".localized(with: completed, completed + failed),
-                    color: successRate >= 80 ? .green : .orange,
+                    color: !hasRuns ? .secondary : (successRate >= 80 ? .green : .orange),
                     progress: Double(successRate) / 100.0
                 )
                 infoCard(
                     title: "dashboard.health.failures".localized,
                     value: "\(consecutiveFailures)",
                     subtitle: "dashboard.health.consecutive".localized,
-                    color: consecutiveFailures == 0 ? .green : .red,
-                    progress: consecutiveFailures == 0 ? 1 : 0.35
+                    color: !hasRuns ? .secondary : (consecutiveFailures == 0 ? .green : .red),
+                    progress: !hasRuns ? 0 : (consecutiveFailures == 0 ? 1 : 0.35)
                 )
             }
 
@@ -613,7 +645,7 @@ struct MainTabView: View {
                 )
                 infoCard(
                     title: "dashboard.files".localized,
-                    value: "\(currentBackupCount)/\(max(totalBackupCount, 1))",
+                    value: "\(currentBackupCount)/\(totalBackupCount)",
                     subtitle: tasks.isEmpty ? "dashboard.items_ready".localized : "dashboard.selected".localized,
                     color: dashboardTheme.secondary,
                     progress: Double(currentBackupCount) / Double(max(totalBackupCount, 1))
@@ -646,6 +678,7 @@ struct MainTabView: View {
                             Image(systemName: "clock.arrow.circlepath")
                                 .foregroundStyle(dashboardTheme.primary)
                         }
+                        .accessibilityHidden(true)
 
                         VStack(alignment: .leading, spacing: 4) {
                             Text("dashboard.no_backups_yet".localized)
@@ -672,6 +705,7 @@ struct MainTabView: View {
                                 Image(systemName: record.status == "failed" ? "exclamationmark.triangle.fill" : "checkmark.seal.fill")
                                     .foregroundStyle(record.status == "failed" ? .red : dashboardTheme.primary)
                             }
+                            .accessibilityHidden(true)
 
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(record.taskDisplayName ?? "dashboard.backup".localized)
@@ -728,8 +762,7 @@ struct MainTabView: View {
     }
 
     private var totalSizeText: String {
-        let total = history.first?.totalBytes ?? 0
-        return total > 0 ? formatBytes(total) : "0 KB"
+        formatBytes(history.first?.totalBytes ?? 0)
     }
 
     private func infoCard(title: String, value: String, subtitle: String, color: Color, progress: Double) -> some View {
@@ -942,6 +975,8 @@ struct MainTabView: View {
     private func formatBytes(_ bytes: Int64) -> String {
         let formatter = ByteCountFormatter()
         formatter.countStyle = .file
+        // Keep "0 KB" numeric instead of the spelled-out "Zero KB".
+        formatter.allowsNonnumericFormatting = false
         return formatter.string(fromByteCount: bytes)
     }
 
@@ -998,6 +1033,18 @@ private struct DashboardTheme {
     }
 }
 
+/// The dashboard draws its own opaque status-bar strip, so the system's
+/// blurred top edge effect (iOS 26+) is redundant there.
+private struct HideTopScrollEdgeEffect: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 26.0, *) {
+            content.scrollEdgeEffectHidden(true, for: .top)
+        } else {
+            content
+        }
+    }
+}
+
 private struct DashboardActionButton: View {
     let icon: String
     let title: String
@@ -1026,6 +1073,9 @@ private struct DashboardActionButton: View {
             .frame(maxWidth: .infinity)
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(title)
+        .accessibilityAddTraits(.isButton)
     }
 }
 

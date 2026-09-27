@@ -2,19 +2,7 @@ import SwiftUI
 import SwiftData
 import UniformTypeIdentifiers
 import Photos
-#if canImport(UIKit)
 import UIKit
-#endif
-
-enum PhotoLibraryPermission {
-    case notDetermined
-    case authorized
-    case denied
-
-    var isGranted: Bool {
-        return self == .authorized
-    }
-}
 
 enum ConnectionStatus: Equatable {
     case idle
@@ -144,7 +132,7 @@ struct DayPicker: View {
 
 struct BackupView: View {
     // Varsayılan ayarlar
-    private static let defaultFTPHost = "192.168.1.1"
+    private static let defaultFTPHost = ""
     private static let defaultWebDAVPath = "/remote.php/dav/files/"
 
     @Environment(\.modelContext) private var modelContext
@@ -304,11 +292,13 @@ struct BackupView: View {
                                 .frame(width: 50, height: 50)
                                 .background(.white.opacity(0.16))
                                 .clipShape(Circle())
+                                .accessibilityHidden(true)
                         }
 
                         HStack(spacing: 10) {
                             Image(systemName: isPhotoLibrarySelected ? selectedMediaType.systemImageName : "folder.fill")
                                 .font(.callout.weight(.semibold))
+                                .accessibilityHidden(true)
                             Text(isPhotoLibrarySelected ? selectedMediaType.displayName : (selectedURL?.lastPathComponent ?? "backup.source_section".localized))
                                 .font(.callout.weight(.semibold))
                                 .lineLimit(1)
@@ -338,6 +328,7 @@ struct BackupView: View {
                             .padding(.trailing, 18)
                             .offset(y: 14)
                             .allowsHitTesting(false)
+                            .accessibilityHidden(true)
                     }
                     .clipShape(RoundedRectangle(cornerRadius: 30))
 
@@ -464,6 +455,7 @@ struct BackupView: View {
                                             .tint(.white)
                                     } else {
                                         Image(systemName: "network")
+                                            .accessibilityHidden(true)
                                     }
                                     Text("backup.test_connection".localized)
                                         .fontWeight(.semibold)
@@ -479,6 +471,7 @@ struct BackupView: View {
                             if let message = connectionStatus.message, !message.isEmpty {
                                 HStack(spacing: 8) {
                                     Image(systemName: connectionStatus.isSuccess ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                        .accessibilityHidden(true)
                                     Text(message)
                                         .font(.caption)
                                 }
@@ -535,16 +528,30 @@ struct BackupView: View {
                         theme: targetTheme
                     ) {
                         VStack(alignment: .leading, spacing: 12) {
-                            Picker("backup.deletion_policy".localized, selection: $deletionPolicy) {
-                                ForEach(BackupDeletionPolicy.allCases) { policy in
-                                    Text(policy.displayName).tag(policy)
+                            // Menu pickers outside a Form show only the value, so draw the label
+                            // beside them; the picker itself still carries it for VoiceOver.
+                            HStack {
+                                Text("backup.deletion_policy".localized)
+                                    .accessibilityHidden(true)
+                                Spacer()
+                                Picker("backup.deletion_policy".localized, selection: $deletionPolicy) {
+                                    ForEach(BackupDeletionPolicy.allCases) { policy in
+                                        Text(policy.displayName).tag(policy)
+                                    }
                                 }
+                                .labelsHidden()
                             }
 
-                            Picker("backup.checksum".localized, selection: $checksumMode) {
-                                ForEach(BackupChecksumMode.allCases) { mode in
-                                    Text(mode.displayName).tag(mode)
+                            HStack {
+                                Text("backup.checksum".localized)
+                                    .accessibilityHidden(true)
+                                Spacer()
+                                Picker("backup.checksum".localized, selection: $checksumMode) {
+                                    ForEach(BackupChecksumMode.allCases) { mode in
+                                        Text(mode.displayName).tag(mode)
+                                    }
                                 }
+                                .labelsHidden()
                             }
 
                             Toggle("backup.require_wifi".localized, isOn: $requiresWiFi)
@@ -593,6 +600,7 @@ struct BackupView: View {
                     } label: {
                         HStack {
                             Image(systemName: "checkmark.circle.fill")
+                                .accessibilityHidden(true)
                             Text("backup.save_task".localized)
                                 .fontWeight(.bold)
                         }
@@ -600,16 +608,20 @@ struct BackupView: View {
                         .padding(.vertical, 15)
                         .background(
                             LinearGradient(
-                                colors: [targetTheme.primary, targetTheme.secondary],
+                                colors: canSaveTask()
+                                    ? [targetTheme.primary, targetTheme.secondary]
+                                    : [Color.secondary.opacity(0.22), Color.secondary.opacity(0.22)],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
                         )
                         .foregroundStyle(.white)
                         .clipShape(RoundedRectangle(cornerRadius: 18))
-                        .shadow(color: targetTheme.primary.opacity(0.22), radius: 14, x: 0, y: 8)
+                        .shadow(color: targetTheme.primary.opacity(canSaveTask() ? 0.22 : 0), radius: 14, x: 0, y: 8)
                     }
                     .buttonStyle(.plain)
+                    .disabled(!canSaveTask())
+                    .accessibilityIdentifier("backup.save")
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 14)
@@ -631,7 +643,12 @@ struct BackupView: View {
         }
         .animation(.easeInOut(duration: 0.3), value: startingToast)
         .navigationTitle("backup.new_backup".localized)
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("task.details.close".localized) { dismiss() }
+                    .accessibilityIdentifier("sheet.close")
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("backup.clear".localized) {
                     resetForm()
@@ -730,6 +747,19 @@ struct BackupView: View {
             return localPatterns.contains { pattern in
                 hostname.range(of: pattern, options: .regularExpression) != nil
             }
+        }
+
+        /// Minimum input before saving is offered. Credentials are validated in saveTask()
+        /// because stored passwords stay in the Keychain and are blank when editing.
+        func canSaveTask() -> Bool {
+            let hasSource = isPhotoLibrarySelected || selectedURL != nil
+            let host: String
+            switch selectedTarget {
+            case .ftp: host = ftpHost
+            case .sftp: host = sftpHost
+            case .webdav: host = webdavURL
+            }
+            return hasSource && !host.trimmingCharacters(in: .whitespaces).isEmpty
         }
 
         func isValidConnectionSettings() -> Bool {
@@ -1323,6 +1353,7 @@ private struct BackupSetupCard<Content: View>: View {
                     .frame(width: 34, height: 34)
                     .background(theme.primary.opacity(0.12))
                     .clipShape(Circle())
+                    .accessibilityHidden(true)
 
                 Text(title)
                     .font(.headline.weight(.semibold))
@@ -1364,6 +1395,7 @@ private struct BackupChoiceRow: View {
                 .frame(width: 42, height: 42)
                 .background(isSelected ? theme.primary : theme.primary.opacity(0.1))
                 .clipShape(Circle())
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
@@ -1385,7 +1417,10 @@ private struct BackupChoiceRow: View {
             Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                 .font(.title3)
                 .foregroundStyle(isSelected ? theme.primary : .secondary.opacity(0.5))
+                .accessibilityHidden(true)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
         .padding(12)
         .background(isSelected ? theme.primary.opacity(0.08) : Color(.secondarySystemBackground).opacity(0.62))
         .clipShape(RoundedRectangle(cornerRadius: 16))
