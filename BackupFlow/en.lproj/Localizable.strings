@@ -36,8 +36,8 @@
 "battery.help.3" = "Notifications are sent for skipped backups";
 "battery.low_battery" = "Battery level low (%d%%), minimum %d%% required";
 "settings.reset" = "Reset";
-"settings.reset_confirm_title" = "Reset Settings";
-"settings.reset_confirm_message" = "All settings will be reset to default values. Do you want to continue?";
+"settings.reset_confirm_title" = "Delete all data?";
+"settings.reset_confirm_message" = "All tasks, backup history and saved passwords will be removed from this device. Files on your servers are not touched. This can't be undone.";
 // Task Pause/Resume System
 "task.pause.button" = "Pause Scheduling";
 "task.resume.button" = "Resume Scheduling";

@@ -36,8 +36,8 @@
 "battery.help.3" = "スキップされたバックアップについて通知が送信されます";
 "battery.low_battery" = "バッテリー残量が少なすぎます（%d%%）、最低%d%%必要です";
 "settings.reset" = "リセット";
-"settings.reset_confirm_title" = "設定をリセット";
-"settings.reset_confirm_message" = "すべての設定がデフォルト値にリセットされます。続行しますか？";
+"settings.reset_confirm_title" = "すべてのデータを削除しますか？";
+"settings.reset_confirm_message" = "すべてのタスク、バックアップ履歴、保存されたパスワードがこのデバイスから削除されます。サーバー上のファイルには影響しません。この操作は取り消せません。";
 
 // Task Pause/Resume System
 "task.pause.button" = "スケジュールを一時停止";

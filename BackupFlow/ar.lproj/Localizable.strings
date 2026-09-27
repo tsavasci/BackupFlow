@@ -36,8 +36,8 @@
 "battery.help.3" = "يتم إرسال إشعارات للنسخ الاحتياطية المتخطاة";
 "battery.low_battery" = "مستوى البطارية منخفض (%d%%)، الحد الأدنى المطلوب %d%%";
 "settings.reset" = "إعادة تعيين";
-"settings.reset_confirm_title" = "إعادة تعيين الإعدادات";
-"settings.reset_confirm_message" = "سيتم إعادة تعيين جميع الإعدادات إلى القيم الافتراضية. هل تريد المتابعة؟";
+"settings.reset_confirm_title" = "حذف جميع البيانات؟";
+"settings.reset_confirm_message" = "سيتم حذف جميع المهام وسجل النسخ الاحتياطي وكلمات المرور المحفوظة من هذا الجهاز. لن يتم المساس بالملفات الموجودة على خوادمك. لا يمكن التراجع عن هذا الإجراء.";
 // Task Pause/Resume System
 "task.pause.button" = "إيقاف الجدولة";
 "task.resume.button" = "استئناف الجدولة";

@@ -5,8 +5,14 @@ import Combine
 struct MainTabView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Query(sort: \BackupTask.createdAt, order: .reverse) private var tasks: [BackupTask]
-    @Query(sort: [SortDescriptor(\BackupHistory.timestamp, order: .reverse)]) private var history: [BackupHistory]
+    @Query(sort: \BackupTask.createdAt, order: .reverse) private var queriedTasks: [BackupTask]
+    @Query(sort: [SortDescriptor(\BackupHistory.timestamp, order: .reverse)]) private var queriedHistory: [BackupHistory]
+
+    // "Reset all data" deletes models while this view is still on screen under the
+    // Settings sheet. Until the queries refetch they can still hand back those deleted,
+    // detached models, and reading any attribute of one crashes SwiftData.
+    private var tasks: [BackupTask] { queriedTasks.filter { $0.modelContext != nil } }
+    private var history: [BackupHistory] { queriedHistory.filter { $0.modelContext != nil } }
 
     @State private var showBackupSheet = false
     @State private var showHistory = false

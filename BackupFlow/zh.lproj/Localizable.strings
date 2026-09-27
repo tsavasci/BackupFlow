@@ -36,8 +36,8 @@
 "battery.help.3" = "跳过的备份会发送通知";
 "battery.low_battery" = "电池电量过低（%d%%），至少需要%d%%";
 "settings.reset" = "重置";
-"settings.reset_confirm_title" = "重置设置";
-"settings.reset_confirm_message" = "所有设置将重置为默认值。您要继续吗？";
+"settings.reset_confirm_title" = "删除所有数据？";
+"settings.reset_confirm_message" = "所有任务、备份记录和已保存的密码都将从此设备中删除。服务器上的文件不受影响。此操作无法撤销。";
 
 // Task Pause/Resume System
 "task.pause.button" = "暂停计划";

@@ -36,8 +36,8 @@
 "battery.help.3" = "छोड़े गए बैकअप के लिए सूचनाएं भेजी जाती हैं";
 "battery.low_battery" = "बैटरी स्तर कम (%d%%), न्यूनतम %d%% आवश्यक";
 "settings.reset" = "रीसेट करें";
-"settings.reset_confirm_title" = "सेटिंग्स रीसेट करें";
-"settings.reset_confirm_message" = "सभी सेटिंग्स डिफ़ॉल्ट मानों पर रीसेट हो जाएंगी। क्या आप जारी रखना चाहते हैं?";
+"settings.reset_confirm_title" = "सारा डेटा हटाएँ?";
+"settings.reset_confirm_message" = "इस डिवाइस से सभी कार्य, बैकअप इतिहास और सहेजे गए पासवर्ड हटा दिए जाएँगे। आपके सर्वर की फ़ाइलों को नहीं छुआ जाएगा। इसे पूर्ववत नहीं किया जा सकता।";
 // Task Pause/Resume System
 "task.pause.button" = "शेड्यूलिंग रोकें";
 "task.resume.button" = "शेड्यूलिंग फिर से शुरू करें";

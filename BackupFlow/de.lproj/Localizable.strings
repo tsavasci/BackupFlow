@@ -36,8 +36,8 @@
 "battery.help.3" = "Benachrichtigungen werden für übersprungene Backups gesendet";
 "battery.low_battery" = "Akkustand niedrig (%d%%), mindestens %d%% erforderlich";
 "settings.reset" = "Zurücksetzen";
-"settings.reset_confirm_title" = "Einstellungen zurücksetzen";
-"settings.reset_confirm_message" = "Alle Einstellungen werden auf die Standardwerte zurückgesetzt. Möchten Sie fortfahren?";
+"settings.reset_confirm_title" = "Alle Daten löschen?";
+"settings.reset_confirm_message" = "Alle Aufgaben, der Sicherungsverlauf und gespeicherte Passwörter werden von diesem Gerät entfernt. Dateien auf deinen Servern bleiben unberührt. Dies kann nicht rückgängig gemacht werden.";
 
 // Task Pause/Resume System
 "task.pause.button" = "Planung pausieren";

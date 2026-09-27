@@ -36,8 +36,8 @@
 "battery.help.3" = "Des notifications sont envoyées pour les sauvegardes ignorées";
 "battery.low_battery" = "Niveau de batterie faible (%d%%), minimum %d%% requis";
 "settings.reset" = "Réinitialiser";
-"settings.reset_confirm_title" = "Réinitialiser les paramètres";
-"settings.reset_confirm_message" = "Tous les paramètres seront réinitialisés aux valeurs par défaut. Voulez-vous continuer ?";
+"settings.reset_confirm_title" = "Supprimer toutes les données ?";
+"settings.reset_confirm_message" = "Toutes les tâches, l’historique des sauvegardes et les mots de passe enregistrés seront supprimés de cet appareil. Les fichiers de vos serveurs ne sont pas touchés. Cette action est irréversible.";
 
 // Task Pause/Resume System
 "task.pause.button" = "Mettre en pause la planification";

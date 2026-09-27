@@ -36,8 +36,8 @@
 "battery.help.3" = "Se envían notificaciones para copias de seguridad omitidas";
 "battery.low_battery" = "Nivel de batería bajo (%d%%), se requiere un mínimo de %d%%";
 "settings.reset" = "Restablecer";
-"settings.reset_confirm_title" = "Restablecer ajustes";
-"settings.reset_confirm_message" = "Todos los ajustes se restablecerán a los valores predeterminados. ¿Desea continuar?";
+"settings.reset_confirm_title" = "¿Eliminar todos los datos?";
+"settings.reset_confirm_message" = "Se eliminarán de este dispositivo todas las tareas, el historial de copias y las contraseñas guardadas. Los archivos de tus servidores no se tocan. Esta acción no se puede deshacer.";
 // Task Pause/Resume System
 "task.pause.button" = "Pausar programación";
 "task.resume.button" = "Reanudar programación";

@@ -36,8 +36,8 @@
 "battery.help.3" = "Atlanan yedeklemeler için bildirim gönderilir";
 "battery.low_battery" = "Pil seviyesi düşük (%%%d), en az %%%d gerekli";
 "settings.reset" = "Sıfırla";
-"settings.reset_confirm_title" = "Ayarları Sıfırla";
-"settings.reset_confirm_message" = "Tüm ayarlar varsayılan değerlerine sıfırlanacak. Devam etmek istiyor musunuz?";
+"settings.reset_confirm_title" = "Tüm veriler silinsin mi?";
+"settings.reset_confirm_message" = "Tüm görevler, yedek geçmişi ve kayıtlı parolalar bu cihazdan silinecek. Sunucudaki dosyalara dokunulmaz. Bu işlem geri alınamaz.";
 // Task Pause/Resume System
 "task.pause.button" = "Zamanlamayı Duraklat";
 "task.resume.button" = "Zamanlamayı Devam Ettir";
