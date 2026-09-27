@@ -390,6 +390,18 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         }
     }
     
+    /// Re-arms the in-app timer at the task's current `nextRunTime` after it was moved
+    /// (skipped or postponed), so the stale timer doesn't still run the old occurrence.
+    @MainActor
+    private func rearmTimer(for task: BackupTask) {
+        cancelTimer(for: task.id)
+        guard task.isEnabled, !task.isPaused, task.frequency != .manual,
+              let nextRunTime = task.nextRunTime, nextRunTime.timeIntervalSinceNow > 10 else { return }
+        let newTimer = Timer(fireAt: nextRunTime, interval: 0, target: self, selector: #selector(timerFired), userInfo: ["taskId": task.id], repeats: false)
+        RunLoop.main.add(newTimer, forMode: .common)
+        scheduledTimers[task.id] = newTimer
+    }
+
     @objc private func timerFired(timer: Timer) {
         guard let userInfo = timer.userInfo as? [String: Any],
               let taskId = userInfo["taskId"] as? UUID else {
@@ -1672,6 +1684,7 @@ extension BackupScheduler {
         guard let task = fetchMainContextTask(id: taskId) else { return }
         task.nextRunTime = calculateNextRunTime(for: task)
         try? task.modelContext?.save()
+        rearmTimer(for: task)
         refreshReminder(for: task)
         scheduleProcessingTask()
         debugLog("⏭️ BackupFlow: Zamanlanmış çalıştırma atlandı: \(task.displayName)")
@@ -1697,6 +1710,7 @@ extension BackupScheduler {
         task.nextRunTime = Date().addingTimeInterval(interval)
         do {
             try context.save()
+            rearmTimer(for: task)
             refreshReminder(for: task)
             scheduleAppRefresh()
             scheduleProcessingTask()
