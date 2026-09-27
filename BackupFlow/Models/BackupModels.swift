@@ -431,7 +431,7 @@ final class BackupTask: Identifiable, Hashable {
         mediaType: MediaType = .photosOnly,
         allowCellularForLocalServer: Bool = false,
         includeICloudAssets: Bool = true,
-        deletionPolicy: BackupDeletionPolicy = .mirror,
+        deletionPolicy: BackupDeletionPolicy = .appendOnly,
         checksumMode: BackupChecksumMode = .off,
         allowedStartTime: ScheduleTime? = nil,
         allowedEndTime: ScheduleTime? = nil,

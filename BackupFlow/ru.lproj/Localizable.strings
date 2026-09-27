@@ -11,6 +11,7 @@
 "settings.rate_app" = "Оценить приложение";
 "settings.contact_support" = "Связаться с поддержкой";
 "settings.reset_all_data" = "Сбросить все данные";
+"settings.reset_unavailable_while_backing_up" = "Недоступно во время резервного копирования.";
 "alert.cancel" = "Отмена";
 "dashboard.next_task" = "Следующая задача";
 "dashboard.never" = "Никогда";
@@ -98,6 +99,14 @@
 "backup.port_default" = "Порт (по умолчанию: 21)";
 "backup.port_webdav_default" = "Порт (по умолчанию: 443)";
 "backup.port_sftp_default" = "Порт (по умолчанию: 22)";
+"backup.continued.title" = "Идёт резервное копирование";
+"backup.background_interrupted.title" = "Копирование прервано";
+"backup.background_interrupted.body" = "iOS остановила «%@» в фоне до завершения. Откройте приложение, чтобы продолжить; уже отправленные файлы будут пропущены.";
+"backup.stop" = "Остановить";
+"backup.start_prompt_title" = "Начать резервное копирование сейчас?";
+"backup.start_prompt_message" = "Задача сохранена. Запустить первое копирование сейчас?";
+"backup.start_prompt_later" = "Позже";
+"backup.mirror_policy_warning" = "Зеркало: файлы на сервере, которых нет в источнике, будут удалены безвозвратно.";
 "backup.anonymous_login" = "Анонимный вход";
 "backup.username" = "Имя пользователя";
 "backup.password" = "Пароль";
@@ -211,9 +220,6 @@
 "backup.allow_cellular_warning" = "Резервное копирование через мобильные данные может повлечь дополнительные расходы.";
 "backup.wifi_only_info" = "Резервное копирование выполняется только через Wi‑Fi.";
 "backup.save_task" = "Сохранить задачу";
-"backup.first_start_prompt_title" = "Запустить первую резервную копию сейчас?";
-"backup.first_start_prompt_message" = "Ваша первая задача сохранена. Запустить резервное копирование сейчас?";
-"backup.first_start_prompt_later" = "Не сейчас";
 "backup.info_title" = "Информация";
 "backup.ok" = "OK";
 "backup.testing_network" = "Проверка сети…";
@@ -239,10 +245,6 @@
 "tasks.schedule_error_detail" = "но планирование не удалось: %@";
 "tasks.save_error_detail" = "Ошибка при сохранении задачи: %@";
 
-"backup.ftp_background_warning.title" = "Резервное копирование FTP начато";
-"backup.ftp_background_warning.body" = "Чтобы надежно сохранять большие файлы, держите приложение на переднем плане.";
-"backup.sftp_background_warning.title" = "Резервное копирование SFTP начато";
-"backup.sftp_background_warning.body" = "Чтобы надежно сохранять большие файлы, держите приложение на переднем плане.";
 "backup.network_unavailable.title" = "Нет сетевого подключения";
 "backup.network_unavailable.body" = "Нет сетевого подключения. Повтор %d/%d.";
 "backup.network_unavailable.body_with_delay" = "Нет сетевого подключения. Повтор %d/%d (через %d мин).";

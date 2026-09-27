@@ -172,6 +172,8 @@ final class SFTPService: NSObject, @unchecked Sendable {
     private override init() {
         super.init()
         backgroundTaskCoordinator.onExpiration = { [weak self] in
+            // A continued processing task keeps the app alive past the UIKit window.
+            guard !ContinuedBackupRunner.isRunning else { return }
             self?.handleBackgroundExpiration()
         }
     }

@@ -175,7 +175,8 @@ struct BackupView: View {
     @State private var selectedMonthDay = 1
     @State private var intervalHours = 6
     @State private var allowCellularForLocalServer = false // Network policy
-    @State private var deletionPolicy: BackupDeletionPolicy = .mirror
+    // Never delete remote files unless the user opts into mirroring.
+    @State private var deletionPolicy: BackupDeletionPolicy = .appendOnly
     @State private var checksumMode: BackupChecksumMode = .off
     @State private var requiresWiFi = false
     @State private var requiresExternalPower = false
@@ -191,9 +192,8 @@ struct BackupView: View {
     @State private var isTestingConnection = false
     @State private var connectionStatus: ConnectionStatus = .idle
     @State private var lastTestTapAt: Date? = nil
-    @State private var showingFirstBackupPrompt = false
-    @State private var firstBackupTaskToStart: BackupTask? = nil
-    @State private var startingToast: String? = nil
+    @State private var showingStartPrompt = false
+    @State private var backupTaskToStart: BackupTask? = nil
     @State private var showingSFTPHostKeyAlert = false
     @State private var sftpHostKeyAlertMessage = ""
     @State private var showingRemoteFolderPicker = false
@@ -572,6 +572,10 @@ struct BackupView: View {
                                 Text("backup.archive_policy_warning".localized)
                                     .font(.caption)
                                     .foregroundStyle(.orange)
+                            } else if deletionPolicy == .mirror {
+                                Text("backup.mirror_policy_warning".localized)
+                                    .font(.caption)
+                                    .foregroundStyle(.red)
                             }
                         }
                     }
@@ -628,20 +632,6 @@ struct BackupView: View {
                 .padding(.bottom, 36)
             }
         }
-        .overlay(alignment: .bottom) {
-            if let toast = startingToast {
-                Text(toast)
-                    .font(.subheadline.weight(.medium))
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(.ultraThinMaterial)
-                    .clipShape(Capsule())
-                    .shadow(radius: 8)
-                    .padding(.bottom, 60)
-                    .transition(.opacity.combined(with: .move(edge: .bottom)))
-            }
-        }
-        .animation(.easeInOut(duration: 0.3), value: startingToast)
         .navigationTitle("backup.new_backup".localized)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -656,14 +646,6 @@ struct BackupView: View {
                 }
             }
         }
-        .onChange(of: showingDocumentPicker) { _, newValue in
-            if newValue {
-                // prevent re-present within 1s
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                    if showingDocumentPicker { showingDocumentPicker = true }
-                }
-            }
-        }
         .sheet(isPresented: $showingDocumentPicker) {
             DocumentPicker(url: $selectedURL) {
                 showingDocumentPicker = false
@@ -675,21 +657,27 @@ struct BackupView: View {
             Text(saveAlertMessage)
         }
         .alert(
-            "backup.first_start_prompt_title".localized,
-            isPresented: $showingFirstBackupPrompt
-        ) {
+            "backup.start_prompt_title".localized,
+            isPresented: $showingStartPrompt,
+            presenting: backupTaskToStart
+        ) { taskToStart in
             Button("backup.notification.action.start".localized) {
-                guard let taskToStart = firstBackupTaskToStart else { return }
-                Task {
-                    try? await BackupScheduler.shared.performBackup(task: taskToStart)
-                }
-                firstBackupTaskToStart = nil
+                BackupScheduler.shared.startUserInitiatedBackup(task: taskToStart)
+                backupTaskToStart = nil
+                dismiss()
             }
-            Button("backup.first_start_prompt_later".localized, role: .cancel) {
-                firstBackupTaskToStart = nil
+            .accessibilityIdentifier("backup.start_now")
+            Button("backup.start_prompt_later".localized, role: .cancel) {
+                backupTaskToStart = nil
+                dismiss()
             }
-        } message: {
-            Text("backup.first_start_prompt_message".localized)
+            .accessibilityIdentifier("backup.start_later")
+        } message: { taskToStart in
+            if taskToStart.deletionPolicy == .mirror {
+                Text("backup.start_prompt_message".localized + "\n\n" + "backup.mirror_policy_warning".localized)
+            } else {
+                Text("backup.start_prompt_message".localized)
+            }
         }
         .alert("sftp.hostkey_title".localized, isPresented: $showingSFTPHostKeyAlert) {
             Button("backup.ok".localized, role: .cancel) {}
@@ -974,11 +962,8 @@ struct BackupView: View {
                 hostToCheck = webdavURL.lowercased()
                 destPathToCheck = webdavPath
             }
-            var isFirstTask = false
-
             do {
                 let allTasks = try modelContext.fetch(FetchDescriptor<BackupTask>())
-                isFirstTask = allTasks.isEmpty
                 let backupType: BackupType
                 let portToCheck: Int
                 switch selectedTarget {
@@ -1170,19 +1155,11 @@ struct BackupView: View {
                 sftpPassword = ""
                 sftpPath = ""
 
-                let isNewFTPOrSFTP = editingTask == nil && (selectedTarget == .ftp || selectedTarget == .sftp)
-
-                if isNewFTPOrSFTP {
-                    let taskToRun = taskToSave
-                    startingToast = "tasks.run_started".localized
-                    Task {
-                        try? await Task.sleep(nanoseconds: 900_000_000)
-                        dismiss()
-                        try? await BackupScheduler.shared.performBackup(task: taskToRun, bypassThrottle: true)
-                    }
-                } else if isFirstTask {
-                    firstBackupTaskToStart = taskToSave
-                    showingFirstBackupPrompt = true
+                if editingTask == nil {
+                    // A new task never starts on its own: the first run can upload, and under
+                    // the mirror policy delete, many remote files, so ask first.
+                    backupTaskToStart = taskToSave
+                    showingStartPrompt = true
                 } else {
                     let now = Date()
                     if let last = lastAlertAt, now.timeIntervalSince(last) < 1 { return }
@@ -1300,7 +1277,7 @@ struct BackupView: View {
             selectedDay = 1
             selectedMonthDay = 1
             intervalHours = 6
-            deletionPolicy = .mirror
+            deletionPolicy = .appendOnly
             checksumMode = .off
             requiresWiFi = false
             requiresExternalPower = false

@@ -161,11 +161,9 @@ struct MainTabView: View {
             }
             .modifier(HideTopScrollEdgeEffect())
 
-            // Opaque strip over the top safe area so scrolled content doesn't
-            // collide with the status bar. A sibling layer (not a ScrollView
-            // overlay) so the system scroll edge effect can't draw over it.
-            // A zero-height view pinned to the top of the safe area whose background
-            // extends up into it, i.e. exactly the status bar's height.
+            // Opaque strip behind the status bar so scrolled content doesn't collide
+            // with it: a zero-height view at the top of the safe area whose background
+            // extends up into it. A sibling layer so the scroll edge effect can't cover it.
             VStack(spacing: 0) {
                 Color.clear
                     .frame(height: 0)
@@ -222,6 +220,12 @@ struct MainTabView: View {
         .onReceive(timer) { time in
             currentTime = time
         }
+        .onReceive(BackupScheduler.shared.$requestedDetailTaskID) { taskID in
+            // A notification's "Details" action asked to open this task.
+            guard let taskID, let task = tasks.first(where: { $0.id == taskID }) else { return }
+            selectedTask = task
+            BackupScheduler.shared.requestedDetailTaskID = nil
+        }
     }
 
     private var headerView: some View {
@@ -276,6 +280,17 @@ struct MainTabView: View {
                 Text("\(Int(min(max(backupProgress, 0), 1) * 100))%")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(dashboardTheme.primary)
+                if let activeTask {
+                    Button(role: .destructive) {
+                        BackupScheduler.shared.cancelCurrentTask(for: activeTask)
+                    } label: {
+                        Label("backup.stop".localized, systemImage: "stop.fill")
+                            .font(.caption.weight(.semibold))
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .accessibilityIdentifier("dashboard.stop_backup")
+                }
             }
 
             AnimatedDashboardProgressBar(
@@ -789,6 +804,7 @@ struct MainTabView: View {
     }
 
     private func deleteTask(_ task: BackupTask) {
+        BackupScheduler.shared.removeReminder(forTaskID: task.id)
         task.removeStoredPassword()
         modelContext.delete(task)
         try? modelContext.save()
@@ -803,9 +819,7 @@ struct MainTabView: View {
 
     private func startTaskNow(_ task: BackupTask) {
         guard task.backupType != .ftp && task.backupType != .sftp else {
-            Task {
-                try? await BackupScheduler.shared.performBackup(task: task, bypassThrottle: true)
-            }
+            BackupScheduler.shared.startUserInitiatedBackup(task: task)
             return
         }
 
@@ -828,9 +842,7 @@ struct MainTabView: View {
             BackupScheduler.shared.resumeTask(task)
         }
         clearPreview()
-        Task {
-            try? await BackupScheduler.shared.performBackup(task: task, bypassThrottle: true)
-        }
+        BackupScheduler.shared.startUserInitiatedBackup(task: task)
     }
 
     private func clearPreview() {

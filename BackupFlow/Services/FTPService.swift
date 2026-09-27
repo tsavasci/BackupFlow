@@ -18,6 +18,25 @@ final class FTPService: NSObject, @unchecked Sendable {
     private let isVerboseLoggingEnabled = false
     private let backgroundTaskCoordinator = FTPBackgroundTaskCoordinator()
     
+    /// The task's destination folder, or `fallback` when it's left at the root.
+    /// Matches SFTP: an empty or "/" destination keeps the historical default location.
+    private func remoteBase(for destinationPath: String, fallback: String) -> String {
+        let trimmed = destinationPath.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, trimmed != "/" else { return fallback }
+        var path = normalizedRemotePath(trimmed)
+        while path.count > 1 && path.hasSuffix("/") { path.removeLast() }
+        return path
+    }
+
+    /// Creates each level of `path`; levels that already exist are fine.
+    private func createDirectoryTree(at path: String) async {
+        var current = ""
+        for component in path.split(separator: "/") {
+            current += "/" + component
+            try? await createDirectory(at: current)
+        }
+    }
+
     private func normalizedRemotePath(_ path: String) -> String {
         var p = path.replacingOccurrences(of: "\\", with: "/")
         if !p.hasPrefix("/") { p = "/" + p }
@@ -387,18 +406,22 @@ final class FTPService: NSObject, @unchecked Sendable {
         let retryPolicy = FTPRetryPolicy()
 
         for attempt in 1...maxAttempts {
+            guard !isCancelled else { throw BackupServiceError.cancelled }
             do {
                 try await performConnection(host: host, port: port, username: username, password: password, attempt: attempt)
                 debugLog("✅ BackupFlow: FTP bağlantısı başarıyla kuruldu!")
                 return
             } catch {
+                // A cancel during connect must end the run as cancelled, not as a
+                // connection failure after the remaining retries.
+                guard !isCancelled else { throw BackupServiceError.cancelled }
                 lastError = error
                 logger.warning("FTP bağlantı denemesi \(attempt)/\(maxAttempts) başarısız: \(error.localizedDescription)")
 
                 if attempt < maxAttempts {
                     let delaySeconds = retryPolicy.delayForAttempt(attempt)
                     logger.info("\(String(format: "%.1f", delaySeconds)) saniye bekleniyor...")
-                    try await Task.sleep(nanoseconds: UInt64(delaySeconds * 1_000_000_000))
+                    try await sleepUnlessCancelled(seconds: delaySeconds)
                 }
             }
         }
@@ -406,6 +429,15 @@ final class FTPService: NSObject, @unchecked Sendable {
         throw lastError ?? FTPError.connectionFailed
     }
     
+    /// Waits between connection attempts, returning early as cancelled once the user cancels.
+    private func sleepUnlessCancelled(seconds: Double) async throws {
+        let deadline = Date().addingTimeInterval(seconds)
+        while Date() < deadline {
+            guard !isCancelled else { throw BackupServiceError.cancelled }
+            try await Task.sleep(nanoseconds: 500_000_000)
+        }
+    }
+
     private func performConnection(host: String, port: Int, username: String?, password: String?, attempt: Int) async throws {
         // Kullanıcı adı boşsa anonim giriş yap
         guard let username = username, !username.isEmpty else {
@@ -456,19 +488,7 @@ final class FTPService: NSObject, @unchecked Sendable {
             // weaken TLS validation or claim background-session support here.
             logger.info("FTP provider configured with standard stream session")
             
-            // Bağlantıyı test et
-            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                provider.contentsOfDirectory(path: "/") { contents, error in
-                    if let error = error {
-                        self.logger.error("Anonim FTP bağlantı hatası: \(error.localizedDescription)")
-                        continuation.resume(throwing: self.mapError(error))
-                    } else {
-                        self.ftpProvider = provider
-                        self.logger.info("Anonim FTP bağlantısı başarılı")
-                        continuation.resume(returning: ())
-                    }
-                }
-            }
+            try await verifyConnection(provider, label: "Anonim FTP")
             return
         }
         
@@ -527,16 +547,35 @@ final class FTPService: NSObject, @unchecked Sendable {
         // weaken TLS validation or claim background-session support here.
         logger.info("FTP provider configured with standard stream session")
         
-        // Bağlantıyı test et
+        try await verifyConnection(provider, label: "FTP")
+    }
+
+    /// Lists "/" to verify the login and keeps the provider on success.
+    ///
+    /// FilesProvider can't cancel this request, so against an unreachable host it only
+    /// fails at the ~60 s network timeout. It races the user's cancel instead: a cancel
+    /// resumes right away and the late callback is ignored.
+    private func verifyConnection(_ provider: FTPFileProvider, label: String) async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            provider.contentsOfDirectory(path: "/") { contents, error in
-                if let error = error {
-                    self.logger.error("FTP bağlantı hatası: \(error.localizedDescription)")
+            let pending = OneShotContinuation(continuation)
+            provider.contentsOfDirectory(path: "/") { _, error in
+                guard let continuation = pending.claim() else { return }
+                if let error {
+                    self.logger.error("\(label, privacy: .public) bağlantı hatası: \(error.localizedDescription)")
                     continuation.resume(throwing: self.mapError(error))
                 } else {
                     self.ftpProvider = provider
-                    self.logger.info("FTP bağlantısı başarılı")
+                    self.logger.info("\(label, privacy: .public) bağlantısı başarılı")
                     continuation.resume(returning: ())
+                }
+            }
+            Task { [weak self] in
+                while !pending.isClaimed {
+                    if self?.isCancelled ?? true, let continuation = pending.claim() {
+                        continuation.resume(throwing: BackupServiceError.cancelled)
+                        return
+                    }
+                    try? await Task.sleep(nanoseconds: 300_000_000)
                 }
             }
         }
@@ -993,6 +1032,7 @@ final class FTPService: NSObject, @unchecked Sendable {
         username: String, 
         password: String, 
         sourcePath: String, 
+        destinationPath: String,
         isAnonymous: Bool,
         mediaType: MediaType,
         includeICloudAssets: Bool = true,
@@ -1006,6 +1046,8 @@ final class FTPService: NSObject, @unchecked Sendable {
             return UIApplication.shared.applicationState != .active
         }()
         backgroundTaskCoordinator.onExpiration = { [weak self] in
+            // A continued processing task keeps the app alive past the UIKit window.
+            guard !ContinuedBackupRunner.isRunning else { return }
             self?.logger.warning("FTP background time expired, cancelling transfer")
             self?.cancelCurrentTask()
         }
@@ -1054,31 +1096,33 @@ final class FTPService: NSObject, @unchecked Sendable {
         
         if sourcePath == "PHOTOS_LIBRARY" {
             // Photo library sync backup
+            let photosBase = remoteBase(for: destinationPath, fallback: "photos")
             if shouldSkipRemotePreparation {
                 logger.info("Preview mode: skipping FTP remote directory preparation for photo library")
             } else {
-                try? await createDirectory(at: "photos")
-                await cleanupStaleTemporaryFiles(at: "photos")
+                await createDirectoryTree(at: photosBase)
+                await cleanupStaleTemporaryFiles(at: photosBase)
             }
             let engine = try makeSyncEngine()
             syncResult = try await engine.syncBackupPhotoLibrary(
+                remoteBasePath: photosBase,
                 mediaType: mediaType,
                 includeICloudAssets: includeICloudAssets,
                 options: options,
                 progressHandler: progressHandler
             )
             if !options.isDryRun {
-                try await uploadManifest(syncResult: syncResult, remoteBasePath: "photos", options: options)
+                try await uploadManifest(syncResult: syncResult, remoteBasePath: photosBase, options: options)
             }
         } else {
             // Directory sync backup - preserve source folder name
             let sourceURL = URL(fileURLWithPath: sourcePath)
             let sourceFolderName = sourceURL.lastPathComponent
-            let safeRemoteBase = normalizedRemotePath("/" + sourceFolderName)
+            let safeRemoteBase = remoteBase(for: destinationPath, fallback: normalizedRemotePath("/" + sourceFolderName))
             if shouldSkipRemotePreparation {
                 logger.info("Preview mode: skipping FTP remote directory preparation for \(safeRemoteBase)")
             } else {
-                try? await createDirectory(at: safeRemoteBase)
+                await createDirectoryTree(at: safeRemoteBase)
                 await cleanupStaleTemporaryFiles(at: safeRemoteBase)
             }
             syncResult = try await syncUploadDirectory(localURL: sourceURL, remotePath: safeRemoteBase, options: options, progressHandler: progressHandler)
@@ -1133,6 +1177,28 @@ final class FTPService: NSObject, @unchecked Sendable {
     }
 }
 
+
+/// Hands out a continuation exactly once, so whichever of two racing callbacks
+/// arrives first resumes it and the other is dropped.
+private final class OneShotContinuation: @unchecked Sendable {
+    private let lock = NSLock()
+    private var continuation: CheckedContinuation<Void, Error>?
+
+    init(_ continuation: CheckedContinuation<Void, Error>) {
+        self.continuation = continuation
+    }
+
+    var isClaimed: Bool {
+        lock.withLock { continuation == nil }
+    }
+
+    func claim() -> CheckedContinuation<Void, Error>? {
+        lock.withLock {
+            defer { continuation = nil }
+            return continuation
+        }
+    }
+}
 
 private final class FTPBackgroundTaskCoordinator {
     private let lock = NSLock()

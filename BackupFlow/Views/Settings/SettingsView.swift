@@ -8,6 +8,7 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.requestReview) private var requestReview
     @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var scheduler = BackupScheduler.shared
     @State private var showingResetAlert = false
     @AppStorage("keepHistoryDays") private var keepHistoryDays = 30
     @AppStorage("selectedLanguageCode") private var selectedLanguageCode = "system"
@@ -107,6 +108,12 @@ struct SettingsView: View {
                         Spacer()
                     }
                 }
+                // A running backup still holds its task; deleting it underneath crashes SwiftData.
+                .disabled(scheduler.isProcessing)
+            } footer: {
+                if scheduler.isProcessing {
+                    Text("settings.reset_unavailable_while_backing_up".localized)
+                }
             }
             .liquidListRow()
         }
@@ -189,6 +196,7 @@ struct SettingsView: View {
                 let taskDescriptor = FetchDescriptor<BackupTask>()
                 let allTasks = try modelContext.fetch(taskDescriptor)
                 for task in allTasks {
+                    BackupScheduler.shared.removeReminder(forTaskID: task.id)
                     task.removeStoredPassword()
                     modelContext.delete(task)
                 }

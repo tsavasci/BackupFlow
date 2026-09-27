@@ -11,6 +11,7 @@
 "settings.rate_app" = "Noter l'application";
 "settings.contact_support" = "Contacter le support";
 "settings.reset_all_data" = "Réinitialiser toutes les données";
+"settings.reset_unavailable_while_backing_up" = "Indisponible pendant une sauvegarde.";
 "alert.cancel" = "Annuler";
 "dashboard.next_task" = "Prochaine tâche";
 "dashboard.never" = "Jamais";
@@ -99,6 +100,14 @@
 "backup.port_default" = "Port (Par défaut: 21)";
 "backup.port_webdav_default" = "Port (Par défaut : 443)";
 "backup.port_sftp_default" = "Port (Par défaut : 22)";
+"backup.continued.title" = "Sauvegarde en cours";
+"backup.background_interrupted.title" = "Sauvegarde interrompue";
+"backup.background_interrupted.body" = "iOS a arrêté « %@ » en arrière-plan avant la fin. Ouvrez l’app pour continuer ; les fichiers déjà envoyés seront ignorés.";
+"backup.stop" = "Arrêter";
+"backup.start_prompt_title" = "Lancer la sauvegarde maintenant ?";
+"backup.start_prompt_message" = "La tâche a été enregistrée. Lancer la première sauvegarde maintenant ?";
+"backup.start_prompt_later" = "Plus tard";
+"backup.mirror_policy_warning" = "Miroir : les fichiers du serveur absents de la source seront supprimés définitivement.";
 "backup.anonymous_login" = "Connexion anonyme";
 "backup.username" = "Nom d'utilisateur";
 "backup.password" = "Mot de passe";
@@ -213,9 +222,6 @@
 "backup.allow_cellular_warning" = "Les sauvegardes via données mobiles peuvent entraîner des frais supplémentaires.";
 "backup.wifi_only_info" = "Les sauvegardes s’exécutent uniquement via Wi‑Fi.";
 "backup.save_task" = "Enregistrer la tâche";
-"backup.first_start_prompt_title" = "Démarrer la première sauvegarde maintenant ?";
-"backup.first_start_prompt_message" = "Votre première tâche a été enregistrée. Voulez-vous lancer la sauvegarde maintenant ?";
-"backup.first_start_prompt_later" = "Pas maintenant";
 "backup.info_title" = "Info";
 "backup.ok" = "OK";
 "backup.testing_network" = "Vérification du réseau…";
@@ -241,10 +247,6 @@
 "tasks.schedule_error_detail" = "mais la planification a échoué : %@";
 "tasks.save_error_detail" = "Erreur lors de l'enregistrement de la tâche : %@";
 
-"backup.ftp_background_warning.title" = "Sauvegarde FTP démarrée";
-"backup.ftp_background_warning.body" = "Pour garantir la sauvegarde des gros fichiers, gardez l’app au premier plan.";
-"backup.sftp_background_warning.title" = "Sauvegarde SFTP démarrée";
-"backup.sftp_background_warning.body" = "Pour garantir la sauvegarde des gros fichiers, gardez l’app au premier plan.";
 "backup.network_unavailable.title" = "Aucune connexion réseau";
 "backup.network_unavailable.body" = "Aucune connexion réseau. Nouvelle tentative %d/%d.";
 "backup.network_unavailable.body_with_delay" = "Aucune connexion réseau. Nouvelle tentative %d/%d (dans %d min).";

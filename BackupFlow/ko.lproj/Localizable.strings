@@ -11,6 +11,7 @@
 "settings.rate_app" = "앱 평가하기";
 "settings.contact_support" = "지원 문의";
 "settings.reset_all_data" = "모든 데이터 초기화";
+"settings.reset_unavailable_while_backing_up" = "백업 중에는 사용할 수 없습니다.";
 "alert.cancel" = "취소";
 "dashboard.next_task" = "다음 작업";
 "dashboard.never" = "안 함";
@@ -98,6 +99,14 @@
 "backup.port_default" = "포트 (기본값: 21)";
 "backup.port_webdav_default" = "포트 (기본값: 443)";
 "backup.port_sftp_default" = "포트 (기본값: 22)";
+"backup.continued.title" = "백업 중";
+"backup.background_interrupted.title" = "백업이 중단됨";
+"backup.background_interrupted.body" = "iOS가 백그라운드에서 \"%@\" 백업을 완료 전에 중지했습니다. 계속하려면 앱을 여세요. 이미 전송된 파일은 건너뜁니다.";
+"backup.stop" = "중지";
+"backup.start_prompt_title" = "지금 백업을 시작할까요?";
+"backup.start_prompt_message" = "작업이 저장되었습니다. 첫 백업을 지금 시작할까요?";
+"backup.start_prompt_later" = "나중에";
+"backup.mirror_policy_warning" = "미러: 원본에 없는 서버 파일은 영구적으로 삭제됩니다.";
 "backup.anonymous_login" = "익명 로그인";
 "backup.username" = "사용자 이름";
 "backup.password" = "비밀번호";
@@ -213,9 +222,6 @@
 "backup.allow_cellular_warning" = "셀룰러 데이터로 백업하면 추가 요금이 발생할 수 있습니다.";
 "backup.wifi_only_info" = "백업은 Wi‑Fi에서만 실행됩니다.";
 "backup.save_task" = "작업 저장";
-"backup.first_start_prompt_title" = "첫 백업을 지금 시작할까요?";
-"backup.first_start_prompt_message" = "첫 작업이 저장되었습니다. 지금 백업을 시작하시겠습니까?";
-"backup.first_start_prompt_later" = "지금은 안 함";
 "backup.info_title" = "정보";
 "backup.ok" = "확인";
 "backup.testing_network" = "네트워크 확인 중…";
@@ -241,10 +247,6 @@
 "tasks.schedule_error_detail" = "하지만 예약에 실패했습니다: %@";
 "tasks.save_error_detail" = "작업 저장 오류: %@";
 
-"backup.ftp_background_warning.title" = "FTP 백업 시작됨";
-"backup.ftp_background_warning.body" = "대용량 파일을 안정적으로 백업하려면 앱을 전면에 유지하세요.";
-"backup.sftp_background_warning.title" = "SFTP 백업 시작됨";
-"backup.sftp_background_warning.body" = "대용량 파일을 안정적으로 백업하려면 앱을 전면에 유지하세요.";
 "backup.network_unavailable.title" = "네트워크 연결 없음";
 "backup.network_unavailable.body" = "네트워크 연결 없음. 재시도 %d/%d.";
 "backup.network_unavailable.body_with_delay" = "네트워크 연결 없음. 재시도 %d/%d (%d분 후).";

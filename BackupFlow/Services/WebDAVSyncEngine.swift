@@ -10,6 +10,7 @@ struct WebDAVSyncEngine {
     let deleteFile: (String) async throws -> Void
     let archiveFile: (String, String) async throws -> Void
     let setCurrentFile: (String) -> Void
+    let isCancelled: () -> Bool
     let uploadFile: (URL, String, ((Double) -> Void)?) async throws -> Void
     let verifyUpload: (URL, String) async throws -> Void
 
@@ -37,6 +38,7 @@ struct WebDAVSyncEngine {
         let archiveRunIdentifier = BackupArchive.makeRunIdentifier()
 
         for (index, (relativePath, localFileURL)) in localFileMap.enumerated() {
+            guard !isCancelled() else { throw BackupServiceError.cancelled }
             let remotePath = remoteBasePath == "/" ? "/\(relativePath)" : "\(remoteBasePath)/\(relativePath)"
 
             let parentPath = (remotePath as NSString).deletingLastPathComponent
@@ -88,6 +90,7 @@ struct WebDAVSyncEngine {
             logger.warning("Skipping orphan deletion because \(failed) upload(s) failed.")
         } else {
             for (remotePath, _) in remoteFileMap where !BackupArchive.isReserved(relativePath: remotePath) {
+                guard !isCancelled() else { throw BackupServiceError.cancelled }
                 if !localRelativePaths.contains(remotePath) {
                     let fullRemotePath = remoteBasePath == "/" ? "/\(remotePath)" : "\(remoteBasePath)/\(remotePath)"
                     switch options.deletionPolicy {

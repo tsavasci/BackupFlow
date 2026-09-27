@@ -366,6 +366,8 @@ struct BackupFlowApp: App {
                 debugLog("📱 BackupFlow: App foreground'a geldi")
                 WebDAVService.shared.updateBackgroundMode(isBackground: false)
                 FTPService.shared.updateBackgroundMode(isBackground: false)
+                // A reminder's "Start" action opened the app; run that backup now.
+                BackupScheduler.shared.startPendingNotificationBackup()
                 
                 // Missed timer kontrolü
                 Task {

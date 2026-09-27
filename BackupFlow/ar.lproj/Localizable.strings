@@ -11,6 +11,7 @@
 "settings.rate_app" = "تقييم التطبيق";
 "settings.contact_support" = "اتصل بالدعم";
 "settings.reset_all_data" = "إعادة تعيين جميع البيانات";
+"settings.reset_unavailable_while_backing_up" = "غير متاح أثناء تشغيل النسخ الاحتياطي.";
 "alert.cancel" = "إلغاء";
 "dashboard.next_task" = "المهمة التالية";
 "dashboard.never" = "أبداً";
@@ -98,6 +99,14 @@
 "backup.port_default" = "المنفذ (الافتراضي: 21)";
 "backup.port_webdav_default" = "المنفذ (الافتراضي: 443)";
 "backup.port_sftp_default" = "المنفذ (الافتراضي: 22)";
+"backup.continued.title" = "جارٍ النسخ الاحتياطي";
+"backup.background_interrupted.title" = "توقف النسخ الاحتياطي";
+"backup.background_interrupted.body" = "أوقف iOS النسخ \"%@\" في الخلفية قبل اكتماله. افتح التطبيق للمتابعة؛ سيتم تخطي الملفات المرسلة مسبقًا.";
+"backup.stop" = "إيقاف";
+"backup.start_prompt_title" = "بدء النسخ الاحتياطي الآن؟";
+"backup.start_prompt_message" = "تم حفظ المهمة. هل تريد بدء أول نسخ احتياطي الآن؟";
+"backup.start_prompt_later" = "لاحقًا";
+"backup.mirror_policy_warning" = "المرآة: سيتم حذف الملفات الموجودة على الخادم وغير الموجودة في المصدر نهائيًا.";
 "backup.anonymous_login" = "تسجيل دخول مجهول";
 "backup.username" = "اسم المستخدم";
 "backup.password" = "كلمة المرور";
@@ -211,9 +220,6 @@
 "backup.allow_cellular_warning" = "قد يؤدي النسخ الاحتياطي عبر بيانات الجوال إلى رسوم إضافية.";
 "backup.wifi_only_info" = "سيتم إجراء النسخ الاحتياطي عبر Wi‑Fi فقط.";
 "backup.save_task" = "حفظ المهمة";
-"backup.first_start_prompt_title" = "بدء أول نسخ احتياطي الآن؟";
-"backup.first_start_prompt_message" = "تم حفظ أول مهمة. هل تريد بدء النسخ الاحتياطي الآن؟";
-"backup.first_start_prompt_later" = "ليس الآن";
 "backup.info_title" = "معلومات";
 "backup.ok" = "موافق";
 "backup.testing_network" = "جارٍ التحقق من الشبكة…";
@@ -238,10 +244,6 @@
 "tasks.schedule_error_detail" = "لكن جدولة المهمة فشلت: %@";
 "tasks.save_error_detail" = "خطأ في حفظ المهمة: %@";
 
-"backup.ftp_background_warning.title" = "بدأت النسخة الاحتياطية عبر FTP";
-"backup.ftp_background_warning.body" = "لضمان نسخ الملفات الكبيرة بشكل موثوق، أبقِ التطبيق في المقدمة.";
-"backup.sftp_background_warning.title" = "بدأت النسخة الاحتياطية عبر SFTP";
-"backup.sftp_background_warning.body" = "لضمان نسخ الملفات الكبيرة بشكل موثوق، أبقِ التطبيق في المقدمة.";
 "backup.network_unavailable.title" = "لا يوجد اتصال بالشبكة";
 "backup.network_unavailable.body" = "لا يوجد اتصال بالشبكة. ستتم إعادة المحاولة %d/%d.";
 "backup.network_unavailable.body_with_delay" = "لا يوجد اتصال بالشبكة. ستتم إعادة المحاولة %d/%d (بعد %d دقيقة).";

@@ -77,6 +77,10 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     private var backgroundExpirationTaskIDs: Set<UUID> = []
     
     @Published private(set) var isProcessing = false
+    /// Task whose details a notification action asked to open; the dashboard presents it.
+    @Published var requestedDetailTaskID: UUID?
+    /// Task a reminder's "Start" action asked to run once the app is active.
+    private var pendingStartTaskID: UUID?
     
     // Timers keyed by BackupTask.id
     @MainActor private var scheduledTimers: [UUID: Timer] = [:]
@@ -261,10 +265,8 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         await scheduleTask(task)
     }
     
+    /// Stops the run in progress. The schedule is left alone, so the task still runs next time.
     public func cancelCurrentTask(for task: BackupTask) {
-        // Cancel timer for this specific task
-        cancelTimer(for: task.id)
-
         switch task.backupType {
         case .ftp:
             FTPService.shared.cancelCurrentTask()
@@ -307,9 +309,20 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         task.lastError = BackupServiceError.cancelled.localizedDescription
         task.nextRunTime = Date().addingTimeInterval(15 * 60)
         try? context.save()
+        refreshReminder(for: task)
         debugLog("⏱️ BGTaskScheduler: Süresi dolan aktif yedek iptal edildi: \(task.displayName)")
     }
     
+    /// Entry point for backups the user starts explicitly (buttons, notification actions).
+    /// FTP/SFTP runs go through a continued processing task when available so they keep
+    /// running after the app is backgrounded; everything else runs directly as before.
+    public func startUserInitiatedBackup(task: BackupTask) {
+        if ContinuedBackupRunner.shared.start(task: task) { return }
+        Task {
+            try? await performBackup(task: task, bypassThrottle: true)
+        }
+    }
+
     // MARK: - Timer Management
     @MainActor
     private func scheduleTask(_ task: BackupTask) async {
@@ -343,6 +356,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                 debugLog("❌ BackupFlow: nextRunTime kaydedilemedi: \(error)")
             }
         }
+        refreshReminder(for: task)
         
         let timeUntilNextRun = nextRunTime.timeIntervalSinceNow
         
@@ -408,6 +422,8 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     
     // MARK: - Backup Execution
     public func performBackup(task: BackupTask, bypassThrottle: Bool = false) async throws {
+        // Every exit path below may move nextRunTime; keep the queued reminder in sync.
+        defer { refreshReminder(for: task) }
         let runStart = Date()
         let executionOptions = BackupExecutionOptions.forTask(task)
         if let blockReason = await blockedReason(for: task, options: executionOptions) {
@@ -499,6 +515,8 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             
             // Schedule next run
             task.nextRunTime = calculateNextRunTime(for: task)
+            // This run is done; a still-visible reminder for it would only start a duplicate.
+            UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [Self.reminderIdentifier(for: task.id)])
             
             // Create backup history record
             let duration = Date().timeIntervalSince(runStart)
@@ -539,6 +557,10 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                 
                 if expiredBySystem {
                     scheduleProcessingTask()
+                    // Only socket transfers are cut off here; WebDAV continues in its background session.
+                    if task.backupType == .ftp || task.backupType == .sftp {
+                        sendBackgroundInterruptedNotification(for: task)
+                    }
                     debugLog("⏱️ BackupFlow: Arka plan süresi dolduğu için yedekleme ertelendi: \(task.displayName)")
                 } else {
                     debugLog("⏸️ BackupFlow: Yedekleme yarıda kesildi: \(task.displayName)")
@@ -715,6 +737,75 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             return
         }
 
+        let content = makeScheduledBackupContent(for: task)
+        
+        // Hemen gönder: önce aynı kimlikli pending ve delivered bildirimleri temizle
+        let request = UNNotificationRequest(
+            identifier: Self.reminderIdentifier(for: task.id),
+            content: content,
+            trigger: nil
+        )
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [request.identifier])
+        UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [request.identifier])
+        UNUserNotificationCenter.current().add(request)
+        debugLog("🔔 BackupFlow: Zamanlanmış yedekleme bildirimi gönderildi: \(task.displayName)")
+        lastNotificationSentAt[task.id] = Date()
+    }
+
+    /// Tells the user iOS stopped an FTP/SFTP run before it finished, so opening the app
+    /// (or tapping the reminder) is needed to continue; the sync resumes where it left off.
+    private func sendBackgroundInterruptedNotification(for task: BackupTask) {
+        let content = UNMutableNotificationContent()
+        content.title = "backup.background_interrupted.title".localized
+        content.body = String(format: "backup.background_interrupted.body".localized, task.displayName)
+        content.sound = .default
+        let request = UNNotificationRequest(
+            identifier: "background-interrupted-\(task.id)",
+            content: content,
+            trigger: nil
+        )
+        UNUserNotificationCenter.current().add(request)
+    }
+
+    private static func reminderIdentifier(for taskID: UUID) -> String {
+        "scheduled-backup-\(taskID)"
+    }
+
+    /// Keeps a reminder queued in the system for the task's next FTP/SFTP run.
+    ///
+    /// iOS can't start FTP/SFTP at an exact time in the background, and never launches a
+    /// force-quit app for background tasks. A notification scheduled with the system is
+    /// delivered regardless, and its "Start" action opens the app so the backup can run
+    /// as a user-initiated continued processing task.
+    public func refreshReminder(for task: BackupTask) {
+        let identifier = Self.reminderIdentifier(for: task.id)
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: [identifier])
+
+        // WebDAV continues through its background URLSession and needs no reminder.
+        let usesSocketTransfer = task.backupType == .ftp || task.backupType == .sftp
+        guard usesSocketTransfer,
+              task.isEnabled, !task.isPaused,
+              task.frequency != .manual,
+              let fireDate = task.nextRunTime, fireDate > Date() else { return }
+
+        let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: fireDate)
+        let request = UNNotificationRequest(
+            identifier: identifier,
+            content: makeScheduledBackupContent(for: task),
+            trigger: UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+        )
+        center.add(request)
+        debugLog("⏰ BackupFlow: Hatırlatma planlandı: \(task.displayName) -> \(userLocalDateFormatter.string(from: fireDate))")
+    }
+
+    public func removeReminder(forTaskID taskID: UUID) {
+        let identifier = Self.reminderIdentifier(for: taskID)
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [identifier])
+        UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [identifier])
+    }
+
+    private func makeScheduledBackupContent(for task: BackupTask) -> UNMutableNotificationContent {
         let content = UNMutableNotificationContent()
         content.title = "backup.scheduled.notification.title".localized
         
@@ -748,69 +839,13 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         content.body = bodyMessage
         content.sound = .default
         content.badge = 1
+        content.userInfo = ["taskId": task.id.uuidString]
         
         // Kategori zaten AppDelegate'te kaydedildi, sadece identifier'ı ayarla
         content.categoryIdentifier = "SCHEDULED_BACKUP"
-        
-        // Hemen gönder: önce aynı kimlikli pending ve delivered bildirimleri temizle
-        let request = UNNotificationRequest(
-            identifier: "scheduled-backup-\(task.id)",
-            content: content,
-            trigger: nil
-        )
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [request.identifier])
-        UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [request.identifier])
-        UNUserNotificationCenter.current().add(request)
-        debugLog("🔔 BackupFlow: Zamanlanmış yedekleme bildirimi gönderildi: \(task.displayName) (\(frequencyText))")
-        lastNotificationSentAt[task.id] = Date()
+        return content
     }
     
-    /// FTP'nin arka planda çalışmasının limitleri hakkında uyarı bildirimi gönderir.
-    private func sendBackgroundFTPWarningNotification() {
-        let content = UNMutableNotificationContent()
-        content.title = "backup.ftp_background_warning.title".localized
-        content.body = "backup.ftp_background_warning.body".localized
-        content.sound = .default
-        
-        // identifier'ı sabit tutarak aynı anda birden fazla uyarının birikmesini önle
-        let request = UNNotificationRequest(
-            identifier: "ftp-background-warning",
-            content: content,
-            trigger: nil // Immediately
-        )
-        
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                debugLog("❌ BackupFlow: FTP uyarı bildirimi gönderilemedi: \(error.localizedDescription)")
-            } else {
-                debugLog("🔔 BackupFlow: FTP arka plan uyarı bildirimi gönderildi.")
-            }
-        }
-    }
-
-    /// SFTP'nin arka planda çalışmasının limitleri hakkında uyarı bildirimi gönderir.
-    private func sendBackgroundSFTPWarningNotification() {
-        let content = UNMutableNotificationContent()
-        content.title = "backup.sftp_background_warning.title".localized
-        content.body = "backup.sftp_background_warning.body".localized
-        content.sound = .default
-
-        // identifier'ı sabit tutarak aynı anda birden fazla uyarının birikmesini önle
-        let request = UNNotificationRequest(
-            identifier: "sftp-background-warning",
-            content: content,
-            trigger: nil // Immediately
-        )
-
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                debugLog("❌ BackupFlow: SFTP uyarı bildirimi gönderilemedi: \(error.localizedDescription)")
-            } else {
-                debugLog("🔔 BackupFlow: SFTP arka plan uyarı bildirimi gönderildi.")
-            }
-        }
-    }
-
     /// Sends a no-network retry notification like: "Ağ bağlantısı yok. Tekrar denenecek 1/3"
     private func sendNoNetworkRetryNotification(task: BackupTask, attempt: Int, maxAttempts: Int, delaySeconds: TimeInterval) {
         let content = UNMutableNotificationContent()
@@ -1108,18 +1143,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         var anySuccess = false
         for taskToRun in dueTasks {
             activeBackgroundTaskID = taskToRun.id
-            
-            // Check if it's an FTP/SFTP task in the background and send a warning notification
-            // (both rely on a raw socket connection with no system-managed background transfer)
-            if taskToRun.backupType == .ftp || taskToRun.backupType == .sftp {
-                if UIApplication.shared.applicationState == .background {
-                    if taskToRun.backupType == .ftp {
-                        sendBackgroundFTPWarningNotification()
-                    } else {
-                        sendBackgroundSFTPWarningNotification()
-                    }
-                }
-            }
+
             
             debugLog("📱 BGTaskScheduler: Arka plan görevi başlatılıyor: \(taskToRun.displayName)")
             do {
@@ -1157,6 +1181,7 @@ extension BackupScheduler {
                 username: task.isAnonymous ? "" : task.serverUsername,
                 password: task.isAnonymous ? "" : task.resolvedServerPassword,
                 sourcePath: task.sourcePath ?? "",
+                destinationPath: task.destinationPath,
                 isAnonymous: task.isAnonymous,
                 mediaType: task.mediaType,
                 includeICloudAssets: task.includeICloudAssets,
@@ -1574,6 +1599,12 @@ extension BackupScheduler {
 // MARK: - UNUserNotificationCenterDelegate
 extension BackupScheduler {
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        // While the app is open the in-app timer starts the backup itself, so a
+        // "time to back up" reminder would only ask for something already happening.
+        if notification.request.identifier.hasPrefix("scheduled-backup-") {
+            completionHandler([])
+            return
+        }
         completionHandler([.banner, .sound, .badge])
     }
     
@@ -1587,43 +1618,71 @@ extension BackupScheduler {
         Task {
             do {
                 try await UNUserNotificationCenter.current().setBadgeCount(0)
-                debugLog("🔔 BackupFlow: Bildirim badge temizlendi")
             } catch {
                 debugLog("❌ BackupFlow: Badge temizleme hatası: \(error)")
             }
         }
-        
-        // Action'a göre işlem yap
-        if actionIdentifier == "START_BACKUP_ACTION" || actionIdentifier == "OPEN_DETAILS_ACTION" {
-            // Notification'dan task ID'yi al
-            if identifier.hasPrefix("scheduled-backup-") {
-                let taskIdString = String(identifier.dropFirst("scheduled-backup-".count))
-                if let taskId = UUID(uuidString: taskIdString) {
-                    debugLog("📱 BackupFlow: Yedekleme başlatma talebi - Task ID: \(taskId.uuidString)")
-                    
-                    // Global state'e yedekleme talebi kaydet
-                    UserDefaults.standard.set(taskId.uuidString, forKey: "pendingBackupTaskId")
-                    UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "pendingBackupTimestamp")
-                    UserDefaults.standard.set(actionIdentifier == "OPEN_DETAILS_ACTION", forKey: "pendingBackupOpenDetails")
-                    
-                    // App açıldığında bu task otomatik başlatılacak
-                }
+
+        guard identifier.hasPrefix("scheduled-backup-"),
+              let taskId = UUID(uuidString: String(identifier.dropFirst("scheduled-backup-".count))) else {
+            completionHandler()
+            return
+        }
+
+        switch actionIdentifier {
+        case "START_BACKUP_ACTION":
+            // The action opens the app; start once it is active so the run counts as
+            // user-initiated and can continue in the background.
+            pendingStartTaskID = taskId
+            if UIApplication.shared.applicationState == .active {
+                startPendingNotificationBackup()
             }
-        } else if actionIdentifier == "POSTPONE_1H_ACTION" {
-            if identifier.hasPrefix("scheduled-backup-") {
-                let taskIdString = String(identifier.dropFirst("scheduled-backup-".count))
-                if let taskId = UUID(uuidString: taskIdString) {
-                    Task {
-                        await self.postponeTask(taskId: taskId, interval: 3600)
-                    }
-                }
+        case "OPEN_DETAILS_ACTION":
+            requestedDetailTaskID = taskId
+        case "POSTPONE_1H_ACTION":
+            Task {
+                await self.postponeTask(taskId: taskId, interval: 3600)
             }
-        } else if actionIdentifier == "CANCEL_BACKUP_ACTION" {
-            debugLog("❌ BackupFlow: Kullanıcı yedeklemeyi iptal etti")
-            // İsteğe bağlı: İptal bildirimi gönder
+        case "CANCEL_BACKUP_ACTION":
+            skipScheduledRun(taskId: taskId)
+        default:
+            break
         }
         
         completionHandler()
+    }
+
+    /// Starts the backup requested from a reminder's "Start" action. Called when the app
+    /// becomes active, since continued processing requests must come from the foreground.
+    public func startPendingNotificationBackup() {
+        guard let taskId = pendingStartTaskID else { return }
+        pendingStartTaskID = nil
+        guard let task = fetchMainContextTask(id: taskId) else {
+            debugLog("❌ BackupFlow: Bildirimdeki görev bulunamadı: \(taskId)")
+            return
+        }
+        let isRunning = task.backupStatus == .preparing || task.backupStatus == .scanning || task.backupStatus == .uploading
+        guard !isRunning else { return }
+        debugLog("▶️ BackupFlow: Bildirimden yedekleme başlatılıyor: \(task.displayName)")
+        startUserInitiatedBackup(task: task)
+    }
+
+    /// "Cancel" on a reminder skips this occurrence and moves on to the next scheduled one.
+    private func skipScheduledRun(taskId: UUID) {
+        guard let task = fetchMainContextTask(id: taskId) else { return }
+        task.nextRunTime = calculateNextRunTime(for: task)
+        try? task.modelContext?.save()
+        refreshReminder(for: task)
+        scheduleProcessingTask()
+        debugLog("⏭️ BackupFlow: Zamanlanmış çalıştırma atlandı: \(task.displayName)")
+    }
+
+    /// Uses the UI's main context so progress from a user-started run shows up live.
+    private func fetchMainContextTask(id: UUID) -> BackupTask? {
+        guard let container = Self.sharedModelContainer else { return nil }
+        var descriptor = FetchDescriptor<BackupTask>(predicate: #Predicate { $0.id == id })
+        descriptor.fetchLimit = 1
+        return try? container.mainContext.fetch(descriptor).first
     }
 
     private func postponeTask(taskId: UUID, interval: TimeInterval) async {
@@ -1638,6 +1697,7 @@ extension BackupScheduler {
         task.nextRunTime = Date().addingTimeInterval(interval)
         do {
             try context.save()
+            refreshReminder(for: task)
             scheduleAppRefresh()
             scheduleProcessingTask()
             debugLog("⏰ BackupFlow: Görev 1 saat ertelendi: \(task.displayName)")

@@ -2,13 +2,15 @@ import XCTest
 @testable import BackupFlow
 
 final class BackupFlowTests: XCTestCase {
-    func testExecutionOptionsDefaultToMirrorAndNoChecksum() throws {
+    func testNewTasksDefaultToAppendOnlyAndNoChecksum() throws {
         let task = BackupTask(sourcePath: "/tmp/source")
 
         let options = BackupExecutionOptions.forTask(task)
 
         XCTAssertFalse(options.isDryRun)
-        XCTAssertEqual(options.deletionPolicy, .mirror)
+        // New tasks must never delete remote files unless mirroring is chosen explicitly.
+        XCTAssertEqual(options.deletionPolicy, .appendOnly)
+        XCTAssertEqual(BackupExecutionOptions.defaults.deletionPolicy, .appendOnly)
         XCTAssertEqual(options.checksumMode, .off)
         XCTAssertFalse(options.requiresWiFi)
         XCTAssertFalse(options.requiresExternalPower)
@@ -131,6 +133,15 @@ final class BackupFlowTests: XCTestCase {
         service.updateBackgroundMode(isBackground: false)
 
         XCTAssertFalse(service.isBackgroundUploading)
+    }
+
+    @MainActor
+    func testWebDAVBackupsAreNotHandedToContinuedProcessing() throws {
+        // WebDAV already continues through its background URLSession.
+        let task = BackupTask(sourcePath: "/tmp/source", backupType: .webdav, serverHost: "dav.example.org")
+
+        XCTAssertFalse(ContinuedBackupRunner.shared.start(task: task))
+        XCTAssertFalse(ContinuedBackupRunner.isRunning)
     }
 
     func testBackupStatusScanningAndPreparingAreUserFriendly() throws {

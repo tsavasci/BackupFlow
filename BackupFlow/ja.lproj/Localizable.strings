@@ -11,6 +11,7 @@
 "settings.rate_app" = "アプリを評価";
 "settings.contact_support" = "サポートに連絡";
 "settings.reset_all_data" = "すべてのデータをリセット";
+"settings.reset_unavailable_while_backing_up" = "バックアップ中は使用できません。";
 "alert.cancel" = "キャンセル";
 "dashboard.next_task" = "次のタスク";
 "dashboard.never" = "なし";
@@ -99,6 +100,14 @@
 "backup.port_default" = "ポート (デフォルト: 21)";
 "backup.port_webdav_default" = "ポート（デフォルト：443）";
 "backup.port_sftp_default" = "ポート（デフォルト：22）";
+"backup.continued.title" = "バックアップ中";
+"backup.background_interrupted.title" = "バックアップが中断されました";
+"backup.background_interrupted.body" = "iOSがバックグラウンドで「%@」を完了前に停止しました。続けるにはアプリを開いてください。送信済みのファイルはスキップされます。";
+"backup.stop" = "停止";
+"backup.start_prompt_title" = "今すぐバックアップを開始しますか？";
+"backup.start_prompt_message" = "タスクを保存しました。最初のバックアップを今すぐ開始しますか？";
+"backup.start_prompt_later" = "後で";
+"backup.mirror_policy_warning" = "ミラー：ソースにないサーバー上のファイルは完全に削除されます。";
 "backup.anonymous_login" = "匿名ログイン";
 "backup.username" = "ユーザー名";
 "backup.password" = "パスワード";
@@ -211,9 +220,6 @@
 "backup.allow_cellular_warning" = "モバイルデータでのバックアップは追加料金が発生する場合があります。";
 "backup.wifi_only_info" = "バックアップはWi‑Fiのみで実行されます。";
 "backup.save_task" = "タスクを保存";
-"backup.first_start_prompt_title" = "最初のバックアップを今開始しますか？";
-"backup.first_start_prompt_message" = "最初のタスクが保存されました。今すぐバックアップを開始しますか？";
-"backup.first_start_prompt_later" = "今はしない";
 "backup.info_title" = "情報";
 "backup.ok" = "OK";
 "backup.testing_network" = "ネットワークを確認中…";
@@ -239,10 +245,6 @@
 "tasks.schedule_error_detail" = "しかしスケジュールに失敗しました: %@";
 "tasks.save_error_detail" = "タスクの保存中にエラー: %@";
 
-"backup.ftp_background_warning.title" = "FTPバックアップを開始しました";
-"backup.ftp_background_warning.body" = "大きなファイルを確実にバックアップするため、アプリを前面に保ってください。";
-"backup.sftp_background_warning.title" = "SFTPバックアップを開始しました";
-"backup.sftp_background_warning.body" = "大きなファイルを確実にバックアップするため、アプリを前面に保ってください。";
 "backup.network_unavailable.title" = "ネットワーク接続なし";
 "backup.network_unavailable.body" = "ネットワーク接続がありません。再試行 %d/%d。";
 "backup.network_unavailable.body_with_delay" = "ネットワーク接続がありません。再試行 %d/%d（%d分後）。";

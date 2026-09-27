@@ -11,6 +11,7 @@
 "settings.rate_app" = "Avaliar App";
 "settings.contact_support" = "Contatar Suporte";
 "settings.reset_all_data" = "Redefinir Todos os Dados";
+"settings.reset_unavailable_while_backing_up" = "Indisponível durante um backup.";
 "alert.cancel" = "Cancelar";
 "dashboard.next_task" = "Próxima Tarefa";
 "dashboard.never" = "Nunca";
@@ -98,6 +99,14 @@
 "backup.port_default" = "Porta (Padrão: 21)";
 "backup.port_webdav_default" = "Porta (Padrão: 443)";
 "backup.port_sftp_default" = "Porta (Padrão: 22)";
+"backup.continued.title" = "Fazendo backup";
+"backup.background_interrupted.title" = "Backup interrompido";
+"backup.background_interrupted.body" = "O iOS interrompeu \"%@\" em segundo plano antes de terminar. Abra o app para continuar; arquivos já enviados serão ignorados.";
+"backup.stop" = "Parar";
+"backup.start_prompt_title" = "Iniciar o backup agora?";
+"backup.start_prompt_message" = "A tarefa foi salva. Iniciar o primeiro backup agora?";
+"backup.start_prompt_later" = "Depois";
+"backup.mirror_policy_warning" = "Espelho: arquivos no servidor que não estão na origem serão excluídos permanentemente.";
 "backup.anonymous_login" = "Login anônimo";
 "backup.username" = "Nome de usuário";
 "backup.password" = "Senha";
@@ -209,9 +218,6 @@
 "backup.allow_cellular_warning" = "Backups via dados móveis podem gerar custos adicionais.";
 "backup.wifi_only_info" = "Backups são executados somente via Wi‑Fi.";
 "backup.save_task" = "Salvar tarefa";
-"backup.first_start_prompt_title" = "Iniciar o primeiro backup agora?";
-"backup.first_start_prompt_message" = "Sua primeira tarefa foi salva. Deseja iniciar o backup agora?";
-"backup.first_start_prompt_later" = "Agora não";
 "backup.info_title" = "Informações";
 "backup.ok" = "OK";
 "backup.testing_network" = "Verificando rede…";
@@ -237,10 +243,6 @@
 "tasks.schedule_error_detail" = "mas o agendamento falhou: %@";
 "tasks.save_error_detail" = "Erro ao salvar a tarefa: %@";
 
-"backup.ftp_background_warning.title" = "Backup FTP iniciado";
-"backup.ftp_background_warning.body" = "Para garantir backup de arquivos grandes, mantenha o app em primeiro plano.";
-"backup.sftp_background_warning.title" = "Backup SFTP iniciado";
-"backup.sftp_background_warning.body" = "Para garantir backup de arquivos grandes, mantenha o app em primeiro plano.";
 "backup.network_unavailable.title" = "Sem conexão de rede";
 "backup.network_unavailable.body" = "Sem conexão de rede. Nova tentativa %d/%d.";
 "backup.network_unavailable.body_with_delay" = "Sem conexão de rede. Nova tentativa %d/%d (em %d min).";

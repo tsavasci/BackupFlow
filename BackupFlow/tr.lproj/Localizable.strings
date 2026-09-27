@@ -11,6 +11,7 @@
 "settings.rate_app" = "Uygulamayı Değerlendir";
 "settings.contact_support" = "Destek İletişim";
 "settings.reset_all_data" = "Tüm Verileri Sıfırla";
+"settings.reset_unavailable_while_backing_up" = "Yedekleme sürerken kullanılamaz.";
 "alert.cancel" = "İptal";
 "dashboard.next_task" = "Sonraki Görev";
 "dashboard.never" = "Hiç";
@@ -98,6 +99,14 @@
 "backup.port_default" = "Port (Varsayılan: 21)";
 "backup.port_webdav_default" = "Port (Varsayılan: 443)";
 "backup.port_sftp_default" = "Port (Varsayılan: 22)";
+"backup.continued.title" = "Yedekleniyor";
+"backup.background_interrupted.title" = "Yedekleme yarıda kaldı";
+"backup.background_interrupted.body" = "iOS \"%@\" yedeğini arka planda tamamlamadan durdurdu. Devam etmek için uygulamayı açın; gönderilmiş dosyalar atlanır.";
+"backup.stop" = "Durdur";
+"backup.start_prompt_title" = "Yedekleme şimdi başlatılsın mı?";
+"backup.start_prompt_message" = "Görev kaydedildi. İlk yedeklemeyi şimdi başlatmak ister misiniz?";
+"backup.start_prompt_later" = "Sonra";
+"backup.mirror_policy_warning" = "Ayna: kaynakta olmayan sunucu dosyaları kalıcı olarak silinir.";
 "backup.anonymous_login" = "Anonim Giriş";
 "backup.username" = "Kullanıcı Adı";
 "backup.password" = "Şifre";
@@ -183,9 +192,6 @@
 "backup.wifi_only_info" = "Yedeklemeler sadece Wi-Fi üzerinden yapılır.";
 
 "backup.save_task" = "Görevi Kaydet";
-"backup.first_start_prompt_title" = "İlk yedeklemeyi şimdi başlatılsın mı?";
-"backup.first_start_prompt_message" = "İlk görev kaydedildi. Yedeklemeyi şimdi başlatmak ister misiniz?";
-"backup.first_start_prompt_later" = "Şimdi değil";
 "backup.info_title" = "Bilgi";
 "backup.ok" = "Tamam";
 "backup.testing_network" = "Ağ kontrol ediliyor...";
@@ -216,10 +222,6 @@
 "tasks.schedule_error_detail" = "ancak planlama sırasında hata oluştu: %@";
 "tasks.save_error_detail" = "Görev kaydedilirken hata oluştu: %@";
 
-"backup.ftp_background_warning.title" = "FTP Yedekleme Başladı";
-"backup.ftp_background_warning.body" = "Büyük dosyaların sorunsuz yedeklenmesi için uygulamanın ön planda tutulması önerilir.";
-"backup.sftp_background_warning.title" = "SFTP Yedekleme Başladı";
-"backup.sftp_background_warning.body" = "Büyük dosyaların sorunsuz yedeklenmesi için uygulamanın ön planda tutulması önerilir.";
 "backup.network_unavailable.title" = "Ağ Bağlantısı Yok";
 "backup.network_unavailable.body" = "Ağ bağlantısı yok. Tekrar denenecek %d/%d.";
 "backup.network_unavailable.body_with_delay" = "Ağ bağlantısı yok. Tekrar denenecek %d/%d (%d dk sonra).";

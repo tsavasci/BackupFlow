@@ -6,6 +6,7 @@
 	<array>
 		<string>$(PRODUCT_BUNDLE_IDENTIFIER).backupTask</string>
 		<string>$(PRODUCT_BUNDLE_IDENTIFIER).processing</string>
+		<string>$(PRODUCT_BUNDLE_IDENTIFIER).continued.*</string>
 	</array>
 	<key>CFBundleLocalizations</key>
 	<array>

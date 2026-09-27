@@ -11,7 +11,7 @@ struct BackupExecutionOptions: Codable, Equatable {
 
     nonisolated static let defaults = BackupExecutionOptions(
         isDryRun: false,
-        deletionPolicy: .mirror,
+        deletionPolicy: .appendOnly,
         checksumMode: .off,
         requiresWiFi: false,
         requiresExternalPower: false,

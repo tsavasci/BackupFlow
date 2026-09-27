@@ -11,6 +11,7 @@
 "settings.rate_app" = "Calificar app";
 "settings.contact_support" = "Contactar soporte";
 "settings.reset_all_data" = "Restablecer todos los datos";
+"settings.reset_unavailable_while_backing_up" = "No disponible mientras se realiza una copia.";
 "alert.cancel" = "Cancelar";
 "dashboard.next_task" = "Siguiente tarea";
 "dashboard.never" = "Nunca";
@@ -98,6 +99,14 @@
 "backup.port_default" = "Puerto (Predeterminado: 21)";
 "backup.port_webdav_default" = "Puerto (predeterminado: 443)";
 "backup.port_sftp_default" = "Puerto (predeterminado: 22)";
+"backup.continued.title" = "Haciendo copia";
+"backup.background_interrupted.title" = "Copia interrumpida";
+"backup.background_interrupted.body" = "iOS detuvo «%@» en segundo plano antes de terminar. Abre la app para continuar; los archivos ya enviados se omitirán.";
+"backup.stop" = "Detener";
+"backup.start_prompt_title" = "¿Iniciar la copia ahora?";
+"backup.start_prompt_message" = "La tarea se guardó. ¿Iniciar la primera copia ahora?";
+"backup.start_prompt_later" = "Más tarde";
+"backup.mirror_policy_warning" = "Espejo: los archivos del servidor que no estén en el origen se eliminarán de forma permanente.";
 "backup.anonymous_login" = "Inicio de sesión anónimo";
 "backup.username" = "Nombre de usuario";
 "backup.password" = "Contraseña";
@@ -211,9 +220,6 @@
 "backup.allow_cellular_warning" = "Las copias de seguridad con datos móviles pueden generar costes adicionales.";
 "backup.wifi_only_info" = "Las copias de seguridad se realizan solo por Wi‑Fi.";
 "backup.save_task" = "Guardar tarea";
-"backup.first_start_prompt_title" = "¿Iniciar la primera copia ahora?";
-"backup.first_start_prompt_message" = "Tu primera tarea se guardó. ¿Quieres iniciar la copia ahora?";
-"backup.first_start_prompt_later" = "Ahora no";
 "backup.info_title" = "Información";
 "backup.ok" = "Aceptar";
 "backup.testing_network" = "Comprobando la red…";
@@ -238,10 +244,6 @@
 "tasks.schedule_error_detail" = "pero la programación falló: %@";
 "tasks.save_error_detail" = "Error al guardar la tarea: %@";
 
-"backup.ftp_background_warning.title" = "Copia FTP iniciada";
-"backup.ftp_background_warning.body" = "Para asegurar copias de archivos grandes, mantén la app en primer plano.";
-"backup.sftp_background_warning.title" = "Copia SFTP iniciada";
-"backup.sftp_background_warning.body" = "Para asegurar copias de archivos grandes, mantén la app en primer plano.";
 "backup.network_unavailable.title" = "Sin conexión de red";
 "backup.network_unavailable.body" = "Sin conexión de red. Reintento %d/%d.";
 "backup.network_unavailable.body_with_delay" = "Sin conexión de red. Reintento %d/%d (en %d min).";

@@ -110,8 +110,11 @@ final class WebDAVService: NSObject, FileProviderDelegate {
         let attempts = min(maxAttempts, config.maxAttempts)
         var lastError: Error?
         for attempt in 1...attempts {
+            try throwIfCancelled()
             do { return try await operation() } catch {
                 lastError = error
+                // A failure caused by the user's cancel must surface as a cancellation.
+                try throwIfCancelled()
                 if !config.shouldRetry(error: error) {
                     throw WebDAVErrorMapper.mapError(error)
                 }
@@ -705,8 +708,18 @@ final class WebDAVService: NSObject, FileProviderDelegate {
         }
     }
 
+    /// Set by `cancelCurrentTask()` and checked between files. Cancelling the in-flight
+    /// upload alone isn't enough: the sync loops would move on to the next file, and
+    /// could still reach the orphan-deletion phase.
+    private var isCancelled = false
+
+    private func throwIfCancelled() throws {
+        if isCancelled { throw BackupServiceError.cancelled }
+    }
+
     func cancelCurrentTask() {
         logger.info("WebDAV işlemi iptal ediliyor...")
+        isCancelled = true
         currentUploadTask?.cancel()
         currentUploadTask = nil
         for (_, continuation) in backgroundUploadContinuations {
@@ -820,6 +833,7 @@ final class WebDAVService: NSObject, FileProviderDelegate {
         try fileManager.createDirectory(at: exportRootURL(), withIntermediateDirectories: true)
 
         for (index, asset) in assets.enumerated() {
+            try throwIfCancelled()
             if index == 0 || (index + 1).isMultiple(of: 10) {
                 logger.info("📷 WebDAV photo sync progress: \(index + 1)/\(totalAssets) (uploaded: \(result.newFiles + result.updatedFiles), skipped: \(result.skippedFiles), iCloud-only: \(result.iCloudSkippedFiles), timeout: \(result.timedOutAssetReads), unreadable: \(result.failedAssetReads))")
             }
@@ -903,6 +917,7 @@ final class WebDAVService: NSObject, FileProviderDelegate {
         if !options.isDryRun && !timedOutUploads.isEmpty {
             logger.info("🔁 Retrying timed out uploads: \(timedOutUploads.count)")
             for item in timedOutUploads {
+                try throwIfCancelled()
                 let retryExportResult = await photoLibraryManager.exportAssetToTemporaryFile(
                     asset: item.asset,
                     fileName: item.fileName,
@@ -969,6 +984,7 @@ final class WebDAVService: NSObject, FileProviderDelegate {
         let archiveRunIdentifier = BackupArchive.makeRunIdentifier()
         for (relativePath, _) in existingFileMap
         where !processedRelativePaths.contains(relativePath) && !BackupArchive.isReserved(relativePath: relativePath) {
+            try throwIfCancelled()
             let fullRemotePath = remoteBasePath == "/" ? "/\(relativePath)" : "\(remoteBasePath)/\(relativePath)"
             switch options.deletionPolicy {
             case .mirror where canDeletePhotoOrphans:
@@ -1271,6 +1287,9 @@ final class WebDAVService: NSObject, FileProviderDelegate {
             setCurrentFile: { [weak self] name in
                 self?.currentFile = name
             },
+            isCancelled: { [weak self] in
+                self?.isCancelled ?? true
+            },
             uploadFile: { [weak self] localURL, remotePath, progressHandler in
                 guard let self else { throw BackupServiceError.connectionFailed }
                 try await self.uploadFileAwaitingCompletion(localURL: localURL, remotePath: remotePath, progressHandler: progressHandler)
@@ -1340,6 +1359,7 @@ final class WebDAVService: NSObject, FileProviderDelegate {
         options: BackupExecutionOptions = .defaults,
         progressHandler: @escaping (Double) -> Void
     ) async throws -> FTPService.SyncResult {
+        isCancelled = false
         self.logger.info("Starting backup: \(host):\(port)")
         if sourcePath == "PHOTOS_LIBRARY" {
             self.logger.info("Media type: \(mediaType == .photosOnly ? "Photos only" : "Photos and Videos")")

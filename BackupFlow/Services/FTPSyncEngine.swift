@@ -161,6 +161,8 @@ struct FTPSyncEngine {
         let localRelativePaths = Set(localFileMap.keys)
 
         for (remotePath, _) in remoteFileMap where !BackupArchive.isReserved(relativePath: remotePath) {
+            // Stop before touching the next remote file once the user cancels.
+            guard !isCancelled() else { throw BackupServiceError.cancelled }
             if !localRelativePaths.contains(remotePath) {
                 let fullRemotePath = remoteBasePath == "/" ? "/\(remotePath)" : "\(remoteBasePath)/\(remotePath)"
                 switch options.deletionPolicy {
@@ -332,6 +334,7 @@ struct FTPSyncEngine {
     }
 
     func syncBackupPhotoLibrary(
+        remoteBasePath photosDir: String,
         mediaType: MediaType,
         includeICloudAssets: Bool,
         options: BackupExecutionOptions = .defaults,
@@ -346,15 +349,6 @@ struct FTPSyncEngine {
 
         debugLog("📸 BackupFlow: \(totalCount) medya dosyası bulundu")
 
-        let photosDir = "photos"
-        if !options.isDryRun {
-            do {
-                try await createDirectory(photosDir)
-                debugLog("📁 BackupFlow: Photos klasörü hazır: \(photosDir)")
-            } catch {
-                debugLog("⚠️ BackupFlow: Photos klasörü oluşturma hatası (devam edilecek): \(error)")
-            }
-        }
 
         let existingFileMap = try await listAllFiles(at: photosDir)
         logger.info("Found \(existingFileMap.count) existing photo files on FTP")
@@ -476,6 +470,8 @@ struct FTPSyncEngine {
 
         let archiveRunIdentifier = BackupArchive.makeRunIdentifier()
         for (remotePath, remoteFile) in existingFileMap where !BackupArchive.isReserved(relativePath: remotePath) {
+            // Stop before touching the next remote file once the user cancels.
+            guard !isCancelled() else { throw BackupServiceError.cancelled }
             if !processedFiles.contains(remoteFile.name) {
                 let fullRemotePath = "\(photosDir)/\(remotePath)"
                 switch options.deletionPolicy {

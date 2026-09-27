@@ -17,7 +17,7 @@ final class ContinuedBackupRunner {
 
     /// Read by the transfer services' UIKit background-task expiration handlers, which
     /// run off the main actor, so it is guarded by a lock rather than actor isolation.
-    private static let runningLock = NSLock()
+    nonisolated private static let runningLock = NSLock()
     nonisolated(unsafe) private static var _isRunning = false
     nonisolated static var isRunning: Bool {
         runningLock.withLock { _isRunning }
