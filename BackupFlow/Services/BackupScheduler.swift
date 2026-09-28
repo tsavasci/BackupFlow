@@ -81,6 +81,15 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     @Published var requestedDetailTaskID: UUID?
     /// Task a reminder's "Start" action asked to run once the app is active.
     private var pendingStartTaskID: UUID?
+    /// Tasks with a run in progress. Several paths can start the same task at once
+    /// (a notification action, checkMissedTimers, a timer); only the first one runs.
+    private var runningTaskIDs: Set<UUID> = []
+    /// Tasks the user just started whose run hasn't begun yet. On a device that start
+    /// goes through a continued processing task that launches a moment later;
+    /// checkMissedTimers leaves these alone so that the run which can keep going in
+    /// the background is the one that happens.
+    private var userStartedTaskIDs: [UUID: Date] = [:]
+    private var isCheckingMissedTimers = false
     
     // Timers keyed by BackupTask.id
     @MainActor private var scheduledTimers: [UUID: Timer] = [:]
@@ -317,6 +326,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     /// FTP/SFTP runs go through a continued processing task when available so they keep
     /// running after the app is backgrounded; everything else runs directly as before.
     public func startUserInitiatedBackup(task: BackupTask) {
+        userStartedTaskIDs[task.id] = Date()
         if ContinuedBackupRunner.shared.start(task: task) { return }
         Task {
             try? await performBackup(task: task, bypassThrottle: true)
@@ -410,7 +420,19 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         }
         
         debugLog("⏰ BackupFlow: Timer tetiklendi: \(taskId)")
-        
+        scheduledTimers.removeValue(forKey: taskId)
+
+        // A timer that came due while the app was suspended fires the moment anything
+        // wakes the app, including a notification response, before that response is
+        // handled. Starting here would run a backup the user just skipped with the
+        // reminder's "Cancel". Only run for an active app: once it comes forward,
+        // checkMissedTimers runs the task if it is still due, and in the background
+        // the reminder and BGProcessingTask paths take over.
+        guard UIApplication.shared.applicationState == .active else {
+            debugLog("ℹ️ BackupFlow: Uygulama aktif değil; zamanlayıcı yedeği başlatmadı: \(taskId)")
+            return
+        }
+
         // Find the task and perform the backup
         Task {
             guard let container = Self.sharedModelContainer else {
@@ -434,6 +456,14 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     
     // MARK: - Backup Execution
     public func performBackup(task: BackupTask, bypassThrottle: Bool = false) async throws {
+        userStartedTaskIDs[task.id] = nil
+        // Claim the task before the first await so a second caller sees it running.
+        guard !runningTaskIDs.contains(task.id) else {
+            debugLog("ℹ️ BackupFlow: Görev zaten çalışıyor, ikinci başlatma yok sayıldı: \(task.displayName)")
+            return
+        }
+        runningTaskIDs.insert(task.id)
+        defer { runningTaskIDs.remove(task.id) }
         // Every exit path below may move nextRunTime; keep the queued reminder in sync.
         defer { refreshReminder(for: task) }
         let runStart = Date()
@@ -1039,6 +1069,12 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     
     /// Missed timer kontrolü - BGTask tarafından çağrılır
     public func checkMissedTimers() async {
+        // One activation can report "active" twice; a concurrent pass would find the
+        // same due tasks again.
+        guard !isCheckingMissedTimers else { return }
+        isCheckingMissedTimers = true
+        defer { isCheckingMissedTimers = false }
+
         guard let container = Self.sharedModelContainer else {
             debugLog("❌ checkMissedTimers: ModelContainer yok")
             return
@@ -1058,12 +1094,18 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         for task in tasks {
             guard !task.isPaused, task.isEnabled else { continue }
             if case .manual = task.frequency { continue }
-            
+            // Already running, or the user just started it and its run is about to begin.
+            if runningTaskIDs.contains(task.id) { continue }
+            if let startedAt = userStartedTaskIDs[task.id], now.timeIntervalSince(startedAt) < 60 { continue }
+
             if let nextRunTime = task.nextRunTime {
                 let timeDiff = now.timeIntervalSince(nextRunTime)
                 
-                // Timer 2+ dakika geç kalmışsa manuel tetikle
-                if timeDiff > 120 { // 2 dakika
+                // Timer 2+ dakika geç kalmışsa manuel tetikle. A due task with no pending
+                // timer (it fired while the app was inactive and skipped the run) must not
+                // wait out that grace period, or opening the app shortly after would miss it.
+                let hasPendingTimer = scheduledTimers[task.id] != nil
+                if timeDiff > 120 || (timeDiff >= 0 && !hasPendingTimer) {
                     debugLog("⚠️ checkMissedTimers: Kaçırılmış görev tespit edildi: \(task.displayName)")
                     debugLog("   📅 Planlanmış: \(userLocalDateFormatter.string(from: nextRunTime))")
                     debugLog("   📅 Şu anda: \(userLocalDateFormatter.string(from: now))")

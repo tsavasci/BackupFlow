@@ -40,7 +40,12 @@ final class ContinuedBackupRunner {
         // WebDAV already continues through its background URLSession.
         guard task.backupType == .ftp || task.backupType == .sftp else { return false }
         // Requests must be submitted by the foreground app in response to a user action.
-        guard UIApplication.shared.applicationState == .active else { return false }
+        // Only rule out the background: when a notification action opens the app, the
+        // scene is already active while applicationState can still report .inactive.
+        guard UIApplication.shared.applicationState != .background else {
+            debugLog("ℹ️ ContinuedBackup: Uygulama arka planda, ön planda çalıştırılacak")
+            return false
+        }
 
         // A fresh suffix per run: re-registering an identifier terminates the app.
         let identifier = Self.identifierPrefix + UUID().uuidString
