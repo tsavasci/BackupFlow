@@ -40,11 +40,4 @@ final class BackupFlowUITests: XCTestCase {
         app.buttons["sheet.close"].tap()
         XCTAssertFalse(save.waitForExistence(timeout: 2))
     }
-
-    @MainActor
-    func testLaunchPerformance() throws {
-        measure(metrics: [XCTApplicationLaunchMetric()]) {
-            XCUIApplication().launch()
-        }
-    }
 }

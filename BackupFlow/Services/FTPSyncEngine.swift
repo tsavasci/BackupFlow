@@ -122,6 +122,7 @@ struct FTPSyncEngine {
                 }
                 result.newFiles += 1
                 result.totalBytes += localSize
+                BackupRunTally.shared.recordUpload(bytes: localSize)
                 if !options.isDryRun {
                     transferredBytes += localSize
                 }
@@ -144,6 +145,7 @@ struct FTPSyncEngine {
                 }
                 result.updatedFiles += 1
                 result.totalBytes += localSize
+                BackupRunTally.shared.recordUpload(bytes: localSize)
                 if !options.isDryRun {
                     transferredBytes += localSize
                 }
@@ -432,6 +434,7 @@ struct FTPSyncEngine {
                 }
                 result.newFiles += 1
                 result.totalBytes += localSize
+                BackupRunTally.shared.recordUpload(bytes: localSize)
                 debugLog("📤 BackupFlow: Yeni dosya yüklendi: \(stableFileName) (\(formatBytes(localSize)))")
             case .updated:
                 setCurrentFile("backup.current_file.updating_file".localized(with: stableFileName))
@@ -444,6 +447,7 @@ struct FTPSyncEngine {
                 }
                 result.updatedFiles += 1
                 result.totalBytes += localSize
+                BackupRunTally.shared.recordUpload(bytes: localSize)
                 debugLog("🔄 BackupFlow: Güncellenmiş dosya yüklendi: \(stableFileName) (\(formatBytes(localSize)))")
             }
 

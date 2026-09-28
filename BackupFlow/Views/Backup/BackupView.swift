@@ -186,6 +186,7 @@ struct BackupView: View {
 
     @State private var showingDocumentPicker = false
     @State private var showingSaveAlert = false
+    @State private var closeAfterSaveAlert = false
     @State private var showingPhotoLibraryDeniedAlert = false
     @State private var saveAlertMessage = ""
     @State private var lastAlertAt: Date? = nil
@@ -197,6 +198,10 @@ struct BackupView: View {
     @State private var showingSFTPHostKeyAlert = false
     @State private var sftpHostKeyAlertMessage = ""
     @State private var showingRemoteFolderPicker = false
+
+    private var screenTitle: String {
+        editingTask == nil ? "backup.new_backup".localized : "common.edit".localized
+    }
 
     init(editingTask: BackupTask? = nil) {
         self.editingTask = editingTask
@@ -276,7 +281,7 @@ struct BackupView: View {
                     VStack(alignment: .leading, spacing: 18) {
                         HStack(alignment: .top) {
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("backup.new_backup".localized)
+                                Text(screenTitle)
                                     .font(.title.weight(.bold))
                                     .foregroundStyle(.white)
                                 Text(selectedTarget.displayName)
@@ -632,7 +637,7 @@ struct BackupView: View {
                 .padding(.bottom, 36)
             }
         }
-        .navigationTitle("backup.new_backup".localized)
+        .navigationTitle(screenTitle)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
@@ -652,7 +657,12 @@ struct BackupView: View {
             }
         }
         .alert("backup.info_title".localized, isPresented: $showingSaveAlert) {
-            Button("backup.ok".localized, role: .cancel) {}
+            Button("backup.ok".localized, role: .cancel) {
+                if closeAfterSaveAlert {
+                    closeAfterSaveAlert = false
+                    dismiss()
+                }
+            }
         } message: {
             Text(saveAlertMessage)
         }
@@ -1164,6 +1174,8 @@ struct BackupView: View {
                     let now = Date()
                     if let last = lastAlertAt, now.timeIntervalSince(last) < 1 { return }
                     lastAlertAt = now
+                    // The edit is saved; confirming the alert returns to the task.
+                    closeAfterSaveAlert = true
                     showingSaveAlert = true
                 }
             } catch {

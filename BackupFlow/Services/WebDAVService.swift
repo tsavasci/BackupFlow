@@ -342,8 +342,14 @@ final class WebDAVService: NSObject, FileProviderDelegate {
                         
                         var errorMessage = "Could not connect to server."
                         var errorCode = -1
-                        
-                        if let nsError = error as NSError? {
+
+                        // FilesProvider reports HTTP failures as FileProviderHTTPError; a 401/403
+                        // is a credentials problem, not "could not connect".
+                        if let httpError = error as? FileProviderHTTPError,
+                           [401, 403].contains(httpError.code.rawValue) {
+                            errorCode = httpError.code.rawValue
+                            errorMessage = "backup.error.authentication_failed".localized
+                        } else if let nsError = error as NSError? {
                             errorCode = nsError.code
                             self.logger.error("   - Error code: \(nsError.code)")
                             self.logger.error("   - Error domain: \(nsError.domain)")
@@ -911,6 +917,7 @@ final class WebDAVService: NSObject, FileProviderDelegate {
                 result.newFiles += 1
             }
             result.totalBytes += localSize
+            BackupRunTally.shared.recordUpload(bytes: localSize)
             progressHandler(Double(index + 1) / Double(max(assets.count, 1)) * 0.8)
         }
 
@@ -966,6 +973,7 @@ final class WebDAVService: NSObject, FileProviderDelegate {
                         result.newFiles += 1
                     }
                     result.totalBytes += retrySize
+                    BackupRunTally.shared.recordUpload(bytes: retrySize)
                 } catch {
                     failedUploads += 1
                     logger.error("Retry failed: \(item.fileName) - \(error.localizedDescription)")

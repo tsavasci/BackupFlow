@@ -55,12 +55,16 @@ struct FTPFileOperations {
             }
         }
 
-        if let exists = try? await directoryExists(path), exists == true {
+        switch try? await directoryExists(path) {
+        case .some(true):
             logger.info("Dizin başarıyla oluşturuldu: \(path)")
-            return
-        } else {
+        case .some(false):
             logger.error("Dizin oluşturulamadı: \(path)")
             throw FTPError.fileOperationFailed
+        default:
+            // Many FTP servers can't report attributes for a directory (nil = unknown).
+            // That isn't a failure: a real problem surfaces when uploading into it.
+            logger.debug("Dizin durumu doğrulanamadı, devam ediliyor: \(path)")
         }
     }
 

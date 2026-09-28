@@ -491,7 +491,8 @@ struct MainTabView: View {
                         if let pausedScheduledTask {
                             selectedTask = pausedScheduledTask
                         } else {
-                            showBackupSheet = true
+                            // "Back up now" runs a saved task; the form only opens when none exist.
+                            syncActiveTasks()
                         }
                     } label: {
                         Image(systemName: heroActionIconName)
@@ -552,13 +553,15 @@ struct MainTabView: View {
                                 }
                             }
                             Spacer()
-                            HStack(spacing: 8) {
+                            HStack(spacing: 0) {
                                 Button {
                                     selectedTask = liveTask(row.id)
                                 } label: {
                                     Image(systemName: "square.and.pencil")
                                         .font(.caption2)
                                         .foregroundStyle(taskTheme.primary)
+                                        .frame(width: 44, height: 44)
+                                        .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
                                 .accessibilityLabel("task.details.title".localized)
@@ -571,6 +574,8 @@ struct MainTabView: View {
                                     Image(systemName: "trash")
                                         .font(.caption2)
                                         .foregroundStyle(.red)
+                                        .frame(width: 44, height: 44)
+                                        .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
                                 .accessibilityLabel("tasks.delete".localized)

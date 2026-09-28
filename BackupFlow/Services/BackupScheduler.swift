@@ -464,6 +464,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         }
         runningTaskIDs.insert(task.id)
         defer { runningTaskIDs.remove(task.id) }
+        BackupRunTally.shared.reset()
         // Every exit path below may move nextRunTime; keep the queued reminder in sync.
         defer { refreshReminder(for: task) }
         let runStart = Date()
@@ -625,37 +626,9 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             task.consecutiveFailureCount += 1
             
             debugLog("❌ BackupFlow: Yedekleme başarısız: \(task.displayName) - \(error)")
-            
-            // Retry logic
-            let currentRetryCount = retryCount[task.id] ?? 0
-            if currentRetryCount < maxRetryAttempts {
-                retryCount[task.id] = currentRetryCount + 1
-                debugLog("🔄 BackupFlow: Yeniden deneme \(currentRetryCount + 1)/\(maxRetryAttempts)")
-                
-                let delay = self.jitteredDelay(for: currentRetryCount + 1)
-                // Advance nextRunTime to avoid foreground re-trigger via missed timers
-                task.nextRunTime = Date().addingTimeInterval(delay)
-                if let context = task.modelContext {
-                    do { try context.save() }
-                    catch { debugLog("❌ BackupFlow: nextRunTime kaydedilemedi (retry): \\ (error)") }
-                }
-                // Delayed dispatch does not run reliably while the app is
-                // suspended. Persist the retry and let BGTaskScheduler decide
-                // the next execution window.
-                scheduleProcessingTask()
-                return
-            } else {
-                retryCount.removeValue(forKey: task.id)
-                debugLog("💥 BackupFlow: Maksimum yeniden deneme sayısına ulaşıldı")
-                // Move to the next scheduled time to prevent immediate re-run on foreground
-                task.nextRunTime = calculateNextRunTime(for: task)
-                if let context = task.modelContext {
-                    do { try context.save() }
-                    catch { debugLog("❌ BackupFlow: nextRunTime kaydedilemedi (max retry): \\ (error)") }
-                }
-            }
-            
-            // Create backup history record for failure
+
+            // Record every failed run, including ones that will be retried; the dashboard
+            // failure counter already counts them, so history must show them too.
             let duration = Date().timeIntervalSince(runStart)
             await createBackupHistoryRecord(
                 task: task,
@@ -665,6 +638,37 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                 errorMessage: error.localizedDescription,
                 failureCategory: failureCategory
             )
+
+            // Retry logic, for scheduled tasks only: a manual task runs when the user
+            // starts it and must not gain a "next backup" time from a retry.
+            let currentRetryCount = retryCount[task.id] ?? 0
+            if task.frequency != .manual, currentRetryCount < maxRetryAttempts {
+                retryCount[task.id] = currentRetryCount + 1
+                debugLog("🔄 BackupFlow: Yeniden deneme \(currentRetryCount + 1)/\(maxRetryAttempts)")
+
+                let delay = self.jitteredDelay(for: currentRetryCount + 1)
+                // Advance nextRunTime to avoid foreground re-trigger via missed timers
+                task.nextRunTime = Date().addingTimeInterval(delay)
+                if let context = task.modelContext {
+                    do { try context.save() }
+                    catch { debugLog("❌ BackupFlow: nextRunTime kaydedilemedi (retry): \(error)") }
+                }
+                // Delayed dispatch does not run reliably while the app is
+                // suspended. Persist the retry and let BGTaskScheduler decide
+                // the next execution window.
+                scheduleProcessingTask()
+            } else {
+                retryCount.removeValue(forKey: task.id)
+                if task.frequency != .manual {
+                    debugLog("💥 BackupFlow: Maksimum yeniden deneme sayısına ulaşıldı")
+                }
+                // Move to the next scheduled time to prevent immediate re-run on foreground
+                task.nextRunTime = calculateNextRunTime(for: task)
+                if let context = task.modelContext {
+                    do { try context.save() }
+                    catch { debugLog("❌ BackupFlow: nextRunTime kaydedilemedi (max retry): \(error)") }
+                }
+            }
         }
     }
 
@@ -1528,6 +1532,17 @@ extension BackupScheduler {
     ) async {
         guard let container = Self.sharedModelContainer else { return }
 
+        // Cancelled and failed runs pass an empty result; record what was actually
+        // uploaded before they stopped. "Transferred" counts uploads only, not files
+        // that were already on the server.
+        var syncResult = syncResult
+        let tally = BackupRunTally.shared
+        if syncResult.totalProcessed == 0 && tally.uploadedFiles > 0 {
+            syncResult.newFiles = tally.uploadedFiles
+            syncResult.totalBytes = tally.uploadedBytes
+        }
+        let uploadedBytes = tally.uploadedBytes
+
         // Prefer the task's own ModelContext to avoid cross-context attachment
         if let taskContext = task.modelContext {
             let context = taskContext
@@ -1539,7 +1554,7 @@ extension BackupScheduler {
                 status: status,
                 filesProcessed: syncResult.totalProcessed,
                 totalFiles: syncResult.totalProcessed,
-                bytesTransferred: syncResult.totalBytes,
+                bytesTransferred: uploadedBytes,
                 totalBytes: syncResult.totalBytes,
                 errorMessage: errorMessage,
                 duration: duration,
@@ -1589,7 +1604,7 @@ extension BackupScheduler {
                 status: status,
                 filesProcessed: syncResult.totalProcessed,
                 totalFiles: syncResult.totalProcessed,
-                bytesTransferred: syncResult.totalBytes,
+                bytesTransferred: uploadedBytes,
                 totalBytes: syncResult.totalBytes,
                 errorMessage: errorMessage,
                 duration: duration,

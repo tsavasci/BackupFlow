@@ -73,6 +73,7 @@ struct WebDAVSyncEngine {
                     uploaded += 1
                     if !options.isDryRun {
                         transferred += localSize
+                        BackupRunTally.shared.recordUpload(bytes: localSize)
                     }
                 } catch {
                     logger.error("Upload failed for \(relativePath): \(error.localizedDescription)")

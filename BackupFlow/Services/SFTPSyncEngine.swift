@@ -82,6 +82,7 @@ struct SFTPSyncEngine {
                     }
                     result.updatedFiles += 1
                     result.totalBytes += localSize
+                    BackupRunTally.shared.recordUpload(bytes: localSize)
                     transferred += localSize
                     if !options.isDryRun {
                         checkpoint.insert(relativePath)
@@ -104,6 +105,7 @@ struct SFTPSyncEngine {
                     }
                     result.newFiles += 1
                     result.totalBytes += localSize
+                    BackupRunTally.shared.recordUpload(bytes: localSize)
                     transferred += localSize
                     if !options.isDryRun {
                         checkpoint.insert(relativePath)
@@ -248,6 +250,7 @@ struct SFTPSyncEngine {
                     }
                     result.updatedFiles += 1
                     result.totalBytes += localSize
+                    BackupRunTally.shared.recordUpload(bytes: localSize)
                     if !options.isDryRun {
                         checkpoint.insert(fileName)
                         await markCheckpoint?(fileName)
@@ -269,6 +272,7 @@ struct SFTPSyncEngine {
                     }
                     result.newFiles += 1
                     result.totalBytes += localSize
+                    BackupRunTally.shared.recordUpload(bytes: localSize)
                     if !options.isDryRun {
                         checkpoint.insert(fileName)
                         await markCheckpoint?(fileName)
