@@ -58,7 +58,7 @@
 
 // History View
 "history.files.deleted" = "excluído";
-"history.files.skipped" = "ignorado";
+"history.files.skipped" = "Arquivos ignorados";
 
 // Progress Status Messages
 "battery.state.unknown" = "Desconhecido";

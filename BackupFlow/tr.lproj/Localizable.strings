@@ -52,7 +52,7 @@
 "backup.frequency.daily" = "Günlük";
 "backup.frequency.weekly" = "Haftalık";
 "history.files.deleted" = "silindi";
-"history.files.skipped" = "atlandı";
+"history.files.skipped" = "Atlanan Dosyalar";
 "battery.state.unknown" = "Bilinmiyor";
 "battery.state.unplugged" = "Şarj değil";
 "battery.state.charging" = "Şarj oluyor";

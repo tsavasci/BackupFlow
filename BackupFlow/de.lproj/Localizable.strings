@@ -59,7 +59,7 @@
 
 // History View
 "history.files.deleted" = "gelöscht";
-"history.files.skipped" = "übersprungen";
+"history.files.skipped" = "Übersprungene Dateien";
 
 // Progress Status Messages
 "battery.state.unknown" = "Unbekannt";
@@ -76,8 +76,8 @@
 "tasks.scheduled" = "und geplant";
 "backup.or" = "oder";
 "backup.manual" = "Manuell";
-"backup.daily" = "Täglich";
-"backup.weekly" = "Wöchentlich";
+"backup.daily" = "Tag";
+"backup.weekly" = "Woche";
 "backup.hour" = "Stunde";
 "backup.minute" = "Minute";
 "backup.day" = "Tag";
@@ -380,7 +380,7 @@
 "backup.failure.unknown" = "Unbekannt";
 "backup.frequency.monthly" = "Monatlich";
 "backup.frequency.interval_hours" = "Alle paar Stunden";
-"backup.monthly" = "Monatlich";
+"backup.monthly" = "Monat";
 "backup.interval" = "Intervall";
 "backup.month_day" = "Tag %d";
 "backup.every_hours" = "Alle %d Stunden";

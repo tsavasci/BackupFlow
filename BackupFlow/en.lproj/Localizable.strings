@@ -58,7 +58,7 @@
 
 // History View
 "history.files.deleted" = "deleted";
-"history.files.skipped" = "skipped";
+"history.files.skipped" = "Skipped Files";
 
 // Progress Status Messages
 "battery.state.unknown" = "Unknown";

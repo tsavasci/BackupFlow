@@ -58,7 +58,7 @@
 
 // History View
 "history.files.deleted" = "удалено";
-"history.files.skipped" = "пропущено";
+"history.files.skipped" = "Пропущено файлов";
 
 // Progress Status Messages
 "battery.state.unknown" = "Неизвестно";
@@ -67,7 +67,7 @@
 "battery.state.full" = "Полная";
 "tasks.delete" = "Удалить";
 "tasks.delete_confirmation" = "Удалить задачу";
-"history.title" = "История резервного копирования";
+"history.title" = "История копий";
 "history.no_history" = "История резервного копирования отсутствует";
 "alert.error" = "Ошибка";
 "tasks.duplicate_error" = "Задача с такими же настройками уже существует";
@@ -75,14 +75,14 @@
 "tasks.scheduled" = "и запланирована";
 "backup.or" = "или";
 "backup.manual" = "Вручную";
-"backup.daily" = "Ежедневно";
-"backup.weekly" = "Еженедельно";
+"backup.daily" = "День";
+"backup.weekly" = "Неделя";
 "backup.hour" = "Час";
 "backup.minute" = "Минута";
 "backup.day" = "День";
 "backup.select_day" = "Выбрать день";
 "backup.test_connection" = "Проверить соединение";
-"backup.new_backup" = "Новая резервная копия";
+"backup.new_backup" = "Новая копия";
 "backup.clear" = "Очистить";
 "backup.connection_testing" = "Проверка соединения...";
 "backup.connection_success_ftp" = "FTP соединение успешно!";
@@ -288,7 +288,7 @@
 "dashboard.greeting.afternoon" = "Добрый день";
 "dashboard.greeting.evening" = "Добрый вечер";
 "dashboard.greeting.night" = "Доброй ночи";
-"dashboard.backup_hub" = "Центр резервного копирования";
+"dashboard.backup_hub" = "Центр копий";
 "dashboard.backup_in_progress" = "Резервное копирование выполняется";
 "dashboard.last_sync" = "Последняя синхронизация";
 "dashboard.backing_up_now" = "Идет резервное копирование";
@@ -381,7 +381,7 @@
 "backup.failure.unknown" = "Неизвестно";
 "backup.frequency.monthly" = "Ежемесячно";
 "backup.frequency.interval_hours" = "Каждые несколько часов";
-"backup.monthly" = "Ежемесячно";
+"backup.monthly" = "Месяц";
 "backup.interval" = "Интервал";
 "backup.month_day" = "День %d";
 "backup.every_hours" = "Каждые %d ч.";

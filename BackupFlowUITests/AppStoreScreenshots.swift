@@ -17,7 +17,12 @@ final class AppStoreScreenshots: XCTestCase {
 
     @MainActor
     func testCaptureAppStoreScreenshots() throws {
-        for language in languages {
+        // Optional comma-separated language codes in /tmp/bf_shot_languages limit a
+        // re-capture to the languages whose screens changed.
+        let only = (try? String(contentsOfFile: "/tmp/bf_shot_languages", encoding: .utf8))?
+            .split(separator: ",")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        for language in languages where only?.contains(language.code) ?? true {
             try capture(language: language.code, locale: language.locale)
         }
     }

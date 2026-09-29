@@ -59,7 +59,7 @@
 
 // History View
 "history.files.deleted" = "supprimés";
-"history.files.skipped" = "ignorés";
+"history.files.skipped" = "Fichiers ignorés";
 
 // Progress Status Messages
 "battery.state.unknown" = "Inconnu";
@@ -68,7 +68,7 @@
 "battery.state.full" = "Pleine";
 "tasks.delete" = "Supprimer";
 "tasks.delete_confirmation" = "Supprimer la tâche";
-"history.title" = "Historique des sauvegardes";
+"history.title" = "Historique";
 "history.no_history" = "Aucun historique de sauvegarde";
 "alert.error" = "Erreur";
 "tasks.duplicate_error" = "Une tâche avec les mêmes paramètres existe déjà";
@@ -76,8 +76,8 @@
 "tasks.scheduled" = "et planifiée";
 "backup.or" = "ou";
 "backup.manual" = "Manuel";
-"backup.daily" = "Quotidien";
-"backup.weekly" = "Hebdomadaire";
+"backup.daily" = "Jour";
+"backup.weekly" = "Semaine";
 "backup.hour" = "Heure";
 "backup.minute" = "Minute";
 "backup.day" = "Jour";
@@ -383,7 +383,7 @@
 "backup.failure.unknown" = "Inconnu";
 "backup.frequency.monthly" = "Mensuel";
 "backup.frequency.interval_hours" = "Toutes les quelques heures";
-"backup.monthly" = "Mensuel";
+"backup.monthly" = "Mois";
 "backup.interval" = "Intervalle";
 "backup.month_day" = "Jour %d";
 "backup.every_hours" = "Toutes les %d heures";

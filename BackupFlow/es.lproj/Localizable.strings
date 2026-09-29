@@ -58,7 +58,7 @@
 
 // History View
 "history.files.deleted" = "eliminados";
-"history.files.skipped" = "omitidos";
+"history.files.skipped" = "Archivos omitidos";
 
 // Progress Status Messages
 "battery.state.unknown" = "Desconocido";
@@ -67,7 +67,7 @@
 "battery.state.full" = "Completo";
 "tasks.delete" = "Eliminar";
 "tasks.delete_confirmation" = "Eliminar tarea";
-"history.title" = "Historial de copias de seguridad";
+"history.title" = "Historial de copias";
 "history.no_history" = "No hay historial de copias de seguridad disponible";
 "alert.error" = "Error";
 "tasks.duplicate_error" = "Ya existe una tarea con la misma configuración";
