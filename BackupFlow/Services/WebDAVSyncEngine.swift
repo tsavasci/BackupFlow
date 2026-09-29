@@ -51,7 +51,7 @@ struct WebDAVSyncEngine {
             }
 
             let localSize = Int64((try? localFileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
-            let fileName = localFileURL.lastPathComponent
+            let fileName = (relativePath as NSString).lastPathComponent
             setCurrentFile(fileName)
 
             if let remoteFile = remoteFileMap[relativePath],
@@ -229,7 +229,8 @@ struct WebDAVSyncEngine {
                     do {
                         let resourceValues = try fileURL.resourceValues(forKeys: [.isDirectoryKey])
                         if resourceValues.isDirectory != true {
-                            let relativePath = String(fileURL.path.dropFirst(coordinatedURL.path.count + 1))
+                            // iOS may store names decomposed (NFD); servers expect composed "ş", "ğ", "ü".
+                            let relativePath = String(fileURL.path.dropFirst(coordinatedURL.path.count + 1)).precomposedStringWithCanonicalMapping
                             fileMap[relativePath] = fileURL
                             fileCount += 1
 

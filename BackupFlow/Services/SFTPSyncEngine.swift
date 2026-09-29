@@ -374,7 +374,8 @@ struct SFTPSyncEngine {
             for case let fileURL as URL in enumerator {
                 let resourceValues = try fileURL.resourceValues(forKeys: [.isDirectoryKey])
                 if resourceValues.isDirectory != true {
-                    let relativePath = String(fileURL.path.dropFirst(coordinatedURL.path.count + 1))
+                    // iOS may store names decomposed (NFD); servers expect composed "ş", "ğ", "ü".
+                    let relativePath = String(fileURL.path.dropFirst(coordinatedURL.path.count + 1)).precomposedStringWithCanonicalMapping
                     fileMap[relativePath] = fileURL
                 }
             }
