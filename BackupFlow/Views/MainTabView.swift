@@ -565,6 +565,7 @@ struct MainTabView: View {
                                 }
                                 .buttonStyle(.plain)
                                 .accessibilityLabel("task.details.title".localized)
+                                .accessibilityIdentifier("dashboard.server_details")
 
                                 Button {
                                     guard let task = liveTask(row.id) else { return }
@@ -701,6 +702,7 @@ struct MainTabView: View {
             DashboardActionButton(icon: "clock.arrow.circlepath", title: "nav.history".localized, theme: dashboardTheme) {
                 showHistory = true
             }
+            .accessibilityIdentifier("dashboard.history")
             DashboardActionButton(icon: "plus.circle.fill", title: "dashboard.add".localized, theme: dashboardTheme) {
                 showBackupSheet = true
             }

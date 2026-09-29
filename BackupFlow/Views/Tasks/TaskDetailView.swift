@@ -32,7 +32,12 @@ struct TaskDetailView: View {
         List {
             // Genel Bilgiler
             Section("task.details.general".localized) {
-                LabeledContent("task.details.source".localized, value: URL(fileURLWithPath: task.sourcePath ?? "").lastPathComponent)
+                LabeledContent(
+                    "task.details.source".localized,
+                    value: task.sourcePath == "PHOTOS_LIBRARY"
+                        ? "backup.photos_option".localized
+                        : URL(fileURLWithPath: task.sourcePath ?? "").lastPathComponent
+                )
                 LabeledContent("task.details.status".localized, value: task.backupStatus.displayName)
                 LabeledContent("task.details.schedule".localized, value: task.frequency.displayText)
                 LabeledContent("backup.deletion_policy".localized, value: task.deletionPolicy.displayName)
@@ -103,6 +108,7 @@ struct TaskDetailView: View {
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("task.details.close".localized, action: { dismiss() })
+                    .accessibilityIdentifier("sheet.close")
             }
         }
         .sheet(isPresented: $showingEdit) {

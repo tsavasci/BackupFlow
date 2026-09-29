@@ -36,6 +36,11 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         // Setup notification categories and request permissions
         setupNotificationCategories()
         
+        #if DEBUG
+        // The permission alert would cover every screenshot.
+        if ScreenshotDemoData.isEnabled { return true }
+        #endif
+
         // Request notification permissions on app launch
         Task {
             let center = UNUserNotificationCenter.current()
@@ -292,7 +297,15 @@ struct BackupFlowApp: App {
             BackupHistory.self
         ])
         
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        let inMemory: Bool = {
+            #if DEBUG
+            // Screenshot demo data must never mix with or overwrite real tasks.
+            return ScreenshotDemoData.isEnabled
+            #else
+            return false
+            #endif
+        }()
+        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: inMemory)
         
         // Ensure Application Support directory exists before opening the store
         do {
@@ -309,6 +322,11 @@ struct BackupFlowApp: App {
             Task {
                 await performMediaTypeMigration(container: container)
             }
+            #if DEBUG
+            if ScreenshotDemoData.isEnabled {
+                Task { @MainActor in ScreenshotDemoData.seed(into: container) }
+            }
+            #endif
             
             return container
         } catch {

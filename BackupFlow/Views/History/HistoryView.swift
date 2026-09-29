@@ -20,6 +20,7 @@ struct HistoryView: View {
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
                             Button("task.details.close".localized) { dismiss() }
+                                .accessibilityIdentifier("sheet.close")
                         }
                         ToolbarItem(placement: .navigationBarTrailing) { clearHistoryButton }
                     }
@@ -62,6 +63,7 @@ struct HistoryView: View {
                         } label: {
                             HistoryItemCard(item: item, onDelete: { deleteItem(item) })
                         }
+                        .accessibilityIdentifier("history.item")
                     }
                 }
                 .padding(.horizontal, DesignSystem.Spacing.base)
@@ -171,7 +173,9 @@ struct HistoryView: View {
     private func historyDetailView(for item: BackupHistory) -> some View {
         List {
             Section("history.source".localized) {
-                Text(item.taskSourcePath ?? "history.unknown".localized)
+                Text(item.taskSourcePath == "PHOTOS_LIBRARY"
+                     ? "backup.photos_option".localized
+                     : item.taskSourcePath ?? "history.unknown".localized)
                     .font(.system(.body, design: .monospaced))
             }
             .liquidListRow()
