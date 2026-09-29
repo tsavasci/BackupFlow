@@ -374,7 +374,11 @@ struct BackupFlowApp: App {
                 FTPService.shared.updateBackgroundMode(isBackground: true)
                 if BackupScheduler.shared.isProcessing {
                     debugLog("⚠️ App moved to background. Active backup detected - keeping current process running.")
-                    debugLog("📱 WebDAV may continue via background URLSession; FTP is limited to its current iOS execution window.")
+                    if ContinuedBackupRunner.isRunning {
+                        debugLog("📱 A continued processing task keeps this backup running in the background.")
+                    } else {
+                        debugLog("📱 WebDAV may continue via background URLSession; FTP/SFTP are limited to the current iOS execution window.")
+                    }
                 } else {
                     debugLog("🔄 App moved to background. Scheduling processing task.")
                 }

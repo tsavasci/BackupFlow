@@ -46,6 +46,11 @@ struct SFTPSyncEngine {
             if isCancelled?() == true {
                 throw BackupServiceError.cancelled
             }
+            guard LocalFileAvailability.isReadableNow(localFileURL) else {
+                result.iCloudSkippedFiles += 1
+                debugLog("☁️ iCloud'da, henüz indirilmedi; sonraki yedekte yüklenecek: \(relativePath)")
+                continue
+            }
             let targetPath = remotePath.hasSuffix("/") ? remotePath + relativePath : "\(remotePath)/\(relativePath)"
             let parentPath = (targetPath as NSString).deletingLastPathComponent
             if !options.isDryRun && !parentPath.isEmpty && parentPath != "/" {

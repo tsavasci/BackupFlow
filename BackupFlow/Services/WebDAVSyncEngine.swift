@@ -39,6 +39,10 @@ struct WebDAVSyncEngine {
 
         for (index, (relativePath, localFileURL)) in localFileMap.enumerated() {
             guard !isCancelled() else { throw BackupServiceError.cancelled }
+            guard LocalFileAvailability.isReadableNow(localFileURL) else {
+                logger.info("☁️ iCloud'da, henüz indirilmedi; sonraki yedekte yüklenecek: \(relativePath)")
+                continue
+            }
             let remotePath = remoteBasePath == "/" ? "/\(relativePath)" : "\(remoteBasePath)/\(relativePath)"
 
             let parentPath = (remotePath as NSString).deletingLastPathComponent

@@ -144,6 +144,16 @@ final class BackupFlowTests: XCTestCase {
         XCTAssertFalse(ContinuedBackupRunner.isRunning)
     }
 
+    func testRegularLocalFilesAreReadableWithoutICloud() throws {
+        let fileURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("backupflow-availability-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: fileURL) }
+        try Data("x".utf8).write(to: fileURL)
+
+        // Only iCloud files that aren't on the device are skipped.
+        XCTAssertTrue(LocalFileAvailability.isReadableNow(fileURL))
+    }
+
     func testBackupStatusScanningAndPreparingAreUserFriendly() throws {
         XCTAssertFalse(BackupStatus.scanning.displayName.isEmpty)
         XCTAssertFalse(BackupStatus.preparing.displayName.isEmpty)

@@ -77,6 +77,11 @@ struct FTPSyncEngine {
 
         for (index, (relativePath, localFileURL)) in localFileMap.enumerated() {
             guard !isCancelled() else { throw BackupServiceError.cancelled }
+            guard LocalFileAvailability.isReadableNow(localFileURL) else {
+                result.iCloudSkippedFiles += 1
+                logger.info("☁️ iCloud'da, henüz indirilmedi; sonraki yedekte yüklenecek: \(relativePath)")
+                continue
+            }
 
             let targetPath = remotePath.isEmpty ? relativePath : "\(remotePath)/\(relativePath)"
             let parentPath = (targetPath as NSString).deletingLastPathComponent
