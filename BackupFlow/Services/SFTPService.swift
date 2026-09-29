@@ -409,7 +409,13 @@ final class SFTPService: NSObject, @unchecked Sendable {
             }
         }
 
-        try await listAll(at: path, relativeTo: "")
+        do {
+            try await listAll(at: path, relativeTo: "")
+        } catch where Self.isNoSuchFile(error) {
+            // A new destination folder doesn't exist yet; uploads create it.
+            logger.info("SFTP remote dir does not exist yet, treating as empty: \(path)")
+            return [:]
+        }
         return allFiles
     }
     
@@ -754,12 +760,20 @@ final class SFTPService: NSObject, @unchecked Sendable {
         do {
             let attrs = try await sftp.getAttributes(at: path)
             return attrs.size.map(Int64.init)
-        } catch let sftpError as SFTPError {
-            if case .errorStatus(let status) = sftpError, status.errorCode == .noSuchFile {
-                return nil
-            }
-            throw sftpError
+        } catch where Self.isNoSuchFile(error) {
+            return nil
         }
+    }
+
+    /// Citadel reports a missing path either wrapped in SFTPError or as a bare status.
+    private static func isNoSuchFile(_ error: Error) -> Bool {
+        if let status = error as? SFTPMessage.Status {
+            return status.errorCode == .noSuchFile
+        }
+        if case .errorStatus(let status)? = error as? SFTPError {
+            return status.errorCode == .noSuchFile
+        }
+        return false
     }
 
     private func prepareCurrentUpload(

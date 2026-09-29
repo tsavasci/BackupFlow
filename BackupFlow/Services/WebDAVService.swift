@@ -672,9 +672,14 @@ final class WebDAVService: NSObject, FileProviderDelegate {
         prepareCurrentUpload(localURL: localURL, progressHandler: progressHandler)
         self.logger.info("🌐 Enqueuing background PUT upload: \(request.url?.absoluteString ?? remotePath)")
 
+        let uploadURL = try stageForBackgroundUpload(localURL)
+        defer {
+            if uploadURL != localURL { try? fileManager.removeItem(at: uploadURL) }
+        }
+
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             // Enqueue background upload task from file (no in-memory buffering)
-            let task = session.uploadTask(with: request, fromFile: localURL)
+            let task = session.uploadTask(with: request, fromFile: uploadURL)
             self.currentUploadTask = task
             self.backgroundUploadContinuations[task.taskIdentifier] = continuation
             self.backgroundUploadFileSizes[task.taskIdentifier] = currentFileTotalBytes
@@ -696,6 +701,26 @@ final class WebDAVService: NSObject, FileProviderDelegate {
             // Best-effort initial progress callback
             progressHandler?(0.0)
         }
+    }
+
+    /// The background upload daemon cannot read security-scoped files (File Provider
+    /// folders) or files with complete protection, so hand it a copy in our own tmp.
+    private func stageForBackgroundUpload(_ localURL: URL) throws -> URL {
+        let tempRoot = fileManager.temporaryDirectory.standardizedFileURL.path
+        if localURL.standardizedFileURL.path.hasPrefix(tempRoot) {
+            return localURL
+        }
+
+        let stagingDir = fileManager.temporaryDirectory
+            .appendingPathComponent("backupflow-webdav-upload", isDirectory: true)
+        try fileManager.createDirectory(at: stagingDir, withIntermediateDirectories: true)
+        let stagedURL = stagingDir.appendingPathComponent("\(UUID().uuidString)-\(localURL.lastPathComponent)")
+        try fileManager.copyItem(at: localURL, to: stagedURL)
+        try? fileManager.setAttributes(
+            [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
+            ofItemAtPath: stagedURL.path
+        )
+        return stagedURL
     }
 
     private func finishBackgroundUpload(task: URLSessionTask, result: Result<Void, Error>) {

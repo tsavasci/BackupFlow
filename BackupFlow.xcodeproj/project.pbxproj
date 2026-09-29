@@ -8,7 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		A1B2C3D4E5F60718293A4B5C /* Citadel in Frameworks */ = {isa = PBXBuildFile; productRef = B1C2D3E4F5061728394A5B6C /* Citadel */; };
-		F2D9B6992E7D6480005A07FE /* FilesProvider in Frameworks */ = {isa = PBXBuildFile; productRef = F2DA23882E7D6B0000B2727D /* FilesProvider */; };
+		F2E57482306BD5A300A9F22B /* FilesProvider in Frameworks */ = {isa = PBXBuildFile; productRef = F2E57481306BD5A300A9F22B /* FilesProvider */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -71,7 +71,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A1B2C3D4E5F60718293A4B5C /* Citadel in Frameworks */,
-				F2D9B6992E7D6480005A07FE /* FilesProvider in Frameworks */,
+				F2E57482306BD5A300A9F22B /* FilesProvider in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -141,7 +141,7 @@
 			name = BackupFlow;
 			packageProductDependencies = (
 				B1C2D3E4F5061728394A5B6C /* Citadel */,
-				F2DA23882E7D6B0000B2727D /* FilesProvider */,
+				F2E57481306BD5A300A9F22B /* FilesProvider */,
 			);
 			productName = BackupFlow;
 			productReference = F2DA234A2E7D5FD900B2727D /* BackupFlow.app */;
@@ -236,7 +236,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				C1D2E3F40516273849A5B6C7 /* XCRemoteSwiftPackageReference "Citadel" */,
-				F2CF30272E606B8C005EF26F /* XCRemoteSwiftPackageReference "FileProvider" */,
+				F2E57480306BD5A300A9F22B /* XCLocalSwiftPackageReference "LocalPackages/FilesProvider" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A085785A2E231DAC008FF3ED /* Products */;
@@ -699,6 +699,13 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		F2E57480306BD5A300A9F22B /* XCLocalSwiftPackageReference "LocalPackages/FilesProvider" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = LocalPackages/FilesProvider;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		C1D2E3F40516273849A5B6C7 /* XCRemoteSwiftPackageReference "Citadel" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -706,14 +713,6 @@
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 0.12.1;
-			};
-		};
-		F2CF30272E606B8C005EF26F /* XCRemoteSwiftPackageReference "FileProvider" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/amosavian/FileProvider";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 0.26.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -724,9 +723,8 @@
 			package = C1D2E3F40516273849A5B6C7 /* XCRemoteSwiftPackageReference "Citadel" */;
 			productName = Citadel;
 		};
-		F2DA23882E7D6B0000B2727D /* FilesProvider */ = {
+		F2E57481306BD5A300A9F22B /* FilesProvider */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = F2CF30272E606B8C005EF26F /* XCRemoteSwiftPackageReference "FileProvider" */;
 			productName = FilesProvider;
 		};
 /* End XCSwiftPackageProductDependency section */
