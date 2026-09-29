@@ -1064,9 +1064,9 @@ final class FTPService: NSObject, @unchecked Sendable {
             logger.info("📱 FTP background task protection enabled for transfer")
         }
         defer {
-            if shouldProtectBackgroundTransfer {
-                backgroundTaskCoordinator.end()
-            }
+            // Also ends the task opened by updateBackgroundMode when a foreground run
+            // moves to the background; otherwise it would expire after the run.
+            backgroundTaskCoordinator.end()
             Task { @MainActor in
                 self.isBackgroundUploading = false
             }
