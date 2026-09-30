@@ -426,3 +426,11 @@
 "backup.defer.wifi_required" = "يتطلب هذا النسخ الاحتياطي اتصال Wi-Fi.";
 "backup.defer.external_power_required" = "يتطلب هذا النسخ الاحتياطي طاقة خارجية.";
 "backup.defer.outside_allowed_window" = "خارج نافذة وقت النسخ الاحتياطي المسموح بها.";
+"backup.defer.wifi_skipped" = "تم التخطي: لم يتوفر Wi-Fi في الوقت المناسب.";
+"backup.defer.wifi_lost" = "انقطع اتصال Wi-Fi أثناء النسخ الاحتياطي. سيستمر عند عودة Wi-Fi.";
+"backup.wifi_wait.title" = "في انتظار Wi-Fi";
+"backup.wifi_wait.body" = "تتطلب \"%@\" اتصال Wi-Fi. افتح التطبيق عند الاتصال بشبكة Wi-Fi ليبدأ النسخ الاحتياطي.";
+"backup.wifi_confirm.title" = "لا يوجد اتصال Wi-Fi";
+"backup.wifi_confirm.message" = "تتطلب هذه المهمة اتصال Wi-Fi، ولكن لا يوجد اتصال Wi-Fi حاليًا. إذا بدأتها على أي حال، فقد يستخدم النسخ الاحتياطي بيانات الجوال.";
+"backup.wifi_confirm.start_anyway" = "البدء على أي حال";
+"backup.status.deferred" = "مؤجل";

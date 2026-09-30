@@ -429,3 +429,11 @@
 "backup.defer.wifi_required" = "이 백업 작업에는 Wi-Fi가 필요합니다.";
 "backup.defer.external_power_required" = "이 백업 작업에는 외부 전원이 필요합니다.";
 "backup.defer.outside_allowed_window" = "허용된 백업 시간대 밖입니다.";
+"backup.defer.wifi_skipped" = "건너뜀: 제시간에 Wi-Fi에 연결되지 않았습니다.";
+"backup.defer.wifi_lost" = "백업 중 Wi-Fi 연결이 끊겼습니다. Wi-Fi가 다시 연결되면 계속됩니다.";
+"backup.wifi_wait.title" = "Wi-Fi 대기 중";
+"backup.wifi_wait.body" = "‘%@’에는 Wi-Fi가 필요합니다. Wi-Fi에 연결되면 앱을 열어 백업을 시작하세요.";
+"backup.wifi_confirm.title" = "Wi-Fi 연결 없음";
+"backup.wifi_confirm.message" = "이 작업에는 Wi-Fi가 필요하지만 현재 Wi-Fi에 연결되어 있지 않습니다. 그래도 시작하면 백업에 모바일 데이터가 사용될 수 있습니다.";
+"backup.wifi_confirm.start_anyway" = "그래도 시작";
+"backup.status.deferred" = "연기됨";

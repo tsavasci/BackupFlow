@@ -427,3 +427,11 @@
 "backup.defer.wifi_required" = "Для этой задачи резервного копирования требуется Wi-Fi.";
 "backup.defer.external_power_required" = "Для этой задачи резервного копирования требуется внешнее питание.";
 "backup.defer.outside_allowed_window" = "Вне разрешенного времени резервного копирования.";
+"backup.defer.wifi_skipped" = "Пропущено: Wi-Fi не появился вовремя.";
+"backup.defer.wifi_lost" = "Во время резервного копирования пропало подключение к Wi-Fi. Копирование продолжится, когда Wi-Fi появится снова.";
+"backup.wifi_wait.title" = "Ожидание Wi-Fi";
+"backup.wifi_wait.body" = "Для «%@» требуется Wi-Fi. Откройте приложение после подключения к Wi-Fi, и резервное копирование начнётся.";
+"backup.wifi_confirm.title" = "Нет подключения к Wi-Fi";
+"backup.wifi_confirm.message" = "Для этой задачи требуется Wi-Fi, но сейчас подключения к Wi-Fi нет. Если всё равно запустить её, резервное копирование может использовать мобильные данные.";
+"backup.wifi_confirm.start_anyway" = "Всё равно запустить";
+"backup.status.deferred" = "Отложено";

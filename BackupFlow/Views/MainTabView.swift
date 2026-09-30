@@ -76,6 +76,10 @@ struct MainTabView: View {
     @State private var previewResult: BackupPreviewResult?
     @State private var previewError: String?
     @State private var isPreviewLoading = false
+    /// The previewed run was confirmed to start without Wi-Fi.
+    @State private var previewIgnoresWiFi = false
+    /// A Wi-Fi-only task the user tried to start while not on Wi-Fi.
+    @State private var wifiConfirmationTask: BackupTask?
     private static let largeFileProgressThresholdBytes: Int64 = 50 * 1024 * 1024
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -273,6 +277,27 @@ struct MainTabView: View {
             }
         } message: {
             Text("tasks.delete_message_full".localized)
+        }
+        .alert(
+            "backup.wifi_confirm.title".localized,
+            isPresented: Binding(
+                get: { wifiConfirmationTask != nil },
+                set: { if !$0 { wifiConfirmationTask = nil } }
+            ),
+            presenting: wifiConfirmationTask
+        ) { task in
+            Button("backup.wifi_confirm.start_anyway".localized) {
+                startTaskNow(task, ignoreWiFiRequirement: true)
+            }
+            Button("alert.cancel".localized, role: .cancel) {}
+        } message: { _ in
+            Text("backup.wifi_confirm.message".localized)
+        }
+        .onReceive(BackupScheduler.shared.$wifiConfirmationTaskID) { taskID in
+            // A reminder's "Start" reached a Wi-Fi-only task while not on Wi-Fi.
+            guard let taskID, let task = tasks.first(where: { $0.id == taskID }) else { return }
+            wifiConfirmationTask = task
+            BackupScheduler.shared.wifiConfirmationTaskID = nil
         }
         .onReceive(timer) { time in
             currentTime = time
@@ -882,12 +907,19 @@ struct MainTabView: View {
         task.backupStatus == .uploading
     }
 
-    private func startTaskNow(_ task: BackupTask) {
-        guard task.backupType != .ftp && task.backupType != .sftp else {
-            BackupScheduler.shared.startUserInitiatedBackup(task: task)
+    /// - Parameter ignoreWiFiRequirement: The user already agreed to start without Wi-Fi.
+    private func startTaskNow(_ task: BackupTask, ignoreWiFiRequirement: Bool = false) {
+        if !ignoreWiFiRequirement, BackupScheduler.shared.needsWiFiConfirmation(for: task) {
+            wifiConfirmationTask = task
             return
         }
 
+        guard task.backupType != .ftp && task.backupType != .sftp else {
+            BackupScheduler.shared.startUserInitiatedBackup(task: task, ignoreWiFiRequirement: ignoreWiFiRequirement)
+            return
+        }
+
+        previewIgnoresWiFi = ignoreWiFiRequirement
         previewTask = task
         previewResult = nil
         previewError = nil
@@ -906,12 +938,14 @@ struct MainTabView: View {
         if task.isPaused {
             BackupScheduler.shared.resumeTask(task)
         }
+        let ignoreWiFiRequirement = previewIgnoresWiFi
         clearPreview()
-        BackupScheduler.shared.startUserInitiatedBackup(task: task)
+        BackupScheduler.shared.startUserInitiatedBackup(task: task, ignoreWiFiRequirement: ignoreWiFiRequirement)
     }
 
     private func clearPreview() {
         previewTask = nil
+        previewIgnoresWiFi = false
         previewResult = nil
         previewError = nil
         isPreviewLoading = false
@@ -1067,6 +1101,8 @@ struct MainTabView: View {
             return "backup.status.cancelled".localized
         case "interrupted":
             return "backup.status.interrupted".localized
+        case "deferred":
+            return "backup.status.deferred".localized
         case "uploading":
             return "backup.status.uploading".localized
         case "scanning":

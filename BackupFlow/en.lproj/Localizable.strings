@@ -420,3 +420,11 @@
 "backup.defer.wifi_required" = "Wi-Fi required for this backup task.";
 "backup.defer.external_power_required" = "External power required for this backup task.";
 "backup.defer.outside_allowed_window" = "Outside allowed backup time window.";
+"backup.defer.wifi_skipped" = "Skipped: Wi-Fi did not become available in time.";
+"backup.defer.wifi_lost" = "Wi-Fi was lost during the backup. It continues once Wi-Fi is back.";
+"backup.wifi_wait.title" = "Waiting for Wi-Fi";
+"backup.wifi_wait.body" = "\"%@\" requires Wi-Fi. Open the app once you are on Wi-Fi and the backup starts.";
+"backup.wifi_confirm.title" = "No Wi-Fi Connection";
+"backup.wifi_confirm.message" = "This task requires Wi-Fi, but there is no Wi-Fi connection right now. If you start it anyway, the backup may use mobile data.";
+"backup.wifi_confirm.start_anyway" = "Start Anyway";
+"backup.status.deferred" = "Deferred";

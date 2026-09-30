@@ -429,3 +429,11 @@
 "backup.defer.wifi_required" = "Cette tâche de sauvegarde requiert le Wi-Fi.";
 "backup.defer.external_power_required" = "Cette tâche de sauvegarde requiert une alimentation externe.";
 "backup.defer.outside_allowed_window" = "En dehors de la plage horaire de sauvegarde autorisée.";
+"backup.defer.wifi_skipped" = "Ignorée : le Wi-Fi n’a pas été disponible à temps.";
+"backup.defer.wifi_lost" = "La connexion Wi-Fi a été perdue pendant la sauvegarde. Elle reprendra dès que le Wi-Fi sera de retour.";
+"backup.wifi_wait.title" = "En attente du Wi-Fi";
+"backup.wifi_wait.body" = "« %@ » nécessite le Wi-Fi. Ouvrez l’app une fois connecté au Wi-Fi pour lancer la sauvegarde.";
+"backup.wifi_confirm.title" = "Pas de connexion Wi-Fi";
+"backup.wifi_confirm.message" = "Cette tâche nécessite le Wi-Fi, mais aucune connexion Wi-Fi n’est disponible pour le moment. Si vous la lancez quand même, la sauvegarde peut utiliser les données cellulaires.";
+"backup.wifi_confirm.start_anyway" = "Lancer quand même";
+"backup.status.deferred" = "Reportée";

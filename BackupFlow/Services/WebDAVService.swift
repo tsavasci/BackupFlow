@@ -18,6 +18,8 @@ final class WebDAVService: NSObject, FileProviderDelegate {
     private var webdavProvider: WebDAVFileProvider?
     private var currentBaseURL: URL?
     private var currentCredential: URLCredential?
+    /// Set for the duration of a backup whose task requires Wi-Fi.
+    private var uploadsRequireWiFi = false
     private var backgroundURLSession: URLSession?
     private var backgroundURLSessionCompletionHandler: (() -> Void)?
     private var currentUploadTask: URLSessionTask?
@@ -544,6 +546,9 @@ final class WebDAVService: NSObject, FileProviderDelegate {
 
         var request = URLRequest(url: targetURL)
         request.httpMethod = "PUT"
+        // The sessions allow cellular; a Wi-Fi-only task narrows each upload to Wi-Fi,
+        // so a dropped Wi-Fi pauses the transfer instead of moving it to cellular.
+        request.allowsCellularAccess = !uploadsRequireWiFi
 
         if let cred = currentCredential, let user = cred.user {
             let pwd = cred.password ?? ""
@@ -1393,6 +1398,8 @@ final class WebDAVService: NSObject, FileProviderDelegate {
         progressHandler: @escaping (Double) -> Void
     ) async throws -> FTPService.SyncResult {
         isCancelled = false
+        uploadsRequireWiFi = options.requiresWiFi
+        defer { uploadsRequireWiFi = false }
         self.logger.info("Starting backup: \(host):\(port)")
         if sourcePath == "PHOTOS_LIBRARY" {
             self.logger.info("Media type: \(mediaType == .photosOnly ? "Photos only" : "Photos and Videos")")

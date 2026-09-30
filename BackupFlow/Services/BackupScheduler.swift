@@ -90,6 +90,19 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     /// the background is the one that happens.
     private var userStartedTaskIDs: [UUID: Date] = [:]
     private var isCheckingMissedTimers = false
+    /// Tasks the user chose to start without Wi-Fi despite their Wi-Fi requirement, with
+    /// when they confirmed. The run that follows consumes the entry.
+    private var wifiOverrideTaskIDs: [UUID: Date] = [:]
+    /// A reminder's "Start" reached a task that needs Wi-Fi while there is none;
+    /// the dashboard asks whether to start it anyway.
+    @Published var wifiConfirmationTaskID: UUID?
+    /// Watches for Wi-Fi so runs waiting for it start as soon as it is back.
+    private let wifiPathMonitor = NWPathMonitor()
+    /// Latest state from `wifiPathMonitor`; nil until its first update.
+    private(set) var isOnWiFi: Bool?
+    /// How long a scheduled run may wait for Wi-Fi before it is skipped.
+    private let maxWiFiWait: TimeInterval = 6 * 60 * 60
+    private let wifiRetryInterval: TimeInterval = 15 * 60
     
     // Timers keyed by BackupTask.id
     @MainActor private var scheduledTimers: [UUID: Timer] = [:]
@@ -117,6 +130,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     override init() {
         super.init()
         setupNotifications()
+        startWiFiMonitoring()
         debugLog("🔄 BackupFlow: BackupScheduler init tamamlandı (BGTask + Timer hibrit)")
         
         // Debug: Veritabanındaki tüm görevleri listele
@@ -325,12 +339,113 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     /// Entry point for backups the user starts explicitly (buttons, notification actions).
     /// FTP/SFTP runs go through a continued processing task when available so they keep
     /// running after the app is backgrounded; everything else runs directly as before.
-    public func startUserInitiatedBackup(task: BackupTask) {
+    /// - Parameter ignoreWiFiRequirement: The user confirmed starting this run without Wi-Fi.
+    public func startUserInitiatedBackup(task: BackupTask, ignoreWiFiRequirement: Bool = false) {
         userStartedTaskIDs[task.id] = Date()
+        if ignoreWiFiRequirement {
+            wifiOverrideTaskIDs[task.id] = Date()
+        }
         if ContinuedBackupRunner.shared.start(task: task) { return }
         Task {
             try? await performBackup(task: task, bypassThrottle: true)
         }
+    }
+
+    /// Whether starting this task now should first ask the user to go ahead without Wi-Fi.
+    public func needsWiFiConfirmation(for task: BackupTask) -> Bool {
+        task.requiresWiFi && isOnWiFi == false
+    }
+
+    // MARK: - Wi-Fi Wait
+
+    private func startWiFiMonitoring() {
+        wifiPathMonitor.pathUpdateHandler = { path in
+            let onWiFi = path.status == .satisfied && path.usesInterfaceType(.wifi)
+            Task { @MainActor in
+                BackupScheduler.shared.wifiPathChanged(onWiFi: onWiFi)
+            }
+        }
+        wifiPathMonitor.start(queue: DispatchQueue(label: "BackupScheduler.WiFiMonitor"))
+    }
+
+    private func wifiPathChanged(onWiFi: Bool) {
+        let wasOnWiFi = isOnWiFi
+        isOnWiFi = onWiFi
+        // Wi-Fi is back while the app is open: runs waiting for it go now rather than
+        // at their next 15-minute retry. checkMissedTimers picks them up.
+        guard onWiFi, wasOnWiFi != true,
+              UIApplication.shared.applicationState == .active else { return }
+        debugLog("📶 BackupFlow: Wi-Fi bağlandı, Wi-Fi bekleyen görevler kontrol ediliyor")
+        Task {
+            await checkMissedTimers()
+        }
+    }
+
+    /// Holds a scheduled run that needs Wi-Fi. It is retried every 15 minutes, or as soon
+    /// as the open app sees Wi-Fi, until the task's next regular run and for at most
+    /// 6 hours. After that this occurrence is skipped with a single history record.
+    private func waitForWiFi(task: BackupTask) async {
+        task.lastError = "backup.defer.wifi_required".localized
+        // A manual task has no schedule to hold; the user starts it again on Wi-Fi.
+        guard task.frequency != .manual else {
+            try? task.modelContext?.save()
+            return
+        }
+
+        let now = Date()
+        if task.wifiWaitDeadline == nil {
+            let nextRegularRun = calculateNextRunTime(for: task) ?? now.addingTimeInterval(maxWiFiWait)
+            task.wifiWaitDeadline = min(nextRegularRun, now.addingTimeInterval(maxWiFiWait))
+            // WebDAV has no reminders to replace; FTP/SFTP get one notice instead of a
+            // "time to back up" reminder every 15 minutes.
+            if task.backupType == .ftp || task.backupType == .sftp {
+                sendWaitingForWiFiNotification(for: task)
+            }
+        }
+
+        let retryAt = now.addingTimeInterval(wifiRetryInterval)
+        if let deadline = task.wifiWaitDeadline, retryAt < deadline {
+            task.nextRunTime = retryAt
+            try? task.modelContext?.save()
+            debugLog("📶 BackupFlow: Wi-Fi bekleniyor, yeniden deneme: \(userLocalDateFormatter.string(from: retryAt)) - \(task.displayName)")
+        } else {
+            let skippedMessage = "backup.defer.wifi_skipped".localized
+            task.wifiWaitDeadline = nil
+            task.lastError = skippedMessage
+            task.nextRunTime = calculateNextRunTime(for: task)
+            UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [Self.wifiWaitNotificationIdentifier(for: task.id)])
+            try? task.modelContext?.save()
+            await createBackupHistoryRecord(
+                task: task,
+                syncResult: FTPService.SyncResult(newFiles: 0, skippedFiles: 0, totalBytes: 0),
+                duration: 0,
+                status: "deferred",
+                errorMessage: skippedMessage,
+                failureCategory: .network
+            )
+            debugLog("⏭️ BackupFlow: Wi-Fi gelmedi, bu çalıştırma atlandı: \(task.displayName)")
+        }
+
+        rearmTimer(for: task)
+        scheduleAppRefresh()
+        scheduleProcessingTask()
+    }
+
+    private static func wifiWaitNotificationIdentifier(for taskID: UUID) -> String {
+        "wifi-wait-\(taskID)"
+    }
+
+    private func sendWaitingForWiFiNotification(for task: BackupTask) {
+        let content = UNMutableNotificationContent()
+        content.title = "backup.wifi_wait.title".localized
+        content.body = String(format: "backup.wifi_wait.body".localized, task.displayName)
+        content.sound = .default
+        let request = UNNotificationRequest(
+            identifier: Self.wifiWaitNotificationIdentifier(for: task.id),
+            content: content,
+            trigger: nil
+        )
+        UNUserNotificationCenter.current().add(request)
     }
 
     // MARK: - Timer Management
@@ -352,6 +467,8 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
 
         // Cancel any existing legacy timer for this task to be safe
         cancelTimer(for: task.id)
+        // A fresh schedule starts over; an earlier wait for Wi-Fi no longer applies.
+        task.wifiWaitDeadline = nil
 
         // Calculate and set the next run time
         guard let nextRunTime = calculateNextRunTime(for: task) else {
@@ -468,7 +585,21 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         // Every exit path below may move nextRunTime; keep the queued reminder in sync.
         defer { refreshReminder(for: task) }
         let runStart = Date()
-        let executionOptions = BackupExecutionOptions.forTask(task)
+        var executionOptions = BackupExecutionOptions.forTask(task)
+        // The user confirmed starting this run without Wi-Fi; a stale confirmation
+        // (its run never began) must not lift the rule for a later scheduled run.
+        if let confirmedAt = wifiOverrideTaskIDs.removeValue(forKey: task.id),
+           Date().timeIntervalSince(confirmedAt) < 120 {
+            executionOptions.requiresWiFi = false
+        }
+        if executionOptions.requiresWiFi {
+            guard await getCurrentNetworkType() == .wifi else {
+                debugLog("📶 BackupFlow: Wi-Fi yok, görev Wi-Fi bekliyor: \(task.displayName)")
+                await waitForWiFi(task: task)
+                return
+            }
+            task.wifiWaitDeadline = nil
+        }
         if let blockReason = await blockedReason(for: task, options: executionOptions) {
             debugLog("⏸️ BackupFlow: Görev koşullar nedeniyle ertelendi: \(blockReason)")
             task.lastError = blockReason
@@ -559,7 +690,10 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             // Schedule next run
             task.nextRunTime = calculateNextRunTime(for: task)
             // This run is done; a still-visible reminder for it would only start a duplicate.
-            UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [Self.reminderIdentifier(for: task.id)])
+            UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [
+                Self.reminderIdentifier(for: task.id),
+                Self.wifiWaitNotificationIdentifier(for: task.id)
+            ])
             
             // Create backup history record
             let duration = Date().timeIntervalSince(runStart)
@@ -611,8 +745,32 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                 return
             }
 
-            // If currently offline, use the no-network staged retry flow
             let currentType = await getCurrentNetworkType()
+
+            // Wi-Fi dropped during a run that requires it: wait for Wi-Fi again rather
+            // than spend a retry on a connection this task isn't allowed to use.
+            if executionOptions.requiresWiFi, currentType != .wifi {
+                debugLog("📶 BackupFlow: Yedekleme sırasında Wi-Fi koptu: \(task.displayName) - \(error)")
+                task.backupStatus = task.frequency == .manual ? .failed : .idle
+                task.progress = 0.0
+                task.currentFile = nil
+                resetCurrentFileProgress(for: task)
+                // Keep a record of what was sent before the drop.
+                if BackupRunTally.shared.uploadedFiles > 0 {
+                    await createBackupHistoryRecord(
+                        task: task,
+                        syncResult: FTPService.SyncResult(newFiles: 0, skippedFiles: 0, totalBytes: 0),
+                        duration: Date().timeIntervalSince(runStart),
+                        status: "interrupted",
+                        errorMessage: "backup.defer.wifi_lost".localized,
+                        failureCategory: .network
+                    )
+                }
+                await waitForWiFi(task: task)
+                return
+            }
+
+            // If currently offline, use the no-network staged retry flow
             if !(currentType == .wifi || currentType == .cellular || currentType == .ethernet) {
                 await handleNoNetworkFor(task: task)
                 return
@@ -830,9 +988,12 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
 
         // WebDAV continues through its background URLSession and needs no reminder.
         let usesSocketTransfer = task.backupType == .ftp || task.backupType == .sftp
+        // While waiting for Wi-Fi a reminder every retry would only start a run that
+        // defers again; the task sent a single "waiting for Wi-Fi" notice instead.
         guard usesSocketTransfer,
               task.isEnabled, !task.isPaused,
               task.frequency != .manual,
+              task.wifiWaitDeadline == nil,
               let fireDate = task.nextRunTime, fireDate > Date() else { return }
 
         let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: fireDate)
@@ -1109,7 +1270,9 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                 // timer (it fired while the app was inactive and skipped the run) must not
                 // wait out that grace period, or opening the app shortly after would miss it.
                 let hasPendingTimer = scheduledTimers[task.id] != nil
-                if timeDiff > 120 || (timeDiff >= 0 && !hasPendingTimer) {
+                // A run waiting for Wi-Fi goes as soon as Wi-Fi is back, not at its next retry.
+                let wifiReturned = task.wifiWaitDeadline != nil && isOnWiFi == true
+                if timeDiff > 120 || (timeDiff >= 0 && !hasPendingTimer) || wifiReturned {
                     debugLog("⚠️ checkMissedTimers: Kaçırılmış görev tespit edildi: \(task.displayName)")
                     debugLog("   📅 Planlanmış: \(userLocalDateFormatter.string(from: nextRunTime))")
                     debugLog("   📅 Şu anda: \(userLocalDateFormatter.string(from: now))")
@@ -1129,6 +1292,8 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                             continue
                         }
                         debugLog("📱 checkMissedTimers: App aktif - Yedekleme başlatılıyor")
+                        // The pending Wi-Fi retry timer would start this run a second time.
+                        if wifiReturned { cancelTimer(for: task.id) }
                         try? await performBackup(task: task)
                     } else {
                         if isProcessing {
@@ -1136,6 +1301,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                             continue
                         }
                         debugLog("🌙 checkMissedTimers: App arka planda - otomatik yedekleme deneniyor")
+                        if wifiReturned { cancelTimer(for: task.id) }
                         do {
                             try await performBackup(task: task, bypassThrottle: true)
                         } catch {
@@ -1420,14 +1586,8 @@ extension BackupScheduler {
         task.transferSpeedBytesPerSecond = 0
     }
 
+    /// Conditions other than Wi-Fi, which performBackup handles through `waitForWiFi`.
     private func blockedReason(for task: BackupTask, options: BackupExecutionOptions) async -> String? {
-        if options.requiresWiFi {
-            let networkType = await getCurrentNetworkType()
-            if networkType != .wifi {
-                return "backup.defer.wifi_required".localized
-            }
-        }
-
         if options.requiresExternalPower {
             let batteryState = BatteryManager.shared.batteryState
             if batteryState != .charging && batteryState != .full {
@@ -1732,6 +1892,11 @@ extension BackupScheduler {
         }
         let isRunning = task.backupStatus == .preparing || task.backupStatus == .scanning || task.backupStatus == .uploading
         guard !isRunning else { return }
+        if needsWiFiConfirmation(for: task) {
+            // The dashboard asks whether to start without Wi-Fi.
+            wifiConfirmationTaskID = task.id
+            return
+        }
         debugLog("▶️ BackupFlow: Bildirimden yedekleme başlatılıyor: \(task.displayName)")
         startUserInitiatedBackup(task: task)
     }
@@ -1739,6 +1904,7 @@ extension BackupScheduler {
     /// "Cancel" on a reminder skips this occurrence and moves on to the next scheduled one.
     private func skipScheduledRun(taskId: UUID) {
         guard let task = fetchMainContextTask(id: taskId) else { return }
+        task.wifiWaitDeadline = nil
         task.nextRunTime = calculateNextRunTime(for: task)
         try? task.modelContext?.save()
         rearmTimer(for: task)

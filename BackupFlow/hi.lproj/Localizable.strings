@@ -427,3 +427,11 @@
 "backup.defer.wifi_required" = "इस बैकअप कार्य के लिए Wi-Fi आवश्यक है।";
 "backup.defer.external_power_required" = "इस बैकअप कार्य के लिए बाहरी बिजली आवश्यक है।";
 "backup.defer.outside_allowed_window" = "अनुमत बैकअप समय विंडो के बाहर।";
+"backup.defer.wifi_skipped" = "छोड़ा गया: Wi-Fi समय पर उपलब्ध नहीं हुआ।";
+"backup.defer.wifi_lost" = "बैकअप के दौरान Wi-Fi कनेक्शन टूट गया। Wi-Fi वापस आने पर यह जारी रहेगा।";
+"backup.wifi_wait.title" = "Wi-Fi की प्रतीक्षा";
+"backup.wifi_wait.body" = "\"%@\" के लिए Wi-Fi ज़रूरी है। Wi-Fi से जुड़ने के बाद ऐप खोलें, बैकअप शुरू हो जाएगा।";
+"backup.wifi_confirm.title" = "Wi-Fi कनेक्शन नहीं है";
+"backup.wifi_confirm.message" = "इस कार्य के लिए Wi-Fi ज़रूरी है, लेकिन अभी Wi-Fi कनेक्शन नहीं है। फिर भी शुरू करने पर बैकअप मोबाइल डेटा का उपयोग कर सकता है।";
+"backup.wifi_confirm.start_anyway" = "फिर भी शुरू करें";
+"backup.status.deferred" = "स्थगित";

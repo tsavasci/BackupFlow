@@ -426,3 +426,11 @@
 "backup.defer.wifi_required" = "Für diese Backup-Aufgabe ist Wi-Fi erforderlich.";
 "backup.defer.external_power_required" = "Für diese Backup-Aufgabe ist externe Stromversorgung erforderlich.";
 "backup.defer.outside_allowed_window" = "Außerhalb des erlaubten Backup-Zeitfensters.";
+"backup.defer.wifi_skipped" = "Übersprungen: WLAN war nicht rechtzeitig verfügbar.";
+"backup.defer.wifi_lost" = "Die WLAN-Verbindung wurde während des Backups getrennt. Es wird fortgesetzt, sobald WLAN wieder verfügbar ist.";
+"backup.wifi_wait.title" = "Warten auf WLAN";
+"backup.wifi_wait.body" = "„%@“ erfordert WLAN. Öffne die App, sobald du mit einem WLAN verbunden bist, dann startet das Backup.";
+"backup.wifi_confirm.title" = "Keine WLAN-Verbindung";
+"backup.wifi_confirm.message" = "Diese Aufgabe erfordert WLAN, aber derzeit besteht keine WLAN-Verbindung. Wenn du sie trotzdem startest, kann das Backup mobile Daten verwenden.";
+"backup.wifi_confirm.start_anyway" = "Trotzdem starten";
+"backup.status.deferred" = "Verschoben";

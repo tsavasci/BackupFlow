@@ -426,3 +426,11 @@
 "backup.defer.wifi_required" = "Esta tarea de copia requiere Wi-Fi.";
 "backup.defer.external_power_required" = "Esta tarea de copia requiere alimentación externa.";
 "backup.defer.outside_allowed_window" = "Fuera del intervalo horario permitido para copias.";
+"backup.defer.wifi_skipped" = "Omitida: la Wi-Fi no estuvo disponible a tiempo.";
+"backup.defer.wifi_lost" = "Se perdió la conexión Wi-Fi durante la copia. Continuará cuando vuelva la Wi-Fi.";
+"backup.wifi_wait.title" = "Esperando Wi-Fi";
+"backup.wifi_wait.body" = "«%@» requiere Wi-Fi. Abre la app cuando estés conectado a una red Wi-Fi y la copia se iniciará.";
+"backup.wifi_confirm.title" = "Sin conexión Wi-Fi";
+"backup.wifi_confirm.message" = "Esta tarea requiere Wi-Fi, pero ahora no hay conexión Wi-Fi. Si la inicias de todos modos, la copia puede usar datos móviles.";
+"backup.wifi_confirm.start_anyway" = "Iniciar de todos modos";
+"backup.status.deferred" = "Aplazada";

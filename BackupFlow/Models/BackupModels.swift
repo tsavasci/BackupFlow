@@ -292,7 +292,10 @@ final class BackupTask: Identifiable, Hashable {
     var allowedEndTime: ScheduleTime?
     var requiresExternalPowerValue: Bool?
     var requiresWiFiValue: Bool?
-    
+    /// Set while a scheduled run waits for Wi-Fi: the time after which this
+    /// occurrence is skipped and the task moves on to its next regular run.
+    var wifiWaitDeadline: Date?
+
     // Backup type (FTP or WebDAV)
     var backupType: BackupType
     

@@ -403,3 +403,11 @@
 "backup.defer.wifi_required" = "Bu yedekleme görevi için Wi-Fi gerekli.";
 "backup.defer.external_power_required" = "Bu yedekleme görevi için harici güç gerekli.";
 "backup.defer.outside_allowed_window" = "İzinli yedekleme saat aralığının dışında.";
+"backup.defer.wifi_skipped" = "Atlandı: Wi-Fi bağlantısı zamanında gelmedi.";
+"backup.defer.wifi_lost" = "Yedekleme sırasında Wi-Fi koptu. Wi-Fi gelince devam edecek.";
+"backup.wifi_wait.title" = "Wi-Fi bekleniyor";
+"backup.wifi_wait.body" = "\"%@\" Wi-Fi gerektiriyor. Wi-Fi'ye bağlandığınızda uygulamayı açın, yedekleme başlasın.";
+"backup.wifi_confirm.title" = "Wi-Fi Bağlantısı Yok";
+"backup.wifi_confirm.message" = "Bu görev Wi-Fi gerektiriyor ancak şu anda Wi-Fi bağlantısı yok. Yine de başlatırsanız yedekleme mobil veri kullanabilir.";
+"backup.wifi_confirm.start_anyway" = "Yine de Başlat";
+"backup.status.deferred" = "Ertelendi";

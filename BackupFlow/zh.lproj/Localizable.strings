@@ -425,3 +425,11 @@
 "backup.defer.wifi_required" = "此备份任务需要 Wi-Fi。";
 "backup.defer.external_power_required" = "此备份任务需要外部电源。";
 "backup.defer.outside_allowed_window" = "不在允许的备份时间窗口内。";
+"backup.defer.wifi_skipped" = "已跳过：Wi-Fi 未能及时连接。";
+"backup.defer.wifi_lost" = "备份过程中 Wi-Fi 连接断开。Wi-Fi 恢复后将继续。";
+"backup.wifi_wait.title" = "正在等待 Wi-Fi";
+"backup.wifi_wait.body" = "“%@”需要 Wi-Fi。连接 Wi-Fi 后打开 App，备份即会开始。";
+"backup.wifi_confirm.title" = "无 Wi-Fi 连接";
+"backup.wifi_confirm.message" = "此任务需要 Wi-Fi，但当前没有 Wi-Fi 连接。如果仍要开始，备份可能会使用蜂窝数据。";
+"backup.wifi_confirm.start_anyway" = "仍要开始";
+"backup.status.deferred" = "已推迟";

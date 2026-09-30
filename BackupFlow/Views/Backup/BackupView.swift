@@ -672,7 +672,12 @@ struct BackupView: View {
             presenting: backupTaskToStart
         ) { taskToStart in
             Button("backup.notification.action.start".localized) {
-                BackupScheduler.shared.startUserInitiatedBackup(task: taskToStart)
+                // The message below already warned about the missing Wi-Fi, so tapping
+                // Start is the confirmation.
+                BackupScheduler.shared.startUserInitiatedBackup(
+                    task: taskToStart,
+                    ignoreWiFiRequirement: BackupScheduler.shared.needsWiFiConfirmation(for: taskToStart)
+                )
                 backupTaskToStart = nil
                 dismiss()
             }
@@ -683,11 +688,9 @@ struct BackupView: View {
             }
             .accessibilityIdentifier("backup.start_later")
         } message: { taskToStart in
-            if taskToStart.deletionPolicy == .mirror {
-                Text("backup.start_prompt_message".localized + "\n\n" + "backup.mirror_policy_warning".localized)
-            } else {
-                Text("backup.start_prompt_message".localized)
-            }
+            let mirrorWarning = taskToStart.deletionPolicy == .mirror ? "\n\n" + "backup.mirror_policy_warning".localized : ""
+            let wifiWarning = BackupScheduler.shared.needsWiFiConfirmation(for: taskToStart) ? "\n\n" + "backup.wifi_confirm.message".localized : ""
+            Text("backup.start_prompt_message".localized + mirrorWarning + wifiWarning)
         }
         .alert("sftp.hostkey_title".localized, isPresented: $showingSFTPHostKeyAlert) {
             Button("backup.ok".localized, role: .cancel) {}
