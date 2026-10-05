@@ -203,10 +203,13 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         
         let id = identifier
         BGTaskScheduler.shared.getPendingTaskRequests { requests in
-            let hasPending = requests.contains { $0.identifier == id }
+            let pending = requests.first { $0.identifier == id }
+            let hasPending = pending != nil
+            let pendingBeginDate = pending?.earliestBeginDate
             Task { @MainActor in
                 BackupScheduler.shared.handleProcessingPendingCheck(
                     hasPending: hasPending,
+                    pendingBeginDate: pendingBeginDate,
                     identifier: id,
                     earliestBeginDate: earliestBeginDate,
                     requireExternal: requireExternal
@@ -218,13 +221,23 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
     @MainActor
     private func handleProcessingPendingCheck(
         hasPending: Bool,
+        pendingBeginDate: Date?,
         identifier: String,
         earliestBeginDate: Date?,
         requireExternal: Bool
     ) {
         if hasPending {
-            debugLog("ℹ️ BGTaskScheduler: Processing görevi zaten pending, yeniden planlama atlandı")
-            return
+            // Keep the pending request unless a task now needs to run earlier than it
+            // allows (e.g. its time was moved forward). Replacing it with a later date
+            // would only push the next background run further out.
+            guard let newDate = earliestBeginDate,
+                  let pendingDate = pendingBeginDate,
+                  newDate.addingTimeInterval(60) < pendingDate else {
+                debugLog("ℹ️ BGTaskScheduler: Processing görevi zaten pending, yeniden planlama atlandı")
+                return
+            }
+            BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: identifier)
+            debugLog("🔁 BGTaskScheduler: Bekleyen processing görevi daha erken tarihe alınıyor: \(userLocalDateFormatter.string(from: pendingDate)) -> \(userLocalDateFormatter.string(from: newDate))")
         }
         
         if let last = lastSubmitByIdentifier[identifier], Date().timeIntervalSince(last) < 900 {
@@ -539,16 +552,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         debugLog("⏰ BackupFlow: Timer tetiklendi: \(taskId)")
         scheduledTimers.removeValue(forKey: taskId)
 
-        // A timer that came due while the app was suspended fires the moment anything
-        // wakes the app, including a notification response, before that response is
-        // handled. Starting here would run a backup the user just skipped with the
-        // reminder's "Cancel". Only run for an active app: once it comes forward,
-        // checkMissedTimers runs the task if it is still due, and in the background
-        // the reminder and BGProcessingTask paths take over.
-        guard UIApplication.shared.applicationState == .active else {
-            debugLog("ℹ️ BackupFlow: Uygulama aktif değil; zamanlayıcı yedeği başlatmadı: \(taskId)")
-            return
-        }
+        let isActive = UIApplication.shared.applicationState == .active
 
         // Find the task and perform the backup
         Task {
@@ -561,8 +565,23 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                 predicate: #Predicate { $0.id == taskId }
             )
             descriptor.fetchLimit = 1
-            
+
             if let taskToRun = try? context.fetch(descriptor).first {
+                // A timer that came due while the app was suspended fires the moment anything
+                // wakes the app, including a notification response, before that response is
+                // handled. Starting here would run an FTP/SFTP backup the user just skipped
+                // with the reminder's "Cancel"; for those, checkMissedTimers runs the task
+                // once the app comes forward, and the reminder covers the background.
+                // WebDAV has no reminder, so its timer still runs in the background.
+                if !isActive, taskToRun.backupType != .webdav {
+                    debugLog("ℹ️ BackupFlow: Uygulama aktif değil; zamanlayıcı yedeği başlatmadı: \(taskToRun.displayName)")
+                    return
+                }
+                // The run was skipped or postponed after this timer was armed.
+                if let nextRunTime = taskToRun.nextRunTime, nextRunTime.timeIntervalSinceNow > 10 {
+                    debugLog("ℹ️ BackupFlow: Görevin zamanı ileri alınmış; zamanlayıcı yedeği başlatmadı: \(taskToRun.displayName)")
+                    return
+                }
                 debugLog("▶️ BackupFlow: Timer'dan yedekleme başlatılıyor: \(taskToRun.displayName)")
                 try? await performBackup(task: taskToRun)
             } else {

@@ -475,12 +475,12 @@ struct BackupView: View {
 
                             if let message = connectionStatus.message, !message.isEmpty {
                                 HStack(spacing: 8) {
-                                    Image(systemName: connectionStatus.isSuccess ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                    Image(systemName: connectionStatus.isTesting ? "hourglass" : (connectionStatus.isSuccess ? "checkmark.circle.fill" : "xmark.circle.fill"))
                                         .accessibilityHidden(true)
                                     Text(message)
                                         .font(.caption)
                                 }
-                                .foregroundStyle(connectionStatus.isSuccess ? .green : .red)
+                                .foregroundStyle(connectionStatus.isTesting ? .secondary : (connectionStatus.isSuccess ? Color.green : Color.red))
                                 .transition(.opacity)
                             }
 
