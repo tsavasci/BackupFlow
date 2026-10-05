@@ -143,9 +143,6 @@
 "history.stats.total_size" = "الحجم الإجمالي";
 "history.stats.duration" = "المدة";
 "history.stats.date" = "التاريخ";
-"history.duration.seconds" = "%.1f ثانية";
-"history.duration.minutes" = "%.1f دقيقة";
-"history.duration.hours" = "%.1f ساعة";
 "day.names.sunday" = "الأحد";
 "day.names.monday" = "الاثنين";
 "day.names.tuesday" = "الثلاثاء";

@@ -144,9 +144,6 @@
 "history.stats.total_size" = "合計サイズ";
 "history.stats.duration" = "所要時間";
 "history.stats.date" = "日付";
-"history.duration.seconds" = "%.1f 秒";
-"history.duration.minutes" = "%.1f 分";
-"history.duration.hours" = "%.1f 時間";
 "day.names.sunday" = "日曜日";
 "day.names.monday" = "月曜日";
 "day.names.tuesday" = "火曜日";

@@ -144,9 +144,6 @@
 "history.stats.total_size" = "Общий размер";
 "history.stats.duration" = "Длительность";
 "history.stats.date" = "Дата";
-"history.duration.seconds" = "%.1f секунд";
-"history.duration.minutes" = "%.1f минут";
-"history.duration.hours" = "%.1f часов";
 "day.names.sunday" = "Воскресенье";
 "day.names.monday" = "Понедельник";
 "day.names.tuesday" = "Вторник";

@@ -3,7 +3,6 @@ import SwiftUI
 // MARK: - App Surface Theme
 
 struct LiquidTheme {
-    static let accent = Color(red: 0.20, green: 0.45, blue: 0.95)
     static let cardCornerRadius: CGFloat = 18
     static let cardStroke = LinearGradient(
         colors: [
@@ -24,33 +23,16 @@ struct LiquidTheme {
     )
 }
 
-// Alias for modern design system
-
 private struct LiquidBackgroundModifier: ViewModifier {
-    @Environment(\.colorScheme) private var colorScheme
-
-    private var gradient: LinearGradient {
-        switch colorScheme {
-        case .dark:
-            return LinearGradient(
-                colors: [
-                    Color(.systemBackground),
-                    Color(.systemBackground).opacity(0.94)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        default:
-            return LinearGradient(
-                colors: [
-                    Color(.systemBackground),
-                    Color(.systemBackground).opacity(0.94)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        }
-    }
+    // systemBackground adapts to light/dark mode on its own.
+    private let gradient = LinearGradient(
+        colors: [
+            Color(.systemBackground),
+            Color(.systemBackground).opacity(0.94)
+        ],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
 
     func body(content: Content) -> some View {
         content.background(gradient.ignoresSafeArea())

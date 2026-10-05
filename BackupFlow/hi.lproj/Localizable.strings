@@ -143,9 +143,6 @@
 "history.stats.total_size" = "कुल आकार";
 "history.stats.duration" = "अवधि";
 "history.stats.date" = "तिथि";
-"history.duration.seconds" = "%.1f सेकंड";
-"history.duration.minutes" = "%.1f मिनट";
-"history.duration.hours" = "%.1f घंटे";
 "day.names.sunday" = "रविवार";
 "day.names.monday" = "सोमवार";
 "day.names.tuesday" = "मंगलवार";

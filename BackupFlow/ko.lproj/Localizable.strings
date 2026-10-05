@@ -143,9 +143,6 @@
 "history.stats.total_size" = "전체 크기";
 "history.stats.duration" = "소요 시간";
 "history.stats.date" = "날짜";
-"history.duration.seconds" = "%.1f초";
-"history.duration.minutes" = "%.1f분";
-"history.duration.hours" = "%.1f시간";
 "day.names.sunday" = "일요일";
 "day.names.monday" = "월요일";
 "day.names.tuesday" = "화요일";

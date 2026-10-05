@@ -143,9 +143,6 @@
 "history.stats.total_size" = "Tamaño total";
 "history.stats.duration" = "Duración";
 "history.stats.date" = "Fecha";
-"history.duration.seconds" = "%.1f segundos";
-"history.duration.minutes" = "%.1f minutos";
-"history.duration.hours" = "%.1f horas";
 "day.names.sunday" = "Domingo";
 "day.names.monday" = "Lunes";
 "day.names.tuesday" = "Martes";

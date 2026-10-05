@@ -134,14 +134,6 @@ enum MediaType: String, Codable, CaseIterable, Identifiable {
         }
     }
     
-    var includesPhotos: Bool {
-        self == .photosOnly || self == .photosAndVideos
-    }
-    
-    var includesVideos: Bool {
-        self == .videosOnly || self == .photosAndVideos
-    }
-    
     var systemImageName: String {
         switch self {
         case .photosOnly: return "photo"
@@ -599,65 +591,5 @@ final class BackupHistory: Identifiable {
         self.taskIsAnonymous = taskIsAnonymous
         self.taskMediaTypeRaw = taskMediaTypeRaw
         self.task = task
-    }
-
-    var taskMediaType: MediaType? {
-        guard let rawValue = taskMediaTypeRaw else { return nil }
-        return MediaType(rawValue: rawValue)
-    }
-    
-    var formattedDuration: String {
-        let formatter = DateComponentsFormatter()
-        formatter.allowedUnits = [.hour, .minute, .second]
-        formatter.unitsStyle = .abbreviated
-        return formatter.string(from: duration) ?? "0s"
-    }
-    
-    var formattedFileSize: String {
-        let formatter = ByteCountFormatter()
-        formatter.countStyle = .file
-        return formatter.string(fromByteCount: bytesTransferred)
-    }
-    
-    var formattedTotalSize: String {
-        let formatter = ByteCountFormatter()
-        formatter.countStyle = .file
-        return formatter.string(fromByteCount: totalBytes)
-    }
-    
-    var progress: Double {
-        totalBytes > 0 ? Double(bytesTransferred) / Double(totalBytes) : 0.0
-    }
-    
-    var progressPercentage: String {
-        String(format: "%.1f%%", progress * 100)
-    }
-    
-    var filesProcessedText: String {
-        "\(filesProcessed) / \(totalFiles) dosya"
-    }
-    
-    var isSuccess: Bool {
-        errorMessage == nil && status == "completed"
-    }
-    
-    var statusIcon: String {
-        if status == "completed" {
-            return "checkmark.circle.fill"
-        } else if status == "failed" || status == "cancelled" {
-            return "xmark.circle.fill"
-        } else {
-            return "arrow.clockwise.circle.fill"
-        }
-    }
-    
-    var statusColor: Color {
-        if status == "completed" {
-            return .green
-        } else if status == "failed" || status == "cancelled" {
-            return .red
-        } else {
-            return .blue
-        }
     }
 }
