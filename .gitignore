@@ -101,3 +101,9 @@ iOSInjectionProject/
 
 # Swift Package Manager build output
 .build/
+
+# App Store marketing images (regenerate with the scripts in banners/_generator and custom-pages/_generator)
+banners/*.png
+custom-pages/**/*.png
+custom-pages/**/*.jpg
+screenshots/ipad-13/
