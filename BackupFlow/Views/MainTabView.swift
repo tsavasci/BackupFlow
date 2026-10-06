@@ -69,6 +69,7 @@ struct MainTabView: View {
     @State private var showHistory = false
     @State private var showSettings = false
     @State private var selectedTask: BackupTask?
+    @State private var selectedHistory: BackupHistory?
     @State private var taskToDelete: BackupTask?
     @State private var showDeleteAlert = false
     @State private var currentTime = Date()
@@ -252,6 +253,17 @@ struct MainTabView: View {
                 TaskDetailView(task: task)
                     .navigationTitle("task.details.title".localized)
                     .navigationBarTitleDisplayMode(.inline)
+            }
+        }
+        .sheet(item: $selectedHistory) { item in
+            NavigationStack {
+                HistoryDetailView(item: item)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("task.details.close".localized) { selectedHistory = nil }
+                                .accessibilityIdentifier("sheet.close")
+                        }
+                    }
             }
         }
         .sheet(item: $previewTask) { task in
@@ -802,36 +814,44 @@ struct MainTabView: View {
                     )
                 } else {
                     ForEach(recentBackupRows) { record in
-                        HStack(spacing: 12) {
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 14)
-                                    .fill(dashboardTheme.primary.opacity(0.1))
-                                    .frame(width: 48, height: 48)
-                                Image(systemName: record.status == "failed" ? "exclamationmark.triangle.fill" : "checkmark.seal.fill")
-                                    .foregroundStyle(record.status == "failed" ? .red : dashboardTheme.primary)
+                        Button {
+                            // Resolve the snapshot back to its live record at tap time.
+                            selectedHistory = history.first { $0.persistentModelID == record.id }
+                        } label: {
+                            HStack(spacing: 12) {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 14)
+                                        .fill(dashboardTheme.primary.opacity(0.1))
+                                        .frame(width: 48, height: 48)
+                                    Image(systemName: record.status == "failed" ? "exclamationmark.triangle.fill" : "checkmark.seal.fill")
+                                        .foregroundStyle(record.status == "failed" ? .red : dashboardTheme.primary)
+                                }
+                                .accessibilityHidden(true)
+
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(record.displayName ?? "dashboard.backup".localized)
+                                        .font(.subheadline.weight(.semibold))
+                                        .lineLimit(1)
+                                    Text(formatDate(record.timestamp))
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                }
+
+                                Spacer()
+
+                                Text(localizedStatus(record.status))
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(record.status == "failed" ? .red : .green)
                             }
-                            .accessibilityHidden(true)
-
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(record.displayName ?? "dashboard.backup".localized)
-                                    .font(.subheadline.weight(.semibold))
-                                    .lineLimit(1)
-                                Text(formatDate(record.timestamp))
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
-                            }
-
-                            Spacer()
-
-                            Text(localizedStatus(record.status))
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(record.status == "failed" ? .red : .green)
+                            .padding(14)
+                            .background(
+                                RoundedRectangle(cornerRadius: 18)
+                                    .fill(Color(.systemBackground).opacity(0.55))
+                            )
+                            .contentShape(RoundedRectangle(cornerRadius: 18))
                         }
-                        .padding(14)
-                        .background(
-                            RoundedRectangle(cornerRadius: 18)
-                                .fill(Color(.systemBackground).opacity(0.55))
-                        )
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("dashboard.recent_backup")
                     }
                 }
             }

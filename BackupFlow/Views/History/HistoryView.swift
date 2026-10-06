@@ -59,7 +59,7 @@ struct HistoryView: View {
                 LazyVStack(spacing: DesignSystem.Spacing.medium) {
                     ForEach(history, id: \.persistentModelID) { item in
                         NavigationLink {
-                            historyDetailView(for: item)
+                            HistoryDetailView(item: item)
                         } label: {
                             HistoryItemCard(item: item, onDelete: { deleteItem(item) })
                         }
@@ -139,40 +139,15 @@ struct HistoryView: View {
         return formatter.string(fromByteCount: bytes)
     }
     
-    private func formatDuration(_ seconds: TimeInterval) -> String {
-        if seconds < 60 {
-            return "history.duration.seconds".localized(with: String(format: "%.0f", seconds))
-        } else if seconds < 3600 {
-            return "history.duration.minutes".localized(with: String(format: "%.1f", seconds / 60))
-        } else {
-            return "history.duration.hours".localized(with: String(format: "%.1f", seconds / 3600))
-        }
-    }
+}
 
-    private func localizedHistoryStatus(_ status: String) -> String {
-        switch status.lowercased() {
-        case "completed":
-            return "backup.status.completed".localized
-        case "failed":
-            return "backup.status.failed".localized
-        case "cancelled":
-            return "backup.status.cancelled".localized
-        case "interrupted":
-            return "backup.status.interrupted".localized
-        case "deferred":
-            return "backup.status.deferred".localized
-        case "uploading":
-            return "backup.status.uploading".localized
-        case "scanning":
-            return "backup.status.scanning".localized
-        case "preparing":
-            return "backup.status.preparing".localized
-        default:
-            return status.capitalized
-        }
-    }
-    
-    private func historyDetailView(for item: BackupHistory) -> some View {
+// MARK: - History Detail
+
+/// "Backup Detail" screen, opened from the history list and the dashboard's recent backups.
+struct HistoryDetailView: View {
+    let item: BackupHistory
+
+    var body: some View {
         List {
             Section("history.source".localized) {
                 Text(item.taskSourcePath == "PHOTOS_LIBRARY"
@@ -269,6 +244,46 @@ struct HistoryView: View {
         ]
         let escaped = values.map { "\"\($0.replacingOccurrences(of: "\"", with: "\"\""))\"" }.joined(separator: ",")
         return "id,task,status,failureCategory,timestamp,filesProcessed,newFiles,updatedFiles,skippedFiles,deletedFiles,verifiedFiles,totalBytes,duration\n\(escaped)"
+    }
+
+    private func formatFileSize(_ bytes: Int64) -> String {
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .file
+        formatter.allowsNonnumericFormatting = true
+        return formatter.string(fromByteCount: bytes)
+    }
+
+    private func formatDuration(_ seconds: TimeInterval) -> String {
+        if seconds < 60 {
+            return "history.duration.seconds".localized(with: String(format: "%.0f", seconds))
+        } else if seconds < 3600 {
+            return "history.duration.minutes".localized(with: String(format: "%.1f", seconds / 60))
+        } else {
+            return "history.duration.hours".localized(with: String(format: "%.1f", seconds / 3600))
+        }
+    }
+
+    private func localizedHistoryStatus(_ status: String) -> String {
+        switch status.lowercased() {
+        case "completed":
+            return "backup.status.completed".localized
+        case "failed":
+            return "backup.status.failed".localized
+        case "cancelled":
+            return "backup.status.cancelled".localized
+        case "interrupted":
+            return "backup.status.interrupted".localized
+        case "deferred":
+            return "backup.status.deferred".localized
+        case "uploading":
+            return "backup.status.uploading".localized
+        case "scanning":
+            return "backup.status.scanning".localized
+        case "preparing":
+            return "backup.status.preparing".localized
+        default:
+            return status.capitalized
+        }
     }
 }
 
