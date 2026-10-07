@@ -169,7 +169,7 @@ struct HistoryDetailView: View {
             .liquidListRow()
             
             Section("history.stats_section".localized) {
-                LabeledContent("history.stats.status".localized, value: localizedHistoryStatus(item.status))
+                LabeledContent("history.stats.status".localized, value: BackupHistory.localizedStatus(item.status))
                 LabeledContent("history.stats.files_processed".localized, value: "\(item.filesProcessed)")
                 LabeledContent("history.stats.total_files".localized, value: "\(item.totalFiles)")
                 if item.skippedFiles > 0 {
@@ -262,29 +262,6 @@ struct HistoryDetailView: View {
             return "history.duration.hours".localized(with: String(format: "%.1f", seconds / 3600))
         }
     }
-
-    private func localizedHistoryStatus(_ status: String) -> String {
-        switch status.lowercased() {
-        case "completed":
-            return "backup.status.completed".localized
-        case "failed":
-            return "backup.status.failed".localized
-        case "cancelled":
-            return "backup.status.cancelled".localized
-        case "interrupted":
-            return "backup.status.interrupted".localized
-        case "deferred":
-            return "backup.status.deferred".localized
-        case "uploading":
-            return "backup.status.uploading".localized
-        case "scanning":
-            return "backup.status.scanning".localized
-        case "preparing":
-            return "backup.status.preparing".localized
-        default:
-            return status.capitalized
-        }
-    }
 }
 
 // MARK: - History Item Card Component
@@ -325,7 +302,7 @@ struct HistoryItemCard: View {
                     Spacer()
                     
                     StatusBadge(
-                        text: localizedHistoryStatus(item.status),
+                        text: BackupHistory.localizedStatus(item.status),
                         style: statusStyle
                     )
                 }
@@ -372,29 +349,6 @@ struct HistoryItemCard: View {
             } label: {
                 Label("history.delete".localized, systemImage: "trash")
             }
-        }
-    }
-    
-    private func localizedHistoryStatus(_ status: String) -> String {
-        switch status.lowercased() {
-        case "completed":
-            return "backup.status.completed".localized
-        case "failed":
-            return "backup.status.failed".localized
-        case "cancelled":
-            return "backup.status.cancelled".localized
-        case "interrupted":
-            return "backup.status.interrupted".localized
-        case "deferred":
-            return "backup.status.deferred".localized
-        case "uploading":
-            return "backup.status.uploading".localized
-        case "scanning":
-            return "backup.status.scanning".localized
-        case "preparing":
-            return "backup.status.preparing".localized
-        default:
-            return status.capitalized
         }
     }
     

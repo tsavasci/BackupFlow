@@ -440,6 +440,7 @@ final class SFTPService: NSObject, @unchecked Sendable {
         sourcePath: String,
         destinationPath: String,
         mediaType: MediaType,
+        includeICloudAssets: Bool,
         options: BackupExecutionOptions = .defaults,
         progressHandler: ((Double) -> Void)?
     ) async throws -> FTPService.SyncResult {
@@ -527,6 +528,7 @@ final class SFTPService: NSObject, @unchecked Sendable {
             let result = try await engine.syncBackupPhotoLibrary(
                 mediaType: mediaType,
                 remotePath: effectiveRemotePath,
+                includeICloudAssets: includeICloudAssets,
                 options: options,
                 progressHandler: progressHandler
             )

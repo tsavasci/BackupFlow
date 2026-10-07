@@ -325,107 +325,117 @@ final class WebDAVService: NSObject, FileProviderDelegate {
         self.logger.info("Testing WebDAV connection...")
         
         try await executeWithRetry {
-            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                var didResume = false
-                func safeThrow(_ error: Error) {
-                    if didResume { return }
-                    didResume = true
-                    continuation.resume(throwing: error)
-                }
-                func safeResume() {
-                    if didResume { return }
-                    didResume = true
-                    continuation.resume()
-                }
-                
-                provider.contentsOfDirectory(path: "/") { files, error in
-                    if let error = error {
-                        self.logger.error("Connection test failed: \(error.localizedDescription)")
-                        
-                        var errorMessage = "Could not connect to server."
-                        var errorCode = -1
+            try await self.verifyConnection(using: provider)
+        }
+    }
 
-                        // FilesProvider reports HTTP failures as FileProviderHTTPError; a 401/403
-                        // is a credentials problem, not "could not connect".
-                        if let httpError = error as? FileProviderHTTPError,
-                           [401, 403].contains(httpError.code.rawValue) {
-                            errorCode = httpError.code.rawValue
-                            errorMessage = "backup.error.authentication_failed".localized
-                        } else if let nsError = error as NSError? {
-                            errorCode = nsError.code
-                            self.logger.error("   - Error code: \(nsError.code)")
-                            self.logger.error("   - Error domain: \(nsError.domain)")
-                            if nsError.domain == NSURLErrorDomain {
-                                switch nsError.code {
-                                case NSURLErrorCannotFindHost, NSURLErrorCannotConnectToHost:
-                                    errorMessage = "Server not found or unreachable."
-                                    self.logger.error("   - DNS/Host resolution failed")
-                                case NSURLErrorTimedOut:
-                                    errorMessage = "Connection timed out."
-                                    self.logger.error("   - Request timeout")
-                                case NSURLErrorNotConnectedToInternet, NSURLErrorNetworkConnectionLost:
-                                    errorMessage = "No internet connection."
-                                    self.logger.error("   - Network connection issue")
-                                case NSURLErrorSecureConnectionFailed, NSURLErrorServerCertificateUntrusted:
-                                    errorMessage = "Secure connection failed. SSL certificate may be invalid."
-                                    self.logger.error("   - SSL certificate issue")
-                                case NSURLErrorUserAuthenticationRequired, NSURLErrorUserCancelledAuthentication:
-                                    errorMessage = "Authentication failed. Please check your username and password."
-                                    self.logger.error("   - Authentication error")
-                                default:
-                                    errorMessage = "Network error occurred: \(nsError.localizedDescription)"
-                                    self.logger.error("   - General network error")
-                                }
-                            } else if nsError.domain.contains("WebDav") {
-                                switch nsError.code {
-                                case 1:
-                                    errorMessage = "Could not connect to server. Please check server address and port."
-                                    self.logger.error("   - WebDAV Error Code 1: Connection failed")
-                                case 2:
-                                    errorMessage = "Authentication failed. Please check your username and password."
-                                    self.logger.error("   - WebDAV Error Code 2: Authentication failed")
-                                case 4:
-                                    errorMessage = "Permission denied. You do not have sufficient permissions."
-                                    self.logger.error("   - WebDAV Error Code 4: Permission error")
-                                case 5:
-                                    errorMessage = "Server error occurred. Please try again later."
-                                    self.logger.error("   - WebDAV Error Code 5: Server error")
-                                default:
-                                    if nsError.code == 405 ||
-                                       error.localizedDescription.contains("405") ||
-                                       error.localizedDescription.contains("Method Not Allowed") ||
-                                       (nsError.userInfo[NSUnderlyingErrorKey] as? NSError)?.code == 405 {
-                                        errorMessage = "WebDAV listing not supported in root directory. WebDAV may be active on a different path (e.g., /webdav, /storage). Please check the WebDAV path."
-                                        self.logger.error("   - HTTP 405: WebDAV path issue")
-                                    } else {
-                                        errorMessage = "WebDAV error occurred: \(error.localizedDescription)"
-                                        self.logger.error("   - General WebDAV error")
-                                    }
-                                }
-                            }
-                        }
-                        
-                        let detailedError = NSError(
-                            domain: "WebDAVError",
-                            code: errorCode,
-                            userInfo: [
-                                NSLocalizedDescriptionKey: errorMessage,
-                                NSUnderlyingErrorKey: error
-                            ]
-                        )
-                        
-                        self.isConnected = false
-                        self.webdavProvider = nil
-                        self.lastError = detailedError
-                        safeThrow(detailedError)
+    /// Lists "/" once to check that the server accepts the connection and credentials.
+    /// On failure the provider is dropped and the error explains what to check.
+    private func verifyConnection(using provider: WebDAVFileProvider) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            var didResume = false
+            func safeThrow(_ error: Error) {
+                if didResume { return }
+                didResume = true
+                continuation.resume(throwing: error)
+            }
+            func safeResume() {
+                if didResume { return }
+                didResume = true
+                continuation.resume()
+            }
+
+            provider.contentsOfDirectory(path: "/") { files, error in
+                if let error = error {
+                    self.logger.error("Connection test failed: \(error.localizedDescription)")
+                    let detailedError = self.connectionTestError(from: error)
+                    self.isConnected = false
+                    self.webdavProvider = nil
+                    self.lastError = detailedError
+                    safeThrow(detailedError)
+                } else {
+                    self.logger.info("Successfully connected. Found \(files.count) items.")
+                    self.isConnected = true
+                    safeResume()
+                }
+            }
+        }
+    }
+
+    /// Turns a failed connection test into an error whose message says what to check
+    /// (address, credentials, certificate, WebDAV path), keeping the original as underlying error.
+    private func connectionTestError(from error: Error) -> NSError {
+        var errorMessage = "Could not connect to server."
+        var errorCode = -1
+
+        // FilesProvider reports HTTP failures as FileProviderHTTPError; a 401/403
+        // is a credentials problem, not "could not connect".
+        if let httpError = error as? FileProviderHTTPError,
+           [401, 403].contains(httpError.code.rawValue) {
+            errorCode = httpError.code.rawValue
+            errorMessage = "backup.error.authentication_failed".localized
+        } else if let nsError = error as NSError? {
+            errorCode = nsError.code
+            self.logger.error("   - Error code: \(nsError.code)")
+            self.logger.error("   - Error domain: \(nsError.domain)")
+            if nsError.domain == NSURLErrorDomain {
+                switch nsError.code {
+                case NSURLErrorCannotFindHost, NSURLErrorCannotConnectToHost:
+                    errorMessage = "Server not found or unreachable."
+                    self.logger.error("   - DNS/Host resolution failed")
+                case NSURLErrorTimedOut:
+                    errorMessage = "Connection timed out."
+                    self.logger.error("   - Request timeout")
+                case NSURLErrorNotConnectedToInternet, NSURLErrorNetworkConnectionLost:
+                    errorMessage = "No internet connection."
+                    self.logger.error("   - Network connection issue")
+                case NSURLErrorSecureConnectionFailed, NSURLErrorServerCertificateUntrusted:
+                    errorMessage = "Secure connection failed. SSL certificate may be invalid."
+                    self.logger.error("   - SSL certificate issue")
+                case NSURLErrorUserAuthenticationRequired, NSURLErrorUserCancelledAuthentication:
+                    errorMessage = "Authentication failed. Please check your username and password."
+                    self.logger.error("   - Authentication error")
+                default:
+                    errorMessage = "Network error occurred: \(nsError.localizedDescription)"
+                    self.logger.error("   - General network error")
+                }
+            } else if nsError.domain.contains("WebDav") {
+                switch nsError.code {
+                case 1:
+                    errorMessage = "Could not connect to server. Please check server address and port."
+                    self.logger.error("   - WebDAV Error Code 1: Connection failed")
+                case 2:
+                    errorMessage = "Authentication failed. Please check your username and password."
+                    self.logger.error("   - WebDAV Error Code 2: Authentication failed")
+                case 4:
+                    errorMessage = "Permission denied. You do not have sufficient permissions."
+                    self.logger.error("   - WebDAV Error Code 4: Permission error")
+                case 5:
+                    errorMessage = "Server error occurred. Please try again later."
+                    self.logger.error("   - WebDAV Error Code 5: Server error")
+                default:
+                    if nsError.code == 405 ||
+                       error.localizedDescription.contains("405") ||
+                       error.localizedDescription.contains("Method Not Allowed") ||
+                       (nsError.userInfo[NSUnderlyingErrorKey] as? NSError)?.code == 405 {
+                        errorMessage = "WebDAV listing not supported in root directory. WebDAV may be active on a different path (e.g., /webdav, /storage). Please check the WebDAV path."
+                        self.logger.error("   - HTTP 405: WebDAV path issue")
                     } else {
-                        self.logger.info("Successfully connected. Found \(files.count) items.")
-                        self.isConnected = true
-                        safeResume()
+                        errorMessage = "WebDAV error occurred: \(error.localizedDescription)"
+                        self.logger.error("   - General WebDAV error")
                     }
                 }
             }
         }
+
+        return NSError(
+            domain: "WebDAVError",
+            code: errorCode,
+            userInfo: [
+                NSLocalizedDescriptionKey: errorMessage,
+                NSUnderlyingErrorKey: error
+            ]
+        )
     }
     
     func uploadFile(localURL: URL, remotePath: String, progressHandler: ((Double) -> Void)? = nil) async throws {
@@ -861,20 +871,105 @@ final class WebDAVService: NSObject, FileProviderDelegate {
 
         let existingFileMap = try await listAllRemoteFiles(at: remoteBasePath)
         let processedRelativePaths = Set(assets.map { photoLibraryManager.generateFileName(for: $0) })
-        var timedOutUploads: [(asset: PHAsset, fileName: String, remotePath: String)] = []
+
+        try fileManager.createDirectory(at: exportRootURL(), withIntermediateDirectories: true)
+
+        let firstPass = try await uploadPhotoAssets(
+            assets,
+            to: remoteBasePath,
+            existingFileMap: existingFileMap,
+            includeICloudAssets: includeICloudAssets,
+            options: options,
+            progressHandler: progressHandler,
+            result: &result
+        )
+        var failedUploads = firstPass.failedCount
+        if !options.isDryRun && !firstPass.timedOut.isEmpty {
+            failedUploads += try await retryTimedOutPhotoUploads(
+                firstPass.timedOut,
+                existingFileMap: existingFileMap,
+                includeICloudAssets: includeICloudAssets,
+                options: options,
+                result: &result
+            )
+        }
+
+        let canDeletePhotoOrphans = failedUploads == 0 && options.permitsPhotoOrphanDeletion(
+            hasFullLibraryAccess: photoLibraryManager.hasFullLibraryAccess,
+            visibleAssetCount: assets.count
+        )
+        if !canDeletePhotoOrphans && options.deletionPolicy == .mirror {
+            logger.warning("Skipping orphan photo deletion because the source snapshot is unsafe or one or more uploads failed.")
+        }
+
+        let orphans = existingFileMap.keys
+            .filter { !processedRelativePaths.contains($0) && !BackupArchive.isReserved(relativePath: $0) }
+            .map { relativePath in
+                PhotoOrphanCleanup.Orphan(
+                    relativePath: relativePath,
+                    fullRemotePath: remoteBasePath == "/" ? "/\(relativePath)" : "\(remoteBasePath)/\(relativePath)"
+                )
+            }
+        result.deletedFiles += try await PhotoOrphanCleanup.apply(
+            to: orphans,
+            basePath: remoteBasePath,
+            options: options,
+            canDelete: canDeletePhotoOrphans,
+            logger: logger,
+            isCancelled: { self.isCancelled },
+            deleteFile: { try await self.deleteFile(at: $0) },
+            archiveFile: { try await self.archiveFile(from: $0, to: $1) }
+        )
+
+        removeExportRootIfEmpty()
+
+        if failedUploads > 0 {
+            logger.warning("⚠️ Photo sync completed with \(failedUploads) failed/timeouted uploads")
+            progressHandler(1.0)
+            throw BackupServiceError.fileOperationFailed
+        }
+
+        progressHandler(1.0)
+        return result
+    }
+
+    /// A photo whose upload timed out in the first pass, kept for one more try.
+    private struct PendingPhotoUpload {
+        let asset: PHAsset
+        let fileName: String
+        let remotePath: String
+    }
+
+    /// First pass over the library: uploads new and changed photos and skips those already
+    /// on the server at the same size. Covers the first 80% of the reported progress.
+    /// - Returns: Uploads that timed out (to retry) and how many others failed.
+    private func uploadPhotoAssets(
+        _ assets: [PHAsset],
+        to remoteBasePath: String,
+        existingFileMap: [String: FileObject],
+        includeICloudAssets: Bool,
+        options: BackupExecutionOptions,
+        progressHandler: @escaping (Double) -> Void,
+        result: inout FTPService.SyncResult
+    ) async throws -> (timedOut: [PendingPhotoUpload], failedCount: Int) {
+        var timedOutUploads: [PendingPhotoUpload] = []
         var failedUploads = 0
         let totalAssets = assets.count
         var lastHeartbeatAt = Date()
 
-        try fileManager.createDirectory(at: exportRootURL(), withIntermediateDirectories: true)
+        func reportProgress(afterAsset index: Int) {
+            progressHandler(Double(index + 1) / Double(max(totalAssets, 1)) * 0.8)
+        }
 
         for (index, asset) in assets.enumerated() {
             try throwIfCancelled()
+            // Logger can't capture the inout `result`; log from a copy.
+            let counts = result
             if index == 0 || (index + 1).isMultiple(of: 10) {
-                logger.info("📷 WebDAV photo sync progress: \(index + 1)/\(totalAssets) (uploaded: \(result.newFiles + result.updatedFiles), skipped: \(result.skippedFiles), iCloud-only: \(result.iCloudSkippedFiles), timeout: \(result.timedOutAssetReads), unreadable: \(result.failedAssetReads))")
+                logger.info("📷 WebDAV photo sync progress: \(index + 1)/\(totalAssets) (uploaded: \(counts.newFiles + counts.updatedFiles), skipped: \(counts.skippedFiles), iCloud-only: \(counts.iCloudSkippedFiles), timeout: \(counts.timedOutAssetReads), unreadable: \(counts.failedAssetReads))")
             }
             if Date().timeIntervalSince(lastHeartbeatAt) >= 30 {
-                logger.info("⏳ WebDAV photo sync heartbeat: processed \(index)/\(totalAssets), transferred \(result.totalBytes) bytes")
+                logger.info("⏳ WebDAV photo sync heartbeat: processed \(index)/\(totalAssets), transferred \(counts.totalBytes) bytes")
                 lastHeartbeatAt = Date()
             }
 
@@ -892,15 +987,15 @@ final class WebDAVService: NSObject, FileProviderDelegate {
                 localSize = exportedSize
             case .iCloudOnly:
                 result.iCloudSkippedFiles += 1
-                progressHandler(Double(index + 1) / Double(max(assets.count, 1)) * 0.8)
+                reportProgress(afterAsset: index)
                 continue
             case .timedOut:
                 result.timedOutAssetReads += 1
-                progressHandler(Double(index + 1) / Double(max(assets.count, 1)) * 0.8)
+                reportProgress(afterAsset: index)
                 continue
             case .unavailable:
                 result.failedAssetReads += 1
-                progressHandler(Double(index + 1) / Double(max(assets.count, 1)) * 0.8)
+                reportProgress(afterAsset: index)
                 continue
             }
             defer { try? fileManager.removeItem(at: tempURL) }
@@ -911,7 +1006,7 @@ final class WebDAVService: NSObject, FileProviderDelegate {
                 result.skippedFiles += 1
                 result.totalBytes += localSize
                 logger.debug("⏭️ Upload skipped (\(index + 1)/\(totalAssets)): \(fileName) (\(localSize) bytes)")
-                progressHandler(Double(index + 1) / Double(max(assets.count, 1)) * 0.8)
+                reportProgress(afterAsset: index)
                 continue
             }
 
@@ -919,8 +1014,8 @@ final class WebDAVService: NSObject, FileProviderDelegate {
                 logger.info("⬆️ Upload starting (\(index + 1)/\(totalAssets)): \(fileName) (\(localSize) bytes)")
                 if !options.isDryRun {
                     try await uploadFileAwaitingCompletion(localURL: tempURL, remotePath: remotePath) { fileProgress in
-                        let assetShare = 0.8 / Double(max(assets.count, 1))
-                        let overallProgress = (Double(index) / Double(max(assets.count, 1)) * 0.8) + (fileProgress * assetShare)
+                        let assetShare = 0.8 / Double(max(totalAssets, 1))
+                        let overallProgress = (Double(index) / Double(max(totalAssets, 1)) * 0.8) + (fileProgress * assetShare)
                         progressHandler(min(max(overallProgress, 0.0), 0.8))
                     }
                     if options.checksumMode == .verifyUploads {
@@ -931,13 +1026,13 @@ final class WebDAVService: NSObject, FileProviderDelegate {
                 logger.info("✅ Upload completed (\(index + 1)/\(totalAssets)): \(fileName)")
             } catch {
                 if isUploadTimeoutError(error) {
-                    timedOutUploads.append((asset: asset, fileName: fileName, remotePath: remotePath))
+                    timedOutUploads.append(PendingPhotoUpload(asset: asset, fileName: fileName, remotePath: remotePath))
                     logger.warning("⏱️ Upload timeout queued for retry: \(fileName)")
                 } else {
                     failedUploads += 1
                     logger.error("Upload failed (continuing): \(fileName) - \(error.localizedDescription)")
                 }
-                progressHandler(Double(index + 1) / Double(max(assets.count, 1)) * 0.8)
+                reportProgress(afterAsset: index)
                 continue
             }
 
@@ -948,118 +1043,87 @@ final class WebDAVService: NSObject, FileProviderDelegate {
             }
             result.totalBytes += localSize
             BackupRunTally.shared.recordUpload(bytes: localSize)
-            progressHandler(Double(index + 1) / Double(max(assets.count, 1)) * 0.8)
+            reportProgress(afterAsset: index)
         }
 
-        if !options.isDryRun && !timedOutUploads.isEmpty {
-            logger.info("🔁 Retrying timed out uploads: \(timedOutUploads.count)")
-            for item in timedOutUploads {
-                try throwIfCancelled()
-                let retryExportResult = await photoLibraryManager.exportAssetToTemporaryFile(
-                    asset: item.asset,
-                    fileName: item.fileName,
-                    allowNetworkAccess: includeICloudAssets
-                )
-                let retryTempURL: URL
-                let retrySize: Int64
-                switch retryExportResult {
-                case .success(let exportedURL, let exportedSize):
-                    retryTempURL = exportedURL
-                    retrySize = exportedSize
-                case .iCloudOnly:
-                    result.iCloudSkippedFiles += 1
-                    failedUploads += 1
-                    logger.warning("Retry skipped (asset iCloud-only): \(item.fileName)")
-                    continue
-                case .timedOut:
-                    result.timedOutAssetReads += 1
-                    failedUploads += 1
-                    logger.warning("Retry skipped (asset read timeout): \(item.fileName)")
-                    continue
-                case .unavailable:
-                    result.failedAssetReads += 1
-                    failedUploads += 1
-                    logger.warning("Retry skipped (asset data unavailable): \(item.fileName)")
-                    continue
-                }
-                defer { try? fileManager.removeItem(at: retryTempURL) }
+        return (timedOutUploads, failedUploads)
+    }
 
-                do {
-                    // Relax timeout budget for second-chance uploads on slow/unstable links.
-                    try await uploadFile(
-                        localURL: retryTempURL,
-                        remotePath: item.remotePath,
-                        progressHandler: nil,
-                        allowBackgroundSession: false,
-                        timeoutMultiplier: 2.5
-                    )
-                    if options.checksumMode == .verifyUploads {
-                        try await verifyUploadChecksum(localURL: retryTempURL, remotePath: item.remotePath)
-                        result.verifiedFiles += 1
-                    }
-                    if existingFileMap[item.fileName] != nil {
-                        result.updatedFiles += 1
-                    } else {
-                        result.newFiles += 1
-                    }
-                    result.totalBytes += retrySize
-                    BackupRunTally.shared.recordUpload(bytes: retrySize)
-                } catch {
-                    failedUploads += 1
-                    logger.error("Retry failed: \(item.fileName) - \(error.localizedDescription)")
-                }
-            }
-        }
+    /// Second pass for uploads that timed out: exports each photo again and uploads it
+    /// in the foreground with a longer timeout.
+    /// - Returns: How many of them still failed.
+    private func retryTimedOutPhotoUploads(
+        _ uploads: [PendingPhotoUpload],
+        existingFileMap: [String: FileObject],
+        includeICloudAssets: Bool,
+        options: BackupExecutionOptions,
+        result: inout FTPService.SyncResult
+    ) async throws -> Int {
+        logger.info("🔁 Retrying timed out uploads: \(uploads.count)")
+        var failedUploads = 0
 
-        let canDeletePhotoOrphans = failedUploads == 0 && options.permitsPhotoOrphanDeletion(
-            hasFullLibraryAccess: photoLibraryManager.hasFullLibraryAccess,
-            visibleAssetCount: assets.count
-        )
-        if !canDeletePhotoOrphans && options.deletionPolicy == .mirror {
-            logger.warning("Skipping orphan photo deletion because the source snapshot is unsafe or one or more uploads failed.")
-        }
-
-        let archiveRunIdentifier = BackupArchive.makeRunIdentifier()
-        for (relativePath, _) in existingFileMap
-        where !processedRelativePaths.contains(relativePath) && !BackupArchive.isReserved(relativePath: relativePath) {
+        for item in uploads {
             try throwIfCancelled()
-            let fullRemotePath = remoteBasePath == "/" ? "/\(relativePath)" : "\(remoteBasePath)/\(relativePath)"
-            switch options.deletionPolicy {
-            case .mirror where canDeletePhotoOrphans:
-                if options.isDryRun {
-                    result.deletedFiles += 1
-                } else {
-                    do {
-                        try await deleteFile(at: fullRemotePath)
-                        result.deletedFiles += 1
-                    } catch {
-                        logger.error("Failed to delete orphaned photo \(relativePath): \(error.localizedDescription)")
-                    }
+            let retryExportResult = await photoLibraryManager.exportAssetToTemporaryFile(
+                asset: item.asset,
+                fileName: item.fileName,
+                allowNetworkAccess: includeICloudAssets
+            )
+            let retryTempURL: URL
+            let retrySize: Int64
+            switch retryExportResult {
+            case .success(let exportedURL, let exportedSize):
+                retryTempURL = exportedURL
+                retrySize = exportedSize
+            case .iCloudOnly:
+                result.iCloudSkippedFiles += 1
+                failedUploads += 1
+                logger.warning("Retry skipped (asset iCloud-only): \(item.fileName)")
+                continue
+            case .timedOut:
+                result.timedOutAssetReads += 1
+                failedUploads += 1
+                logger.warning("Retry skipped (asset read timeout): \(item.fileName)")
+                continue
+            case .unavailable:
+                result.failedAssetReads += 1
+                failedUploads += 1
+                logger.warning("Retry skipped (asset data unavailable): \(item.fileName)")
+                continue
+            }
+            defer { try? fileManager.removeItem(at: retryTempURL) }
+
+            do {
+                // Relax timeout budget for second-chance uploads on slow/unstable links.
+                try await uploadFile(
+                    localURL: retryTempURL,
+                    remotePath: item.remotePath,
+                    progressHandler: nil,
+                    allowBackgroundSession: false,
+                    timeoutMultiplier: 2.5
+                )
+                if options.checksumMode == .verifyUploads {
+                    try await verifyUploadChecksum(localURL: retryTempURL, remotePath: item.remotePath)
+                    result.verifiedFiles += 1
                 }
-            case .mirror:
-                break
-            case .appendOnly:
-                logger.info("Skipping orphan photo deletion because append-only policy is active: \(relativePath)")
-            case .archive:
-                if options.isDryRun {
-                    logger.info("Would archive orphaned photo: \(relativePath)")
+                if existingFileMap[item.fileName] != nil {
+                    result.updatedFiles += 1
                 } else {
-                    do {
-                        let archivePath = BackupArchive.destinationPath(
-                            basePath: remoteBasePath,
-                            runIdentifier: archiveRunIdentifier,
-                            relativePath: relativePath
-                        )
-                        try await archiveFile(from: fullRemotePath, to: archivePath)
-                        logger.info("Archived orphaned photo: \(relativePath)")
-                    } catch {
-                        logger.error("Failed to archive orphaned photo \(relativePath): \(error.localizedDescription)")
-                        throw error
-                    }
+                    result.newFiles += 1
                 }
+                result.totalBytes += retrySize
+                BackupRunTally.shared.recordUpload(bytes: retrySize)
+            } catch {
+                failedUploads += 1
+                logger.error("Retry failed: \(item.fileName) - \(error.localizedDescription)")
             }
         }
 
+        return failedUploads
+    }
+
+    /// Removes the temporary export folder once every exported photo has been cleaned up.
+    private func removeExportRootIfEmpty() {
         if let remaining = try? fileManager.contentsOfDirectory(
             at: exportRootURL(),
             includingPropertiesForKeys: nil,
@@ -1067,15 +1131,6 @@ final class WebDAVService: NSObject, FileProviderDelegate {
         ), remaining.isEmpty {
             try? fileManager.removeItem(at: exportRootURL())
         }
-
-        if failedUploads > 0 {
-            logger.warning("⚠️ Photo sync completed with \(failedUploads) failed/timeouted uploads")
-            progressHandler(1.0)
-            throw BackupServiceError.fileOperationFailed
-        }
-
-        progressHandler(1.0)
-        return result
     }
 
     func createDirectory(at path: String) async throws {

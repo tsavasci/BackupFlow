@@ -180,6 +180,7 @@ struct SFTPSyncEngine {
     func syncBackupPhotoLibrary(
         mediaType: MediaType,
         remotePath: String,
+        includeICloudAssets: Bool,
         options: BackupExecutionOptions = .defaults,
         progressHandler: ((Double) -> Void)? = nil
     ) async throws -> FTPService.SyncResult {
@@ -221,14 +222,25 @@ struct SFTPSyncEngine {
                 continue
             }
 
-            let exportResult = await photoManager.exportAssetToTemporaryFile(asset: asset, fileName: fileName)
+            let exportResult = await photoManager.exportAssetToTemporaryFile(
+                asset: asset,
+                fileName: fileName,
+                allowNetworkAccess: includeICloudAssets
+            )
             let tempURL: URL
             let localSize: Int64
             switch exportResult {
             case .success(let exportedURL, let exportedSize):
                 tempURL = exportedURL
                 localSize = exportedSize
-            case .iCloudOnly, .timedOut, .unavailable:
+            case .iCloudOnly:
+                result.iCloudSkippedFiles += 1
+                continue
+            case .timedOut:
+                result.timedOutAssetReads += 1
+                continue
+            case .unavailable:
+                result.failedAssetReads += 1
                 continue
             }
             defer { try? FileManager.default.removeItem(at: tempURL) }
@@ -301,49 +313,19 @@ struct SFTPSyncEngine {
         if !canDeletePhotoOrphans && options.deletionPolicy == .mirror {
             logger.warning("Skipping orphan photo deletion because full Photo Library access is unavailable or the visible library is empty.")
         }
-        let archiveRunIdentifier = BackupArchive.makeRunIdentifier()
-        for remotePath in existingFileMap.keys where !BackupArchive.isReserved(relativePath: remotePath) {
-            if isCancelled?() == true {
-                throw BackupServiceError.cancelled
-            }
-            if !processedFiles.contains(remotePath) {
-                let fullRemotePath = "\(photosDir)/\(remotePath)"
-                switch options.deletionPolicy {
-                case .mirror where canDeletePhotoOrphans:
-                    if options.isDryRun {
-                        result.deletedFiles += 1
-                    } else {
-                        do {
-                            try await deleteFile(fullRemotePath)
-                            result.deletedFiles += 1
-                        } catch {
-                            logger.error("Failed to delete orphaned file \(remotePath): \(error.localizedDescription)")
-                        }
-                    }
-                case .mirror:
-                    break
-                case .appendOnly:
-                    logger.info("Skipping orphan photo deletion because append-only policy is active: \(remotePath)")
-                case .archive:
-                    if options.isDryRun {
-                        logger.info("Would archive orphaned photo: \(remotePath)")
-                    } else {
-                        do {
-                            let archivePath = BackupArchive.destinationPath(
-                                basePath: photosDir,
-                                runIdentifier: archiveRunIdentifier,
-                                relativePath: remotePath
-                            )
-                            try await archiveFile(fullRemotePath, archivePath)
-                            logger.info("Archived orphaned photo: \(remotePath)")
-                        } catch {
-                            logger.error("Failed to archive orphaned photo \(remotePath): \(error.localizedDescription)")
-                            throw error
-                        }
-                    }
-                }
-            }
-        }
+        let orphans = existingFileMap.keys
+            .filter { !BackupArchive.isReserved(relativePath: $0) && !processedFiles.contains($0) }
+            .map { PhotoOrphanCleanup.Orphan(relativePath: $0, fullRemotePath: "\(photosDir)/\($0)") }
+        result.deletedFiles += try await PhotoOrphanCleanup.apply(
+            to: orphans,
+            basePath: photosDir,
+            options: options,
+            canDelete: canDeletePhotoOrphans,
+            logger: logger,
+            isCancelled: { isCancelled?() == true },
+            deleteFile: deleteFile,
+            archiveFile: archiveFile
+        )
 
         if !options.isDryRun {
             await clearCheckpoint?()

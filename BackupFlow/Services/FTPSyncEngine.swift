@@ -478,51 +478,24 @@ struct FTPSyncEngine {
             logger.warning("Skipping orphan photo deletion because full Photo Library access is unavailable or the visible library is empty.")
         }
 
-        let archiveRunIdentifier = BackupArchive.makeRunIdentifier()
-        for (remotePath, remoteFile) in existingFileMap where !BackupArchive.isReserved(relativePath: remotePath) {
-            // Stop before touching the next remote file once the user cancels.
-            guard !isCancelled() else { throw BackupServiceError.cancelled }
-            if !processedFiles.contains(remoteFile.name) {
-                let fullRemotePath = "\(photosDir)/\(remotePath)"
-                switch options.deletionPolicy {
-                case .mirror where canDeletePhotoOrphans:
-                    if options.isDryRun {
-                        result.deletedFiles += 1
-                    } else {
-                        do {
-                            try await deleteFile(fullRemotePath)
-                            result.deletedFiles += 1
-                            debugLog("🗑 BackupFlow: Silinmiş fotoğraf FTP'den kaldırıldı: \(remoteFile.name)")
-                            logger.debug("Successfully deleted orphaned photo: \(remoteFile.name)")
-                        } catch {
-                            debugLog("⚠️ BackupFlow: Fotoğraf silinemedi: \(remoteFile.name), hata: \(error)")
-                            logger.error("Failed to delete orphaned photo \(remoteFile.name): \(error.localizedDescription)")
-                        }
-                    }
-                case .mirror:
-                    break
-                case .appendOnly:
-                    logger.info("Skipping orphan photo deletion because append-only policy is active: \(remoteFile.name)")
-                case .archive:
-                    if options.isDryRun {
-                        logger.info("Would archive orphaned photo: \(remoteFile.name)")
-                    } else {
-                        do {
-                            let archivePath = BackupArchive.destinationPath(
-                                basePath: photosDir,
-                                runIdentifier: archiveRunIdentifier,
-                                relativePath: remotePath
-                            )
-                            try await archiveFile(fullRemotePath, archivePath)
-                            logger.info("Archived orphaned photo: \(remoteFile.name)")
-                        } catch {
-                            logger.error("Failed to archive orphaned photo \(remoteFile.name): \(error.localizedDescription)")
-                            throw error
-                        }
-                    }
-                }
+        // FTP matches orphans by file name, so photos in subfolders are compared by name too.
+        let orphans = existingFileMap
+            .filter { remotePath, remoteFile in
+                !BackupArchive.isReserved(relativePath: remotePath) && !processedFiles.contains(remoteFile.name)
             }
-        }
+            .map { remotePath, _ in
+                PhotoOrphanCleanup.Orphan(relativePath: remotePath, fullRemotePath: "\(photosDir)/\(remotePath)")
+            }
+        result.deletedFiles += try await PhotoOrphanCleanup.apply(
+            to: orphans,
+            basePath: photosDir,
+            options: options,
+            canDelete: canDeletePhotoOrphans,
+            logger: logger,
+            isCancelled: isCancelled,
+            deleteFile: deleteFile,
+            archiveFile: archiveFile
+        )
 
         progressHandler?(1.0)
         return result

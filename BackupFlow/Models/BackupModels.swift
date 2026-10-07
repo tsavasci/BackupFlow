@@ -593,3 +593,30 @@ final class BackupHistory: Identifiable {
         self.task = task
     }
 }
+
+extension BackupHistory {
+    /// User-facing name for a stored `status` value such as "completed" or "failed".
+    /// Takes the raw string so plain-value row snapshots can use it too.
+    static func localizedStatus(_ status: String) -> String {
+        switch status.lowercased() {
+        case "completed":
+            return "backup.status.completed".localized
+        case "failed":
+            return "backup.status.failed".localized
+        case "cancelled":
+            return "backup.status.cancelled".localized
+        case "interrupted":
+            return "backup.status.interrupted".localized
+        case "deferred":
+            return "backup.status.deferred".localized
+        case "uploading":
+            return "backup.status.uploading".localized
+        case "scanning":
+            return "backup.status.scanning".localized
+        case "preparing":
+            return "backup.status.preparing".localized
+        default:
+            return status.capitalized
+        }
+    }
+}

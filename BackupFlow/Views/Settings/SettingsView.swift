@@ -196,7 +196,7 @@ struct SettingsView: View {
                 let taskDescriptor = FetchDescriptor<BackupTask>()
                 let allTasks = try modelContext.fetch(taskDescriptor)
                 for task in allTasks {
-                    BackupScheduler.shared.removeReminder(forTaskID: task.id)
+                    BackupNotifier.shared.removeReminder(forTaskID: task.id)
                     task.removeStoredPassword()
                     modelContext.delete(task)
                 }
