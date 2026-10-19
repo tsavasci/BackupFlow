@@ -43,8 +43,9 @@ enum WebDAVConnectionBuilder {
             )
         }
 
-        let useHTTPS = (port == 443 || port == 8443 || port == 4433 || port == 4430 || port == 5006)
-        let scheme = schemeFromInput ?? (useHTTPS ? "https" : "http")
+        // Default to secure HTTPS unless explicitly specified as http in URL or standard HTTP port 80
+        let isExplicitHttp = (schemeFromInput == "http") || (schemeFromInput == nil && port == 80)
+        let scheme = schemeFromInput ?? (isExplicitHttp ? "http" : "https")
 
         var urlComponents = URLComponents()
         urlComponents.scheme = scheme

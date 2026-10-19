@@ -86,7 +86,10 @@ final class WebDAVBackgroundSessionDelegate: NSObject, URLSessionDelegate, URLSe
         // Handle TLS server trust
         if challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
            let serverTrust = challenge.protectionSpace.serverTrust {
-            // If pinning is configured, validate against pinned hashes
+            let host = challenge.protectionSpace.host
+            let port = challenge.protectionSpace.port
+
+            // 1. If explicit pinning is configured, validate against pinned hashes
             if let pins = pinnedCertHashes, !pins.isEmpty, let serverHash = leafCertificateSHA256Base64(from: serverTrust) {
                 if pins.contains(serverHash) {
                     completionHandler(.useCredential, URLCredential(trust: serverTrust))
@@ -96,12 +99,34 @@ final class WebDAVBackgroundSessionDelegate: NSObject, URLSessionDelegate, URLSe
                 }
                 return
             }
-            // No pinning configured: allow self-signed if permitted, otherwise default handling
-            if allowSelfSigned {
-                completionHandler(.useCredential, URLCredential(trust: serverTrust))
-            } else {
+
+            // 2. Standard system trust evaluation (valid CA certificates)
+            var secError: CFError?
+            let isTrustedBySystem = SecTrustEvaluateWithError(serverTrust, &secError)
+            if isTrustedBySystem {
                 completionHandler(.performDefaultHandling, nil)
+                return
             }
+
+            // 3. Self-signed or untrusted CA certificate: pin and validate against WebDAVCertificateStore
+            if allowSelfSigned, let serverHash = leafCertificateSHA256Base64(from: serverTrust) {
+                do {
+                    let isNew = try WebDAVCertificateStore.shared.validate(fingerprint: serverHash, host: host, port: port)
+                    if isNew {
+                        self.logger.info("🔒 Stored new self-signed certificate fingerprint for \(host):\(port)")
+                    } else {
+                        self.logger.debug("🔒 Verified existing self-signed certificate fingerprint for \(host):\(port)")
+                    }
+                    completionHandler(.useCredential, URLCredential(trust: serverTrust))
+                } catch {
+                    self.logger.error("🔒 TLS certificate verification failed for \(host):\(port): \(error.localizedDescription)")
+                    completionHandler(.cancelAuthenticationChallenge, nil)
+                }
+                return
+            }
+
+            // Self-signed certificates not permitted or unable to parse leaf hash
+            completionHandler(.performDefaultHandling, nil)
             return
         }
         completionHandler(.performDefaultHandling, nil)

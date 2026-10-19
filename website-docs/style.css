@@ -1,0 +1,120 @@
+:root {
+    --bg: #f5f7fb;
+    --card: #ffffff;
+    --text: #1c1f26;
+    --muted: #5d6573;
+    --accent: #2f6fed;
+    --border: #e3e7ef;
+    --warn-bg: #fff6e5;
+    --warn-border: #f2c46d;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #0f1115;
+        --card: #181b22;
+        --text: #e9ecf2;
+        --muted: #9aa3b2;
+        --accent: #6b9bff;
+        --border: #2a2f3a;
+        --warn-bg: #2b2414;
+        --warn-border: #8a6a2a;
+    }
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+}
+
+main {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 32px 20px 64px;
+}
+
+header { margin-bottom: 28px; }
+
+h1 { font-size: 2rem; margin: 0 0 8px; }
+
+h2 {
+    font-size: 1.25rem;
+    margin: 0 0 12px;
+}
+
+.lead { color: var(--muted); font-size: 1.05rem; margin: 0; }
+
+section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 22px;
+    margin-bottom: 16px;
+}
+
+section p:last-child, section ul:last-child, section ol:last-child { margin-bottom: 0; }
+
+ul, ol { padding-inline-start: 22px; }
+
+li { margin-bottom: 6px; }
+
+b { font-weight: 600; }
+
+.note {
+    background: var(--warn-bg);
+    border: 1px solid var(--warn-border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-top: 12px;
+}
+
+dt { font-weight: 600; margin-top: 12px; }
+dt:first-child { margin-top: 0; }
+dd { margin: 4px 0 0; color: var(--muted); }
+
+nav.languages {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 24px;
+    font-size: 0.9rem;
+}
+
+nav.languages a {
+    color: var(--muted);
+    text-decoration: none;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+}
+
+nav.languages a[aria-current="page"] {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+a { color: var(--accent); }
+
+.picker {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
+    padding: 0;
+    list-style: none;
+}
+
+.picker a {
+    display: block;
+    padding: 14px 16px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    text-decoration: none;
+    color: var(--text);
+}
+
+footer { color: var(--muted); font-size: 0.85rem; text-align: center; margin-top: 32px; }

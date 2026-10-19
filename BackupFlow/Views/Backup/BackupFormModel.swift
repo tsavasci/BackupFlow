@@ -8,7 +8,8 @@ import Photos
 final class BackupFormModel {
     // Varsayılan ayarlar
     static let defaultFTPHost = ""
-    static let defaultWebDAVPath = "/remote.php/dav/files/"
+    static let defaultWebDAVPath = "/"
+    static let legacyDefaultWebDAVPath = "/remote.php/dav/files/"
 
     // Kaynak
     var selectedURL: URL?
@@ -209,10 +210,11 @@ extension BackupFormModel {
                 destinationPath: sftpPath
             )
         case .webdav:
+            let parsed = Self.parseWebDAVURL(webdavURL, portOverride: webdavPort, fallbackPath: webdavPath)
             return ServerSettings(
                 backupType: .webdav,
-                host: webdavURL,
-                port: Int(webdavPort) ?? 443,
+                host: parsed.host,
+                port: parsed.port,
                 username: webdavUsername,
                 password: webdavPassword,
                 destinationPath: webdavPath
@@ -280,17 +282,23 @@ extension BackupFormModel {
         case .sftp:
             return (sftpHost, Int(sftpPort) ?? 22, sftpUsername, sftpPassword)
         case .webdav:
-            let parsed = Self.parseWebDAVURL(webdavURL, portOverride: webdavPort)
+            let parsed = Self.parseWebDAVURL(webdavURL, portOverride: webdavPort, fallbackPath: webdavPath)
             return (parsed.host, parsed.port, webdavUsername, webdavPassword)
         }
     }
 
     /// Turns a user-entered WebDAV address into a `scheme://host/path` string and a port.
     /// Without a scheme, ports 80/5005 mean http and anything else https.
-    static func parseWebDAVURL(_ urlString: String, portOverride: String) -> (host: String, port: Int) {
+    static func parseWebDAVURL(_ urlString: String, portOverride: String, fallbackPath: String = "") -> (host: String, port: Int) {
         let trimmed = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
         let overridePort = Int(portOverride)
         guard !trimmed.isEmpty else { return ("", overridePort ?? 443) }
+
+        let cleanedFallback: String = {
+            let f = fallbackPath.trimmingCharacters(in: .whitespacesAndNewlines)
+            if f.isEmpty || f == "/" || f == Self.legacyDefaultWebDAVPath { return "" }
+            return f.hasPrefix("/") ? f : "/\(f)"
+        }()
 
         let lowerTrimmed = trimmed.lowercased()
         let hasScheme = lowerTrimmed.hasPrefix("http://") || lowerTrimmed.hasPrefix("https://")
@@ -307,7 +315,7 @@ extension BackupFormModel {
             let host = components.host ?? trimmed
             let port: Int = components.port ?? overridePort ?? (scheme == "http" ? 80 : 443)
             let path = components.path
-            let normalizedPath = (path.isEmpty || path == "/") ? "" : path
+            let normalizedPath = (path.isEmpty || path == "/") ? cleanedFallback : path
             let hostForConnect = "\(scheme)://\(host)\(normalizedPath)"
             return (hostForConnect, port)
         }
@@ -328,7 +336,7 @@ extension BackupFormModel {
             }
         }
         let scheme = (port == 5005 || port == 80) ? "http" : "https"
-        let normalizedPath = (path.isEmpty || path == "/") ? "" : path
+        let normalizedPath = (path.isEmpty || path == "/") ? cleanedFallback : path
         let hostForConnect = "\(scheme)://\(host)\(normalizedPath)"
         return (hostForConnect, port)
     }
@@ -369,7 +377,7 @@ extension BackupFormModel {
                 )
 
             case .webdav:
-                let (host, port) = Self.parseWebDAVURL(webdavURL, portOverride: webdavPort)
+                let (host, port) = Self.parseWebDAVURL(webdavURL, portOverride: webdavPort, fallbackPath: webdavPath)
                 let webDAVService = WebDAVService.shared
                 let isConnected = await webDAVService.testConnection(
                     host: host,

@@ -83,7 +83,7 @@ struct FTPSyncEngine {
                 continue
             }
 
-            let targetPath = remotePath.isEmpty ? relativePath : "\(remotePath)/\(relativePath)"
+            let targetPath = BackupArchive.safeRemotePath(basePath: remotePath, relativePath: relativePath)
             let parentPath = (targetPath as NSString).deletingLastPathComponent
             if !options.isDryRun,
                !parentPath.isEmpty,
@@ -171,7 +171,7 @@ struct FTPSyncEngine {
             // Stop before touching the next remote file once the user cancels.
             guard !isCancelled() else { throw BackupServiceError.cancelled }
             if !localRelativePaths.contains(remotePath) {
-                let fullRemotePath = remoteBasePath == "/" ? "/\(remotePath)" : "\(remoteBasePath)/\(remotePath)"
+                let fullRemotePath = BackupArchive.safeRemotePath(basePath: remoteBasePath, relativePath: remotePath)
                 switch options.deletionPolicy {
                 case .mirror:
                     if options.isDryRun {
@@ -484,7 +484,7 @@ struct FTPSyncEngine {
                 !BackupArchive.isReserved(relativePath: remotePath) && !processedFiles.contains(remoteFile.name)
             }
             .map { remotePath, _ in
-                PhotoOrphanCleanup.Orphan(relativePath: remotePath, fullRemotePath: "\(photosDir)/\(remotePath)")
+                PhotoOrphanCleanup.Orphan(relativePath: remotePath, fullRemotePath: BackupArchive.safeRemotePath(basePath: photosDir, relativePath: remotePath))
             }
         result.deletedFiles += try await PhotoOrphanCleanup.apply(
             to: orphans,

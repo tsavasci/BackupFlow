@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="tr" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BackupFlow Yardım</title>
+<meta name="description" content="BackupFlow, iPhone&#x27;unuzdaki fotoğraf, video ve dosyaları kendi sunucunuza yedekler: NAS, ev sunucusu ya da kişisel bulutunuz. Abonelik yok, üçüncü taraf bulut yok.">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<main>
+<nav class="languages">
+<a href="../en/index.html" lang="en" hreflang="en">English</a>
+<a href="../tr/index.html" lang="tr" hreflang="tr" aria-current="page">Türkçe</a>
+<a href="../de/index.html" lang="de" hreflang="de">Deutsch</a>
+<a href="../es/index.html" lang="es" hreflang="es">Español</a>
+<a href="../fr/index.html" lang="fr" hreflang="fr">Français</a>
+<a href="../pt/index.html" lang="pt" hreflang="pt">Português</a>
+<a href="../ru/index.html" lang="ru" hreflang="ru">Русский</a>
+<a href="../ar/index.html" lang="ar" hreflang="ar">العربية</a>
+<a href="../hi/index.html" lang="hi" hreflang="hi">हिन्दी</a>
+<a href="../ja/index.html" lang="ja" hreflang="ja">日本語</a>
+<a href="../ko/index.html" lang="ko" hreflang="ko">한국어</a>
+<a href="../zh/index.html" lang="zh" hreflang="zh">简体中文</a>
+</nav>
+<header>
+<h1>BackupFlow Yardım</h1>
+<p class="lead">BackupFlow, iPhone&#x27;unuzdaki fotoğraf, video ve dosyaları kendi sunucunuza yedekler: NAS, ev sunucusu ya da kişisel bulutunuz. Abonelik yok, üçüncü taraf bulut yok.</p>
+</header>
+<section>
+<h2>Neye ihtiyacınız var?</h2>
+<ul>
+<li><b>FTP</b>, <b>SFTP</b> veya <b>WebDAV</b> destekleyen bir sunucu. Çoğu NAS cihazı (Synology, QNAP gibi) ve Nextcloud gibi kişisel bulutlar bunlardan en az birini destekler.</li>
+<li>Sunucu adresi, kullanıcı adı ve parola.</li>
+<li>Sunucu ev ağınızdaysa, iOS yerel ağ erişimi istediğinde <b>İzin Ver</b>'e dokunun.</li>
+</ul>
+</section>
+<section>
+<h2>İlk yedeğinizi kurun</h2>
+<ol>
+<li><b>Yedekleme Merkezi</b>'nde, <b>Kayıtlı sunucular</b> yanındaki <b>Ekle</b>'ye dokunun.</li>
+<li>Bağlantı türünü (FTP, SFTP veya WebDAV) seçin; sunucu adresini, kullanıcı adını ve parolayı girin.</li>
+<li>Her şeyin doğru olduğundan emin olmak için <b>Bağlantıyı Test Et</b>'e dokunun.</li>
+<li><b>Kaynak</b> bölümünde <b>Fotoğraf Galerisi</b>'ni (fotoğraf, video veya ikisi) seçin ya da Dosyalar uygulamasından bir klasör seçmek için <b>Klasör Seç</b>'e dokunun.</li>
+<li>Sunucudaki <b>Hedef Klasörü</b>'nü yazın ya da seçmek için <b>Uzak klasöre göz at</b>'a dokunun.</li>
+<li>Zamanlamayı seçip <b>Görevi Kaydet</b>'e dokunun. BackupFlow ilk yedeği hemen başlatmayı önerir.</li>
+</ol>
+<p>İlk yedekten sonra yalnızca yeni veya değişen dosyalar gönderilir; bu yüzden sonraki yedekler çok daha hızlıdır.</p>
+</section>
+<section>
+<h2>Otomatik yedekleme</h2>
+<p>Yedeğin ne sıklıkla alınacağını seçin: <b>Manuel</b>, <b>Birkaç saatte bir</b>, <b>Günlük</b>, <b>Haftalık</b> veya <b>Aylık</b>.</p>
+<p>Yedeğin ne zaman çalışabileceğini de belirleyebilirsiniz:</p>
+<ul>
+<li><b>Wi-Fi gerekli</b>: mobil veri hiç kullanılmaz.</li>
+<li><b>Harici güç gerekli</b>: yalnızca iPhone şarj olurken çalışır.</li>
+<li><b>İzinli saat aralığını kullan</b>: örneğin yalnızca gece.</li>
+<li><b>Minimum Pil Seviyesi</b> (<b>Ayarlar › Pil Ayarları</b>): pil düşükken yedek atlanır.</li>
+</ul>
+<p>Koşul sağlanmazsa yedek bekler ve koşul sağlanınca başlar. Bir görevi bir süreliğine durdurmak için görevi açıp <b>Zamanlamayı Duraklat</b>'a dokunun.</p>
+</section>
+<section>
+<h2>Silinen dosyalar</h2>
+<p><b>Silme politikası</b> bölümünde, iPhone'unuzda bir şey sildiğinizde sunucuda ne olacağını seçin:</p>
+<dl>
+<dt>Ayna (varsayılan)</dt><dd>Sunucu, kaynağın birebir kopyası olarak kalır. iPhone'da sildiğiniz dosyalar sunucudan da silinir.</dd>
+<dt>Sadece ekle</dt><dd>Sunucudan hiçbir şey silinmez.</dd>
+<dt>Arşivli silme</dt><dd>Hiçbir şey silinmez. Kaldırılan dosyalar sunucudaki tarihli <b>.backupflow_archive</b> klasörüne taşınır.</dd>
+</dl>
+<p class="note">Yedekten sonra iPhone'da yer açmayı mı düşünüyorsunuz? Bir şey silmeden önce <b>Sadece ekle</b> veya <b>Arşivli silme</b>'ye geçin.</p>
+</section>
+<section>
+<h2>Arka planda yedekleme</h2>
+<p>Uygulamaların arka planda ne zaman çalışacağına iOS karar verir; bu yüzden zamanlanmış yedek tam seçtiğiniz dakikada başlamayabilir. Zamanı geldiğinde BackupFlow yedeği başlatır ya da bir bildirim gönderir. Başlatmak için <b>Şimdi Başlat</b>'a dokunun.</p>
+<p>iOS bir yedeği bitmeden durdurursa BackupFlow'u açın, yedek kaldığı yerden devam eder. Önceden gönderilen dosyalar atlanır.</p>
+<p>Büyük bir ilk yedek için iPhone'unuzu Wi-Fi'da ve şarjda tutun.</p>
+</section>
+<section>
+<h2>Yedek geçmişi</h2>
+<p>Son yedekleriniz <b>Yedekleme Merkezi</b>'nde görünür. Tamamı için <b>Tümünü gör</b>'e dokunarak <b>Yedek Geçmişi</b>'ni açın. Her kayıtta kaç dosyanın gönderildiği, toplam boyut ve sürenin ne kadar tuttuğu görünür. Kaydı rapor olarak da paylaşabilirsiniz.</p>
+<p>Geçmişin ne kadar süre saklanacağını <b>Ayarlar › Geçmiş Saklama</b>'dan seçin.</p>
+</section>
+<section>
+<h2>Ek koruma</h2>
+<ul>
+<li><b>Yüklemeleri doğrula</b>: her dosyanın sunucuya eksiksiz ulaştığını kontrol eder.</li>
+<li><b>Gerekirse iCloud öğelerini indir</b>: yalnızca iCloud'da duran fotoğraf ve videoları da yedekler.</li>
+<li><b>SFTP</b>: BackupFlow sunucunuzu ilk bağlantıda tanır ve kimliği değişirse sizi uyarır.</li>
+</ul>
+</section>
+<section>
+<h2>Sorun giderme</h2>
+<dl>
+<dt>Sunucuma bağlanamıyorum.</dt><dd>Adresi, portu, kullanıcı adını ve parolayı kontrol edin. Genel portlar: FTP 21, SFTP 22, WebDAV 443. Sunucu evdeyse iPhone'unuzun aynı Wi-Fi ağında olduğundan ve <b>iPhone Ayarlar › Gizlilik ve Güvenlik › Yerel Ağ</b>'da erişimin açık olduğundan emin olun.</dd>
+<dt>Zamanlanmış yedek çalışmadı.</dt><dd>Görevin koşullarını (Wi-Fi, güç, saat aralığı, pil) kontrol edin ve BackupFlow bildirimlerine izin verildiğinden emin olun. Bekleyen bir yedeği başlatmak için uygulamayı açın.</dd>
+<dt>Bazı fotoğraflar eksik.</dt><dd><b>Gerekirse iCloud öğelerini indir</b>'i açın. iCloud Fotoğrafları kullanıyorsanız birçok orijinal yalnızca iCloud'da durur.</dd>
+<dt>Sunucumdaki dosyalar kayboldu.</dt><dd>Görev büyük olasılıkla <b>Ayna</b> modunda. <b>Sadece ekle</b> veya <b>Arşivli silme</b>'ye geçin.</dd>
+<dt>SFTP güvenlik uyarısı görüyorum.</dt><dd>Sunucunun kimliği değişmiş. Sunucu yeniden kurulduysa ya da değiştirildiyse bu normaldir. Değilse devam etmeden önce sunucuyu yöneten kişiye danışın.</dd>
+</dl>
+</section>
+<section>
+<h2>Gizlilik</h2>
+<p>Dosyalarınız doğrudan iPhone'unuzdan kendi sunucunuza gider. BackupFlow'un kendi sunucusu yoktur, dosyalarınızı asla görmez ve hiçbir veri toplamaz. Parolalar cihazınızda güvenli şekilde saklanır.</p>
+<p><b>Ayarlar › Tüm Verileri Sıfırla</b>, tüm görevleri, geçmişi ve kayıtlı parolaları bu cihazdan siler. Sunucularınızdaki dosyalara dokunulmaz.</p>
+</section>
+<section>
+<h2>Yardım mı lazım?</h2>
+<p>Bize e-posta göndermek için <b>Ayarlar › Destek İletişim</b>'e gidin. Uygulama sürümü ve cihaz modeli otomatik olarak eklenir.</p>
+</section>
+<footer>BackupFlow</footer>
+</main>
+</body>
+</html>

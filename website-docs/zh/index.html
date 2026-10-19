@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BackupFlow 帮助</title>
+<meta name="description" content="BackupFlow 可将 iPhone 上的照片、视频和文件备份到你自己的服务器：NAS、家庭服务器或私有云。无需订阅，也不经过第三方云。">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<main>
+<nav class="languages">
+<a href="../en/index.html" lang="en" hreflang="en">English</a>
+<a href="../tr/index.html" lang="tr" hreflang="tr">Türkçe</a>
+<a href="../de/index.html" lang="de" hreflang="de">Deutsch</a>
+<a href="../es/index.html" lang="es" hreflang="es">Español</a>
+<a href="../fr/index.html" lang="fr" hreflang="fr">Français</a>
+<a href="../pt/index.html" lang="pt" hreflang="pt">Português</a>
+<a href="../ru/index.html" lang="ru" hreflang="ru">Русский</a>
+<a href="../ar/index.html" lang="ar" hreflang="ar">العربية</a>
+<a href="../hi/index.html" lang="hi" hreflang="hi">हिन्दी</a>
+<a href="../ja/index.html" lang="ja" hreflang="ja">日本語</a>
+<a href="../ko/index.html" lang="ko" hreflang="ko">한국어</a>
+<a href="../zh/index.html" lang="zh" hreflang="zh" aria-current="page">简体中文</a>
+</nav>
+<header>
+<h1>BackupFlow 帮助</h1>
+<p class="lead">BackupFlow 可将 iPhone 上的照片、视频和文件备份到你自己的服务器：NAS、家庭服务器或私有云。无需订阅，也不经过第三方云。</p>
+</header>
+<section>
+<h2>准备工作</h2>
+<ul>
+<li>一台支持 <b>FTP</b>、<b>SFTP</b> 或 <b>WebDAV</b> 的服务器。大多数 NAS（如群晖 Synology 或威联通 QNAP）以及 Nextcloud 等私有云至少支持其中一种。</li>
+<li>服务器地址、用户名和密码。</li>
+<li>如果服务器在家庭网络中，当 iOS 请求访问本地网络时，请轻点<b>允许</b>。</li>
+</ul>
+</section>
+<section>
+<h2>设置第一次备份</h2>
+<ol>
+<li>在<b>备份中心</b>，轻点<b>已保存的服务器</b>旁边的<b>添加</b>。</li>
+<li>选择连接类型（FTP、SFTP 或 WebDAV），然后输入服务器地址、用户名和密码。</li>
+<li>轻点<b>测试连接</b>，确认设置无误。</li>
+<li>在<b>来源</b>中选择<b>照片图库</b>（照片、视频或两者），或轻点<b>选择文件夹</b>，从“文件”App 中选择一个文件夹。</li>
+<li>输入服务器上的<b>目标文件夹</b>，或轻点<b>浏览远程文件夹</b>进行选择。</li>
+<li>选择计划后轻点<b>保存任务</b>。BackupFlow 会询问是否立即开始第一次备份。</li>
+</ol>
+<p>第一次备份之后，只会传输新增或修改过的文件，因此之后的备份会快得多。</p>
+</section>
+<section>
+<h2>自动备份</h2>
+<p>选择备份频率：<b>手动</b>、<b>每隔几小时</b>、<b>每日</b>、<b>每周</b>或<b>每月</b>。</p>
+<p>你还可以设定允许备份的条件：</p>
+<ul>
+<li><b>需要 Wi-Fi</b>：从不使用蜂窝数据。</li>
+<li><b>需要外部电源</b>：仅在 iPhone 充电时运行。</li>
+<li><b>使用允许的时间窗口</b>：例如只在夜间。</li>
+<li><b>最低电池电量</b>（在<b>设置 › 电池设置</b>中）：电量低时跳过备份。</li>
+</ul>
+<p>如果条件未满足，备份会等待，条件满足后立即开始。要暂时停止某个任务，请打开该任务并轻点<b>暂停计划</b>。</p>
+</section>
+<section>
+<h2>已删除的文件</h2>
+<p>在<b>删除策略</b>中，选择你在 iPhone 上删除内容时服务器上的处理方式：</p>
+<dl>
+<dt>镜像（默认）</dt><dd>服务器与来源保持完全一致。你在 iPhone 上删除的文件也会从服务器上删除。</dd>
+<dt>仅追加</dt><dd>服务器上的任何内容都不会被删除。</dd>
+<dt>归档删除</dt><dd>不删除任何内容。被移除的文件会移到服务器上带日期的 <b>.backupflow_archive</b> 文件夹中。</dd>
+</dl>
+<p class="note">打算在备份后清理 iPhone 空间？请在删除任何内容之前，先切换到<b>仅追加</b>或<b>归档删除</b>。</p>
+</section>
+<section>
+<h2>后台备份</h2>
+<p>App 何时可以在后台运行由 iOS 决定，因此计划的备份不一定会在设定的那一分钟准时开始。到时间后，BackupFlow 会开始备份或发送通知。轻点<b>立即开始</b>即可开始。</p>
+<p>如果 iOS 中途停止了备份，打开 BackupFlow 即可继续。已经传输过的文件会被跳过。</p>
+<p>首次进行大量备份时，请让 iPhone 保持连接 Wi-Fi 和电源。</p>
+</section>
+<section>
+<h2>备份历史</h2>
+<p>最近的备份会显示在<b>备份中心</b>。轻点<b>查看全部</b>可打开完整的<b>备份历史</b>。每条记录都会显示传输的文件数、总大小和耗时，也可以作为报告分享。</p>
+<p>要设定历史记录保留多久，请前往<b>设置 › 历史记录保留期</b>。</p>
+</section>
+<section>
+<h2>额外保护</h2>
+<ul>
+<li><b>验证上传</b>：检查每个文件是否完整到达服务器。</li>
+<li><b>需要时下载 iCloud 项目</b>：同时备份仅存储在 iCloud 中的照片和视频。</li>
+<li><b>SFTP</b>：BackupFlow 会在首次连接时记住你的服务器，并在其身份发生变化时发出警告。</li>
+</ul>
+</section>
+<section>
+<h2>常见问题</h2>
+<dl>
+<dt>无法连接到服务器。</dt><dd>请检查地址、端口、用户名和密码。常用端口：FTP 21、SFTP 22、WebDAV 443。如果服务器在家里，请确认 iPhone 连接的是同一个 Wi-Fi，并已在 <b>iPhone 设置 › 隐私与安全性 › 本地网络</b>中开启访问权限。</dd>
+<dt>计划的备份没有运行。</dt><dd>请检查任务的条件（Wi-Fi、电源、时间窗口、电量），并确认已允许 BackupFlow 发送通知。打开 App 即可开始正在等待的备份。</dd>
+<dt>部分照片缺失。</dt><dd>请开启<b>需要时下载 iCloud 项目</b>。使用 iCloud 照片时，许多原件仅存储在 iCloud 中。</dd>
+<dt>服务器上的文件不见了。</dt><dd>该任务很可能设为<b>镜像</b>。请将其改为<b>仅追加</b>或<b>归档删除</b>。</dd>
+<dt>出现了 SFTP 安全警告。</dt><dd>服务器的身份发生了变化。如果服务器重新安装过或被更换，这属于正常情况；否则请在继续之前向服务器管理员确认。</dd>
+</dl>
+</section>
+<section>
+<h2>隐私</h2>
+<p>你的文件直接从 iPhone 传到你自己的服务器。BackupFlow 没有自己的服务器，从不查看你的文件，也不收集任何数据。密码安全地保存在你的设备上。</p>
+<p><b>设置 › 重置所有数据</b>会从这台设备上删除所有任务、历史记录和已保存的密码。服务器上的文件不受影响。</p>
+</section>
+<section>
+<h2>需要帮助？</h2>
+<p>前往<b>设置 › 联系支持</b>给我们发送电子邮件。App 版本和设备型号会自动附上。</p>
+</section>
+<footer>BackupFlow</footer>
+</main>
+</body>
+</html>

@@ -75,6 +75,14 @@ final class SFTPHostKeyStore: @unchecked Sendable {
         SecItemDelete(query as CFDictionary)
     }
 
+    /// Returns the currently stored fingerprint for a host and port, if one exists.
+    func storedFingerprint(host: String, port: Int) -> String? {
+        lock.lock()
+        defer { lock.unlock() }
+        let account = accountName(host: host, port: port)
+        return fingerprintForAccount(account)
+    }
+
     /// Replaces the stored fingerprint for a host. Use when the user explicitly trusts a new key.
     func update(fingerprint: String, host: String, port: Int) throws {
         lock.lock()
@@ -130,13 +138,15 @@ final class SFTPHostKeyStore: @unchecked Sendable {
 final class SFTPHostKeyValidator: NIOSSHClientServerAuthenticationDelegate, @unchecked Sendable {
     private let host: String
     private let port: Int
+    private let expectedFingerprint: String?
     private let store: SFTPHostKeyStore
     private let lock = NSLock()
     private var storedOutcome: SFTPHostKeyValidationOutcome?
 
-    init(host: String, port: Int, store: SFTPHostKeyStore = .shared) {
+    init(host: String, port: Int, expectedFingerprint: String? = nil, store: SFTPHostKeyStore = .shared) {
         self.host = host
         self.port = port
+        self.expectedFingerprint = expectedFingerprint
         self.store = store
     }
 
@@ -151,6 +161,12 @@ final class SFTPHostKeyValidator: NIOSSHClientServerAuthenticationDelegate, @unc
         validationCompletePromise: EventLoopPromise<Void>
     ) {
         let fingerprint = Self.fingerprint(for: hostKey)
+        if let expected = expectedFingerprint, !expected.isEmpty {
+            guard expected.trimmingCharacters(in: .whitespacesAndNewlines) == fingerprint else {
+                validationCompletePromise.fail(SFTPHostKeyValidationError.changedHostKey(host: host, port: port))
+                return
+            }
+        }
         do {
             let isNew = try store.validate(fingerprint: fingerprint, host: host, port: port)
             lock.lock()

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BackupFlow 도움말</title>
+<meta name="description" content="BackupFlow는 iPhone의 사진, 동영상, 파일을 내 서버(NAS, 홈 서버, 개인 클라우드)에 백업합니다. 구독도, 타사 클라우드도 필요 없습니다.">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<main>
+<nav class="languages">
+<a href="../en/index.html" lang="en" hreflang="en">English</a>
+<a href="../tr/index.html" lang="tr" hreflang="tr">Türkçe</a>
+<a href="../de/index.html" lang="de" hreflang="de">Deutsch</a>
+<a href="../es/index.html" lang="es" hreflang="es">Español</a>
+<a href="../fr/index.html" lang="fr" hreflang="fr">Français</a>
+<a href="../pt/index.html" lang="pt" hreflang="pt">Português</a>
+<a href="../ru/index.html" lang="ru" hreflang="ru">Русский</a>
+<a href="../ar/index.html" lang="ar" hreflang="ar">العربية</a>
+<a href="../hi/index.html" lang="hi" hreflang="hi">हिन्दी</a>
+<a href="../ja/index.html" lang="ja" hreflang="ja">日本語</a>
+<a href="../ko/index.html" lang="ko" hreflang="ko" aria-current="page">한국어</a>
+<a href="../zh/index.html" lang="zh" hreflang="zh">简体中文</a>
+</nav>
+<header>
+<h1>BackupFlow 도움말</h1>
+<p class="lead">BackupFlow는 iPhone의 사진, 동영상, 파일을 내 서버(NAS, 홈 서버, 개인 클라우드)에 백업합니다. 구독도, 타사 클라우드도 필요 없습니다.</p>
+</header>
+<section>
+<h2>준비할 것</h2>
+<ul>
+<li><b>FTP</b>, <b>SFTP</b> 또는 <b>WebDAV</b>를 지원하는 서버. 대부분의 NAS(Synology, QNAP 등)와 Nextcloud 같은 개인 클라우드는 이 중 하나 이상을 지원합니다.</li>
+<li>서버 주소, 사용자 이름, 암호.</li>
+<li>서버가 집 네트워크에 있다면 iOS가 로컬 네트워크 접근을 요청할 때 <b>허용</b>을 탭하세요.</li>
+</ul>
+</section>
+<section>
+<h2>첫 백업 설정하기</h2>
+<ol>
+<li><b>백업 허브</b>에서 <b>저장된 서버</b> 옆의 <b>추가</b>를 탭합니다.</li>
+<li>연결 유형(FTP, SFTP 또는 WebDAV)을 선택하고 서버 주소, 사용자 이름, 암호를 입력합니다.</li>
+<li><b>연결 테스트</b>를 탭해 설정이 올바른지 확인합니다.</li>
+<li><b>원본</b>에서 <b>사진 보관함</b>(사진, 동영상 또는 둘 다)을 선택하거나, <b>폴더 선택</b>을 탭해 파일 앱의 폴더를 고릅니다.</li>
+<li>서버의 <b>대상 폴더</b>를 입력하거나 <b>원격 폴더 찾아보기</b>를 탭해 선택합니다.</li>
+<li>일정을 고르고 <b>작업 저장</b>을 탭합니다. BackupFlow가 첫 백업을 바로 시작할지 물어봅니다.</li>
+</ol>
+<p>첫 백업 이후에는 새 파일이나 변경된 파일만 전송되므로 다음 백업은 훨씬 빠릅니다.</p>
+</section>
+<section>
+<h2>자동 백업</h2>
+<p>백업 주기를 선택하세요: <b>수동</b>, <b>몇 시간마다</b>, <b>매일</b>, <b>매주</b>, <b>매월</b>.</p>
+<p>백업이 실행될 수 있는 조건도 정할 수 있습니다:</p>
+<ul>
+<li><b>Wi-Fi 필요</b>: 모바일 데이터를 사용하지 않습니다.</li>
+<li><b>외부 전원 필요</b>: iPhone이 충전 중일 때만 실행됩니다.</li>
+<li><b>허용 시간대 사용</b>: 예를 들어 밤에만.</li>
+<li><b>최소 배터리 잔량</b>(<b>설정 › 배터리 설정</b>): 배터리가 부족하면 백업을 건너뜁니다.</li>
+</ul>
+<p>조건이 충족되지 않으면 백업은 대기하다가 조건이 충족되는 즉시 시작됩니다. 작업을 잠시 멈추려면 작업을 열고 <b>예약 일시 중지</b>를 탭하세요.</p>
+</section>
+<section>
+<h2>삭제한 파일</h2>
+<p><b>삭제 정책</b>에서 iPhone에서 무언가를 삭제했을 때 서버에서 어떻게 할지 선택합니다:</p>
+<dl>
+<dt>미러(기본값)</dt><dd>서버가 원본과 똑같이 유지됩니다. iPhone에서 삭제한 파일은 서버에서도 삭제됩니다.</dd>
+<dt>추가만</dt><dd>서버에서 아무것도 삭제되지 않습니다.</dd>
+<dt>보관 후 삭제</dt><dd>아무것도 삭제되지 않습니다. 제거된 파일은 서버의 날짜별 <b>.backupflow_archive</b> 폴더로 옮겨집니다.</dd>
+</dl>
+<p class="note">백업 후 iPhone 공간을 비울 계획인가요? 무언가를 삭제하기 전에 <b>추가만</b> 또는 <b>보관 후 삭제</b>로 바꾸세요.</p>
+</section>
+<section>
+<h2>백그라운드 백업</h2>
+<p>앱이 백그라운드에서 언제 작동할지는 iOS가 결정하므로, 예약된 백업이 정확히 지정한 분에 시작되지 않을 수 있습니다. 시간이 되면 BackupFlow가 백업을 시작하거나 알림을 보냅니다. <b>지금 시작</b>을 탭하면 시작됩니다.</p>
+<p>iOS가 백업을 중간에 멈추면 BackupFlow를 열어 주세요. 이어서 계속됩니다. 이미 보낸 파일은 건너뜁니다.</p>
+<p>용량이 큰 첫 백업은 iPhone을 Wi-Fi와 전원에 연결한 상태로 진행하세요.</p>
+</section>
+<section>
+<h2>백업 기록</h2>
+<p>최근 백업은 <b>백업 허브</b>에 표시됩니다. <b>모두 보기</b>를 탭하면 전체 <b>백업 기록</b>을 볼 수 있습니다. 각 항목에는 전송한 파일 수, 전체 크기, 걸린 시간이 표시되며 보고서로 공유할 수도 있습니다.</p>
+<p>기록 보관 기간은 <b>설정 › 기록 보관 기간</b>에서 선택하세요.</p>
+</section>
+<section>
+<h2>추가 보호</h2>
+<ul>
+<li><b>업로드 확인</b>: 모든 파일이 서버에 손상 없이 도착했는지 확인합니다.</li>
+<li><b>필요한 경우 iCloud 항목 다운로드</b>: iCloud에만 있는 사진과 동영상도 백업합니다.</li>
+<li><b>SFTP</b>: 처음 연결할 때 서버를 기억하고, 서버의 신원이 바뀌면 경고합니다.</li>
+</ul>
+</section>
+<section>
+<h2>문제 해결</h2>
+<dl>
+<dt>서버에 연결할 수 없어요.</dt><dd>주소, 포트, 사용자 이름, 암호를 확인하세요. 일반적인 포트: FTP 21, SFTP 22, WebDAV 443. 집에 있는 서버라면 iPhone이 같은 Wi-Fi에 연결되어 있는지, <b>iPhone 설정 › 개인정보 보호 및 보안 › 로컬 네트워크</b>에서 접근이 켜져 있는지 확인하세요.</dd>
+<dt>예약된 백업이 실행되지 않았어요.</dt><dd>작업 조건(Wi-Fi, 전원, 시간대, 배터리)과 BackupFlow 알림이 허용되어 있는지 확인하세요. 대기 중인 백업은 앱을 열면 시작할 수 있습니다.</dd>
+<dt>일부 사진이 빠졌어요.</dt><dd><b>필요한 경우 iCloud 항목 다운로드</b>를 켜세요. iCloud 사진을 사용하면 많은 원본이 iCloud에만 저장됩니다.</dd>
+<dt>서버에서 파일이 사라졌어요.</dt><dd>작업이 <b>미러</b>로 설정되어 있을 가능성이 큽니다. <b>추가만</b> 또는 <b>보관 후 삭제</b>로 바꾸세요.</dd>
+<dt>SFTP 보안 경고가 표시돼요.</dt><dd>서버의 신원이 바뀌었습니다. 서버를 다시 설치했거나 교체했다면 정상입니다. 그렇지 않다면 계속하기 전에 서버 관리자에게 확인하세요.</dd>
+</dl>
+</section>
+<section>
+<h2>개인정보 보호</h2>
+<p>파일은 iPhone에서 내 서버로 바로 전송됩니다. BackupFlow는 자체 서버가 없으며, 파일을 보지 않고 어떤 데이터도 수집하지 않습니다. 암호는 기기에 안전하게 저장됩니다.</p>
+<p><b>설정 › 모든 데이터 초기화</b>는 이 기기에서 모든 작업, 기록, 저장된 암호를 삭제합니다. 서버에 있는 파일은 건드리지 않습니다.</p>
+</section>
+<section>
+<h2>도움이 필요하세요?</h2>
+<p><b>설정 › 지원 문의</b>에서 이메일을 보내 주세요. 앱 버전과 기기 모델이 자동으로 추가됩니다.</p>
+</section>
+<footer>BackupFlow</footer>
+</main>
+</body>
+</html>

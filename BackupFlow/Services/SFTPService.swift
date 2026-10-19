@@ -75,6 +75,15 @@ private func classifySFTPError(_ error: Error, defaultKind: SFTPFailureKind) -> 
         return backupError
     }
 
+    if let hostKeyError = error as? SFTPHostKeyValidationError {
+        switch hostKeyError {
+        case .changedHostKey:
+            return makeSFTPError(.hostKeyMismatch, details: hostKeyError.localizedDescription, underlying: error)
+        case .keychainFailure:
+            return makeSFTPError(.connection, details: hostKeyError.localizedDescription, underlying: error)
+        }
+    }
+
     let nsError = error as NSError
     if nsError.domain == "SFTPError" {
         return error
@@ -715,6 +724,12 @@ final class SFTPService: NSObject, @unchecked Sendable {
         return ssh
     }
 
+    func clearStoredConnection() {
+        connectionLock.lock()
+        lastConnection = nil
+        connectionLock.unlock()
+    }
+
     private func disconnectInternal() async {
         let ssh: SSHClient?
         let sftp: SFTPClient?
@@ -725,6 +740,8 @@ final class SFTPService: NSObject, @unchecked Sendable {
             sftpClient = nil
             return (currentSSH, currentSFTP)
         }
+
+        clearStoredConnection()
 
         if let sftp {
             try? await sftp.close()
@@ -976,7 +993,7 @@ final class SFTPService: NSObject, @unchecked Sendable {
                 authenticationMethod: { .passwordBased(username: username, password: password) },
                 hostKeyValidator: .custom(hostKeyValidator)
             )
-            settings.algorithms = .all
+            settings.algorithms = SSHAlgorithms()
             settings.connectTimeout = .seconds(20)
 
             let ssh = try await SSHClient.connect(to: settings)

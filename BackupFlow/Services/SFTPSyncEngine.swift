@@ -51,7 +51,7 @@ struct SFTPSyncEngine {
                 debugLog("☁️ iCloud'da, henüz indirilmedi; sonraki yedekte yüklenecek: \(relativePath)")
                 continue
             }
-            let targetPath = remotePath.hasSuffix("/") ? remotePath + relativePath : "\(remotePath)/\(relativePath)"
+            let targetPath = BackupArchive.safeRemotePath(basePath: remotePath, relativePath: relativePath)
             let parentPath = (targetPath as NSString).deletingLastPathComponent
             if !options.isDryRun && !parentPath.isEmpty && parentPath != "/" {
                 try await createDirectory(parentPath)
@@ -132,7 +132,7 @@ struct SFTPSyncEngine {
                 throw BackupServiceError.cancelled
             }
             if !localRelativePaths.contains(remoteRelativePath) {
-                let fullRemotePath = remoteBase.hasSuffix("/") ? remoteBase + remoteRelativePath : "\(remoteBase)/\(remoteRelativePath)"
+                let fullRemotePath = BackupArchive.safeRemotePath(basePath: remoteBase, relativePath: remoteRelativePath)
                 switch options.deletionPolicy {
                 case .mirror:
                     if options.isDryRun {
@@ -315,7 +315,7 @@ struct SFTPSyncEngine {
         }
         let orphans = existingFileMap.keys
             .filter { !BackupArchive.isReserved(relativePath: $0) && !processedFiles.contains($0) }
-            .map { PhotoOrphanCleanup.Orphan(relativePath: $0, fullRemotePath: "\(photosDir)/\($0)") }
+            .map { PhotoOrphanCleanup.Orphan(relativePath: $0, fullRemotePath: BackupArchive.safeRemotePath(basePath: photosDir, relativePath: $0)) }
         result.deletedFiles += try await PhotoOrphanCleanup.apply(
             to: orphans,
             basePath: photosDir,

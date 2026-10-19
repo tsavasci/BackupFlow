@@ -43,7 +43,7 @@ struct WebDAVSyncEngine {
                 logger.info("☁️ iCloud'da, henüz indirilmedi; sonraki yedekte yüklenecek: \(relativePath)")
                 continue
             }
-            let remotePath = remoteBasePath == "/" ? "/\(relativePath)" : "\(remoteBasePath)/\(relativePath)"
+            let remotePath = BackupArchive.safeRemotePath(basePath: remoteBasePath, relativePath: relativePath)
 
             let parentPath = (remotePath as NSString).deletingLastPathComponent
             if !options.isDryRun && !parentPath.isEmpty && parentPath != "/" {
@@ -97,7 +97,7 @@ struct WebDAVSyncEngine {
             for (remotePath, _) in remoteFileMap where !BackupArchive.isReserved(relativePath: remotePath) {
                 guard !isCancelled() else { throw BackupServiceError.cancelled }
                 if !localRelativePaths.contains(remotePath) {
-                    let fullRemotePath = remoteBasePath == "/" ? "/\(remotePath)" : "\(remoteBasePath)/\(remotePath)"
+                    let fullRemotePath = BackupArchive.safeRemotePath(basePath: remoteBasePath, relativePath: remotePath)
                     switch options.deletionPolicy {
                     case .mirror:
                         if options.isDryRun {

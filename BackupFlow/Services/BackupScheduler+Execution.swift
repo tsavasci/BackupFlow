@@ -408,6 +408,7 @@ extension BackupScheduler {
                 username: username,
                 password: password,
                 sourcePath: sourcePath,
+                destinationPath: task.destinationPath,
                 isAnonymous: username == nil,
                 mediaType: task.mediaType,
                 includeICloudAssets: task.includeICloudAssets,

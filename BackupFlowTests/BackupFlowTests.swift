@@ -160,4 +160,140 @@ final class BackupFlowTests: XCTestCase {
         XCTAssertNotEqual(BackupStatus.scanning.displayName, "backup.status.scanning")
         XCTAssertNotEqual(BackupStatus.preparing.displayName, "backup.status.preparing")
     }
+
+    func testWebDAVConnectionBuilderDefaultsToHTTPS() throws {
+        let httpsDefault = try WebDAVConnectionBuilder.build(host: "nas.local", port: 5005)
+        XCTAssertEqual(httpsDefault.scheme, "https")
+        XCTAssertEqual(httpsDefault.url.scheme, "https")
+
+        let explicitHttp = try WebDAVConnectionBuilder.build(host: "http://nas.local", port: 5005)
+        XCTAssertEqual(explicitHttp.scheme, "http")
+
+        let port80Http = try WebDAVConnectionBuilder.build(host: "nas.local", port: 80)
+        XCTAssertEqual(port80Http.scheme, "http")
+
+        let explicitHttps = try WebDAVConnectionBuilder.build(host: "https://nas.local", port: 443)
+        XCTAssertEqual(explicitHttps.scheme, "https")
+    }
+
+    func testWebDAVCertificateStoreValidationAndMismatch() throws {
+        let store = WebDAVCertificateStore.shared
+        let testHost = "test-host-\(UUID().uuidString).local"
+        let testPort = 5006
+        let fingerprint1 = "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+        let fingerprint2 = "sha256/BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB="
+
+        defer { store.delete(host: testHost, port: testPort) }
+
+        // First validation should store the fingerprint (return true)
+        let isNew = try store.validate(fingerprint: fingerprint1, host: testHost, port: testPort)
+        XCTAssertTrue(isNew)
+
+        // Second validation with same fingerprint should match (return false)
+        let isMatching = try store.validate(fingerprint: fingerprint1, host: testHost, port: testPort)
+        XCTAssertFalse(isMatching)
+
+        // Validation with different fingerprint should throw changedCertificate
+        XCTAssertThrowsError(try store.validate(fingerprint: fingerprint2, host: testHost, port: testPort)) { error in
+            guard case WebDAVCertificateError.changedCertificate = error else {
+                XCTFail("Expected changedCertificate error but got \(error)")
+                return
+            }
+        }
+    }
+
+    func testSFTPHostKeyStoreStoredFingerprintAndDelete() throws {
+        let store = SFTPHostKeyStore.shared
+        let testHost = "sftp-test-\(UUID().uuidString).local"
+        let testPort = 2222
+        let fingerprint = "SHA256:dGVzdGZpbmdlcnByaW50MTIzNDU2Nzg5MDEyMzQ1Njc"
+
+        defer { store.delete(host: testHost, port: testPort) }
+
+        XCTAssertNil(store.storedFingerprint(host: testHost, port: testPort))
+
+        let isNew = try store.validate(fingerprint: fingerprint, host: testHost, port: testPort)
+        XCTAssertTrue(isNew)
+        XCTAssertEqual(store.storedFingerprint(host: testHost, port: testPort), fingerprint)
+
+        store.delete(host: testHost, port: testPort)
+        XCTAssertNil(store.storedFingerprint(host: testHost, port: testPort))
+    }
+
+    func testSFTPHostKeyStoreDetectsMismatch() throws {
+        let store = SFTPHostKeyStore.shared
+        let testHost = "sftp-test-\(UUID().uuidString).local"
+        let testPort = 2222
+        let fingerprintOriginal = "SHA256:MTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTE"
+        let fingerprintChanged = "SHA256:MjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjI"
+
+        defer { store.delete(host: testHost, port: testPort) }
+
+        _ = try store.validate(fingerprint: fingerprintOriginal, host: testHost, port: testPort)
+
+        XCTAssertThrowsError(try store.validate(fingerprint: fingerprintChanged, host: testHost, port: testPort)) { error in
+            guard case SFTPHostKeyValidationError.changedHostKey = error else {
+                XCTFail("Expected changedHostKey error but got \(error)")
+                return
+            }
+        }
+    }
+
+    func testSFTPServiceClearStoredConnectionPurgesMemory() {
+        let service = SFTPService.shared
+        service.clearStoredConnection()
+        service.clearStoredConnection()
+    }
+
+    func testBackupArchiveSanitizesPathTraversal() {
+        let maliciousPath = "../../etc/passwd"
+        let sanitized = BackupArchive.sanitize(relativePath: maliciousPath)
+        XCTAssertEqual(sanitized, "etc/passwd")
+
+        let complexTraversal = "photos/../../secret/./notes.txt"
+        let sanitizedComplex = BackupArchive.sanitize(relativePath: complexTraversal)
+        XCTAssertEqual(sanitizedComplex, "photos/secret/notes.txt")
+
+        let leadingTrailing = "///folder/subfolder///file.jpg///"
+        let sanitizedSlashes = BackupArchive.sanitize(relativePath: leadingTrailing)
+        XCTAssertEqual(sanitizedSlashes, "folder/subfolder/file.jpg")
+    }
+
+    func testBackupArchiveSafeRemotePath() {
+        let remoteBase = "/volume1/backups"
+        let maliciousRelative = "../../../sensitive/data.db"
+        let safePath = BackupArchive.safeRemotePath(basePath: remoteBase, relativePath: maliciousRelative)
+        XCTAssertEqual(safePath, "/volume1/backups/sensitive/data.db")
+
+        let rootBase = "/"
+        let safeRoot = BackupArchive.safeRemotePath(basePath: rootBase, relativePath: maliciousRelative)
+        XCTAssertEqual(safeRoot, "/sensitive/data.db")
+
+        let emptyBase = ""
+        let safeEmpty = BackupArchive.safeRemotePath(basePath: emptyBase, relativePath: maliciousRelative)
+        XCTAssertEqual(safeEmpty, "sensitive/data.db")
+    }
+
+    @MainActor
+    func testParseWebDAVURLPreservesSubpathAndFallback() throws {
+        let keenetic = BackupFormModel.parseWebDAVURL(
+            "https://tamersavasci.keenetic.link/webdav",
+            portOverride: "443",
+            fallbackPath: "/"
+        )
+        XCTAssertEqual(keenetic.host, "https://tamersavasci.keenetic.link/webdav")
+        XCTAssertEqual(keenetic.port, 443)
+
+        let withFallback = BackupFormModel.parseWebDAVURL(
+            "tamersavasci.keenetic.link",
+            portOverride: "443",
+            fallbackPath: "/webdav"
+        )
+        XCTAssertEqual(withFallback.host, "https://tamersavasci.keenetic.link/webdav")
+        XCTAssertEqual(withFallback.port, 443)
+
+        let built = try WebDAVConnectionBuilder.build(host: keenetic.host, port: keenetic.port)
+        XCTAssertEqual(built.url.absoluteString, "https://tamersavasci.keenetic.link/webdav/")
+        XCTAssertEqual(built.path, "/webdav")
+    }
 }

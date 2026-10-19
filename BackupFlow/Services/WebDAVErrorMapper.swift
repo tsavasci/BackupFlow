@@ -2,7 +2,13 @@ import Foundation
 
 enum WebDAVErrorMapper {
     static func mapError(_ error: Error) -> Error {
+        if let serviceError = error as? BackupServiceError {
+            return serviceError
+        }
         let nsError = error as NSError
+        if nsError.domain == "WebDAVError" {
+            return error
+        }
 
         // First try to handle as a FileProvider error
         if let fpError = error as? FileProviderError {

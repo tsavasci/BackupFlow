@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BackupFlow Help</title>
+<meta name="description" content="BackupFlow backs up your iPhone photos, videos and files to your own server: a NAS, a home server or your personal cloud. No subscription and no third-party cloud.">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<main>
+<nav class="languages">
+<a href="../en/index.html" lang="en" hreflang="en" aria-current="page">English</a>
+<a href="../tr/index.html" lang="tr" hreflang="tr">Türkçe</a>
+<a href="../de/index.html" lang="de" hreflang="de">Deutsch</a>
+<a href="../es/index.html" lang="es" hreflang="es">Español</a>
+<a href="../fr/index.html" lang="fr" hreflang="fr">Français</a>
+<a href="../pt/index.html" lang="pt" hreflang="pt">Português</a>
+<a href="../ru/index.html" lang="ru" hreflang="ru">Русский</a>
+<a href="../ar/index.html" lang="ar" hreflang="ar">العربية</a>
+<a href="../hi/index.html" lang="hi" hreflang="hi">हिन्दी</a>
+<a href="../ja/index.html" lang="ja" hreflang="ja">日本語</a>
+<a href="../ko/index.html" lang="ko" hreflang="ko">한국어</a>
+<a href="../zh/index.html" lang="zh" hreflang="zh">简体中文</a>
+</nav>
+<header>
+<h1>BackupFlow Help</h1>
+<p class="lead">BackupFlow backs up your iPhone photos, videos and files to your own server: a NAS, a home server or your personal cloud. No subscription and no third-party cloud.</p>
+</header>
+<section>
+<h2>What you need</h2>
+<ul>
+<li>A server that supports <b>FTP</b>, <b>SFTP</b> or <b>WebDAV</b>. Most NAS devices (such as Synology or QNAP) and personal clouds like Nextcloud support at least one of these.</li>
+<li>The server address, a username and a password.</li>
+<li>If the server is on your home network, tap <b>Allow</b> when iOS asks for local network access.</li>
+</ul>
+</section>
+<section>
+<h2>Set up your first backup</h2>
+<ol>
+<li>On the <b>Backup Hub</b>, tap <b>Add</b> next to <b>Saved servers</b>.</li>
+<li>Choose the connection type (FTP, SFTP or WebDAV) and enter the server address, username and password.</li>
+<li>Tap <b>Test Connection</b> to make sure everything is correct.</li>
+<li>Under <b>Source</b>, choose <b>Photo Library</b> (photos, videos or both) or tap <b>Select Folder</b> to pick a folder from the Files app.</li>
+<li>Enter a <b>Destination Folder</b> on the server, or tap <b>Browse remote folder</b> to pick one.</li>
+<li>Choose a schedule and tap <b>Save Task</b>. BackupFlow offers to start the first backup right away.</li>
+</ol>
+<p>After the first backup, only new or changed files are sent, so later backups are much faster.</p>
+</section>
+<section>
+<h2>Automatic backups</h2>
+<p>Choose how often the backup runs: <b>Manual</b>, <b>Every few hours</b>, <b>Daily</b>, <b>Weekly</b> or <b>Monthly</b>.</p>
+<p>You can also decide when a backup is allowed to run:</p>
+<ul>
+<li><b>Require Wi-Fi</b>: never uses mobile data.</li>
+<li><b>Require external power</b>: runs only while the iPhone is charging.</li>
+<li><b>Use allowed time window</b>: for example, only at night.</li>
+<li><b>Minimum Battery Level</b> (in <b>Settings › Battery Settings</b>): skips backups when the battery is low.</li>
+</ul>
+<p>If a condition isn't met, the backup waits and starts once it is. To stop a task for a while, open it and tap <b>Pause Scheduling</b>.</p>
+</section>
+<section>
+<h2>Deleted files</h2>
+<p>Under <b>Deletion policy</b>, choose what happens on the server when you delete something on your iPhone:</p>
+<dl>
+<dt>Mirror (default)</dt><dd>The server stays an exact copy of the source. Files you delete on your iPhone are deleted from the server too.</dd>
+<dt>Append-only</dt><dd>Nothing is ever deleted from the server.</dd>
+<dt>Archive delete</dt><dd>Nothing is deleted. Removed files are moved to a dated <b>.backupflow_archive</b> folder on the server.</dd>
+</dl>
+<p class="note">Planning to free up space on your iPhone after backing up? Switch to <b>Append-only</b> or <b>Archive delete</b> before you delete anything.</p>
+</section>
+<section>
+<h2>Backing up in the background</h2>
+<p>iOS decides when apps can work in the background, so a scheduled backup may not start at exactly the chosen minute. When it's time, BackupFlow starts the backup or sends a notification. Tap <b>Start Now</b> to begin.</p>
+<p>If iOS stops a backup before it finishes, open BackupFlow and it continues. Files that were already sent are skipped.</p>
+<p>For a large first backup, keep your iPhone on Wi-Fi and connected to power.</p>
+</section>
+<section>
+<h2>Backup history</h2>
+<p>Your latest backups appear on the <b>Backup Hub</b>. Tap <b>See all</b> for the full <b>Backup History</b>. Each entry shows how many files were sent, the total size and how long it took. You can also share it as a report.</p>
+<p>To choose how long history is kept, go to <b>Settings › History Retention</b>.</p>
+</section>
+<section>
+<h2>Extra protection</h2>
+<ul>
+<li><b>Verify uploads</b>: checks that every file arrived on the server intact.</li>
+<li><b>Download iCloud items if needed</b>: also backs up photos and videos that are stored only in iCloud.</li>
+<li><b>SFTP</b>: BackupFlow remembers your server the first time you connect and warns you if its identity changes.</li>
+</ul>
+</section>
+<section>
+<h2>Troubleshooting</h2>
+<dl>
+<dt>I can't connect to my server.</dt><dd>Check the address, port, username and password. Usual ports: FTP 21, SFTP 22, WebDAV 443. For a server at home, make sure your iPhone is on the same Wi-Fi network and local network access is on in <b>iPhone Settings › Privacy &amp; Security › Local Network</b>.</dd>
+<dt>A scheduled backup didn't run.</dt><dd>Check the task's conditions (Wi-Fi, power, time window, battery) and make sure notifications are allowed for BackupFlow. Open the app to start a backup that is waiting.</dd>
+<dt>Some photos are missing.</dt><dd>Turn on <b>Download iCloud items if needed</b>. With iCloud Photos, many originals are kept only in iCloud.</dd>
+<dt>Files disappeared from my server.</dt><dd>The task is probably set to <b>Mirror</b>. Switch it to <b>Append-only</b> or <b>Archive delete</b>.</dd>
+<dt>I see an SFTP security warning.</dt><dd>The server's identity has changed. This is expected if the server was reinstalled or replaced. Otherwise, check with whoever manages the server before continuing.</dd>
+</dl>
+</section>
+<section>
+<h2>Privacy</h2>
+<p>Your files go straight from your iPhone to your own server. BackupFlow has no servers of its own, never sees your files and collects no data. Passwords are stored securely on your device.</p>
+<p><b>Settings › Reset All Data</b> removes all tasks, history and saved passwords from this device. Files on your servers are not touched.</p>
+</section>
+<section>
+<h2>Need help?</h2>
+<p>Go to <b>Settings › Contact Support</b> to send us an email. Your app version and device model are added automatically.</p>
+</section>
+<footer>BackupFlow</footer>
+</main>
+</body>
+</html>
