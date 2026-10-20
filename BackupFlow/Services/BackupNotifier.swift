@@ -63,22 +63,19 @@ final class BackupNotifier {
         lastScheduledNoticeAt[task.id] = Date()
     }
 
-    /// Keeps a reminder queued in the system for the task's next FTP/SFTP run.
+    /// Keeps a reminder queued in the system for the task's next scheduled run.
     ///
-    /// iOS can't start FTP/SFTP at an exact time in the background, and never launches a
+    /// iOS can defer background tasks when the device is unplugged, and never launches a
     /// force-quit app for background tasks. A notification scheduled with the system is
-    /// delivered regardless, and its "Start" action opens the app so the backup can run
-    /// as a user-initiated continued processing task.
+    /// delivered if the run hasn't completed yet (and is cleared automatically by
+    /// `removeDeliveredRunPrompts` if the background run finishes first).
     func refreshReminder(for task: BackupTask) {
         let identifier = Self.reminderIdentifier(for: task.id)
         center.removePendingNotificationRequests(withIdentifiers: [identifier])
 
-        // WebDAV continues through its background URLSession and needs no reminder.
-        let usesSocketTransfer = task.backupType == .ftp || task.backupType == .sftp
         // While waiting for Wi-Fi a reminder every retry would only start a run that
         // defers again; the task sent a single "waiting for Wi-Fi" notice instead.
-        guard usesSocketTransfer,
-              task.isEnabled, !task.isPaused,
+        guard task.isEnabled, !task.isPaused,
               task.frequency != .manual,
               task.wifiWaitDeadline == nil,
               let fireDate = task.nextRunTime, fireDate > Date() else { return }

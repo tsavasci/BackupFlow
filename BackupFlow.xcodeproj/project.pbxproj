@@ -450,33 +450,27 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BackupFlow/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = BackupFlow;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSAppTransportSecurity = "<dict><key>NSAllowsArbitraryLoads</key><true/></dict>";
-				INFOPLIST_KEY_NSDesktopFolderUsageDescription = "Yedekleme işlemleri için masaüstü klasörüne erişim gereklidir.";
-				INFOPLIST_KEY_NSDocumentsFolderUsageDescription = "Dosya yedekleme işlemleri için dosya erişimine ihtiyaç duyulmaktadır.";
-				INFOPLIST_KEY_NSDownloadsFolderUsageDescription = "Yedeklenmiş dosyalara erişmek için indirilenler klasörüne erişim gereklidir.";
-				INFOPLIST_KEY_NSFileProviderDomainUsageDescription = "Bu uygulama, dosyalarınızı yedeklemek için iCloud Drive ve Files uygulamasındaki klasörlere erişim gerektirir.";
 				INFOPLIST_KEY_NSFullDiskAccessUsageDescription = "Dosyalarınıza erişebilmek ve yedekleme yapabilmek için tam disk erişimi gereklidir.";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "FTP sunucuya bağlanabilmek ve yedekleme işlemlerini gerçekleştirebilmek için yerel ağ erişimi gereklidir.";
-				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Yedeklenen fotoğraflarınızı geri yüklemek için erişim izni gerekiyor.";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Fotoğraflarınızı yedeklemek için erişim izni gerekiyor.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Local network access is required to connect to your FTP, SFTP, or WebDAV server and run backups.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Photo library access is required to back up your photos and videos.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
-				INFOPLIST_KEY_NSSystemAdministrationUsageDescription = "Yedekleme işlemi için sistem dosyalarına erişim gereklidir.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UIFileSharingEnabled = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportsDocumentBrowser = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 5.0;
+				MARKETING_VERSION = 5.2;
 				PRODUCT_BUNDLE_IDENTIFIER = tamersavasci.BackupFlow;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -506,32 +500,26 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BackupFlow/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = BackupFlow;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSAppTransportSecurity = "<dict><key>NSAllowsArbitraryLoads</key><true/></dict>";
-				INFOPLIST_KEY_NSDesktopFolderUsageDescription = "Yedekleme işlemleri için masaüstü klasörüne erişim gereklidir.";
-				INFOPLIST_KEY_NSDocumentsFolderUsageDescription = "Dosya yedekleme işlemleri için dosya erişimine ihtiyaç duyulmaktadır.";
-				INFOPLIST_KEY_NSDownloadsFolderUsageDescription = "Yedeklenmiş dosyalara erişmek için indirilenler klasörüne erişim gereklidir.";
-				INFOPLIST_KEY_NSFileProviderDomainUsageDescription = "Bu uygulama, dosyalarınızı yedeklemek için iCloud Drive ve Files uygulamasındaki klasörlere erişim gerektirir.";
 				INFOPLIST_KEY_NSFullDiskAccessUsageDescription = "Dosyalarınıza erişebilmek ve yedekleme yapabilmek için tam disk erişimi gereklidir.";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "FTP sunucuya bağlanabilmek ve yedekleme işlemlerini gerçekleştirebilmek için yerel ağ erişimi gereklidir.";
-				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Yedeklenen fotoğraflarınızı geri yüklemek için erişim izni gerekiyor.";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Fotoğraflarınızı yedeklemek için erişim izni gerekiyor.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Local network access is required to connect to your FTP, SFTP, or WebDAV server and run backups.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Photo library access is required to back up your photos and videos.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
-				INFOPLIST_KEY_NSSystemAdministrationUsageDescription = "Yedekleme işlemi için sistem dosyalarına erişim gereklidir.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UIFileSharingEnabled = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportsDocumentBrowser = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 5.0;
+				MARKETING_VERSION = 5.2;
 				PRODUCT_BUNDLE_IDENTIFIER = tamersavasci.BackupFlow;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;

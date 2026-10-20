@@ -42,25 +42,7 @@
 	<dict>
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
-		<key>NSExceptionDomains</key>
-		<dict>
-			<key>keenetic.link</key>
-			<dict>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<true/>
-				<key>NSExceptionMinimumTLSVersion</key>
-				<string>TLSv1.2</string>
-				<key>NSIncludesSubdomains</key>
-				<true/>
-			</dict>
-		</dict>
 	</dict>
-	<key>NSDocumentDirectory</key>
-	<true/>
-	<key>NSDocumentsDirUsageDescription</key>
-	<string>Belgelerinizi yedeklemek için Belgeler klasörüne erişim gereklidir.</string>
-	<key>NSFileProviderPresenceUpdate</key>
-	<true/>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>
@@ -68,18 +50,5 @@
 	</array>
 	<key>UIFileSharingEnabled</key>
 	<false/>
-	<key>UTExportedTypeDeclarations</key>
-	<array>
-		<dict>
-			<key>UTTypeConformsTo</key>
-			<array>
-				<string>public.data</string>
-			</array>
-			<key>UTTypeDescription</key>
-			<string>All Files</string>
-			<key>UTTypeIdentifier</key>
-			<string>public.item</string>
-		</dict>
-	</array>
 </dict>
 </plist>

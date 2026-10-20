@@ -389,6 +389,18 @@ struct FTPSyncEngine {
                 continue
             }
 
+            if let remoteFile = existingFileMap[stableFileName],
+               remoteFile.size > 0,
+               let expectedSize = photoManager.localResourceSize(for: asset),
+               expectedSize == remoteFile.size {
+                result.skippedFiles += 1
+                result.totalBytes += expectedSize
+                setCurrentFile("backup.current_file.skipped_file".localized(with: stableFileName))
+                let progress = Double(index + 1) / Double(max(totalCount, 1)) * 0.8
+                progressHandler?(progress)
+                continue
+            }
+
             let exportResult = await photoManager.exportAssetToTemporaryFile(
                 asset: asset,
                 fileName: stableFileName,

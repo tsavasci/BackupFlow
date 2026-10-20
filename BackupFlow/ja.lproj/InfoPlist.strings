@@ -1,5 +1,2 @@
 "NSLocalNetworkUsageDescription" = "FTP、SFTP、またはWebDAVサーバーに接続してバックアップを実行するには、ローカルネットワークへのアクセスが必要です。";
 "NSPhotoLibraryUsageDescription" = "写真とビデオをバックアップするには、写真ライブラリへのアクセスが必要です。";
-"NSPhotoLibraryAddUsageDescription" = "バックアップした写真とビデオを復元するには、写真ライブラリへの書き込み権限が必要です。";
-"NSDocumentsDirUsageDescription" = "選択したファイルをバックアップするには、書類へのアクセスが必要です。";
-"NSFileProviderDomainUsageDescription" = "バックアップには、iCloud Driveとファイルアプリ内のファイルへのアクセスが必要です。";

@@ -198,6 +198,8 @@ extension BackupScheduler {
         let message = BackupServiceError.cancelled.localizedDescription
         let expiredBySystem = backgroundExpirationTaskIDs.remove(task.id) != nil
             || (task.backupType == .ftp && FTPService.shared.consumeBackgroundExpiration())
+            || (task.backupType == .sftp && SFTPService.shared.consumeBackgroundExpiration())
+            || (task.backupType == .webdav && WebDAVService.shared.consumeBackgroundExpiration())
         task.backupStatus = .cancelled
         task.lastError = message
         clearRunProgress(for: task)
@@ -216,10 +218,7 @@ extension BackupScheduler {
 
         if expiredBySystem {
             scheduleProcessingTask()
-            // Only socket transfers are cut off here; WebDAV continues in its background session.
-            if task.backupType == .ftp || task.backupType == .sftp {
-                notifier.sendBackgroundInterruptedNotification(for: task)
-            }
+            notifier.sendBackgroundInterruptedNotification(for: task)
             debugLog("⏱️ BackupFlow: Arka plan süresi dolduğu için yedekleme ertelendi: \(task.displayName)")
         } else {
             debugLog("⏸️ BackupFlow: Yedekleme yarıda kesildi: \(task.displayName)")

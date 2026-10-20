@@ -8,6 +8,12 @@ import UniformTypeIdentifiers
 class PhotoLibraryManager: NSObject, ObservableObject {
     static let shared = PhotoLibraryManager()
     private let logger = Logger(subsystem: "com.backupflow.app", category: "PhotoLibrary")
+    private let fileNameFormatterLock = NSLock()
+    private lazy var fileNameDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMMdd_HHmmss"
+        return formatter
+    }()
     
     @Published var authorizationStatus: PHAuthorizationStatus = .notDetermined
     @Published var hasAccess: Bool = false
@@ -97,6 +103,29 @@ class PhotoLibraryManager: NSObject, ObservableObject {
         logger.info("📱 BackupFlow: \(assets.count) adet \(mediaType.displayName) bulundu")
         return assets
     }
+
+    private func primaryResource(for asset: PHAsset) -> PHAssetResource? {
+        let resources = PHAssetResource.assetResources(for: asset)
+        switch asset.mediaType {
+        case .image:
+            return resources.first(where: { $0.type == .photo || $0.type == .fullSizePhoto }) ?? resources.first
+        case .video:
+            return resources.first(where: { $0.type == .video || $0.type == .fullSizeVideo }) ?? resources.first
+        default:
+            return nil
+        }
+    }
+
+    /// Reads the byte size reported by Photos metadata without exporting the asset to disk.
+    /// Allows unchanged remote files to be skipped immediately during background syncs.
+    func localResourceSize(for asset: PHAsset) -> Int64? {
+        guard let resource = primaryResource(for: asset),
+              let sizeNumber = resource.value(forKey: "fileSize") as? NSNumber else {
+            return nil
+        }
+        let size = sizeNumber.int64Value
+        return size > 0 ? size : nil
+    }
     
     func exportAssetToTemporaryFile(asset: PHAsset, fileName: String, allowNetworkAccess: Bool = false) async -> AssetFileExportResult {
         let tempRoot = FileManager.default.temporaryDirectory.appendingPathComponent("backupflow_exports", isDirectory: true)
@@ -137,17 +166,7 @@ class PhotoLibraryManager: NSObject, ObservableObject {
             }
 
             DispatchQueue.global(qos: .utility).async {
-                let resources = PHAssetResource.assetResources(for: asset)
-                let resource: PHAssetResource?
-                if mediaType == .image {
-                    resource = resources.first(where: { $0.type == .photo || $0.type == .fullSizePhoto }) ?? resources.first
-                } else if mediaType == .video {
-                    resource = resources.first(where: { $0.type == .video || $0.type == .fullSizeVideo }) ?? resources.first
-                } else {
-                    resource = nil
-                }
-
-                guard let resource else {
+                guard let resource = self.primaryResource(for: asset) else {
                     _ = tryResume(.unavailable)
                     return
                 }
@@ -183,11 +202,10 @@ class PhotoLibraryManager: NSObject, ObservableObject {
     }
     
     func generateFileName(for asset: PHAsset) -> String {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
-        
         let date = asset.creationDate ?? Date()
-        let dateString = dateFormatter.string(from: date)
+        let dateString = fileNameFormatterLock.withLock {
+            fileNameDateFormatter.string(from: date)
+        }
         
         let fileExtension: String
         if asset.mediaType == .image {

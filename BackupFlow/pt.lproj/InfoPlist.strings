@@ -1,5 +1,2 @@
 "NSLocalNetworkUsageDescription" = "O acesso à rede local é necessário para conectar ao servidor FTP, SFTP ou WebDAV e executar backups.";
 "NSPhotoLibraryUsageDescription" = "O acesso à biblioteca de fotos é necessário para fazer backup das suas fotos e vídeos.";
-"NSPhotoLibraryAddUsageDescription" = "A permissão de gravação na biblioteca de fotos é necessária para restaurar fotos e vídeos salvos.";
-"NSDocumentsDirUsageDescription" = "O acesso aos Documentos é necessário para fazer backup dos arquivos selecionados.";
-"NSFileProviderDomainUsageDescription" = "O acesso aos arquivos do iCloud Drive e do app Arquivos é necessário para backup.";

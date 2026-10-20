@@ -1,5 +1,2 @@
 "NSLocalNetworkUsageDescription" = "FTP, SFTP 또는 WebDAV 서버에 연결하고 백업을 실행하려면 로컬 네트워크 접근이 필요합니다.";
 "NSPhotoLibraryUsageDescription" = "사진과 비디오를 백업하려면 사진 보관함 접근이 필요합니다.";
-"NSPhotoLibraryAddUsageDescription" = "백업된 사진과 비디오를 복원하려면 사진 보관함 쓰기 권한이 필요합니다.";
-"NSDocumentsDirUsageDescription" = "선택한 파일을 백업하려면 문서 접근이 필요합니다.";
-"NSFileProviderDomainUsageDescription" = "백업을 위해 iCloud Drive 및 파일 앱의 파일에 접근해야 합니다.";

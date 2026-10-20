@@ -222,6 +222,18 @@ struct SFTPSyncEngine {
                 continue
             }
 
+            if let remoteSize = existingFileMap[fileName], remoteSize > 0 {
+                result.skippedFiles += 1
+                result.totalBytes += remoteSize
+                if !options.isDryRun {
+                    checkpoint.insert(fileName)
+                    await markCheckpoint?(fileName)
+                }
+                let progress = Double(index + 1) / Double(max(totalCount, 1))
+                progressHandler?(progress)
+                continue
+            }
+
             let exportResult = await photoManager.exportAssetToTemporaryFile(
                 asset: asset,
                 fileName: fileName,

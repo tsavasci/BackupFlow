@@ -20,6 +20,11 @@ final class WebDAVService: NSObject, FileProviderDelegate {
     private var currentCredential: URLCredential?
     /// Set for the duration of a backup whose task requires Wi-Fi.
     private var uploadsRequireWiFi = false
+    private let backgroundTaskCoordinator = WebDAVBackgroundTaskCoordinator()
+    private var isPerformingBackup = false
+    private var backgroundExpirationRequested = false
+    private var ensuredRemoteDirectories: Set<String> = []
+    private var pendingFinishEventsWorkItem: DispatchWorkItem?
     private var backgroundURLSession: URLSession?
     private var backgroundURLSessionCompletionHandler: (() -> Void)?
     private var currentUploadTask: URLSessionTask?
@@ -40,6 +45,9 @@ final class WebDAVService: NSObject, FileProviderDelegate {
             }
         },
         onTaskComplete: { [weak self] task, error in
+            if self?.isPerformingBackup == true, UIApplication.shared.applicationState != .active {
+                self?.backgroundTaskCoordinator.begin()
+            }
             if let error = error {
                 self?.lastError = error
                 self?.logger.error("🌐 Background upload failed: \(error.localizedDescription)")
@@ -60,10 +68,7 @@ final class WebDAVService: NSObject, FileProviderDelegate {
             }
         },
         onFinishEvents: { [weak self] in
-            if let completionHandler = self?.backgroundURLSessionCompletionHandler {
-                completionHandler()
-                self?.backgroundURLSessionCompletionHandler = nil
-            }
+            self?.handleBackgroundSessionDidFinishEvents()
         }
     )
     private let lock = NSLock()
@@ -72,12 +77,55 @@ final class WebDAVService: NSObject, FileProviderDelegate {
     // Background session state tracking
     @Published private(set) var isBackgroundUploading = false
 
-    
     @MainActor
     func updateBackgroundMode(isBackground: Bool) {
-        self.isBackgroundUploading = isBackground
+        guard isBackground else {
+            backgroundTaskCoordinator.end()
+            self.isBackgroundUploading = false
+            self.logger.info("📱 Foreground upload mode enabled")
+            return
+        }
+        if isPerformingBackup || !backgroundUploadContinuations.isEmpty {
+            backgroundTaskCoordinator.begin()
+        }
+        self.isBackgroundUploading = true
         // Not resetting progress/currentFile here to preserve UI continuity across foreground/background
-        self.logger.info("📱 \(isBackground ? "Background" : "Foreground") upload mode enabled")
+        self.logger.info("📱 Background upload mode enabled")
+    }
+
+    private func handleBackgroundSessionDidFinishEvents() {
+        // Because sequential uploads enqueue the next file right after the previous continuation
+        // resumes, calling the system completion handler immediately would let iOS suspend the app
+        // before the next uploadTask is created. Hold the background assertion and flush either
+        // when the next task starts, when the backup finishes, or after a short safety window.
+        if isPerformingBackup {
+            if UIApplication.shared.applicationState != .active {
+                backgroundTaskCoordinator.begin()
+            }
+            scheduleBackgroundSessionCompletionFlush(after: 4.0)
+        } else {
+            flushBackgroundURLSessionCompletionHandler()
+        }
+    }
+
+    private func scheduleBackgroundSessionCompletionFlush(after delay: TimeInterval) {
+        pendingFinishEventsWorkItem?.cancel()
+        let workItem = DispatchWorkItem { [weak self] in
+            Task { @MainActor in
+                self?.flushBackgroundURLSessionCompletionHandler()
+            }
+        }
+        pendingFinishEventsWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
+    }
+
+    private func flushBackgroundURLSessionCompletionHandler() {
+        pendingFinishEventsWorkItem?.cancel()
+        pendingFinishEventsWorkItem = nil
+        if let completionHandler = backgroundURLSessionCompletionHandler {
+            backgroundURLSessionCompletionHandler = nil
+            completionHandler()
+        }
     }
 
     @MainActor
@@ -601,6 +649,9 @@ final class WebDAVService: NSObject, FileProviderDelegate {
                 resumeLock.unlock()
 
                 guard shouldResume else { return }
+                Task { @MainActor in
+                    self.currentUploadTask = nil
+                }
                 session?.finishTasksAndInvalidate()
                 switch result {
                 case .success:
@@ -712,6 +763,7 @@ final class WebDAVService: NSObject, FileProviderDelegate {
             }
 
             task.resume()
+            self.flushBackgroundURLSessionCompletionHandler()
 
             // Best-effort initial progress callback
             progressHandler?(0.0)
@@ -739,6 +791,9 @@ final class WebDAVService: NSObject, FileProviderDelegate {
     }
 
     private func finishBackgroundUpload(task: URLSessionTask, result: Result<Void, Error>) {
+        if currentUploadTask === task {
+            currentUploadTask = nil
+        }
         let taskIdentifier = task.taskIdentifier
         guard let continuation = backgroundUploadContinuations.removeValue(forKey: taskIdentifier) else {
             return
@@ -761,6 +816,16 @@ final class WebDAVService: NSObject, FileProviderDelegate {
 
     private func throwIfCancelled() throws {
         if isCancelled { throw BackupServiceError.cancelled }
+    }
+
+    func cancelForBackgroundExpiration() {
+        backgroundExpirationRequested = true
+        cancelCurrentTask()
+    }
+
+    func consumeBackgroundExpiration() -> Bool {
+        defer { backgroundExpirationRequested = false }
+        return backgroundExpirationRequested
     }
 
     func cancelCurrentTask() {
@@ -974,6 +1039,19 @@ final class WebDAVService: NSObject, FileProviderDelegate {
             }
 
             let fileName = photoLibraryManager.generateFileName(for: asset)
+            let remotePath = remoteBasePath == "/" ? "/\(fileName)" : "\(remoteBasePath)/\(fileName)"
+
+            // Photo filenames embed creation timestamp + PHAsset UUID prefix, so a non-empty
+            // remote file with the same name is already backed up. Skipping before querying
+            // PHAssetResource or exporting avoids main-thread PhotoKit XPC stalls and disk I/O.
+            if let remoteFile = existingFileMap[fileName], remoteFile.size > 0 {
+                result.skippedFiles += 1
+                result.totalBytes += remoteFile.size
+                logger.debug("⏭️ Upload fast-skipped (\(index + 1)/\(totalAssets)): \(fileName) (\(remoteFile.size) bytes)")
+                reportProgress(afterAsset: index)
+                continue
+            }
+
             let exportResult = await photoLibraryManager.exportAssetToTemporaryFile(
                 asset: asset,
                 fileName: fileName,
@@ -999,8 +1077,6 @@ final class WebDAVService: NSObject, FileProviderDelegate {
                 continue
             }
             defer { try? fileManager.removeItem(at: tempURL) }
-
-            let remotePath = remoteBasePath == "/" ? "/\(fileName)" : "\(remoteBasePath)/\(fileName)"
 
             if let remoteFile = existingFileMap[fileName], remoteFile.size == localSize {
                 result.skippedFiles += 1
@@ -1185,6 +1261,8 @@ final class WebDAVService: NSObject, FileProviderDelegate {
         isConnected = false
         lastError = nil
         isBackgroundUploading = false
+        ensuredRemoteDirectories.removeAll()
+        backgroundTaskCoordinator.end()
         // Do not reset progress/currentFile here to avoid UI resets during transient reconnects
     }
     
@@ -1296,12 +1374,29 @@ final class WebDAVService: NSObject, FileProviderDelegate {
     }
     
     // MARK: - Directory Management
+    private func normalizedRemoteDirectoryKey(_ path: String) -> String {
+        let trimmed = path.trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        return trimmed.isEmpty ? "/" : "/\(trimmed)"
+    }
+
     private func ensureDirectoryExists(at path: String) async throws {
+        let normalizedKey = normalizedRemoteDirectoryKey(path)
+        guard normalizedKey != "/" else { return }
+        if ensuredRemoteDirectories.contains(normalizedKey) {
+            return
+        }
         guard let provider = webdavProvider else {
             throw NSError(domain: "WebDAVError", code: -1, userInfo: [NSLocalizedDescriptionKey: "error.webdav.provider_unavailable".localized])
         }
         let ops = WebDAVFileOperations(provider: provider)
         try await ops.ensureDirectoryExists(at: path, logger: logger)
+
+        var current = ""
+        for component in normalizedKey.split(separator: "/") {
+            current += "/\(component)"
+            ensuredRemoteDirectories.insert(current)
+        }
     }
 
     private func makeSyncEngine() throws -> WebDAVSyncEngine {
@@ -1401,8 +1496,27 @@ final class WebDAVService: NSObject, FileProviderDelegate {
         progressHandler: @escaping (Double) -> Void
     ) async throws -> FTPService.SyncResult {
         isCancelled = false
+        backgroundExpirationRequested = false
+        isPerformingBackup = true
         uploadsRequireWiFi = options.requiresWiFi
-        defer { uploadsRequireWiFi = false }
+        ensuredRemoteDirectories.removeAll()
+        backgroundTaskCoordinator.onExpiration = { [weak self] in
+            guard !ContinuedBackupRunner.isRunning else { return }
+            self?.logger.warning("WebDAV background time expired, cancelling transfer")
+            self?.cancelForBackgroundExpiration()
+        }
+        if UIApplication.shared.applicationState != .active && !options.isDryRun {
+            backgroundTaskCoordinator.begin()
+            self.isBackgroundUploading = true
+        }
+        defer {
+            isPerformingBackup = false
+            currentUploadTask = nil
+            uploadsRequireWiFi = false
+            ensuredRemoteDirectories.removeAll()
+            backgroundTaskCoordinator.end()
+            flushBackgroundURLSessionCompletionHandler()
+        }
         self.logger.info("Starting backup: \(host):\(port)")
         if sourcePath == "PHOTOS_LIBRARY" {
             self.logger.info("Media type: \(mediaType == .photosOnly ? "Photos only" : "Photos and Videos")")
@@ -1517,5 +1631,50 @@ final class WebDAVService: NSObject, FileProviderDelegate {
         try await uploadFileAwaitingCompletion(localURL: url, remotePath: remotePath, progressHandler: nil)
     }
 }
+
+private final class WebDAVBackgroundTaskCoordinator {
+    private let lock = NSLock()
+    private var taskID: UIBackgroundTaskIdentifier = .invalid
+    var onExpiration: (() -> Void)?
+
+    func begin() {
+        lock.lock()
+        endLocked()
+        startTaskLocked()
+        lock.unlock()
+    }
+
+    func end() {
+        lock.lock()
+        endLocked()
+        lock.unlock()
+    }
+
+    private func handleExpiration() {
+        end()
+        if Thread.isMainThread {
+            onExpiration?()
+        } else {
+            DispatchQueue.main.async { [onExpiration] in
+                onExpiration?()
+            }
+        }
+    }
+
+    private func startTaskLocked() {
+        let newID = UIApplication.shared.beginBackgroundTask(withName: "WebDAVFileTransfer") { [weak self] in
+            self?.handleExpiration()
+        }
+        taskID = newID
+    }
+
+    private func endLocked() {
+        if taskID != .invalid {
+            UIApplication.shared.endBackgroundTask(taskID)
+            taskID = .invalid
+        }
+    }
+}
+
 
 

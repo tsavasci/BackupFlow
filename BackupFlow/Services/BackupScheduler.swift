@@ -292,9 +292,9 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         case .ftp:
             FTPService.shared.cancelForBackgroundExpiration()
         case .sftp:
-            SFTPService.shared.cancelCurrentTask()
+            SFTPService.shared.cancelForBackgroundExpiration()
         case .webdav:
-            WebDAVService.shared.cancelCurrentTask()
+            WebDAVService.shared.cancelForBackgroundExpiration()
         }
         task.backupStatus = .cancelled
         task.lastError = BackupServiceError.cancelled.localizedDescription

@@ -162,6 +162,7 @@ final class SFTPService: NSObject, @unchecked Sendable {
     private let cancellationLock = NSLock()
     private let stateLock = NSLock()
     private var isCancelled = false
+    private var backgroundExpirationRequested = false
     private let connectionLock = NSLock()
     private var lastConnection: (host: String, port: Int, username: String, password: String)?
     
@@ -1028,8 +1029,24 @@ final class SFTPService: NSObject, @unchecked Sendable {
 
     private func handleBackgroundExpiration() {
         logger.warning("SFTP background time expired, cancelling transfer")
-        markCancelled()
+        cancelForBackgroundExpiration()
+    }
+
+    func cancelForBackgroundExpiration() {
+        cancellationLock.lock()
+        backgroundExpirationRequested = true
+        isCancelled = true
+        cancellationLock.unlock()
         disconnect()
+    }
+
+    func consumeBackgroundExpiration() -> Bool {
+        cancellationLock.lock()
+        defer {
+            backgroundExpirationRequested = false
+            cancellationLock.unlock()
+        }
+        return backgroundExpirationRequested
     }
 
     private func markCancelled() {
@@ -1041,6 +1058,7 @@ final class SFTPService: NSObject, @unchecked Sendable {
     private func resetCancellation() {
         cancellationLock.lock()
         isCancelled = false
+        backgroundExpirationRequested = false
         cancellationLock.unlock()
     }
 
@@ -1109,6 +1127,9 @@ private final class SFTPBackgroundTaskCoordinator {
             self?.handleExpiration()
         }
         taskID = newID
+        if newID == .invalid {
+            stopRenewTimerLocked()
+        }
     }
 
     private func endLocked() {

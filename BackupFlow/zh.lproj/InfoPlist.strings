@@ -1,5 +1,2 @@
 "NSLocalNetworkUsageDescription" = "需要本地网络访问权限，以连接到您的 FTP、SFTP 或 WebDAV 服务器并执行备份。";
 "NSPhotoLibraryUsageDescription" = "需要访问照片图库，以备份您的照片和视频。";
-"NSPhotoLibraryAddUsageDescription" = "需要照片图库写入权限，以恢复已备份的照片和视频。";
-"NSDocumentsDirUsageDescription" = "需要访问文稿，以备份您选择的文件。";
-"NSFileProviderDomainUsageDescription" = "备份需要访问 iCloud Drive 和“文件” App 中的文件。";

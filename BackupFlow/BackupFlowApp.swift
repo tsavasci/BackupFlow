@@ -25,9 +25,11 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         debugLog("🔄 BackupFlow: AppDelegate başlatıldı (BGTaskScheduler mode)")
         
+        #if DEBUG
         // Suppress auto-layout constraint warnings
         UserDefaults.standard.set(false, forKey: "_UIConstraintBasedLayoutLogUnsatisfiable")
         UserDefaults.standard.set(false, forKey: "_UIConstraintBasedLayoutLogUnsatisfied")
+        #endif
         
         TemporaryStorageMaintenance.cleanupStaleFiles()
         

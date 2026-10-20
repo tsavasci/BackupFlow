@@ -1,5 +1,2 @@
 "NSLocalNetworkUsageDescription" = "يلزم الوصول إلى الشبكة المحلية للاتصال بخادم FTP أو SFTP أو WebDAV وتشغيل النسخ الاحتياطي.";
 "NSPhotoLibraryUsageDescription" = "يلزم الوصول إلى مكتبة الصور لنسخ الصور ومقاطع الفيديو احتياطيًا.";
-"NSPhotoLibraryAddUsageDescription" = "يلزم إذن الكتابة في مكتبة الصور لاستعادة الصور ومقاطع الفيديو التي تم نسخها احتياطيًا.";
-"NSDocumentsDirUsageDescription" = "يلزم الوصول إلى المستندات لنسخ الملفات التي تحددها احتياطيًا.";
-"NSFileProviderDomainUsageDescription" = "يلزم الوصول إلى ملفات iCloud Drive وتطبيق الملفات للنسخ الاحتياطي.";

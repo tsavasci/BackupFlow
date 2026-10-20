@@ -1,5 +1,2 @@
 "NSLocalNetworkUsageDescription" = "आपके FTP, SFTP या WebDAV सर्वर से कनेक्ट करने और बैकअप चलाने के लिए स्थानीय नेटवर्क एक्सेस आवश्यक है।";
 "NSPhotoLibraryUsageDescription" = "आपकी फ़ोटो और वीडियो का बैकअप लेने के लिए फ़ोटो लाइब्रेरी एक्सेस आवश्यक है।";
-"NSPhotoLibraryAddUsageDescription" = "बैकअप की गई फ़ोटो और वीडियो को पुनर्स्थापित करने के लिए फ़ोटो लाइब्रेरी में लिखने की अनुमति आवश्यक है।";
-"NSDocumentsDirUsageDescription" = "आपके चुने हुए फ़ाइलों का बैकअप लेने के लिए दस्तावेज़ एक्सेस आवश्यक है।";
-"NSFileProviderDomainUsageDescription" = "बैकअप के लिए iCloud Drive और Files ऐप की फ़ाइलों तक पहुंच आवश्यक है।";

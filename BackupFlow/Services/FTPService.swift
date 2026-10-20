@@ -1056,7 +1056,7 @@ final class FTPService: NSObject, @unchecked Sendable {
             // A continued processing task keeps the app alive past the UIKit window.
             guard !ContinuedBackupRunner.isRunning else { return }
             self?.logger.warning("FTP background time expired, cancelling transfer")
-            self?.cancelCurrentTask()
+            self?.cancelForBackgroundExpiration()
         }
         let shouldProtectBackgroundTransfer = startedInBackground && !options.isDryRun
         if shouldProtectBackgroundTransfer {
