@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="es" dir="ltr">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Ayuda y Documentación de BackupFlow</title>
+        <meta name="description" content="Guía completa de BackupFlow para iOS: Centro de copias, configuración FTP/SFTP/WebDAV, copia de Biblioteca de fotos y Archivos, programación, políticas de eliminación y solución de problemas." />
+        <meta name="theme-color" content="#3B82F6" />
+        <meta name="apple-itunes-app" content="app-id=6753620051" />
+        <meta property="og:type" content="article" />
+        <meta property="og:title" content="Ayuda y Documentación de BackupFlow" />
+        <meta property="og:description" content="Guía completa de BackupFlow para iOS: Centro de copias, configuración FTP/SFTP/WebDAV, copia de Biblioteca de fotos y Archivos, programación, políticas de eliminación y solución de problemas." />
+        <meta property="og:url" content="https://tsavasci.github.io/BackupFlowWeb/docs/es/" />
+        <meta property="og:image" content="https://tsavasci.github.io/BackupFlowWeb/assets/og-image.jpg" />
+        <link rel="canonical" href="https://tsavasci.github.io/BackupFlowWeb/docs/es/" />
+        <link rel="alternate" hreflang="en" href="https://tsavasci.github.io/BackupFlowWeb/docs/en/" />
+        <link rel="alternate" hreflang="tr" href="https://tsavasci.github.io/BackupFlowWeb/docs/tr/" />
+        <link rel="alternate" hreflang="de" href="https://tsavasci.github.io/BackupFlowWeb/docs/de/" />
+        <link rel="alternate" hreflang="fr" href="https://tsavasci.github.io/BackupFlowWeb/docs/fr/" />
+        <link rel="alternate" hreflang="es" href="https://tsavasci.github.io/BackupFlowWeb/docs/es/" />
+        <link rel="alternate" hreflang="ru" href="https://tsavasci.github.io/BackupFlowWeb/docs/ru/" />
+        <link rel="alternate" hreflang="ar" href="https://tsavasci.github.io/BackupFlowWeb/docs/ar/" />
+        <link rel="alternate" hreflang="zh" href="https://tsavasci.github.io/BackupFlowWeb/docs/zh/" />
+        <link rel="alternate" hreflang="ko" href="https://tsavasci.github.io/BackupFlowWeb/docs/ko/" />
+        <link rel="alternate" hreflang="ja" href="https://tsavasci.github.io/BackupFlowWeb/docs/ja/" />
+        <link rel="alternate" hreflang="pt" href="https://tsavasci.github.io/BackupFlowWeb/docs/pt/" />
+        <link rel="alternate" hreflang="hi" href="https://tsavasci.github.io/BackupFlowWeb/docs/hi/" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="../../styles.css" />
+        <link rel="stylesheet" href="../docs.css" />
+        <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+    </head>
+    <body class="docs-body">
+        <a href="#docs-content" class="skip-link">Saltar al contenido</a>
+        <nav class="navbar">
+            <div class="nav-container">
+                <a class="nav-logo" href="../../index.html">
+                    <span class="logo-icon">
+                        <img src="../../web_logo.png" alt="" class="logo-image" />
+                    </span>
+                    <span class="logo-text">BackupFlow</span>
+                </a>
+                <div class="nav-menu" id="nav-menu">
+                    <a class="nav-link" href="../../index.html#features">Funciones</a>
+                    <a class="nav-link" href="../../index.html#pricing">Precios</a>
+                    <a class="nav-link" href="../../index.html#support">Soporte</a>
+                    <div class="lang-switcher" id="lang-switcher">
+                        <button
+                            type="button"
+                            class="lang-toggle"
+                            id="lang-toggle"
+                            aria-haspopup="listbox"
+                            aria-expanded="false"
+                            aria-controls="lang-menu"
+                        >
+                            <span class="lang-flag">🇪🇸</span>
+                            <span class="lang-code">ES</span>
+                            <svg class="lang-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M6 9l6 6 6-6" />
+                            </svg>
+                        </button>
+                        <ul class="lang-menu" id="lang-menu" role="listbox" aria-label="Idioma">
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../en/" hreflang="en" lang="en" data-lang-code="en"><span class="lang-flag">🇬🇧</span><span class="lang-name">English</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../tr/" hreflang="tr" lang="tr" data-lang-code="tr"><span class="lang-flag">🇹🇷</span><span class="lang-name">Türkçe</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../de/" hreflang="de" lang="de" data-lang-code="de"><span class="lang-flag">🇩🇪</span><span class="lang-name">Deutsch</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../fr/" hreflang="fr" lang="fr" data-lang-code="fr"><span class="lang-flag">🇫🇷</span><span class="lang-name">Français</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option active" aria-selected="true" href="../es/" hreflang="es" lang="es" data-lang-code="es"><span class="lang-flag">🇪🇸</span><span class="lang-name">Español</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../ru/" hreflang="ru" lang="ru" data-lang-code="ru"><span class="lang-flag">🇷🇺</span><span class="lang-name">Русский</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../ar/" hreflang="ar" lang="ar" data-lang-code="ar"><span class="lang-flag">🇸🇦</span><span class="lang-name">العربية</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../zh/" hreflang="zh" lang="zh" data-lang-code="zh"><span class="lang-flag">🇨🇳</span><span class="lang-name">简体中文</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../ko/" hreflang="ko" lang="ko" data-lang-code="ko"><span class="lang-flag">🇰🇷</span><span class="lang-name">한국어</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../ja/" hreflang="ja" lang="ja" data-lang-code="ja"><span class="lang-flag">🇯🇵</span><span class="lang-name">日本語</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../pt/" hreflang="pt" lang="pt" data-lang-code="pt"><span class="lang-flag">🇵🇹</span><span class="lang-name">Português</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../hi/" hreflang="hi" lang="hi" data-lang-code="hi"><span class="lang-flag">🇮🇳</span><span class="lang-name">हिन्दी</span></a></li>
+                        </ul>
+                    </div>
+                    <a class="nav-link download-btn" href="https://apps.apple.com/app/backupflow/id6753620051" target="_blank" rel="noopener noreferrer">Descargar</a>
+                </div>
+                <button
+                    type="button"
+                    class="nav-toggle"
+                    aria-label="Alternar navegación"
+                    aria-controls="nav-menu"
+                    aria-expanded="false"
+                >
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </nav>
+
+        <main id="docs-content" class="docs-page">
+            <div class="container">
+                <header class="docs-hero">
+                    <h1>Ayuda de BackupFlow</h1>
+                    <p class="docs-lead">BackupFlow copia las fotos, vídeos y archivos de tu iPhone directamente en tu propio servidor — un NAS, servidor doméstico o nube personal — mediante FTP, SFTP o WebDAV. Sin suscripciones ni nubes de terceros.</p>
+                </header>
+
+                <div class="docs-layout">
+                    <aside class="docs-toc" aria-labelledby="docs-toc-title">
+                        <p class="docs-toc-title" id="docs-toc-title">En esta página</p>
+                        <ol>
+                        <li><a href="#what-you-need">1. Qué necesitas</a></li>
+                        <li><a href="#backup-hub">2. Vista general del Centro de copias</a></li>
+                        <li><a href="#first-backup">3. Crear una nueva copia de seguridad</a></li>
+                        <li><a href="#task-details">4. Detalles y gestión de tareas</a></li>
+                        <li><a href="#automatic-backups">5. Programación y condiciones</a></li>
+                        <li><a href="#deleted-files">6. Política de eliminación, Suma de verificación e iCloud</a></li>
+                        <li><a href="#background">7. Copias en segundo plano</a></li>
+                        <li><a href="#history">8. Historial de copias</a></li>
+                        <li><a href="#settings">9. Ajustes de la aplicación</a></li>
+                        <li><a href="#troubleshooting">10. Solución de problemas</a></li>
+                        <li><a href="#privacy">11. Privacidad y seguridad</a></li>
+                        <li><a href="#help">12. ¿Necesitas ayuda?</a></li>
+                        </ol>
+                    </aside>
+
+                    <article class="docs-content">
+                    <section id="what-you-need" class="docs-section">
+                        <h2>1. Qué necesitas</h2>
+                        <ul>
+                        <li><b>Un servidor compatible</b>: Cualquier NAS (Synology, QNAP, TrueNAS, Unraid), servidor doméstico o nube personal (Nextcloud, ownCloud, WebDAV) compatible con <b>FTP</b>, <b>SFTP (SSH)</b> o <b>WebDAV (HTTP/HTTPS)</b>.</li>
+                        <li><b>Datos de acceso</b>: Dirección del servidor, puerto (FTP <b>21</b>, SFTP <b>22</b>, WebDAV <b>443</b>/<b>80</b>), <b>Nombre de usuario</b> y <b>Contraseña</b> (o inicio anónimo para FTP).</li>
+                        <li><b>Permisos de iOS</b>: Acceso completo a <b>Fotos</b>, acceso a <b>Red local</b> (si el servidor está en tu red doméstica) y <b>Notificaciones</b>.</li>
+                        </ul>
+                    </section>
+
+                    <section id="backup-hub" class="docs-section">
+                        <h2>2. Vista general del Centro de copias</h2>
+                        <p>Al abrir BackupFlow, el <b>Centro de copias</b> muestra en tiempo real el estado de tus copias de seguridad:</p>
+                        <ul>
+                        <li><b>Tarjeta de estado</b>: Muestra la última sincronización, la hora de la próxima tarea, el estado de protección, la dirección del servidor y el botón verde <b>Reproducir (▶)</b> para iniciar una copia al instante.</li>
+                        <li><b>Salud de las copias</b>: Muestra el porcentaje de éxito, los fallos consecutivos, la fecha de la última copia exitosa y la duración media.</li>
+                        <li><b>Servidores guardados</b>: Tarjetas para tus tareas <b>FTP</b>, <b>SFTP</b> y <b>WebDAV</b> con botones rápidos para <b>Editar (✏️)</b> o <b>Eliminar (🗑️)</b>. Toca cualquier tarjeta para abrir los <b>Detalles de la tarea</b>.</li>
+                        <li><b>Barra inferior y Ajustes</b>: Usa los tres botones inferiores para <b>Sincronizar (🔄)</b>, abrir el <b>Historial de copias (🕒)</b> o crear una <b>Nueva copia de seguridad (+)</b>. El icono de <b>engranaje (⚙️)</b> arriba a la derecha abre <b>Ajustes</b>.</li>
+                        </ul>
+                        <div class="docs-screens">
+                            <figure class="docs-screen-card"><img src="../../assets/screens/es/1.jpg" width="300" height="649" loading="lazy" decoding="async" alt="2. Vista general del Centro de copias" /></figure>
+                        </div>
+                    </section>
+
+                    <section id="first-backup" class="docs-section">
+                        <h2>3. Crear una nueva copia de seguridad</h2>
+                        <p>Toca el botón <b>+</b> en la parte inferior del <b>Centro de copias</b> (o <b>Añadir</b> junto a <b>Servidores guardados</b>) para abrir <b>Nueva copia de seguridad</b>:</p>
+                        <ol>
+                        <li><b>Origen</b>: Elige <b>Biblioteca de fotos</b> (solo fotos, solo vídeos o ambos) o toca <b>Seleccionar carpeta</b> para elegir cualquier carpeta de la app <b>Archivos</b> de iOS.</li>
+                        <li><b>Tipo de destino</b>: Selecciona <b>FTP</b>, <b>SFTP</b> o <b>WebDAV</b>. Introduce la dirección del servidor, el puerto, el <b>Nombre de usuario</b>, la <b>Contraseña</b> y la ruta remota (ej. <code>/remote.php/dav/files/</code>). Toca <b>Probar conexión</b> y opcionalmente <b>Explorar carpeta remota</b> para elegir la carpeta en tu servidor.</li>
+                        <li><b>Programación</b>: Elige <b>Manual</b>, <b>Diario</b>, <b>Semanal</b>, <b>Mensual</b> o <b>Intervalo</b>, y define la hora en <b>Seleccionar hora</b>.</li>
+                        <li><b>Comportamiento de la copia</b>: Configura la <b>Política de eliminación</b>, la <b>Suma de verificación</b> y las condiciones de red/energía, y guarda la tarea.</li>
+                        </ol>
+                        <p>Tras la primera copia completa, solo se envían los archivos nuevos o modificados, haciendo que las siguientes copias sean mucho más rápidas.</p>
+                        <div class="docs-screens docs-screens-pair">
+                            <figure class="docs-screen-card"><img src="../../assets/screens/es/6.jpg" width="300" height="649" loading="lazy" decoding="async" alt="3. Crear una nueva copia de seguridad" /></figure>
+                            <figure class="docs-screen-card"><img src="../../assets/screens/es/9.jpg" width="300" height="649" loading="lazy" decoding="async" alt="3. Crear una nueva copia de seguridad" /></figure>
+                        </div>
+                    </section>
+
+                    <section id="task-details" class="docs-section">
+                        <h2>4. Detalles y gestión de tareas</h2>
+                        <p>Toca cualquier tarea en <b>Servidores guardados</b> para ver los <b>Detalles de la tarea</b>:</p>
+                        <ul>
+                        <li><b>General</b>: Revisa el origen, el estado actual, la programación, la <b>Política de eliminación</b> y la <b>Suma de verificación</b>.</li>
+                        <li><b>Servidor</b>: Consulta la dirección del servidor, el puerto y el usuario.</li>
+                        <li><b>Copias recientes</b>: Revisa las últimas ejecuciones de esa tarea con fecha, estado, archivos transferidos, tamaño y duración.</li>
+                        <li>Toca <b>Editar</b> arriba a la izquierda para modificar cualquier ajuste de la tarea.</li>
+                        </ul>
+                        <div class="docs-screens">
+                            <figure class="docs-screen-card"><img src="../../assets/screens/es/5.jpg" width="300" height="649" loading="lazy" decoding="async" alt="4. Detalles y gestión de tareas" /></figure>
+                        </div>
+                    </section>
+
+                    <section id="automatic-backups" class="docs-section">
+                        <h2>5. Programación y condiciones</h2>
+                        <p>En <b>Programación</b> puedes elegir: <b>Manual</b>, <b>Diario</b>, <b>Semanal</b>, <b>Mensual</b> o <b>Intervalo</b>, ajustando la hora en <b>Seleccionar hora</b>.</p>
+                        <p>En <b>Comportamiento de la copia</b> puedes definir cuándo se permite ejecutar la copia automática:</p>
+                        <ul>
+                        <li><b>Requiere Wi-Fi</b>: Evita el uso de datos móviles.</li>
+                        <li><b>Requiere alimentación externa</b>: Solo se ejecuta mientras el iPhone se está cargando.</li>
+                        <li><b>Usar intervalo horario permitido</b>: Limita las copias automáticas a una franja horaria (por ejemplo, de noche).</li>
+                        <li><b>Nivel mínimo de batería</b> (en <b>Ajustes › Ajustes de batería</b>): Omite la copia si la batería está baja.</li>
+                        </ul>
+                    </section>
+
+                    <section id="deleted-files" class="docs-section">
+                        <h2>6. Política de eliminación, Suma de verificación e iCloud</h2>
+                        <p>En <b>Comportamiento de la copia</b> controlas qué ocurre en el servidor cuando borras archivos en el iPhone y cómo se verifican las subidas:</p>
+                        <dl>
+                        <dt>Política de eliminación › Solo añadir</dt>
+                        <dd>Nunca se borra nada del servidor. <b>Recomendado</b> si planeas borrar fotos o vídeos del iPhone para liberar espacio después de hacer la copia.</dd>
+                        <dt>Política de eliminación › Espejo</dt>
+                        <dd>Mantiene la carpeta del servidor como una copia exacta del origen. Los archivos borrados en el iPhone también se eliminan del servidor.</dd>
+                        <dt>Política de eliminación › Archivado al borrar</dt>
+                        <dd>Los archivos eliminados en el iPhone se mueven a una carpeta con fecha <b>.backupflow_archive</b> en el servidor.</dd>
+                        <dt>Suma de verificación</dt>
+                        <dd>Comprueba que cada archivo llegue intacto al servidor tras la subida (por defecto <b>Desactivado</b> para máxima velocidad).</dd>
+                        </dl>
+                        <p class="note"><b>Consejo para Fotos en iCloud:</b> Activa <b>Descargar elementos de iCloud si es necesario</b> para copiar también los originales que solo están almacenados en iCloud.</p>
+                    </section>
+
+                    <section id="background" class="docs-section">
+                        <h2>7. Copias en segundo plano</h2>
+                        <p>BackupFlow utiliza <b>BGTaskScheduler</b> de iOS para ejecutar copias programadas en segundo plano. Dado que iOS decide el momento exacto según el uso y la batería, una tarea programada puede comenzar unos minutos después de la hora elegida o enviarte una notificación.</p>
+                        <p>Si iOS detiene una copia antes de terminar, abre BackupFlow y continuará automáticamente omitiendo los archivos ya enviados. Para una primera copia grande, mantén el iPhone conectado al Wi-Fi y a la corriente.</p>
+                    </section>
+
+                    <section id="history" class="docs-section">
+                        <h2>8. Historial de copias</h2>
+                        <p>Toca el botón central <b>Historial (🕒)</b> en la barra inferior del <b>Centro de copias</b>:</p>
+                        <ul>
+                        <li><b>Tarjetas de resumen</b>: Consulta el total de copias completadas, fallidas y el total de datos transferidos (GB/MB).</li>
+                        <li><b>Registros detallados</b>: Cada entrada muestra el nombre de la tarea, la fecha, los archivos transferidos, el tamaño y la duración. Usa el icono de <b>papelera (🗑️)</b> arriba a la derecha para borrar el historial.</li>
+                        </ul>
+                        <div class="docs-screens">
+                            <figure class="docs-screen-card"><img src="../../assets/screens/es/3.jpg" width="300" height="649" loading="lazy" decoding="async" alt="8. Historial de copias" /></figure>
+                        </div>
+                    </section>
+
+                    <section id="settings" class="docs-section">
+                        <h2>9. Ajustes de la aplicación</h2>
+                        <p>Toca el icono de <b>engranaje (⚙️)</b> arriba a la derecha en el <b>Centro de copias</b> para abrir <b>Ajustes</b>:</p>
+                        <ul>
+                        <li><b>Retención de historial (días)</b>: Elige cuántos días se guarda el historial (ej. <b>30 días</b>).</li>
+                        <li><b>Requiere alimentación externa</b> y <b>Ajustes de batería</b>: Reglas globales de energía y nivel mínimo de batería.</li>
+                        <li><b>Idioma</b>: Cambia el idioma de la aplicación al instante entre los 12 idiomas disponibles.</li>
+                        <li><b>Acerca de</b>: Consulta la <b>Versión</b>, toca <b>Valorar aplicación</b> o <b>Contactar soporte</b>.</li>
+                        <li><b>Restablecer todos los datos</b>: Elimina todas las tareas, el historial y las contraseñas guardadas de este iPhone sin tocar los archivos de tus servidores.</li>
+                        </ul>
+                        <div class="docs-screens">
+                            <figure class="docs-screen-card"><img src="../../assets/screens/es/10.jpg" width="300" height="649" loading="lazy" decoding="async" alt="9. Ajustes de la aplicación" /></figure>
+                        </div>
+                    </section>
+
+                    <section id="troubleshooting" class="docs-section">
+                        <h2>10. Solución de problemas</h2>
+                        <dl>
+                        <dt>No puedo conectar con mi servidor.</dt>
+                        <dd>Revisa la dirección, el puerto (FTP 21, SFTP 22, WebDAV 443/80), el usuario y la contraseña. Si el servidor está en casa, asegúrate de que el iPhone está en el mismo Wi-Fi y de que el permiso está activo en <b>Ajustes del iPhone › Privacidad y seguridad › Red local › BackupFlow</b>.</dd>
+                        <dt>Una copia programada no se ejecutó.</dt>
+                        <dd>Revisa las condiciones en <b>Comportamiento de la copia</b> (Wi-Fi, alimentación, intervalo horario, batería) y los permisos de notificaciones.</dd>
+                        <dt>Faltan algunas fotos.</dt>
+                        <dd>Concede acceso completo a Fotos y activa <b>Descargar elementos de iCloud si es necesario</b>.</dd>
+                        <dt>Han desaparecido archivos de mi servidor.</dt>
+                        <dd>Cambia la <b>Política de eliminación</b> de la tarea de <b>Espejo</b> a <b>Solo añadir</b> o <b>Archivado al borrar</b>.</dd>
+                        <dt>Aviso de seguridad SFTP.</dt>
+                        <dd>La huella SSH del servidor ha cambiado. Es normal si reinstalaste o cambiaste el servidor; de lo contrario, consulta con el administrador.</dd>
+                        </dl>
+                    </section>
+
+                    <section id="privacy" class="docs-section">
+                        <h2>11. Privacidad y seguridad</h2>
+                        <p>Tus archivos van directamente desde tu iPhone a tu propio servidor. BackupFlow no tiene servidores propios, nunca ve tus archivos y no recopila datos ni estadísticas. Las contraseñas se guardan cifradas en el <b>Llavero de iOS (Keychain)</b>. Consulta nuestra <a href="../../privacy-policy.html">Política de privacidad</a> completa.</p>
+                    </section>
+
+                    <section id="help" class="docs-section">
+                        <h2>12. ¿Necesitas ayuda?</h2>
+                        <p>Ve a <b>Ajustes › Contactar soporte</b> dentro de la app (o escribe a <a href="mailto:tamersavasci@icloud.com">tamersavasci@icloud.com</a>). La versión de la app y el modelo del dispositivo se adjuntan automáticamente.</p>
+                    </section>
+                    </article>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <div class="container">
+                <div class="footer-content">
+                    <div class="footer-brand">
+                        <div class="footer-logo">
+                            <div class="logo-icon">
+                                <img src="../../web_logo.png" alt="" class="logo-image" />
+                            </div>
+                            <span class="logo-text">BackupFlow</span>
+                        </div>
+                        <p class="footer-description">Copia de seguridad profesional para iOS con privacidad local y automatización inteligente.</p>
+                    </div>
+                    <div class="footer-links">
+                        <div class="footer-column">
+                            <h4>Soporte</h4>
+                            <a href="./">Documentación</a>
+                            <a href="../../privacy-policy.html?lang=es">Política de privacidad</a>
+                            <a href="mailto:tamersavasci@icloud.com">Contacto</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <p>&copy; 2026 BackupFlow. Todos los derechos reservados.</p>
+                </div>
+            </div>
+        </footer>
+
+        <script src="../docs.js"></script>
+    </body>
+</html>

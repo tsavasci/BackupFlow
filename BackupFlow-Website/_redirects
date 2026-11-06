@@ -1,0 +1,33 @@
+# Netlify redirects file for BackupFlow website
+
+# App Store redirects
+/app                    https://apps.apple.com/us/app/backupflow/id6753620051            302
+/download              https://apps.apple.com/us/app/backupflow/id6753620051            302
+/appstore              https://apps.apple.com/us/app/backupflow/id6753620051            302
+/ios                   https://apps.apple.com/us/app/backupflow/id6753620051            302
+
+# Support redirects (mailto: targets are not supported by Netlify's
+# redirect engine, so these point to the on-page Support section instead)
+/support               /#support                                        302
+/contact               /#support                                        302
+/help                  /#support                                        302
+/email                 /#support                                        302
+
+# Documentation redirects
+/features              /#features                                       302
+/pricing               /#pricing                                        302
+/about                 /#features                                       302
+
+# Legacy URL support
+/home                  /                                                301
+/index                 /                                                301
+/main                  /                                                301
+
+# API redirects (for future use)
+/api/*                 /.netlify/functions/:splat                      200
+
+# Form handling
+/forms/*               /.netlify/functions/:splat                      200
+
+# 404 fallback - this should be last
+/*                     /index.html                                      200

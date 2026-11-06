@@ -1,0 +1,30 @@
+<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <linearGradient id="faviconGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#00D4FF"/>
+            <stop offset="50%" style="stop-color:#3B82F6"/>
+            <stop offset="100%" style="stop-color:#8B5CF6"/>
+        </linearGradient>
+        <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.3"/>
+        </filter>
+    </defs>
+
+    <!-- Background circle -->
+    <circle cx="30" cy="30" r="28" fill="url(#faviconGradient)" filter="url(#shadow)"/>
+
+    <!-- Main flow arrow -->
+    <path d="M30 12 L42 24 Q44 26 42 28 L34 36 Q32 38 30 36 L26 32 Q24 30 26 28 L30 24 Q28 22 26 24 L18 32 Q16 34 18 36 L26 44 Q28 46 30 44 L42 32 Q44 30 42 28 L30 16 Q28 14 30 12 Z"
+          fill="white"
+          opacity="0.95"/>
+
+    <!-- Secondary flow element -->
+    <path d="M16 20 Q18 18 20 20 L24 24 Q22 26 20 24 L16 20 Z"
+          fill="white"
+          opacity="0.7"/>
+
+    <!-- Tertiary flow element -->
+    <path d="M40 36 Q42 38 44 36 L46 34 Q44 32 42 34 L40 36 Z"
+          fill="white"
+          opacity="0.6"/>
+</svg>

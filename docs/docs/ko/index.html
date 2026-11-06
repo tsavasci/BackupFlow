@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="ko" dir="ltr">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>BackupFlow 도움말 및 문서</title>
+        <meta name="description" content="iOS용 BackupFlow 완벽 가이드: 백업 허브, FTP/SFTP/WebDAV 설정, 사진 보관함 및 파일 백업, 스케줄링, 삭제 정책, 체크섬 확인 및 문제 해결." />
+        <meta name="theme-color" content="#3B82F6" />
+        <meta name="apple-itunes-app" content="app-id=6753620051" />
+        <meta property="og:type" content="article" />
+        <meta property="og:title" content="BackupFlow 도움말 및 문서" />
+        <meta property="og:description" content="iOS용 BackupFlow 완벽 가이드: 백업 허브, FTP/SFTP/WebDAV 설정, 사진 보관함 및 파일 백업, 스케줄링, 삭제 정책, 체크섬 확인 및 문제 해결." />
+        <meta property="og:url" content="https://tsavasci.github.io/BackupFlowWeb/docs/ko/" />
+        <meta property="og:image" content="https://tsavasci.github.io/BackupFlowWeb/assets/og-image.jpg" />
+        <link rel="canonical" href="https://tsavasci.github.io/BackupFlowWeb/docs/ko/" />
+        <link rel="alternate" hreflang="en" href="https://tsavasci.github.io/BackupFlowWeb/docs/en/" />
+        <link rel="alternate" hreflang="tr" href="https://tsavasci.github.io/BackupFlowWeb/docs/tr/" />
+        <link rel="alternate" hreflang="de" href="https://tsavasci.github.io/BackupFlowWeb/docs/de/" />
+        <link rel="alternate" hreflang="fr" href="https://tsavasci.github.io/BackupFlowWeb/docs/fr/" />
+        <link rel="alternate" hreflang="es" href="https://tsavasci.github.io/BackupFlowWeb/docs/es/" />
+        <link rel="alternate" hreflang="ru" href="https://tsavasci.github.io/BackupFlowWeb/docs/ru/" />
+        <link rel="alternate" hreflang="ar" href="https://tsavasci.github.io/BackupFlowWeb/docs/ar/" />
+        <link rel="alternate" hreflang="zh" href="https://tsavasci.github.io/BackupFlowWeb/docs/zh/" />
+        <link rel="alternate" hreflang="ko" href="https://tsavasci.github.io/BackupFlowWeb/docs/ko/" />
+        <link rel="alternate" hreflang="ja" href="https://tsavasci.github.io/BackupFlowWeb/docs/ja/" />
+        <link rel="alternate" hreflang="pt" href="https://tsavasci.github.io/BackupFlowWeb/docs/pt/" />
+        <link rel="alternate" hreflang="hi" href="https://tsavasci.github.io/BackupFlowWeb/docs/hi/" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="../../styles.css" />
+        <link rel="stylesheet" href="../docs.css" />
+        <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+    </head>
+    <body class="docs-body">
+        <a href="#docs-content" class="skip-link">본문으로 건너뛰기</a>
+        <nav class="navbar">
+            <div class="nav-container">
+                <a class="nav-logo" href="../../index.html">
+                    <span class="logo-icon">
+                        <img src="../../web_logo.png" alt="" class="logo-image" />
+                    </span>
+                    <span class="logo-text">BackupFlow</span>
+                </a>
+                <div class="nav-menu" id="nav-menu">
+                    <a class="nav-link" href="../../index.html#features">기능</a>
+                    <a class="nav-link" href="../../index.html#pricing">가격</a>
+                    <a class="nav-link" href="../../index.html#support">지원</a>
+                    <div class="lang-switcher" id="lang-switcher">
+                        <button
+                            type="button"
+                            class="lang-toggle"
+                            id="lang-toggle"
+                            aria-haspopup="listbox"
+                            aria-expanded="false"
+                            aria-controls="lang-menu"
+                        >
+                            <span class="lang-flag">🇰🇷</span>
+                            <span class="lang-code">KO</span>
+                            <svg class="lang-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M6 9l6 6 6-6" />
+                            </svg>
+                        </button>
+                        <ul class="lang-menu" id="lang-menu" role="listbox" aria-label="언어">
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../en/" hreflang="en" lang="en" data-lang-code="en"><span class="lang-flag">🇬🇧</span><span class="lang-name">English</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../tr/" hreflang="tr" lang="tr" data-lang-code="tr"><span class="lang-flag">🇹🇷</span><span class="lang-name">Türkçe</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../de/" hreflang="de" lang="de" data-lang-code="de"><span class="lang-flag">🇩🇪</span><span class="lang-name">Deutsch</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../fr/" hreflang="fr" lang="fr" data-lang-code="fr"><span class="lang-flag">🇫🇷</span><span class="lang-name">Français</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../es/" hreflang="es" lang="es" data-lang-code="es"><span class="lang-flag">🇪🇸</span><span class="lang-name">Español</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../ru/" hreflang="ru" lang="ru" data-lang-code="ru"><span class="lang-flag">🇷🇺</span><span class="lang-name">Русский</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../ar/" hreflang="ar" lang="ar" data-lang-code="ar"><span class="lang-flag">🇸🇦</span><span class="lang-name">العربية</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../zh/" hreflang="zh" lang="zh" data-lang-code="zh"><span class="lang-flag">🇨🇳</span><span class="lang-name">简体中文</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option active" aria-selected="true" href="../ko/" hreflang="ko" lang="ko" data-lang-code="ko"><span class="lang-flag">🇰🇷</span><span class="lang-name">한국어</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../ja/" hreflang="ja" lang="ja" data-lang-code="ja"><span class="lang-flag">🇯🇵</span><span class="lang-name">日本語</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../pt/" hreflang="pt" lang="pt" data-lang-code="pt"><span class="lang-flag">🇵🇹</span><span class="lang-name">Português</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../hi/" hreflang="hi" lang="hi" data-lang-code="hi"><span class="lang-flag">🇮🇳</span><span class="lang-name">हिन्दी</span></a></li>
+                        </ul>
+                    </div>
+                    <a class="nav-link download-btn" href="https://apps.apple.com/app/backupflow/id6753620051" target="_blank" rel="noopener noreferrer">다운로드</a>
+                </div>
+                <button
+                    type="button"
+                    class="nav-toggle"
+                    aria-label="내비게이션 전환"
+                    aria-controls="nav-menu"
+                    aria-expanded="false"
+                >
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </nav>
+
+        <main id="docs-content" class="docs-page">
+            <div class="container">
+                <header class="docs-hero">
+                    <h1>BackupFlow 도움말</h1>
+                    <p class="docs-lead">BackupFlow는 iPhone의 사진, 동영상, 파일을 FTP, SFTP 또는 WebDAV를 통해 내 서버(NAS, 홈 서버, 개인 클라우드)로 직접 백업합니다. 구독도, 타사 클라우드도 필요 없습니다.</p>
+                </header>
+
+                <div class="docs-layout">
+                    <aside class="docs-toc" aria-labelledby="docs-toc-title">
+                        <p class="docs-toc-title" id="docs-toc-title">이 페이지에서</p>
+                        <ol>
+                        <li><a href="#what-you-need">1. 준비할 것</a></li>
+                        <li><a href="#backup-hub">2. 백업 허브 둘러보기</a></li>
+                        <li><a href="#first-backup">3. 새 백업 만들기</a></li>
+                        <li><a href="#task-details">4. 작업 상세 및 관리</a></li>
+                        <li><a href="#automatic-backups">5. 스케줄링 및 실행 조건</a></li>
+                        <li><a href="#deleted-files">6. 삭제 정책, 체크섬 및 iCloud</a></li>
+                        <li><a href="#background">7. 백그라운드 백업</a></li>
+                        <li><a href="#history">8. 백업 기록</a></li>
+                        <li><a href="#settings">9. 앱 설정</a></li>
+                        <li><a href="#troubleshooting">10. 문제 해결</a></li>
+                        <li><a href="#privacy">11. 개인정보 보호 및 보안</a></li>
+                        <li><a href="#help">12. 도움이 필요하신가요?</a></li>
+                        </ol>
+                    </aside>
+
+                    <article class="docs-content">
+                    <section id="what-you-need" class="docs-section">
+                        <h2>1. 준비할 것</h2>
+                        <ul>
+                        <li><b>호환 서버</b>: <b>FTP</b>, <b>SFTP(SSH)</b> 또는 <b>WebDAV(HTTP/HTTPS)</b>를 지원하는 NAS(Synology, QNAP, TrueNAS, Unraid), 홈 서버 또는 개인 클라우드(Nextcloud, ownCloud, WebDAV).</li>
+                        <li><b>접속 정보</b>: 서버 주소, 포트 번호(기본값: FTP <b>21</b>, SFTP <b>22</b>, WebDAV <b>443</b>/<b>80</b>), <b>사용자 이름</b> 및 <b>비밀번호</b>(FTP는 익명 로그인 지원).</li>
+                        <li><b>iOS 권한</b>: <b>사진</b> 전체 접근 권한, 홈 네트워크 서버 연결을 위한 <b>로컬 네트워크</b> 권한, <b>알림</b> 권한.</li>
+                        </ul>
+                    </section>
+
+                    <section id="backup-hub" class="docs-section">
+                        <h2>2. 백업 허브 둘러보기</h2>
+                        <p>앱을 열면 <b>백업 허브</b>에서 전체 백업 상태를 한눈에 확인할 수 있습니다:</p>
+                        <ul>
+                        <li><b>상태 배너</b>: 마지막 동기화 시각, 다음 작업 예정 시각, 현재 보호 상태, 활성 서버 주소 및 즉시 백업을 시작하는 초록색 <b>실행(▶)</b> 버튼을 표시합니다.</li>
+                        <li><b>백업 상태(Health)</b>: 성공률(퍼센트 및 실행 횟수), 연속 실패 횟수, 마지막 성공 일시 및 평균 소요 시간을 보여줍니다.</li>
+                        <li><b>저장된 서버</b>: 설정된 모든 <b>FTP</b>, <b>SFTP</b>, <b>WebDAV</b> 작업 카드를 보여주며, 빠른 <b>편집(✏️)</b> 및 <b>삭제(🗑️)</b> 아이콘을 제공합니다. 카드를 탭하면 <b>작업 상세</b> 화면이 열립니다.</li>
+                        <li><b>하단 바 및 설정</b>: 화면 하단의 버튼 3개로 <b>동기화/실행(🔄)</b>, <b>백업 기록(🕒)</b> 열기, <b>새 백업(+)</b> 만들기를 실행할 수 있습니다. 오른쪽 상단의 <b>톱니바퀴(⚙️)</b> 아이콘은 <b>설정</b>을 엽니다.</li>
+                        </ul>
+                        <div class="docs-screens">
+                            <figure class="docs-screen-card"><img src="../../assets/screens/ko/1.jpg" width="300" height="649" loading="lazy" decoding="async" alt="2. 백업 허브 둘러보기" /></figure>
+                        </div>
+                    </section>
+
+                    <section id="first-backup" class="docs-section">
+                        <h2>3. 새 백업 만들기</h2>
+                        <p><b>백업 허브</b> 하단의 <b>+</b> 버튼(또는 <b>저장된 서버</b> 옆의 <b>추가</b>)을 탭해 <b>새 백업</b> 화면을 엽니다:</p>
+                        <ol>
+                        <li><b>원본</b>: <b>사진 보관함</b>(사진만, 동영상만, 또는 사진 및 동영상)을 선택하거나 <b>폴더 선택</b>을 탭해 iOS <b>파일</b> 앱의 폴더를 선택합니다.</li>
+                        <li><b>대상 유형</b>: <b>FTP</b>, <b>SFTP</b> 또는 <b>WebDAV</b>를 선택합니다. 서버 주소, 포트, <b>사용자 이름</b>, <b>비밀번호</b> 및 원격 경로(예: <code>/remote.php/dav/files/</code>)를 입력합니다. <b>연결 테스트</b>로 확인한 뒤 <b>원격 폴더 찾아보기</b>로 대상 폴더를 지정할 수 있습니다.</li>
+                        <li><b>스케줄링</b>: <b>수동</b>, <b>매일</b>, <b>매주</b>, <b>매월</b> 또는 <b>간격</b> 중에서 선택하고 <b>시간 선택</b>에서 실행 시각을 지정합니다.</li>
+                        <li><b>백업 동작</b>: <b>삭제 정책</b>, <b>체크섬</b> 및 실행 조건을 설정한 뒤 작업을 저장합니다.</li>
+                        </ol>
+                        <p>첫 전체 백업이 완료된 후에는 새로 추가되거나 변경된 파일만 전송하므로 다음 백업이 훨씬 빠릅니다.</p>
+                        <div class="docs-screens docs-screens-pair">
+                            <figure class="docs-screen-card"><img src="../../assets/screens/ko/6.jpg" width="300" height="649" loading="lazy" decoding="async" alt="3. 새 백업 만들기" /></figure>
+                            <figure class="docs-screen-card"><img src="../../assets/screens/ko/9.jpg" width="300" height="649" loading="lazy" decoding="async" alt="3. 새 백업 만들기" /></figure>
+                        </div>
+                    </section>
+
+                    <section id="task-details" class="docs-section">
+                        <h2>4. 작업 상세 및 관리</h2>
+                        <p><b>저장된 서버</b>에서 카드를 탭하면 <b>작업 상세</b> 화면이 열립니다:</p>
+                        <ul>
+                        <li><b>일반</b>: 원본, 현재 상태(예: 준비됨), 스케줄, <b>삭제 정책</b> 및 <b>체크섬</b> 설정을 확인합니다.</li>
+                        <li><b>서버</b>: 서버 주소, 포트, 사용자 계정을 확인합니다.</li>
+                        <li><b>최근 백업</b>: 해당 작업의 최근 실행 기록(날짜, 완료 여부, 파일 수, 용량, 소요 시간)을 보여줍니다.</li>
+                        <li>왼쪽 상단의 <b>편집</b>을 탭해 언제든 설정을 수정할 수 있습니다.</li>
+                        </ul>
+                        <div class="docs-screens">
+                            <figure class="docs-screen-card"><img src="../../assets/screens/ko/5.jpg" width="300" height="649" loading="lazy" decoding="async" alt="4. 작업 상세 및 관리" /></figure>
+                        </div>
+                    </section>
+
+                    <section id="automatic-backups" class="docs-section">
+                        <h2>5. 스케줄링 및 실행 조건</h2>
+                        <p><b>스케줄링</b>에서 <b>수동</b>, <b>매일</b>, <b>매주</b>, <b>매월</b>, <b>간격</b> 중 하나를 고르고 <b>시간 선택</b>으로 실행 시각을 정합니다.</p>
+                        <p><b>백업 동작</b>에서 자동 백업이 실행될 조건을 지정할 수 있습니다:</p>
+                        <ul>
+                        <li><b>Wi-Fi 필요</b>: 모바일 데이터를 절대 사용하지 않습니다.</li>
+                        <li><b>외부 전원 필요</b>: iPhone이 충전 중일 때만 실행됩니다.</li>
+                        <li><b>허용 시간대 사용</b>: 지정한 시간대(예: 심야 시간)에만 자동 백업을 허용합니다.</li>
+                        <li><b>최소 배터리 잔량</b>(<b>설정 › 배터리 설정</b>): 배터리가 기준치보다 낮으면 백업을 건너뜁니다.</li>
+                        </ul>
+                    </section>
+
+                    <section id="deleted-files" class="docs-section">
+                        <h2>6. 삭제 정책, 체크섬 및 iCloud</h2>
+                        <p><b>백업 동작</b>에서 iPhone에서 삭제한 파일의 처리 방식과 파일 무결성 검사를 설정합니다:</p>
+                        <dl>
+                        <dt>삭제 정책 › 추가만</dt>
+                        <dd>서버의 파일을 절대 삭제하지 않습니다. 백업 후 iPhone 저장 공간을 확보하기 위해 사진을 지울 계획이라면 <b>반드시 이 옵션을 선택하세요</b>.</dd>
+                        <dt>삭제 정책 › 미러</dt>
+                        <dd>서버 폴더를 iPhone 원본과 똑같이 유지합니다. iPhone에서 삭제한 파일은 서버에서도 삭제됩니다.</dd>
+                        <dt>삭제 정책 › 보관 후 삭제</dt>
+                        <dd>삭제된 파일을 영구 삭제하지 않고 서버의 날짜별 <b>.backupflow_archive</b> 폴더로 이동합니다.</dd>
+                        <dt>체크섬 (Checksum)</dt>
+                        <dd>업로드 후 모든 파일이 손상 없이 도착했는지 확인합니다(최대 속도를 위해 기본값은 <b>끔</b>).</dd>
+                        </dl>
+                        <p class="note"><b>iCloud 사진 팁:</b> iCloud 사진을 사용 중이라면 <b>필요한 경우 iCloud 항목 다운로드</b>를 켜서 iCloud에만 보관된 원본 사진과 동영상도 빠짐없이 백업하세요.</p>
+                    </section>
+
+                    <section id="background" class="docs-section">
+                        <h2>7. 백그라운드 백업</h2>
+                        <p>BackupFlow는 iOS <b>BGTaskScheduler</b>와 연동되어 예약된 백업을 실행합니다. iOS가 배터리 및 기기 사용 패턴에 따라 백그라운드 실행 시점을 조율하므로 지정한 시각보다 조금 뒤에 시작되거나 알림을 보낼 수 있습니다.</p>
+                        <p>iOS가 백그라운드 전송을 일시 중지하더라도 앱을 열면 자동으로 이어서 진행되며, 이미 전송된 파일은 건너뜁니다. 첫 대용량 백업 시에는 Wi-Fi와 충전기에 연결해 두세요.</p>
+                    </section>
+
+                    <section id="history" class="docs-section">
+                        <h2>8. 백업 기록</h2>
+                        <p><b>백업 허브</b> 하단 바 가운데의 <b>기록(🕒)</b> 버튼을 탭해 <b>백업 기록</b>을 엽니다:</p>
+                        <ul>
+                        <li><b>요약 카드</b>: 상단에서 총 완료 횟수, 실패 횟수 및 누적 전송 용량(GB/MB)을 확인합니다.</li>
+                        <li><b>상세 실행 기록</b>: 각 항목에 작업 이름, 날짜 및 시간, 완료 배지, 전송된 파일 수(예: <code>1236/1236</code>), 용량 및 소요 시간이 표시됩니다. 오른쪽 상단의 <b>휴지통(🗑️)</b> 아이콘으로 기록을 지울 수 있습니다.</li>
+                        </ul>
+                        <div class="docs-screens">
+                            <figure class="docs-screen-card"><img src="../../assets/screens/ko/3.jpg" width="300" height="649" loading="lazy" decoding="async" alt="8. 백업 기록" /></figure>
+                        </div>
+                    </section>
+
+                    <section id="settings" class="docs-section">
+                        <h2>9. 앱 설정</h2>
+                        <p><b>백업 허브</b> 오른쪽 상단의 <b>톱니바퀴(⚙️)</b> 아이콘을 탭해 <b>설정</b>을 엽니다:</p>
+                        <ul>
+                        <li><b>기록 보관 기간(일)</b>: 백업 기록을 보관할 일수를 선택합니다(예: <b>30일</b>).</li>
+                        <li><b>외부 전원 필요</b> 및 <b>배터리 설정</b>: 전체 전원 조건 및 최소 배터리 잔량을 설정합니다.</li>
+                        <li><b>언어</b>: 지원하는 12개 언어 중 원하는 언어로 앱 인터페이스를 즉시 변경합니다.</li>
+                        <li><b>정보</b>: 앱 <b>버전</b> 확인, <b>앱 평가하기</b>, <b>지원 문의</b>를 제공합니다.</li>
+                        <li><b>모든 데이터 초기화</b>: 이 기기에서 모든 작업, 기록 및 저장된 비밀번호를 삭제합니다. 서버에 저장된 파일은 건드리지 않습니다.</li>
+                        </ul>
+                        <div class="docs-screens">
+                            <figure class="docs-screen-card"><img src="../../assets/screens/ko/10.jpg" width="300" height="649" loading="lazy" decoding="async" alt="9. 앱 설정" /></figure>
+                        </div>
+                    </section>
+
+                    <section id="troubleshooting" class="docs-section">
+                        <h2>10. 문제 해결</h2>
+                        <dl>
+                        <dt>서버에 연결할 수 없습니다.</dt>
+                        <dd>주소, 포트(FTP 21, SFTP 22, WebDAV 443/80), 사용자 이름과 비밀번호를 확인하세요. 홈 서버의 경우 같은 Wi-Fi에 연결되어 있는지, <b>iPhone 설정 › 개인정보 보호 및 보안 › 로컬 네트워크 › BackupFlow</b> 권한이 켜져 있는지 확인하세요.</dd>
+                        <dt>예약된 백업이 실행되지 않았습니다.</dt>
+                        <dd><b>백업 동작</b> 조건(Wi-Fi, 외부 전원, 허용 시간대, 배터리)과 알림 허용 여부를 확인하세요.</dd>
+                        <dt>일부 사진이 누락되었습니다.</dt>
+                        <dd>사진 '전체 접근' 권한을 허용하고 <b>필요한 경우 iCloud 항목 다운로드</b>를 켜세요.</dd>
+                        <dt>서버에서 파일이 사라졌습니다.</dt>
+                        <dd>작업의 <b>삭제 정책</b>을 <b>미러</b>에서 <b>추가만</b> 또는 <b>보관 후 삭제</b>로 변경하세요.</dd>
+                        <dt>SFTP 보안 경고가 표시됩니다.</dt>
+                        <dd>서버의 SSH 지문이 변경되었습니다. 서버를 재설치하거나 교체했다면 정상이며, 그렇지 않다면 서버 관리자에게 문의하세요.</dd>
+                        </dl>
+                    </section>
+
+                    <section id="privacy" class="docs-section">
+                        <h2>11. 개인정보 보호 및 보안</h2>
+                        <p>모든 파일은 iPhone에서 사용자의 서버로 직접 전송됩니다. BackupFlow는 자체 클라우드 서버를 운영하지 않으며, 파일을 열람하거나 어떠한 분석·추적 데이터도 수집하지 않습니다. 비밀번호는 <b>iOS 키체인(Keychain)</b>에 안전하게 암호화되어 저장됩니다. 자세한 내용은 <a href="../../privacy-policy.html">개인정보 처리방침</a>을 참고하세요.</p>
+                    </section>
+
+                    <section id="help" class="docs-section">
+                        <h2>12. 도움이 필요하신가요?</h2>
+                        <p>앱 내 <b>설정 › 지원 문의</b>를 탭하거나 <a href="mailto:tamersavasci@icloud.com">tamersavasci@icloud.com</a>으로 이메일을 보내 주세요. 앱 버전과 기기 모델이 자동으로 포함됩니다.</p>
+                    </section>
+                    </article>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <div class="container">
+                <div class="footer-content">
+                    <div class="footer-brand">
+                        <div class="footer-logo">
+                            <div class="logo-icon">
+                                <img src="../../web_logo.png" alt="" class="logo-image" />
+                            </div>
+                            <span class="logo-text">BackupFlow</span>
+                        </div>
+                        <p class="footer-description">로컬 우선 개인정보 보호와 스마트 자동화를 갖춘 전문 iOS 백업 솔루션입니다.</p>
+                    </div>
+                    <div class="footer-links">
+                        <div class="footer-column">
+                            <h4>지원</h4>
+                            <a href="./">문서</a>
+                            <a href="../../privacy-policy.html?lang=ko">개인정보 처리방침</a>
+                            <a href="mailto:tamersavasci@icloud.com">문의하기</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <p>&copy; 2026 BackupFlow. 모든 권리 보유.</p>
+                </div>
+            </div>
+        </footer>
+
+        <script src="../docs.js"></script>
+    </body>
+</html>

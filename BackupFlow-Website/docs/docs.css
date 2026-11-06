@@ -1,0 +1,297 @@
+/* Help pages — layered on top of ../styles.css */
+.docs-body .nav-logo {
+    text-decoration: none;
+}
+
+.docs-page {
+    padding: 8rem 0 5rem;
+}
+
+/* Title card */
+.docs-hero {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 2.75rem 3rem;
+    margin-bottom: 2rem;
+}
+
+.docs-hero h1 {
+    font-size: 2.75rem;
+    font-weight: 700;
+    color: #1a202c;
+    margin-bottom: 0.75rem;
+}
+
+.docs-lead {
+    font-size: 1.15rem;
+    color: var(--ink-soft);
+    max-width: 760px;
+}
+
+.docs-updated {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--ink-muted);
+    margin-bottom: 0.65rem;
+}
+
+.docs-section h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #1a202c;
+    margin: 1.25rem 0 0.5rem;
+}
+
+.privacy-summary-card {
+    background: var(--brand-gradient);
+    color: #ffffff;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 2rem 2.25rem;
+}
+
+.privacy-summary-card h2 {
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 0.65rem;
+}
+
+.privacy-summary-card p {
+    color: rgba(255, 255, 255, 0.94);
+    font-size: 1.05rem;
+    line-height: 1.65;
+    margin: 0;
+}
+
+/* Sidebar + content */
+.docs-layout {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    gap: 2rem;
+    align-items: start;
+}
+
+.docs-toc {
+    position: sticky;
+    top: 6.5rem;
+    background: var(--surface-strong);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: 1.25rem;
+}
+
+.docs-toc-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+    margin-bottom: 0.75rem;
+}
+
+.docs-toc ol {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.docs-toc a {
+    display: block;
+    padding: 0.45rem 0.75rem;
+    border-radius: 10px;
+    color: var(--ink-soft);
+    text-decoration: none;
+    font-size: 0.95rem;
+    line-height: 1.35;
+    transition:
+        background 0.2s ease,
+        color 0.2s ease;
+}
+
+.docs-toc a:hover {
+    background: rgba(59, 130, 246, 0.08);
+    color: var(--brand-blue);
+}
+
+.docs-toc a.active {
+    background: rgba(59, 130, 246, 0.12);
+    color: var(--brand-blue);
+    font-weight: 600;
+}
+
+.docs-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.docs-section {
+    background: var(--surface-strong);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    padding: 2rem 2.25rem;
+    scroll-margin-top: 6.5rem;
+    color: var(--ink-soft);
+}
+
+.docs-section h2 {
+    position: relative;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1a202c;
+    padding-inline-start: 1rem;
+    margin-bottom: 1rem;
+}
+
+.docs-section h2::before {
+    content: "";
+    position: absolute;
+    inset-inline-start: 0;
+    top: 0.15em;
+    bottom: 0.15em;
+    width: 4px;
+    border-radius: 4px;
+    background: var(--brand-gradient);
+}
+
+.docs-section p,
+.docs-section ul,
+.docs-section ol,
+.docs-section dl {
+    margin-bottom: 1rem;
+}
+
+.docs-section > :last-child {
+    margin-bottom: 0;
+}
+
+.docs-section ul,
+.docs-section ol {
+    padding-inline-start: 1.4rem;
+}
+
+.docs-section li {
+    margin-bottom: 0.5rem;
+}
+
+.docs-section li::marker {
+    color: var(--brand-blue);
+    font-weight: 600;
+}
+
+.docs-section b {
+    color: #1a202c;
+    font-weight: 600;
+}
+
+.docs-section dt {
+    font-weight: 600;
+    color: #1a202c;
+    margin-top: 1rem;
+}
+
+.docs-section dt:first-child {
+    margin-top: 0;
+}
+
+.docs-section dd {
+    margin: 0.25rem 0 0;
+    padding-inline-start: 1rem;
+    border-inline-start: 2px solid var(--border-soft);
+}
+
+.docs-section .note {
+    background: #fff7e6;
+    border: 1px solid #f5c66e;
+    border-radius: var(--radius-md);
+    padding: 0.9rem 1.1rem;
+    color: #6b4a10;
+}
+
+.docs-section a {
+    color: var(--brand-blue);
+}
+
+/* Inline app screenshot previews inside docs sections */
+.docs-screens {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    margin-top: 1.5rem;
+    justify-content: flex-start;
+}
+
+.docs-screen-card {
+    margin: 0;
+    max-width: 240px;
+    border-radius: 22px;
+    overflow: hidden;
+    border: 1px solid var(--border-soft);
+    box-shadow: var(--shadow-sm);
+    background: #f8fafc;
+}
+
+.docs-screen-card img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+/* Language picker on docs/index.html */
+.docs-picker {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 0.75rem;
+}
+
+.docs-picker a {
+    display: block;
+    padding: 1rem 1.25rem;
+    background: var(--surface-strong);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    color: var(--ink);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.docs-picker a:hover {
+    color: var(--brand-blue);
+}
+
+@media (max-width: 900px) {
+    .docs-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .docs-toc {
+        position: static;
+    }
+}
+
+@media (max-width: 768px) {
+    .docs-page {
+        padding-top: 6.5rem;
+    }
+
+    .docs-hero {
+        padding: 2rem 1.5rem;
+    }
+
+    .docs-hero h1 {
+        font-size: 2rem;
+    }
+
+    .docs-section {
+        padding: 1.5rem 1.25rem;
+    }
+}

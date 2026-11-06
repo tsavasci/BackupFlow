@@ -1,0 +1,800 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>BackupFlow – iOS Photo & File Backup to NAS, SFTP, WebDAV & FTP</title>
+        <meta
+            name="description"
+            content="Automatically back up iPhone & iPad photos, videos (HEIC/RAW/MOV) and files directly to your NAS (Synology, QNAP, TrueNAS), Nextcloud, ownCloud or home server via SFTP, WebDAV and FTP. One-time purchase — no subscriptions, no in-app purchases."
+        />
+        <meta
+            name="keywords"
+            content="iOS photo backup, NAS backup iPhone, Synology photo backup, Nextcloud WebDAV iOS, SFTP backup iPhone, FTP backup, TrueNAS, QNAP, self-hosted photo sync, local cloud backup, BackupFlow"
+        />
+        <meta name="author" content="Tamer Savaşcı" />
+        <meta name="robots" content="index, follow" />
+        <meta name="theme-color" content="#3B82F6" />
+        <meta name="apple-itunes-app" content="app-id=6753620051" />
+
+        <!-- Open Graph / Facebook -->
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://tsavasci.github.io/BackupFlowWeb/" />
+        <meta
+            property="og:title"
+            content="BackupFlow – Private iOS Photo & File Backup to NAS (SFTP, WebDAV, FTP)"
+        />
+        <meta
+            property="og:description"
+            content="Back up iPhone photos and files directly to your Synology, Nextcloud, TrueNAS or home server via SFTP, WebDAV & FTP. Smart Year/Month folders, original HEIC/RAW support. One-time purchase — no subscriptions, no in-app purchases."
+        />
+        <meta
+            property="og:image"
+            content="https://tsavasci.github.io/BackupFlowWeb/assets/og-image.jpg"
+        />
+        <meta property="og:site_name" content="BackupFlow" />
+        <meta property="og:locale" content="en_US" />
+
+        <!-- Twitter Card -->
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta
+            property="twitter:url"
+            content="https://tsavasci.github.io/BackupFlowWeb/"
+        />
+        <meta
+            property="twitter:title"
+            content="BackupFlow – Private iOS Photo & File Backup to NAS (SFTP, WebDAV, FTP)"
+        />
+        <meta
+            property="twitter:description"
+            content="Back up iPhone photos and files directly to your Synology, Nextcloud, TrueNAS or home server via SFTP, WebDAV & FTP. One-time purchase — no subscriptions, no in-app purchases."
+        />
+        <meta
+            property="twitter:image"
+            content="https://tsavasci.github.io/BackupFlowWeb/assets/og-image.jpg"
+        />
+
+        <!-- Structured Data (Schema.org SoftwareApplication) -->
+        <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          "name": "BackupFlow",
+          "operatingSystem": "iOS 17.0 or later",
+          "applicationCategory": "UtilitiesApplication",
+          "downloadUrl": "https://apps.apple.com/app/backupflow/id6753620051",
+          "offers": {
+            "@type": "Offer",
+            "price": "0.00",
+            "priceCurrency": "USD"
+          },
+          "description": "Privacy-first iOS photo, video and file backup app supporting SFTP (SSH), WebDAV (HTTPS) and FTP to personal NAS servers and Nextcloud."
+        }
+        </script>
+
+        <!-- iOS Safari -->
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="BackupFlow" />
+
+        <!-- Windows -->
+        <meta name="msapplication-TileColor" content="#3B82F6" />
+        <link rel="stylesheet" href="styles.css" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
+        <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+        <link rel="canonical" href="https://tsavasci.github.io/BackupFlowWeb/" />
+    </head>
+    <body>
+        <a href="#main-content" class="skip-link" data-i18n="misc.skipLink">Skip to content</a>
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="nav-container">
+                <div class="nav-logo">
+                    <div class="logo-icon">
+                        <img src="web_logo.png" alt="BackupFlow Logo" class="logo-image" />
+                    </div>
+                    <span class="logo-text">BackupFlow</span>
+                </div>
+                <div class="nav-menu" id="nav-menu">
+                    <a class="nav-link" href="#features" data-i18n="nav.features">Features</a>
+                    <a class="nav-link" href="#pricing" data-i18n="nav.pricing">Pricing</a>
+                    <a class="nav-link" href="#support" data-i18n="nav.support">Support</a>
+                    <div class="lang-switcher" id="lang-switcher">
+                        <button
+                            type="button"
+                            class="lang-toggle"
+                            id="lang-toggle"
+                            aria-haspopup="listbox"
+                            aria-expanded="false"
+                            aria-controls="lang-menu"
+                        >
+                            <span class="lang-flag" id="lang-current-flag">🇬🇧</span>
+                            <span class="lang-code" id="lang-current-code">EN</span>
+                            <svg class="lang-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M6 9l6 6 6-6" />
+                            </svg>
+                        </button>
+                        <ul class="lang-menu" id="lang-menu" role="listbox" aria-label="Language"></ul>
+                    </div>
+                    <a class="nav-link download-btn" href="#download" data-i18n="nav.download">Download</a>
+                </div>
+                <button
+                    type="button"
+                    class="nav-toggle"
+                    aria-label="Toggle navigation"
+                    data-i18n-attr="aria-label:misc.toggleNav"
+                    aria-controls="nav-menu"
+                    aria-expanded="false"
+                >
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </nav>
+
+        <main id="main-content">
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-container">
+                <div class="hero-content">
+                    <h1 class="hero-title" data-i18n-html="hero.title">
+                        Professional Backup Solution for
+                        <span class="gradient-text">iOS</span>
+                    </h1>
+                    <p class="hero-subtitle" data-i18n="hero.subtitle">
+                        Secure, automated, and intelligent backup system with
+                        FTP, SFTP &amp; WebDAV support, smart scheduling, and multi-language
+                        interface. Your data protection made effortless.
+                    </p>
+                    <div class="hero-buttons">
+                        <a href="#download" class="btn btn-primary">
+                            <svg
+                                class="btn-icon"
+                                viewBox="0 0 24 24"
+                                fill="currentColor"
+                            >
+                                <path
+                                    d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"
+                                />
+                            </svg>
+                            <span data-i18n="hero.btnPrimary">Download on App Store</span>
+                        </a>
+                        <a href="#features" class="btn btn-secondary" data-i18n="hero.btnSecondary"
+                            >Learn More</a
+                        >
+                    </div>
+                    <div class="hero-badges">
+                        <a
+                            href="https://www.reddit.com/r/selfhosted/comments/1izk3u0/ios_backupflow_099_onetime_purchase_app_to/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="badge badge-reddit"
+                            title="Discuss on r/selfhosted"
+                        >
+                            <span class="badge-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24">
+                                    <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.703zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-4.723 4.062a.343.343 0 0 0-.244.587c.725.727 1.834.984 2.217.984.383 0 1.492-.257 2.217-.984a.343.343 0 0 0-.485-.486c-.523.524-1.353.727-1.732.727-.378 0-1.21-.203-1.732-.727a.34.34 0 0 0-.241-.101z"/>
+                                </svg>
+                            </span>
+                            <span>Discuss on <strong>r/selfhosted</strong></span>
+                        </a>
+                        <div class="badge">
+                            <span class="badge-icon">🌍</span>
+                            <span data-i18n="hero.badges.0">Multi-language Support</span>
+                        </div>
+                        <div class="badge">
+                            <span class="badge-icon">⚡</span>
+                            <span data-i18n="hero.badges.1">Smart Automation</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="hero-visual">
+                    <!-- Localized App Store banner; {lang} is replaced by script.js -->
+                    <img
+                        src="assets/banners/hero-en.jpg"
+                        srcset="assets/banners/hero-en-1200.jpg 1200w, assets/banners/hero-en.jpg 2400w"
+                        sizes="(max-width: 1240px) 100vw, 1200px"
+                        data-lang-src="assets/banners/hero-{lang}.jpg"
+                        data-lang-srcset="assets/banners/hero-{lang}-1200.jpg 1200w, assets/banners/hero-{lang}.jpg 2400w"
+                        width="2400"
+                        height="1029"
+                        alt="BackupFlow app screens: dashboard, FTP, SFTP and WebDAV backups, backup history"
+                        class="hero-banner"
+                        fetchpriority="high"
+                    />
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section id="features" class="features">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title" data-i18n="features.title">Powerful Features</h2>
+                    <p class="section-subtitle" data-i18n="features.subtitle">
+                        Everything you need for comprehensive data protection
+                    </p>
+                </div>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V19C3 20.1 3.9 21 5 21H11V19H5V3H13V9H21Z"
+                                />
+                            </svg>
+                        </div>
+                        <h3 class="feature-title" data-i18n="features.items.0.title">Smart Scheduling</h3>
+                        <p class="feature-description" data-i18n="features.items.0.desc">
+                            Intelligent backup scheduling with WiFi detection,
+                            battery optimization, and background execution.
+                        </p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z"
+                                />
+                            </svg>
+                        </div>
+                        <h3 class="feature-title" data-i18n="features.items.1.title">FTP, SFTP &amp; WebDAV Support</h3>
+                        <p class="feature-description" data-i18n="features.items.1.desc">
+                            Professional server protocols with secure
+                            connections, file synchronization, and remote
+                            access.
+                        </p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M9 12L11 14L15 10M21 12C21 16.97 16.97 21 12 21C7.03 21 3 16.97 3 12C3 7.03 7.03 3 12 3C16.97 3 21 7.03 21 12Z"
+                                />
+                            </svg>
+                        </div>
+                        <h3 class="feature-title" data-i18n="features.items.2.title">Battery Intelligence</h3>
+                        <p class="feature-description" data-i18n="features.items.2.desc">
+                            Smart battery management with configurable
+                            thresholds and charging state override
+                            functionality.
+                        </p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2M21 9V7L15 1H5C3.89 1 3 1.89 3 3V19C3 20.1 3.9 21 5 21H11V19H5V3H13V9H21Z"
+                                />
+                            </svg>
+                        </div>
+                        <h3 class="feature-title" data-i18n="features.items.3.title">Multi-Language</h3>
+                        <p class="feature-description" data-i18n="features.items.3.desc">
+                            Complete localization across major world languages,
+                            in the app and on the web.
+                        </p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM9 17H7V10H9V17ZM13 17H11V7H13V17ZM17 17H15V13H17V17Z"
+                                />
+                            </svg>
+                        </div>
+                        <h3 class="feature-title" data-i18n="features.items.4.title">Real-time Dashboard</h3>
+                        <p class="feature-description" data-i18n="features.items.4.desc">
+                            Live status monitoring with backup history, active
+                            task tracking, and comprehensive analytics.
+                        </p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M12 1L9 9L1 9L7.5 14L5 22L12 17L19 22L16.5 14L23 9L15 9L12 1Z"
+                                />
+                            </svg>
+                        </div>
+                        <h3 class="feature-title" data-i18n="features.items.5.title">Background Execution</h3>
+                        <p class="feature-description" data-i18n="features.items.5.desc">
+                            Professional-grade background processing with
+                            BGTaskScheduler integration and network management.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screenshots Section -->
+        <section class="screenshots">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title" data-i18n="screenshots.title">Beautiful Interface</h2>
+                    <p class="section-subtitle" data-i18n="screenshots.subtitle">
+                        Intuitive design meets powerful functionality
+                    </p>
+                </div>
+                <div class="screenshots-grid">
+                    <figure class="screenshot-card">
+                        <div class="device-frame">
+                            <img
+                                src="assets/screens/en/1.jpg"
+                                data-lang-src="assets/screens/{lang}/1.jpg"
+                                width="600"
+                                height="1298"
+                                alt="BackupFlow dashboard with backup health and saved servers"
+                                class="screenshot-image"
+                                loading="lazy"
+                                decoding="async"
+                            />
+                        </div>
+                        <figcaption>
+                            <h4 data-i18n="screenshots.items.0.title">Task Management</h4>
+                            <p data-i18n="screenshots.items.0.desc">Manage your backup tasks with ease and precision</p>
+                        </figcaption>
+                    </figure>
+                    <figure class="screenshot-card">
+                        <div class="device-frame">
+                            <img
+                                src="assets/screens/en/6.jpg"
+                                data-lang-src="assets/screens/{lang}/6.jpg"
+                                width="600"
+                                height="1298"
+                                alt="Creating a new FTP backup task"
+                                class="screenshot-image"
+                                loading="lazy"
+                                decoding="async"
+                            />
+                        </div>
+                        <figcaption>
+                            <h4 data-i18n="screenshots.items.1.title">Create New Tasks</h4>
+                            <p data-i18n="screenshots.items.1.desc">Easily create and configure new backup tasks</p>
+                        </figcaption>
+                    </figure>
+                    <figure class="screenshot-card">
+                        <div class="device-frame">
+                            <img
+                                src="assets/screens/en/9.jpg"
+                                data-lang-src="assets/screens/{lang}/9.jpg"
+                                width="600"
+                                height="1298"
+                                alt="Scheduling and backup behavior options"
+                                class="screenshot-image"
+                                loading="lazy"
+                                decoding="async"
+                            />
+                        </div>
+                        <figcaption>
+                            <h4 data-i18n="features.items.0.title">Smart Scheduling</h4>
+                            <p data-i18n="features.items.0.desc">Intelligent backup scheduling with WiFi detection, battery optimization, and background execution.</p>
+                        </figcaption>
+                    </figure>
+                    <figure class="screenshot-card">
+                        <div class="device-frame">
+                            <img
+                                src="assets/screens/en/3.jpg"
+                                data-lang-src="assets/screens/{lang}/3.jpg"
+                                width="600"
+                                height="1298"
+                                alt="Backup history with transfer statistics"
+                                class="screenshot-image"
+                                loading="lazy"
+                                decoding="async"
+                            />
+                        </div>
+                        <figcaption>
+                            <h4 data-i18n="screenshots.items.4.title">Backup History</h4>
+                            <p data-i18n="screenshots.items.4.desc">Track your backup history and performance metrics</p>
+                        </figcaption>
+                    </figure>
+                    <figure class="screenshot-card">
+                        <div class="device-frame">
+                            <img
+                                src="assets/screens/en/5.jpg"
+                                data-lang-src="assets/screens/{lang}/5.jpg"
+                                width="600"
+                                height="1298"
+                                alt="Task details with server and schedule information"
+                                class="screenshot-image"
+                                loading="lazy"
+                                decoding="async"
+                            />
+                        </div>
+                        <figcaption>
+                            <h4 data-i18n="screenshots.items.3.title">Task Details</h4>
+                            <p data-i18n="screenshots.items.3.desc">View detailed information and progress for each task</p>
+                        </figcaption>
+                    </figure>
+                    <figure class="screenshot-card">
+                        <div class="device-frame">
+                            <img
+                                src="assets/screens/en/10.jpg"
+                                data-lang-src="assets/screens/{lang}/10.jpg"
+                                width="600"
+                                height="1298"
+                                alt="Settings screen"
+                                class="screenshot-image"
+                                loading="lazy"
+                                decoding="async"
+                            />
+                        </div>
+                        <figcaption>
+                            <h4 data-i18n="screenshots.items.2.title">Intelligent Settings</h4>
+                            <p data-i18n="screenshots.items.2.desc">Configure smart automation and personalization options</p>
+                        </figcaption>
+                    </figure>
+                </div>
+            </div>
+        </section>
+
+        <!-- Use Cases Section -->
+        <section id="use-cases" class="use-cases">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title" data-i18n="useCases.title">Built for Your Setup</h2>
+                    <p class="section-subtitle" data-i18n="useCases.subtitle">
+                        Photos, NAS, personal cloud or fully automatic — BackupFlow fits the way you store your data
+                    </p>
+                </div>
+                <div class="use-cases-grid">
+                    <article class="use-case-card">
+                        <img
+                            src="assets/usecases/1-en.jpg"
+                            data-lang-src="assets/usecases/1-{lang}.jpg"
+                            width="1200"
+                            height="675"
+                            alt=""
+                            class="use-case-image"
+                            loading="lazy"
+                            decoding="async"
+                        />
+                        <div class="use-case-body">
+                            <h3 class="use-case-title" data-i18n="useCases.items.0.title">Photo Backup</h3>
+                            <p class="use-case-description" data-i18n="useCases.items.0.desc">
+                                Back up iPhone photos and videos to your own server, no cloud subscription needed. Only new shots are transferred, and your storage stays under your control.
+                            </p>
+                        </div>
+                    </article>
+                    <article class="use-case-card">
+                        <img
+                            src="assets/usecases/2-en.jpg"
+                            data-lang-src="assets/usecases/2-{lang}.jpg"
+                            width="1200"
+                            height="675"
+                            alt=""
+                            class="use-case-image"
+                            loading="lazy"
+                            decoding="async"
+                        />
+                        <div class="use-case-body">
+                            <h3 class="use-case-title" data-i18n="useCases.items.1.title">NAS & SFTP</h3>
+                            <p class="use-case-description" data-i18n="useCases.items.1.desc">
+                                Back up photos and files straight to your NAS or home server over an encrypted SFTP connection. Set a schedule and let BackupFlow handle the rest.
+                            </p>
+                        </div>
+                    </article>
+                    <article class="use-case-card">
+                        <img
+                            src="assets/usecases/3-en.jpg"
+                            data-lang-src="assets/usecases/3-{lang}.jpg"
+                            width="1200"
+                            height="675"
+                            alt=""
+                            class="use-case-image"
+                            loading="lazy"
+                            decoding="async"
+                        />
+                        <div class="use-case-body">
+                            <h3 class="use-case-title" data-i18n="useCases.items.2.title">Personal Cloud (WebDAV)</h3>
+                            <p class="use-case-description" data-i18n="useCases.items.2.desc">
+                                Running your own cloud? BackupFlow automatically backs up photos and files to any WebDAV server, and uploads keep going in the background.
+                            </p>
+                        </div>
+                    </article>
+                    <article class="use-case-card">
+                        <img
+                            src="assets/usecases/4-en.jpg"
+                            data-lang-src="assets/usecases/4-{lang}.jpg"
+                            width="1200"
+                            height="675"
+                            alt=""
+                            class="use-case-image"
+                            loading="lazy"
+                            decoding="async"
+                        />
+                        <div class="use-case-body">
+                            <h3 class="use-case-title" data-i18n="useCases.items.3.title">Automatic Backup</h3>
+                            <p class="use-case-description" data-i18n="useCases.items.3.desc">
+                                Pick a schedule once and BackupFlow backs up every day, week or month. Limit backups to Wi-Fi, charging or a time window you choose.
+                            </p>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pricing Section -->
+        <section id="pricing" class="pricing">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title" data-i18n="pricing.title">Simple Pricing</h2>
+                    <p class="section-subtitle" data-i18n="pricing.subtitle">
+                        One-time purchase, lifetime ownership. No subscriptions or in-app purchases.
+                    </p>
+                </div>
+                <div class="pricing-card">
+                    <div class="pricing-header">
+                        <h3 class="pricing-title" data-i18n="pricing.planTitle">BackupFlow</h3>
+                        <div class="pricing-price">
+                            <span class="price-currency" data-i18n="pricing.priceCurrency">Paid</span>
+                            <span class="price-period" data-i18n="pricing.pricePeriod">One-time Purchase • Lifetime Access</span>
+                        </div>
+                    </div>
+                    <div class="pricing-features">
+                        <div class="feature-item">
+                            <svg
+                                class="feature-check"
+                                viewBox="0 0 24 24"
+                                fill="currentColor"
+                            >
+                                <path
+                                    d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+                                />
+                            </svg>
+                            <span data-i18n="pricing.items.0">Unlimited backup tasks</span>
+                        </div>
+                        <div class="feature-item">
+                            <svg
+                                class="feature-check"
+                                viewBox="0 0 24 24"
+                                fill="currentColor"
+                            >
+                                <path
+                                    d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+                                />
+                            </svg>
+                            <span data-i18n="pricing.items.1">FTP, SFTP &amp; WebDAV support</span>
+                        </div>
+                        <div class="feature-item">
+                            <svg
+                                class="feature-check"
+                                viewBox="0 0 24 24"
+                                fill="currentColor"
+                            >
+                                <path
+                                    d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+                                />
+                            </svg>
+                            <span data-i18n="pricing.items.2">Smart scheduling & automation</span>
+                        </div>
+                        <div class="feature-item">
+                            <svg
+                                class="feature-check"
+                                viewBox="0 0 24 24"
+                                fill="currentColor"
+                            >
+                                <path
+                                    d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+                                />
+                            </svg>
+                            <span data-i18n="pricing.items.3">Multi-language support</span>
+                        </div>
+                        <div class="feature-item">
+                            <svg
+                                class="feature-check"
+                                viewBox="0 0 24 24"
+                                fill="currentColor"
+                            >
+                                <path
+                                    d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+                                />
+                            </svg>
+                            <span data-i18n="pricing.items.4">Background execution</span>
+                        </div>
+                        <div class="feature-item">
+                            <svg
+                                class="feature-check"
+                                viewBox="0 0 24 24"
+                                fill="currentColor"
+                            >
+                                <path
+                                    d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+                                />
+                            </svg>
+                            <span data-i18n="pricing.items.5">Premium support</span>
+                        </div>
+                    </div>
+                    <div class="pricing-footer">
+                        <a href="#download" class="btn btn-primary btn-large" data-i18n="pricing.btn"
+                            >Download Now</a
+                        >
+                        <p class="pricing-note" data-i18n="pricing.note">
+                            No subscriptions • No in-app purchases • Unlimited transfers
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Download Section -->
+        <section id="download" class="download">
+            <div class="container">
+                <div class="download-content">
+                    <div class="download-info">
+                        <h2 class="download-title" data-i18n="download.title">
+                            Ready to Secure Your Data?
+                        </h2>
+                        <p class="download-subtitle" data-i18n="download.subtitle">
+                            Join thousands of users who trust BackupFlow for
+                            their data protection needs. Download now and
+                            experience professional-grade backup automation.
+                        </p>
+                        <div class="download-buttons">
+                            <a href="https://apps.apple.com/us/app/backupflow/id6753620051" class="download-btn app-store" target="_blank" rel="noopener noreferrer">
+                                <img
+                                    src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTMwIiBoZWlnaHQ9IjQwIiB2aWV3Qm94PSIwIDAgMTMwIDQwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iMTMwIiBoZWlnaHQ9IjQwIiByeD0iNiIgZmlsbD0iYmxhY2siLz4KPHN2ZyB4PSIxMCIgeT0iMTAiIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xOC43MSA4LjIxYzAtLjE3LS4wNS0uMzMtLjE0LS40N0wxMC4yNS4yMmMtLjI4LS4yOC0uNzgtLjI4LTEuMDYgMEwuNzggNy43NGMtLjA5LjE0LS4xNC4zLS4xNC40N3YxNS41OGMwIC4xNy4wNS4zMy4xNC40N2w4LjMxIDcuNTJjLjI4LjI4Ljc4LjI4IDEuMDYgMGw4LjMxLTcuNTJjLjA5LS4xNC4xNC0uMy4xNC0uNDdWOC4yMXoiLz4KPC9zdmc+Cjx0ZXh0IHg9IjM1IiB5PSIxNSIgZmlsbD0id2hpdGUiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjkiPkRvd25sb2FkIG9uIHRoZTwvdGV4dD4KPHRleHQgeD0iMzUiIHk9IjI4IiBmaWxsPSJ3aGl0ZSIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQiIGZvbnQtd2VpZ2h0PSJib2xkIj5BcHAgU3RvcmU8L3RleHQ+Cjwvc3ZnPgo="
+                                    alt="Download on the App Store"
+                                    data-i18n-attr="alt:download.appstoreAlt"
+                                />
+                            </a>
+                        </div>
+                    </div>
+                    <div class="download-visual">
+                        <div class="download-graphic">
+                            <div class="floating-icon icon-1">📱</div>
+                            <div class="floating-icon icon-2">☁️</div>
+                            <div class="floating-icon icon-3">🔒</div>
+                            <div class="floating-icon icon-4">⚡</div>
+                            <div class="central-logo">
+                                <svg viewBox="0 0 80 80" class="logo-large">
+                                    <defs>
+                                        <linearGradient
+                                            id="downloadGradient"
+                                            x1="0%"
+                                            y1="0%"
+                                            x2="100%"
+                                            y2="100%"
+                                        >
+                                            <stop
+                                                offset="0%"
+                                                style="stop-color: #00d4ff"
+                                            />
+                                            <stop
+                                                offset="50%"
+                                                style="stop-color: #3b82f6"
+                                            />
+                                            <stop
+                                                offset="100%"
+                                                style="stop-color: #8b5cf6"
+                                            />
+                                        </linearGradient>
+                                    </defs>
+                                    <circle
+                                        cx="40"
+                                        cy="40"
+                                        r="35"
+                                        fill="rgba(255,255,255,0.1)"
+                                        stroke="url(#downloadGradient)"
+                                        stroke-width="2"
+                                    />
+                                    <path
+                                        d="M40 15 L55 30 Q57 32 55 34 L45 44 Q43 46 41 44 L35 38 Q33 36 35 34 L40 29 Q38 27 36 29 L25 40 Q23 42 25 44 L35 54 Q37 56 39 54 L55 38 Q57 36 55 34 L40 19 Q38 17 40 15 Z"
+                                        fill="url(#downloadGradient)"
+                                    />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Support Section -->
+        <section id="support" class="support">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title" data-i18n="support.title">Support & Contact</h2>
+                    <p class="section-subtitle" data-i18n="support.subtitle">
+                        We're here to help you succeed
+                    </p>
+                </div>
+                <div class="support-grid">
+                    <div class="support-card">
+                        <div class="support-icon">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"
+                                />
+                            </svg>
+                        </div>
+                        <h3 data-i18n="support.cards.0.title">Email Support</h3>
+                        <p data-i18n="support.cards.0.desc">Get direct assistance from our team</p>
+                        <a
+                            href="mailto:tamersavasci@icloud.com"
+                            class="support-link"
+                            >tamersavasci@icloud.com</a
+                        >
+                    </div>
+
+                    <div class="support-card">
+                        <div class="support-icon">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
+                                />
+                            </svg>
+                        </div>
+                        <h3 data-i18n="support.cards.1.title">Documentation</h3>
+                        <p data-i18n="support.cards.1.desc">Comprehensive guides and tutorials</p>
+                        <a href="docs/" class="support-link" data-docs-link data-i18n="support.cards.1.link">View Docs</a>
+                    </div>
+
+                    <div class="support-card">
+                        <div class="support-icon">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+                                />
+                            </svg>
+                        </div>
+                        <h3 data-i18n="support.cards.2.title">Rate & Review</h3>
+                        <p data-i18n="support.cards.2.desc">Share your experience on the App Store</p>
+                        <a href="https://apps.apple.com/app/backupflow/id6753620051?action=write-review" class="support-link" target="_blank" rel="noopener noreferrer" data-i18n="support.cards.2.link">Write Review</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="container">
+                <div class="footer-content">
+                    <div class="footer-brand">
+                        <div class="footer-logo">
+                            <div class="logo-icon">
+                                <img src="web_logo.png" alt="BackupFlow Logo" class="logo-image" />
+                            </div>
+                            <span class="logo-text">BackupFlow</span>
+                        </div>
+                        <p class="footer-description" data-i18n="footer.desc">
+                            Professional iOS backup with local-first privacy and smart automation.
+                        </p>
+                    </div>
+                    <div class="footer-links">
+                        <div class="footer-column">
+                            <h4 data-i18n="footer.supportHeading">Support</h4>
+                            <a href="docs/" data-docs-link data-i18n="footer.docs">Documentation</a>
+                            <a href="privacy-policy.html" data-i18n="footer.privacy">Privacy Policy</a>
+                            <a href="mailto:tamersavasci@icloud.com" data-i18n="footer.contact">Contact</a>
+                        </div>
+                        <div class="footer-column">
+                            <h4 data-i18n="footer.companyHeading">Company</h4>
+                            <a href="#features" data-i18n="footer.about">About</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <p>
+                        &copy; 2026 BackupFlow. <span data-i18n="footer.copyright">All rights reserved.</span>
+                    </p>
+                </div>
+            </div>
+        </footer>
+
+        <script src="translations.js"></script>
+        <script src="script.js"></script>
+    </body>
+</html>

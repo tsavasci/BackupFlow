@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="zh" dir="ltr">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>BackupFlow 帮助与文档</title>
+        <meta name="description" content="iOS 版 BackupFlow 完整指南：备份中心、FTP/SFTP/WebDAV 配置、照片图库与文件备份、日程安排、删除策略、校验和验证及常见问题解答。" />
+        <meta name="theme-color" content="#3B82F6" />
+        <meta name="apple-itunes-app" content="app-id=6753620051" />
+        <meta property="og:type" content="article" />
+        <meta property="og:title" content="BackupFlow 帮助与文档" />
+        <meta property="og:description" content="iOS 版 BackupFlow 完整指南：备份中心、FTP/SFTP/WebDAV 配置、照片图库与文件备份、日程安排、删除策略、校验和验证及常见问题解答。" />
+        <meta property="og:url" content="https://tsavasci.github.io/BackupFlowWeb/docs/zh/" />
+        <meta property="og:image" content="https://tsavasci.github.io/BackupFlowWeb/assets/og-image.jpg" />
+        <link rel="canonical" href="https://tsavasci.github.io/BackupFlowWeb/docs/zh/" />
+        <link rel="alternate" hreflang="en" href="https://tsavasci.github.io/BackupFlowWeb/docs/en/" />
+        <link rel="alternate" hreflang="tr" href="https://tsavasci.github.io/BackupFlowWeb/docs/tr/" />
+        <link rel="alternate" hreflang="de" href="https://tsavasci.github.io/BackupFlowWeb/docs/de/" />
+        <link rel="alternate" hreflang="fr" href="https://tsavasci.github.io/BackupFlowWeb/docs/fr/" />
+        <link rel="alternate" hreflang="es" href="https://tsavasci.github.io/BackupFlowWeb/docs/es/" />
+        <link rel="alternate" hreflang="ru" href="https://tsavasci.github.io/BackupFlowWeb/docs/ru/" />
+        <link rel="alternate" hreflang="ar" href="https://tsavasci.github.io/BackupFlowWeb/docs/ar/" />
+        <link rel="alternate" hreflang="zh" href="https://tsavasci.github.io/BackupFlowWeb/docs/zh/" />
+        <link rel="alternate" hreflang="ko" href="https://tsavasci.github.io/BackupFlowWeb/docs/ko/" />
+        <link rel="alternate" hreflang="ja" href="https://tsavasci.github.io/BackupFlowWeb/docs/ja/" />
+        <link rel="alternate" hreflang="pt" href="https://tsavasci.github.io/BackupFlowWeb/docs/pt/" />
+        <link rel="alternate" hreflang="hi" href="https://tsavasci.github.io/BackupFlowWeb/docs/hi/" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="../../styles.css" />
+        <link rel="stylesheet" href="../docs.css" />
+        <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+    </head>
+    <body class="docs-body">
+        <a href="#docs-content" class="skip-link">跳转到内容</a>
+        <nav class="navbar">
+            <div class="nav-container">
+                <a class="nav-logo" href="../../index.html">
+                    <span class="logo-icon">
+                        <img src="../../web_logo.png" alt="" class="logo-image" />
+                    </span>
+                    <span class="logo-text">BackupFlow</span>
+                </a>
+                <div class="nav-menu" id="nav-menu">
+                    <a class="nav-link" href="../../index.html#features">功能</a>
+                    <a class="nav-link" href="../../index.html#pricing">价格</a>
+                    <a class="nav-link" href="../../index.html#support">支持</a>
+                    <div class="lang-switcher" id="lang-switcher">
+                        <button
+                            type="button"
+                            class="lang-toggle"
+                            id="lang-toggle"
+                            aria-haspopup="listbox"
+                            aria-expanded="false"
+                            aria-controls="lang-menu"
+                        >
+                            <span class="lang-flag">🇨🇳</span>
+                            <span class="lang-code">ZH</span>
+                            <svg class="lang-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M6 9l6 6 6-6" />
+                            </svg>
+                        </button>
+                        <ul class="lang-menu" id="lang-menu" role="listbox" aria-label="语言">
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../en/" hreflang="en" lang="en" data-lang-code="en"><span class="lang-flag">🇬🇧</span><span class="lang-name">English</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../tr/" hreflang="tr" lang="tr" data-lang-code="tr"><span class="lang-flag">🇹🇷</span><span class="lang-name">Türkçe</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../de/" hreflang="de" lang="de" data-lang-code="de"><span class="lang-flag">🇩🇪</span><span class="lang-name">Deutsch</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../fr/" hreflang="fr" lang="fr" data-lang-code="fr"><span class="lang-flag">🇫🇷</span><span class="lang-name">Français</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../es/" hreflang="es" lang="es" data-lang-code="es"><span class="lang-flag">🇪🇸</span><span class="lang-name">Español</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../ru/" hreflang="ru" lang="ru" data-lang-code="ru"><span class="lang-flag">🇷🇺</span><span class="lang-name">Русский</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../ar/" hreflang="ar" lang="ar" data-lang-code="ar"><span class="lang-flag">🇸🇦</span><span class="lang-name">العربية</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option active" aria-selected="true" href="../zh/" hreflang="zh" lang="zh" data-lang-code="zh"><span class="lang-flag">🇨🇳</span><span class="lang-name">简体中文</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../ko/" hreflang="ko" lang="ko" data-lang-code="ko"><span class="lang-flag">🇰🇷</span><span class="lang-name">한국어</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../ja/" hreflang="ja" lang="ja" data-lang-code="ja"><span class="lang-flag">🇯🇵</span><span class="lang-name">日本語</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../pt/" hreflang="pt" lang="pt" data-lang-code="pt"><span class="lang-flag">🇵🇹</span><span class="lang-name">Português</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../hi/" hreflang="hi" lang="hi" data-lang-code="hi"><span class="lang-flag">🇮🇳</span><span class="lang-name">हिन्दी</span></a></li>
+                        </ul>
+                    </div>
+                    <a class="nav-link download-btn" href="https://apps.apple.com/app/backupflow/id6753620051" target="_blank" rel="noopener noreferrer">下载</a>
+                </div>
+                <button
+                    type="button"
+                    class="nav-toggle"
+                    aria-label="切换导航"
+                    aria-controls="nav-menu"
+                    aria-expanded="false"
+                >
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </nav>
+
+        <main id="docs-content" class="docs-page">
+            <div class="container">
+                <header class="docs-hero">
+                    <h1>BackupFlow 帮助</h1>
+                    <p class="docs-lead">BackupFlow 可通过 FTP、SFTP 或 WebDAV 将 iPhone 上的照片、视频和文件直接备份到您自己的服务器（NAS、家庭服务器或私有云）。无需订阅，也不经过任何第三方云。</p>
+                </header>
+
+                <div class="docs-layout">
+                    <aside class="docs-toc" aria-labelledby="docs-toc-title">
+                        <p class="docs-toc-title" id="docs-toc-title">本页内容</p>
+                        <ol>
+                        <li><a href="#what-you-need">1. 准备工作</a></li>
+                        <li><a href="#backup-hub">2. 备份中心概览</a></li>
+                        <li><a href="#first-backup">3. 创建新建备份</a></li>
+                        <li><a href="#task-details">4. 任务详情与管理</a></li>
+                        <li><a href="#automatic-backups">5. 日程安排与运行条件</a></li>
+                        <li><a href="#deleted-files">6. 删除策略、校验和与 iCloud</a></li>
+                        <li><a href="#background">7. 后台备份</a></li>
+                        <li><a href="#history">8. 备份历史</a></li>
+                        <li><a href="#settings">9. 应用设置</a></li>
+                        <li><a href="#troubleshooting">10. 常见问题排查</a></li>
+                        <li><a href="#privacy">11. 隐私与安全</a></li>
+                        <li><a href="#help">12. 需要帮助？</a></li>
+                        </ol>
+                    </aside>
+
+                    <article class="docs-content">
+                    <section id="what-you-need" class="docs-section">
+                        <h2>1. 准备工作</h2>
+                        <ul>
+                        <li><b>兼容的服务器</b>：任何支持 <b>FTP</b>、<b>SFTP (SSH)</b> 或 <b>WebDAV (HTTP/HTTPS)</b> 的 NAS（群晖 Synology、威联通 QNAP、TrueNAS、Unraid）、家庭服务器或私有云（Nextcloud、ownCloud、WebDAV 存储）。</li>
+                        <li><b>连接信息</b>：服务器地址（IP、域名或完整 WebDAV URL）、端口（默认：FTP <b>21</b>、SFTP <b>22</b>、WebDAV <b>443</b>/<b>80</b>）以及<b>用户名</b>和<b>密码</b>（FTP 也支持<b>匿名登录</b>）。</li>
+                        <li><b>iOS 权限</b>：照片图库的<b>完全访问权限</b>、家庭局域网所需的<b>本地网络</b>权限，以及<b>通知</b>权限。</li>
+                        </ul>
+                    </section>
+
+                    <section id="backup-hub" class="docs-section">
+                        <h2>2. 备份中心概览</h2>
+                        <p>打开 BackupFlow 后，<b>备份中心</b>会实时展示您的备份系统状态：</p>
+                        <ul>
+                        <li><b>状态卡片</b>：显示<b>上次同步</b>时间、<b>下一个任务</b>的时间和名称、当前保护状态（<b>安全且已同步</b>）、服务器地址，以及用于立即启动备份的绿色<b>播放 (▶)</b> 按钮。</li>
+                        <li><b>备份健康度</b>：统计备份<b>成功率</b>（百分比与运行次数）、连续<b>失败</b>次数、上次成功备份时间及<b>平均耗时</b>。</li>
+                        <li><b>已保存的服务器</b>：以彩色卡片展示所有已配置的 <b>FTP</b>、<b>SFTP</b> 和 <b>WebDAV</b> 备份任务，支持快速<b>编辑 (✏️)</b> 或<b>删除 (🗑️)</b>。轻点任意卡片即可打开<b>任务详情</b>。</li>
+                        <li><b>底部导航栏与设置</b>：底部三个按钮分别用于<b>同步/运行 (🔄)</b>、打开<b>备份历史 (🕒)</b> 和创建<b>新建备份 (+)</b>。右上角的<b>齿轮图标 (⚙️)</b> 用于打开<b>设置</b>。</li>
+                        </ul>
+                        <div class="docs-screens">
+                            <figure class="docs-screen-card"><img src="../../assets/screens/zh/1.jpg" width="300" height="649" loading="lazy" decoding="async" alt="2. 备份中心概览" /></figure>
+                        </div>
+                    </section>
+
+                    <section id="first-backup" class="docs-section">
+                        <h2>3. 创建新建备份</h2>
+                        <p>轻点<b>备份中心</b>底部的 <b>+</b> 按钮（或<b>已保存的服务器</b>旁的<b>添加</b>），打开<b>新建备份</b>界面：</p>
+                        <ol>
+                        <li><b>来源</b>：选择<b>照片图库</b>（仅照片、仅视频或照片和视频），或轻点<b>选择文件夹</b>从 iOS“文件”App 中选择任意文件夹。</li>
+                        <li><b>目标类型</b>：选择 <b>FTP</b>、<b>SFTP</b> 或 <b>WebDAV</b>。输入服务器地址、端口、<b>用户名</b>、<b>密码</b>以及远程路径（例如 <code>/remote.php/dav/files/</code>）。轻点<b>测试连接</b>验证无误后，可轻点<b>浏览远程文件夹</b>直接选择服务器上的目标文件夹。</li>
+                        <li><b>日程安排</b>：选择<b>手动</b>、<b>每日</b>、<b>每周</b>、<b>每月</b>或<b>间隔</b>，并在<b>选择时间</b>中设定执行时间。</li>
+                        <li><b>备份行为</b>：设置<b>删除策略</b>、<b>校验和</b>及运行条件，然后保存任务。</li>
+                        </ol>
+                        <p>首次完整备份完成后，BackupFlow 只会传输<b>新增或修改过的文件</b>，因此后续备份速度会快得多。</p>
+                        <div class="docs-screens docs-screens-pair">
+                            <figure class="docs-screen-card"><img src="../../assets/screens/zh/6.jpg" width="300" height="649" loading="lazy" decoding="async" alt="3. 创建新建备份" /></figure>
+                            <figure class="docs-screen-card"><img src="../../assets/screens/zh/9.jpg" width="300" height="649" loading="lazy" decoding="async" alt="3. 创建新建备份" /></figure>
+                        </div>
+                    </section>
+
+                    <section id="task-details" class="docs-section">
+                        <h2>4. 任务详情与管理</h2>
+                        <p>在<b>已保存的服务器</b>下轻点任意任务卡片，即可查看<b>任务详情</b>：</p>
+                        <ul>
+                        <li><b>通用</b>：查看<b>来源</b>、当前<b>状态</b>（如<b>就绪</b>）、<b>日程安排</b>、<b>删除策略</b>和<b>校验和</b>状态。</li>
+                        <li><b>服务器</b>：查看服务器地址、端口和用户名。</li>
+                        <li><b>最近备份</b>：查看该任务的最近执行记录，包括时间、状态、传输文件数、大小和耗时。</li>
+                        <li>轻点左上角的<b>编辑</b>即可随时修改任务配置。</li>
+                        </ul>
+                        <div class="docs-screens">
+                            <figure class="docs-screen-card"><img src="../../assets/screens/zh/5.jpg" width="300" height="649" loading="lazy" decoding="async" alt="4. 任务详情与管理" /></figure>
+                        </div>
+                    </section>
+
+                    <section id="automatic-backups" class="docs-section">
+                        <h2>5. 日程安排与运行条件</h2>
+                        <p>在<b>日程安排</b>中可选择五种模式：<b>手动</b>、<b>每日</b>、<b>每周</b>、<b>每月</b>或<b>间隔</b>，并在<b>选择时间</b>中指定时间。</p>
+                        <p>在<b>备份行为</b>中可限制自动备份的运行条件：</p>
+                        <ul>
+                        <li><b>需要 Wi-Fi</b>：绝不使用蜂窝移动数据。</li>
+                        <li><b>需要外部电源</b>：仅在 iPhone 连接充电器时运行。</li>
+                        <li><b>使用允许的时间窗口</b>：仅在指定时间段内（如夜间）执行自动备份。</li>
+                        <li><b>最低电池电量</b>（位于<b>设置 › 电池设置</b>）：电量低于阈值时自动跳过备份。</li>
+                        </ul>
+                    </section>
+
+                    <section id="deleted-files" class="docs-section">
+                        <h2>6. 删除策略、校验和与 iCloud</h2>
+                        <p>在<b>备份行为</b>中，您可以控制 iPhone 删除文件后服务器端的处理方式以及文件完整性校验：</p>
+                        <dl>
+                        <dt>删除策略 › 仅追加</dt>
+                        <dd>从不删除服务器上的任何文件。如果您打算在备份后删除 iPhone 上的照片以释放空间，<b>强烈建议使用此模式</b>。</dd>
+                        <dt>删除策略 › 镜像</dt>
+                        <dd>使服务器文件夹与 iPhone 来源保持完全一致。在 iPhone 上删除的文件也会在下次同步时从服务器上删除。</dd>
+                        <dt>删除策略 › 归档删除</dt>
+                        <dd>不会永久删除任何内容。在 iPhone 上移除的文件会移至服务器上带日期的 <b>.backupflow_archive</b> 文件夹中。</dd>
+                        <dt>校验和 (Checksum)</dt>
+                        <dd>开启后会在上传完成后校验每个文件的完整性（默认<b>关闭</b>以获得最高传输速度）。</dd>
+                        </dl>
+                        <p class="note"><b>iCloud 照片提示：</b>如果启用了“优化 iPhone 储存空间”，请开启<b>需要时下载 iCloud 项目</b>，以便自动下载并备份仅保存在 iCloud 中的原片。</p>
+                    </section>
+
+                    <section id="background" class="docs-section">
+                        <h2>7. 后台备份</h2>
+                        <p>BackupFlow 集成了 iOS <b>BGTaskScheduler</b> 以执行后台自动备份。由于 iOS 会根据电量、充电状态和使用习惯决定后台运行的具体时刻，计划备份可能会在设定时间之后稍晚启动或发送通知提醒。</p>
+                        <p>如果 iOS 中途暂停了后台传输，只需打开 BackupFlow 即可自动续传，已上传的文件会自动跳过。首次进行大容量备份时，建议让 iPhone 保持连接 Wi-Fi 和充电器。</p>
+                    </section>
+
+                    <section id="history" class="docs-section">
+                        <h2>8. 备份历史</h2>
+                        <p>轻点<b>备份中心</b>底部栏中间的<b>历史 (🕒)</b> 按钮即可打开<b>备份历史</b>：</p>
+                        <ul>
+                        <li><b>汇总卡片</b>：顶部显示<b>已完成</b>次数、<b>失败</b>次数以及累计<b>已传输</b>数据量（GB/MB）。</li>
+                        <li><b>详细记录</b>：每条记录展示任务名称、日期时间、状态标签、<b>文件数</b>（如 <code>1236/1236</code>）、<b>已传输</b>大小和<b>耗时</b>。轻点右上角的<b>垃圾桶图标 (🗑️)</b> 可清空历史记录。</li>
+                        </ul>
+                        <div class="docs-screens">
+                            <figure class="docs-screen-card"><img src="../../assets/screens/zh/3.jpg" width="300" height="649" loading="lazy" decoding="async" alt="8. 备份历史" /></figure>
+                        </div>
+                    </section>
+
+                    <section id="settings" class="docs-section">
+                        <h2>9. 应用设置</h2>
+                        <p>轻点<b>备份中心</b>右上角的<b>齿轮图标 (⚙️)</b> 打开<b>设置</b>：</p>
+                        <ul>
+                        <li><b>历史记录保留期（天）</b>：选择历史记录在设备上的保留天数（如 <b>30 天</b>）。</li>
+                        <li><b>需要外部电源</b>与<b>电池设置</b>：全局充电要求与最低电量阈值设置。</li>
+                        <li><b>语言</b>：在应用内随时切换 12 种支持语言。</li>
+                        <li><b>关于</b>：查看当前<b>版本</b>、轻点<b>评价应用</b>或<b>联系支持</b>。</li>
+                        <li><b>重置所有数据</b>：清除此 iPhone 上的所有任务、历史记录和已保存的密码，服务器上的文件不会受到任何影响。</li>
+                        </ul>
+                        <div class="docs-screens">
+                            <figure class="docs-screen-card"><img src="../../assets/screens/zh/10.jpg" width="300" height="649" loading="lazy" decoding="async" alt="9. 应用设置" /></figure>
+                        </div>
+                    </section>
+
+                    <section id="troubleshooting" class="docs-section">
+                        <h2>10. 常见问题排查</h2>
+                        <dl>
+                        <dt>无法连接到服务器。</dt>
+                        <dd>请检查服务器地址、端口（FTP 21、SFTP 22、WebDAV 443/80）、用户名和密码。对于家庭局域网服务器，请确认 iPhone 连接在同一 Wi-Fi 下，且已在 <b>iPhone 设置 › 隐私与安全性 › 本地网络 › BackupFlow</b> 中开启权限。</dd>
+                        <dt>计划的备份未执行。</dt>
+                        <dd>请检查任务的<b>备份行为</b>条件（Wi-Fi、电源、时间窗口、电池设置）以及是否已允许 BackupFlow 发送通知。</dd>
+                        <dt>部分照片未备份。</dt>
+                        <dd>请确认已授予照片“完全访问”权限，并开启<b>需要时下载 iCloud 项目</b>。</dd>
+                        <dt>服务器上的文件被删除了。</dt>
+                        <dd>请将任务的<b>删除策略</b>从<b>镜像</b>改为<b>仅追加</b>或<b>归档删除</b>。</dd>
+                        <dt>出现 SFTP 安全警告。</dt>
+                        <dd>服务器的 SSH 指纹发生了变化。如果服务器重装或更换过属于正常情况，否则请先向管理员确认。</dd>
+                        </dl>
+                    </section>
+
+                    <section id="privacy" class="docs-section">
+                        <h2>11. 隐私与安全</h2>
+                        <p>您的文件直接从 iPhone 传输到您自己的服务器。BackupFlow 没有自己的云服务器，从不查看您的文件，也不收集任何个人数据或分析统计。服务器密码加密保存在 <b>iOS 钥匙串 (Keychain)</b> 中。详情请参阅完整<a href="../../privacy-policy.html">隐私政策</a>。</p>
+                    </section>
+
+                    <section id="help" class="docs-section">
+                        <h2>12. 需要帮助？</h2>
+                        <p>请在应用内前往<b>设置 › 联系支持</b>（或发送邮件至 <a href="mailto:tamersavasci@icloud.com">tamersavasci@icloud.com</a>），邮件会自动附上应用版本和设备型号。</p>
+                    </section>
+                    </article>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <div class="container">
+                <div class="footer-content">
+                    <div class="footer-brand">
+                        <div class="footer-logo">
+                            <div class="logo-icon">
+                                <img src="../../web_logo.png" alt="" class="logo-image" />
+                            </div>
+                            <span class="logo-text">BackupFlow</span>
+                        </div>
+                        <p class="footer-description">专业的 iOS 备份方案,注重本地隐私与智能自动化。</p>
+                    </div>
+                    <div class="footer-links">
+                        <div class="footer-column">
+                            <h4>支持</h4>
+                            <a href="./">文档</a>
+                            <a href="../../privacy-policy.html?lang=zh">隐私政策</a>
+                            <a href="mailto:tamersavasci@icloud.com">联系我们</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <p>&copy; 2026 BackupFlow. 保留所有权利。</p>
+                </div>
+            </div>
+        </footer>
+
+        <script src="../docs.js"></script>
+    </body>
+</html>

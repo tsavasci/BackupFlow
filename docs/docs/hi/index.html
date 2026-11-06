@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="hi" dir="ltr">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>BackupFlow सहायता और दस्तावेज़ीकरण</title>
+        <meta name="description" content="iOS के लिए BackupFlow की पूरी गाइड: बैकअप हब, FTP/SFTP/WebDAV सेटअप, फ़ोटो लाइब्रेरी और फ़ाइल बैकअप, शेड्यूलिंग, हटाने की नीति और समस्या समाधान।" />
+        <meta name="theme-color" content="#3B82F6" />
+        <meta name="apple-itunes-app" content="app-id=6753620051" />
+        <meta property="og:type" content="article" />
+        <meta property="og:title" content="BackupFlow सहायता और दस्तावेज़ीकरण" />
+        <meta property="og:description" content="iOS के लिए BackupFlow की पूरी गाइड: बैकअप हब, FTP/SFTP/WebDAV सेटअप, फ़ोटो लाइब्रेरी और फ़ाइल बैकअप, शेड्यूलिंग, हटाने की नीति और समस्या समाधान।" />
+        <meta property="og:url" content="https://tsavasci.github.io/BackupFlowWeb/docs/hi/" />
+        <meta property="og:image" content="https://tsavasci.github.io/BackupFlowWeb/assets/og-image.jpg" />
+        <link rel="canonical" href="https://tsavasci.github.io/BackupFlowWeb/docs/hi/" />
+        <link rel="alternate" hreflang="en" href="https://tsavasci.github.io/BackupFlowWeb/docs/en/" />
+        <link rel="alternate" hreflang="tr" href="https://tsavasci.github.io/BackupFlowWeb/docs/tr/" />
+        <link rel="alternate" hreflang="de" href="https://tsavasci.github.io/BackupFlowWeb/docs/de/" />
+        <link rel="alternate" hreflang="fr" href="https://tsavasci.github.io/BackupFlowWeb/docs/fr/" />
+        <link rel="alternate" hreflang="es" href="https://tsavasci.github.io/BackupFlowWeb/docs/es/" />
+        <link rel="alternate" hreflang="ru" href="https://tsavasci.github.io/BackupFlowWeb/docs/ru/" />
+        <link rel="alternate" hreflang="ar" href="https://tsavasci.github.io/BackupFlowWeb/docs/ar/" />
+        <link rel="alternate" hreflang="zh" href="https://tsavasci.github.io/BackupFlowWeb/docs/zh/" />
+        <link rel="alternate" hreflang="ko" href="https://tsavasci.github.io/BackupFlowWeb/docs/ko/" />
+        <link rel="alternate" hreflang="ja" href="https://tsavasci.github.io/BackupFlowWeb/docs/ja/" />
+        <link rel="alternate" hreflang="pt" href="https://tsavasci.github.io/BackupFlowWeb/docs/pt/" />
+        <link rel="alternate" hreflang="hi" href="https://tsavasci.github.io/BackupFlowWeb/docs/hi/" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="../../styles.css" />
+        <link rel="stylesheet" href="../docs.css" />
+        <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+    </head>
+    <body class="docs-body">
+        <a href="#docs-content" class="skip-link">सामग्री पर जाएं</a>
+        <nav class="navbar">
+            <div class="nav-container">
+                <a class="nav-logo" href="../../index.html">
+                    <span class="logo-icon">
+                        <img src="../../web_logo.png" alt="" class="logo-image" />
+                    </span>
+                    <span class="logo-text">BackupFlow</span>
+                </a>
+                <div class="nav-menu" id="nav-menu">
+                    <a class="nav-link" href="../../index.html#features">सुविधाएं</a>
+                    <a class="nav-link" href="../../index.html#pricing">मूल्य</a>
+                    <a class="nav-link" href="../../index.html#support">सहायता</a>
+                    <div class="lang-switcher" id="lang-switcher">
+                        <button
+                            type="button"
+                            class="lang-toggle"
+                            id="lang-toggle"
+                            aria-haspopup="listbox"
+                            aria-expanded="false"
+                            aria-controls="lang-menu"
+                        >
+                            <span class="lang-flag">🇮🇳</span>
+                            <span class="lang-code">HI</span>
+                            <svg class="lang-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M6 9l6 6 6-6" />
+                            </svg>
+                        </button>
+                        <ul class="lang-menu" id="lang-menu" role="listbox" aria-label="भाषा">
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../en/" hreflang="en" lang="en" data-lang-code="en"><span class="lang-flag">🇬🇧</span><span class="lang-name">English</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../tr/" hreflang="tr" lang="tr" data-lang-code="tr"><span class="lang-flag">🇹🇷</span><span class="lang-name">Türkçe</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../de/" hreflang="de" lang="de" data-lang-code="de"><span class="lang-flag">🇩🇪</span><span class="lang-name">Deutsch</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../fr/" hreflang="fr" lang="fr" data-lang-code="fr"><span class="lang-flag">🇫🇷</span><span class="lang-name">Français</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../es/" hreflang="es" lang="es" data-lang-code="es"><span class="lang-flag">🇪🇸</span><span class="lang-name">Español</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../ru/" hreflang="ru" lang="ru" data-lang-code="ru"><span class="lang-flag">🇷🇺</span><span class="lang-name">Русский</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../ar/" hreflang="ar" lang="ar" data-lang-code="ar"><span class="lang-flag">🇸🇦</span><span class="lang-name">العربية</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../zh/" hreflang="zh" lang="zh" data-lang-code="zh"><span class="lang-flag">🇨🇳</span><span class="lang-name">简体中文</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../ko/" hreflang="ko" lang="ko" data-lang-code="ko"><span class="lang-flag">🇰🇷</span><span class="lang-name">한국어</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../ja/" hreflang="ja" lang="ja" data-lang-code="ja"><span class="lang-flag">🇯🇵</span><span class="lang-name">日本語</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../pt/" hreflang="pt" lang="pt" data-lang-code="pt"><span class="lang-flag">🇵🇹</span><span class="lang-name">Português</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option active" aria-selected="true" href="../hi/" hreflang="hi" lang="hi" data-lang-code="hi"><span class="lang-flag">🇮🇳</span><span class="lang-name">हिन्दी</span></a></li>
+                        </ul>
+                    </div>
+                    <a class="nav-link download-btn" href="https://apps.apple.com/app/backupflow/id6753620051" target="_blank" rel="noopener noreferrer">डाउनलोड</a>
+                </div>
+                <button
+                    type="button"
+                    class="nav-toggle"
+                    aria-label="नेविगेशन टॉगल करें"
+                    aria-controls="nav-menu"
+                    aria-expanded="false"
+                >
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </nav>
+
+        <main id="docs-content" class="docs-page">
+            <div class="container">
+                <header class="docs-hero">
+                    <h1>BackupFlow सहायता</h1>
+                    <p class="docs-lead">BackupFlow आपके iPhone की फ़ोटो, वीडियो और फ़ाइलों का बैकअप FTP, SFTP या WebDAV के ज़रिए सीधे आपके अपने सर्वर (NAS, होम सर्वर या निजी क्लाउड) पर लेता है। न कोई सब्सक्रिप्शन, न कोई थर्ड-पार्टी क्लाउड।</p>
+                </header>
+
+                <div class="docs-layout">
+                    <aside class="docs-toc" aria-labelledby="docs-toc-title">
+                        <p class="docs-toc-title" id="docs-toc-title">इस पेज पर</p>
+                        <ol>
+                        <li><a href="#what-you-need">1. आपको क्या चाहिए</a></li>
+                        <li><a href="#backup-hub">2. बैकअप हब का परिचय</a></li>
+                        <li><a href="#first-backup">3. नया बैकअप बनाएँ</a></li>
+                        <li><a href="#task-details">4. टास्क विवरण और प्रबंधन</a></li>
+                        <li><a href="#automatic-backups">5. शेड्यूलिंग और शर्तें</a></li>
+                        <li><a href="#deleted-files">6. हटाने की नीति, चेकसम और iCloud</a></li>
+                        <li><a href="#background">7. बैकग्राउंड में बैकअप</a></li>
+                        <li><a href="#history">8. बैकअप इतिहास</a></li>
+                        <li><a href="#settings">9. ऐप सेटिंग्स</a></li>
+                        <li><a href="#troubleshooting">10. समस्या समाधान</a></li>
+                        <li><a href="#privacy">11. गोपनीयता और सुरक्षा</a></li>
+                        <li><a href="#help">12. मदद चाहिए?</a></li>
+                        </ol>
+                    </aside>
+
+                    <article class="docs-content">
+                    <section id="what-you-need" class="docs-section">
+                        <h2>1. आपको क्या चाहिए</h2>
+                        <ul>
+                        <li><b>एक संगत सर्वर</b>: कोई भी NAS (Synology, QNAP, TrueNAS, Unraid), होम सर्वर या निजी क्लाउड (Nextcloud, ownCloud, WebDAV) जो <b>FTP</b>, <b>SFTP (SSH)</b> या <b>WebDAV (HTTP/HTTPS)</b> सपोर्ट करता हो।</li>
+                        <li><b>कनेक्शन विवरण</b>: सर्वर का पता, पोर्ट (डिफ़ॉल्ट: FTP <b>21</b>, SFTP <b>22</b>, WebDAV <b>443</b>/<b>80</b>), <b>उपयोगकर्ता नाम</b> और <b>पासवर्ड</b> (FTP के लिए अनाम लॉगिन भी उपलब्ध)।</li>
+                        <li><b>iOS अनुमतियाँ</b>: <b>फ़ोटो</b> की पूर्ण अनुमति, होम सर्वर के लिए <b>लोकल नेटवर्क</b> अनुमति, और <b>नोटिफ़िकेशन</b>।</li>
+                        </ul>
+                    </section>
+
+                    <section id="backup-hub" class="docs-section">
+                        <h2>2. बैकअप हब का परिचय</h2>
+                        <p>BackupFlow खोलने पर <b>बैकअप हब</b> आपकी बैकअप प्रणाली की लाइव स्थिति दिखाता है:</p>
+                        <ul>
+                        <li><b>स्टेटस कार्ड</b>: पिछला सिंक समय, अगले टास्क का समय, सुरक्षा स्थिति, सर्वर पता और तुरंत बैकअप शुरू करने के लिए हरा <b>प्ले (▶)</b> बटन दिखाता है।</li>
+                        <li><b>बैकअप स्वास्थ्य</b>: सफलता दर (प्रतिशत और कुल रन), लगातार विफलताएँ, पिछला सफल बैकअप और औसत समय दिखाता है।</li>
+                        <li><b>सहेजे गए सर्वर</b>: आपके सभी <b>FTP</b>, <b>SFTP</b> और <b>WebDAV</b> टास्क के कार्ड, जिनमें त्वरित <b>संपादित करें (✏️)</b> और <b>हटाएँ (🗑️)</b> बटन शामिल हैं। किसी भी कार्ड पर टैप करके <b>टास्क विवरण</b> खोलें।</li>
+                        <li><b>निचला बार और सेटिंग्स</b>: नीचे दिए गए तीन बटनों से <b>सिंक/रन (🔄)</b> करें, <b>बैकअप इतिहास (🕒)</b> खोलें या <b>नया बैकअप (+)</b> बनाएँ। ऊपर दाईं ओर <b>गियर आइकन (⚙️)</b> से <b>सेटिंग्स</b> खुलती हैं।</li>
+                        </ul>
+                        <div class="docs-screens">
+                            <figure class="docs-screen-card"><img src="../../assets/screens/hi/1.jpg" width="300" height="649" loading="lazy" decoding="async" alt="2. बैकअप हब का परिचय" /></figure>
+                        </div>
+                    </section>
+
+                    <section id="first-backup" class="docs-section">
+                        <h2>3. नया बैकअप बनाएँ</h2>
+                        <p><b>बैकअप हब</b> के नीचे <b>+</b> बटन (या <b>सहेजे गए सर्वर</b> के पास <b>जोड़ें</b>) पर टैप करके <b>नया बैकअप</b> स्क्रीन खोलें:</p>
+                        <ol>
+                        <li><b>स्रोत</b>: <b>फ़ोटो लाइब्रेरी</b> (केवल फ़ोटो, केवल वीडियो, या दोनों) चुनें या iOS <b>Files</b> ऐप से कोई फ़ोल्डर चुनने के लिए <b>फ़ोल्डर चुनें</b> पर टैप करें।</li>
+                        <li><b>लक्ष्य प्रकार</b>: <b>FTP</b>, <b>SFTP</b> या <b>WebDAV</b> चुनें। सर्वर पता, पोर्ट, <b>उपयोगकर्ता नाम</b>, <b>पासवर्ड</b> और रिमोट पथ (जैसे <code>/remote.php/dav/files/</code>) दर्ज करें। <b>कनेक्शन टेस्ट करें</b> पर टैप करें और चाहें तो <b>रिमोट फ़ोल्डर ब्राउज़ करें</b> से गंतव्य फ़ोल्डर चुनें।</li>
+                        <li><b>शेड्यूलिंग</b>: <b>मैनुअल</b>, <b>दैनिक</b>, <b>साप्ताहिक</b>, <b>मासिक</b> या <b>अंतराल</b> चुनें और <b>समय चुनें</b> में समय सेट करें।</li>
+                        <li><b>बैकअप व्यवहार</b>: <b>हटाने की नीति</b>, <b>चेकसम</b> और नेटवर्क/पावर शर्तें चुनें और टास्क सेव करें।</li>
+                        </ol>
+                        <p>पहले पूर्ण बैकअप के बाद, केवल नई या बदली हुई फ़ाइलें ही भेजी जाती हैं, जिससे अगले बैकअप बहुत तेज़ी से पूरे होते हैं।</p>
+                        <div class="docs-screens docs-screens-pair">
+                            <figure class="docs-screen-card"><img src="../../assets/screens/hi/6.jpg" width="300" height="649" loading="lazy" decoding="async" alt="3. नया बैकअप बनाएँ" /></figure>
+                            <figure class="docs-screen-card"><img src="../../assets/screens/hi/9.jpg" width="300" height="649" loading="lazy" decoding="async" alt="3. नया बैकअप बनाएँ" /></figure>
+                        </div>
+                    </section>
+
+                    <section id="task-details" class="docs-section">
+                        <h2>4. टास्क विवरण और प्रबंधन</h2>
+                        <p><b>सहेजे गए सर्वर</b> में किसी भी टास्क पर टैप करके <b>टास्क विवरण</b> देखें:</p>
+                        <ul>
+                        <li><b>सामान्य</b>: स्रोत, वर्तमान स्थिति, शेड्यूल, <b>हटाने की नीति</b> और <b>चेकसम</b> देखें।</li>
+                        <li><b>सर्वर</b>: सर्वर का पता, पोर्ट और उपयोगकर्ता नाम देखें।</li>
+                        <li><b>हाल के बैकअप</b>: इस टास्क के पिछले बैकअप रन का समय, स्थिति, फ़ाइलों की संख्या, आकार और अवधि देखें।</li>
+                        <li>ऊपर बाईं ओर <b>संपादित करें</b> पर टैप करके टास्क में बदलाव करें।</li>
+                        </ul>
+                        <div class="docs-screens">
+                            <figure class="docs-screen-card"><img src="../../assets/screens/hi/5.jpg" width="300" height="649" loading="lazy" decoding="async" alt="4. टास्क विवरण और प्रबंधन" /></figure>
+                        </div>
+                    </section>
+
+                    <section id="automatic-backups" class="docs-section">
+                        <h2>5. शेड्यूलिंग और शर्तें</h2>
+                        <p><b>शेड्यूलिंग</b> में आप <b>मैनुअल</b>, <b>दैनिक</b>, <b>साप्ताहिक</b>, <b>मासिक</b> या <b>अंतराल</b> चुन सकते हैं और <b>समय चुनें</b> में समय निर्धारित कर सकते हैं।</p>
+                        <p><b>बैकअप व्यवहार</b> में आप तय कर सकते हैं कि ऑटोमैटिक बैकअप कब चले:</p>
+                        <ul>
+                        <li><b>Wi-Fi आवश्यक</b>: मोबाइल डेटा का उपयोग कभी नहीं करता।</li>
+                        <li><b>बाहरी बिजली आवश्यक</b>: केवल तभी चलता है जब iPhone चार्ज हो रहा हो।</li>
+                        <li><b>अनुमत समय विंडो उपयोग करें</b>: केवल चुने गए समय (जैसे रात में) के दौरान बैकअप चलाता है।</li>
+                        <li><b>न्यूनतम बैटरी स्तर</b> (<b>सेटिंग्स › बैटरी सेटिंग्स</b> में): बैटरी कम होने पर बैकअप छोड़ देता है।</li>
+                        </ul>
+                    </section>
+
+                    <section id="deleted-files" class="docs-section">
+                        <h2>6. हटाने की नीति, चेकसम और iCloud</h2>
+                        <p><b>बैकअप व्यवहार</b> में चुनें कि iPhone पर फ़ाइलें डिलीट करने पर सर्वर पर क्या हो और फ़ाइल की जाँच कैसे हो:</p>
+                        <dl>
+                        <dt>हटाने की नीति › केवल जोड़ें</dt>
+                        <dd>सर्वर से कभी कुछ डिलीट नहीं होता। यदि आप बैकअप के बाद iPhone में जगह खाली करने के लिए फ़ोटो डिलीट करना चाहते हैं, तो <b>इसी विकल्प को चुनें</b>।</dd>
+                        <dt>हटाने की नीति › मिरर</dt>
+                        <dd>सर्वर फ़ोल्डर को स्रोत की हूबहू कॉपी रखता है। iPhone से हटाई गई फ़ाइलें सर्वर से भी डिलीट हो जाती हैं।</dd>
+                        <dt>हटाने की नीति › आर्काइव हटाना</dt>
+                        <dd>हटाई गई फ़ाइलें डिलीट होने के बजाय सर्वर पर तारीख वाले <b>.backupflow_archive</b> फ़ोल्डर में चली जाती हैं।</dd>
+                        <dt>चेकसम (Checksum)</dt>
+                        <dd>अपलोड के बाद जाँचता है कि हर फ़ाइल सर्वर पर सही-सलामत पहुँची है (अधिकतम गति के लिए डिफ़ॉल्ट <b>बंद</b>)।</dd>
+                        </dl>
+                        <p class="note"><b>iCloud फ़ोटो टिप:</b> <b>आवश्यक होने पर iCloud आइटम डाउनलोड करें</b> चालू करें ताकि केवल iCloud में रखे गए मूल फ़ोटो और वीडियो का भी बैकअप लिया जा सके।</p>
+                    </section>
+
+                    <section id="background" class="docs-section">
+                        <h2>7. बैकग्राउंड में बैकअप</h2>
+                        <p>BackupFlow शेड्यूल किए गए बैकअप चलाने के लिए iOS के <b>BGTaskScheduler</b> का उपयोग करता है। चूँकि iOS बैटरी और उपयोग के आधार पर बैकग्राउंड समय तय करता है, इसलिए बैकअप तय समय से कुछ देर बाद शुरू हो सकता है या नोटिफ़िकेशन भेज सकता है।</p>
+                        <p>यदि iOS बीच में बैकअप रोक दे, तो ऐप खोलने पर यह वहीं से आगे बढ़ता है और पहले भेजी जा चुकी फ़ाइलों को छोड़ देता है। बड़े शुरुआती बैकअप के लिए iPhone को Wi-Fi और चार्जर से जोड़े रखें।</p>
+                    </section>
+
+                    <section id="history" class="docs-section">
+                        <h2>8. बैकअप इतिहास</h2>
+                        <p><b>बैकअप हब</b> के निचले बार के बीच वाले <b>इतिहास (🕒)</b> बटन पर टैप करके <b>बैकअप इतिहास</b> खोलें:</p>
+                        <ul>
+                        <li><b>सारांश कार्ड</b>: ऊपर कुल पूर्ण, विफल और कुल ट्रांसफ़र किए गए डेटा (GB/MB) की जानकारी देखें।</li>
+                        <li><b>विस्तृत लॉग</b>: हर कार्ड में टास्क का नाम, तारीख, स्थिति, फ़ाइल संख्या (जैसे <code>1236/1236</code>), आकार और समय दिखता है। ऊपर दाईं ओर <b>ट्रैश आइकन (🗑️)</b> से इतिहास साफ़ कर सकते हैं।</li>
+                        </ul>
+                        <div class="docs-screens">
+                            <figure class="docs-screen-card"><img src="../../assets/screens/hi/3.jpg" width="300" height="649" loading="lazy" decoding="async" alt="8. बैकअप इतिहास" /></figure>
+                        </div>
+                    </section>
+
+                    <section id="settings" class="docs-section">
+                        <h2>9. ऐप सेटिंग्स</h2>
+                        <p><b>बैकअप हब</b> के ऊपर दाईं ओर <b>गियर आइकन (⚙️)</b> पर टैप करके <b>सेटिंग्स</b> खोलें:</p>
+                        <ul>
+                        <li><b>इतिहास अवधारण (दिन)</b>: इतिहास कितने दिनों तक रखा जाए चुनें (जैसे <b>30 दिन</b>)।</li>
+                        <li><b>बाहरी बिजली आवश्यक</b> और <b>बैटरी सेटिंग्स</b>: पावर और न्यूनतम बैटरी नियम।</li>
+                        <li><b>भाषा</b>: समर्थित 12 भाषाओं में से किसी भी भाषा में ऐप इंटरफ़ेस तुरंत बदलें।</li>
+                        <li><b>के बारे में</b>: ऐप <b>वर्ज़न</b> देखें, <b>ऐप को रेट करें</b> या <b>सहायता से संपर्क करें</b> पर टैप करें।</li>
+                        <li><b>सभी डेटा रीसेट करें</b>: इस iPhone से सभी टास्क, इतिहास और सहेजे गए पासवर्ड हटाता है। आपके सर्वर की फ़ाइलों को छुआ नहीं जाता।</li>
+                        </ul>
+                        <div class="docs-screens">
+                            <figure class="docs-screen-card"><img src="../../assets/screens/hi/10.jpg" width="300" height="649" loading="lazy" decoding="async" alt="9. ऐप सेटिंग्स" /></figure>
+                        </div>
+                    </section>
+
+                    <section id="troubleshooting" class="docs-section">
+                        <h2>10. समस्या समाधान</h2>
+                        <dl>
+                        <dt>सर्वर से कनेक्ट नहीं हो पा रहा है।</dt>
+                        <dd>पता, पोर्ट (FTP 21, SFTP 22, WebDAV 443/80), उपयोगकर्ता नाम और पासवर्ड जाँचें। होम सर्वर के लिए सुनिश्चित करें कि iPhone उसी Wi-Fi पर है और <b>iPhone सेटिंग्स › गोपनीयता और सुरक्षा › लोकल नेटवर्क › BackupFlow</b> चालू है।</dd>
+                        <dt>शेड्यूल किया गया बैकअप नहीं चला।</dt>
+                        <dd><b>बैकअप व्यवहार</b> की शर्तें (Wi-Fi, बिजली, समय विंडो, बैटरी) और नोटिफ़िकेशन अनुमति जाँचें।</dd>
+                        <dt>कुछ फ़ोटो गायब हैं।</dt>
+                        <dd>फ़ोटो की पूर्ण अनुमति दें और <b>आवश्यक होने पर iCloud आइटम डाउनलोड करें</b> चालू करें।</dd>
+                        <dt>सर्वर से फ़ाइलें हट गईं।</dt>
+                        <dd>टास्क की <b>हटाने की नीति</b> को <b>मिरर</b> से बदलकर <b>केवल जोड़ें</b> या <b>आर्काइव हटाना</b> करें।</dd>
+                        <dt>SFTP सुरक्षा चेतावनी दिख रही है।</dt>
+                        <dd>सर्वर की SSH पहचान बदल गई है। सर्वर दोबारा इंस्टॉल होने पर यह सामान्य है; अन्यथा अपने सर्वर एडमिन से संपर्क करें।</dd>
+                        </dl>
+                    </section>
+
+                    <section id="privacy" class="docs-section">
+                        <h2>11. गोपनीयता और सुरक्षा</h2>
+                        <p>आपकी फ़ाइलें सीधे आपके iPhone से आपके सर्वर पर जाती हैं। BackupFlow का अपना कोई सर्वर नहीं है, यह आपकी फ़ाइलें कभी नहीं देखता और कोई डेटा इकट्ठा नहीं करता। पासवर्ड <b>iOS कीचेन (Keychain)</b> में सुरक्षित रूप से एन्क्रिप्टेड रहते हैं। पूरी जानकारी के लिए हमारी <a href="../../privacy-policy.html">गोपनीयता नीति</a> पढ़ें।</p>
+                    </section>
+
+                    <section id="help" class="docs-section">
+                        <h2>12. मदद चाहिए?</h2>
+                        <p>ऐप में <b>सेटिंग्स › सहायता से संपर्क करें</b> पर जाएँ (या <a href="mailto:tamersavasci@icloud.com">tamersavasci@icloud.com</a> पर ईमेल करें)। ऐप वर्ज़न और डिवाइस मॉडल अपने-आप जुड़ जाते हैं।</p>
+                    </section>
+                    </article>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <div class="container">
+                <div class="footer-content">
+                    <div class="footer-brand">
+                        <div class="footer-logo">
+                            <div class="logo-icon">
+                                <img src="../../web_logo.png" alt="" class="logo-image" />
+                            </div>
+                            <span class="logo-text">BackupFlow</span>
+                        </div>
+                        <p class="footer-description">लोकल-फर्स्ट प्राइवेसी और स्मार्ट ऑटोमेशन के साथ प्रोफेशनल iOS बैकअप।</p>
+                    </div>
+                    <div class="footer-links">
+                        <div class="footer-column">
+                            <h4>सहायता</h4>
+                            <a href="./">दस्तावेज़ीकरण</a>
+                            <a href="../../privacy-policy.html?lang=hi">गोपनीयता नीति</a>
+                            <a href="mailto:tamersavasci@icloud.com">संपर्क करें</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <p>&copy; 2026 BackupFlow. सर्वाधिकार सुरक्षित।</p>
+                </div>
+            </div>
+        </footer>
+
+        <script src="../docs.js"></script>
+    </body>
+</html>

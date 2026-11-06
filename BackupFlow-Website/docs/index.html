@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>BackupFlow Help</title>
+        <link rel="canonical" href="https://tsavasci.github.io/BackupFlowWeb/docs/" />
+        <script>
+            // Open the Help page in the language chosen on the main site, else the browser language.
+            (function () {
+                var supported = ["en", "tr", "de", "fr", "es", "ru", "ar", "zh", "ko", "ja", "pt", "hi"];
+                var langs = [];
+                try {
+                    langs.push(localStorage.getItem("bf_lang") || "");
+                } catch (e) {
+                    /* localStorage unavailable */
+                }
+                langs = langs.concat(navigator.languages || [navigator.language || "en"]);
+                for (var i = 0; i < langs.length; i++) {
+                    var code = (langs[i] || "").toLowerCase().split("-")[0];
+                    if (supported.indexOf(code) !== -1) {
+                        location.replace(code + "/");
+                        return;
+                    }
+                }
+            })();
+        </script>
+        <link rel="stylesheet" href="../styles.css" />
+        <link rel="stylesheet" href="docs.css" />
+        <link rel="icon" type="image/svg+xml" href="../favicon.svg" />
+    </head>
+    <body class="docs-body">
+        <main class="docs-page">
+            <div class="container">
+                <header class="docs-hero">
+                    <h1>BackupFlow Help</h1>
+                    <p class="docs-lead">Choose your language</p>
+                </header>
+                <ul class="docs-picker">
+                <li><a href="en/" lang="en" hreflang="en"><span class="lang-flag">🇬🇧</span> English</a></li>
+                <li><a href="tr/" lang="tr" hreflang="tr"><span class="lang-flag">🇹🇷</span> Türkçe</a></li>
+                <li><a href="de/" lang="de" hreflang="de"><span class="lang-flag">🇩🇪</span> Deutsch</a></li>
+                <li><a href="fr/" lang="fr" hreflang="fr"><span class="lang-flag">🇫🇷</span> Français</a></li>
+                <li><a href="es/" lang="es" hreflang="es"><span class="lang-flag">🇪🇸</span> Español</a></li>
+                <li><a href="ru/" lang="ru" hreflang="ru"><span class="lang-flag">🇷🇺</span> Русский</a></li>
+                <li><a href="ar/" lang="ar" hreflang="ar"><span class="lang-flag">🇸🇦</span> العربية</a></li>
+                <li><a href="zh/" lang="zh" hreflang="zh"><span class="lang-flag">🇨🇳</span> 简体中文</a></li>
+                <li><a href="ko/" lang="ko" hreflang="ko"><span class="lang-flag">🇰🇷</span> 한국어</a></li>
+                <li><a href="ja/" lang="ja" hreflang="ja"><span class="lang-flag">🇯🇵</span> 日本語</a></li>
+                <li><a href="pt/" lang="pt" hreflang="pt"><span class="lang-flag">🇵🇹</span> Português</a></li>
+                <li><a href="hi/" lang="hi" hreflang="hi"><span class="lang-flag">🇮🇳</span> हिन्दी</a></li>
+                </ul>
+            </div>
+        </main>
+    </body>
+</html>

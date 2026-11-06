@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="ru" dir="ltr">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Справка и документация BackupFlow</title>
+        <meta name="description" content="Полное руководство по BackupFlow для iOS: Центр копий, настройка FTP/SFTP/WebDAV, резервное копирование Фото и Файлов, расписание, политика удаления и решение проблем." />
+        <meta name="theme-color" content="#3B82F6" />
+        <meta name="apple-itunes-app" content="app-id=6753620051" />
+        <meta property="og:type" content="article" />
+        <meta property="og:title" content="Справка и документация BackupFlow" />
+        <meta property="og:description" content="Полное руководство по BackupFlow для iOS: Центр копий, настройка FTP/SFTP/WebDAV, резервное копирование Фото и Файлов, расписание, политика удаления и решение проблем." />
+        <meta property="og:url" content="https://tsavasci.github.io/BackupFlowWeb/docs/ru/" />
+        <meta property="og:image" content="https://tsavasci.github.io/BackupFlowWeb/assets/og-image.jpg" />
+        <link rel="canonical" href="https://tsavasci.github.io/BackupFlowWeb/docs/ru/" />
+        <link rel="alternate" hreflang="en" href="https://tsavasci.github.io/BackupFlowWeb/docs/en/" />
+        <link rel="alternate" hreflang="tr" href="https://tsavasci.github.io/BackupFlowWeb/docs/tr/" />
+        <link rel="alternate" hreflang="de" href="https://tsavasci.github.io/BackupFlowWeb/docs/de/" />
+        <link rel="alternate" hreflang="fr" href="https://tsavasci.github.io/BackupFlowWeb/docs/fr/" />
+        <link rel="alternate" hreflang="es" href="https://tsavasci.github.io/BackupFlowWeb/docs/es/" />
+        <link rel="alternate" hreflang="ru" href="https://tsavasci.github.io/BackupFlowWeb/docs/ru/" />
+        <link rel="alternate" hreflang="ar" href="https://tsavasci.github.io/BackupFlowWeb/docs/ar/" />
+        <link rel="alternate" hreflang="zh" href="https://tsavasci.github.io/BackupFlowWeb/docs/zh/" />
+        <link rel="alternate" hreflang="ko" href="https://tsavasci.github.io/BackupFlowWeb/docs/ko/" />
+        <link rel="alternate" hreflang="ja" href="https://tsavasci.github.io/BackupFlowWeb/docs/ja/" />
+        <link rel="alternate" hreflang="pt" href="https://tsavasci.github.io/BackupFlowWeb/docs/pt/" />
+        <link rel="alternate" hreflang="hi" href="https://tsavasci.github.io/BackupFlowWeb/docs/hi/" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="../../styles.css" />
+        <link rel="stylesheet" href="../docs.css" />
+        <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+    </head>
+    <body class="docs-body">
+        <a href="#docs-content" class="skip-link">Перейти к содержимому</a>
+        <nav class="navbar">
+            <div class="nav-container">
+                <a class="nav-logo" href="../../index.html">
+                    <span class="logo-icon">
+                        <img src="../../web_logo.png" alt="" class="logo-image" />
+                    </span>
+                    <span class="logo-text">BackupFlow</span>
+                </a>
+                <div class="nav-menu" id="nav-menu">
+                    <a class="nav-link" href="../../index.html#features">Функции</a>
+                    <a class="nav-link" href="../../index.html#pricing">Тарифы</a>
+                    <a class="nav-link" href="../../index.html#support">Поддержка</a>
+                    <div class="lang-switcher" id="lang-switcher">
+                        <button
+                            type="button"
+                            class="lang-toggle"
+                            id="lang-toggle"
+                            aria-haspopup="listbox"
+                            aria-expanded="false"
+                            aria-controls="lang-menu"
+                        >
+                            <span class="lang-flag">🇷🇺</span>
+                            <span class="lang-code">RU</span>
+                            <svg class="lang-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M6 9l6 6 6-6" />
+                            </svg>
+                        </button>
+                        <ul class="lang-menu" id="lang-menu" role="listbox" aria-label="Язык">
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../en/" hreflang="en" lang="en" data-lang-code="en"><span class="lang-flag">🇬🇧</span><span class="lang-name">English</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../tr/" hreflang="tr" lang="tr" data-lang-code="tr"><span class="lang-flag">🇹🇷</span><span class="lang-name">Türkçe</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../de/" hreflang="de" lang="de" data-lang-code="de"><span class="lang-flag">🇩🇪</span><span class="lang-name">Deutsch</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../fr/" hreflang="fr" lang="fr" data-lang-code="fr"><span class="lang-flag">🇫🇷</span><span class="lang-name">Français</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../es/" hreflang="es" lang="es" data-lang-code="es"><span class="lang-flag">🇪🇸</span><span class="lang-name">Español</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option active" aria-selected="true" href="../ru/" hreflang="ru" lang="ru" data-lang-code="ru"><span class="lang-flag">🇷🇺</span><span class="lang-name">Русский</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../ar/" hreflang="ar" lang="ar" data-lang-code="ar"><span class="lang-flag">🇸🇦</span><span class="lang-name">العربية</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../zh/" hreflang="zh" lang="zh" data-lang-code="zh"><span class="lang-flag">🇨🇳</span><span class="lang-name">简体中文</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../ko/" hreflang="ko" lang="ko" data-lang-code="ko"><span class="lang-flag">🇰🇷</span><span class="lang-name">한국어</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../ja/" hreflang="ja" lang="ja" data-lang-code="ja"><span class="lang-flag">🇯🇵</span><span class="lang-name">日本語</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../pt/" hreflang="pt" lang="pt" data-lang-code="pt"><span class="lang-flag">🇵🇹</span><span class="lang-name">Português</span></a></li>
+                            <li role="presentation"><a role="option" class="lang-option" aria-selected="false" href="../hi/" hreflang="hi" lang="hi" data-lang-code="hi"><span class="lang-flag">🇮🇳</span><span class="lang-name">हिन्दी</span></a></li>
+                        </ul>
+                    </div>
+                    <a class="nav-link download-btn" href="https://apps.apple.com/app/backupflow/id6753620051" target="_blank" rel="noopener noreferrer">Скачать</a>
+                </div>
+                <button
+                    type="button"
+                    class="nav-toggle"
+                    aria-label="Переключить навигацию"
+                    aria-controls="nav-menu"
+                    aria-expanded="false"
+                >
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </nav>
+
+        <main id="docs-content" class="docs-page">
+            <div class="container">
+                <header class="docs-hero">
+                    <h1>Справка BackupFlow</h1>
+                    <p class="docs-lead">BackupFlow сохраняет фото, видео и файлы с вашего iPhone напрямую на ваш собственный сервер — NAS, домашний сервер или личное облако — по протоколам FTP, SFTP или WebDAV. Без подписок и сторонних облаков.</p>
+                </header>
+
+                <div class="docs-layout">
+                    <aside class="docs-toc" aria-labelledby="docs-toc-title">
+                        <p class="docs-toc-title" id="docs-toc-title">На этой странице</p>
+                        <ol>
+                        <li><a href="#what-you-need">1. Что понадобится</a></li>
+                        <li><a href="#backup-hub">2. Обзор Центра копий</a></li>
+                        <li><a href="#first-backup">3. Создание новой резервной копии</a></li>
+                        <li><a href="#task-details">4. Детали задачи и управление</a></li>
+                        <li><a href="#automatic-backups">5. Расписание и условия запуска</a></li>
+                        <li><a href="#deleted-files">6. Политика удаления, Контрольная сумма и iCloud</a></li>
+                        <li><a href="#background">7. Копирование в фоновом режиме</a></li>
+                        <li><a href="#history">8. История копий</a></li>
+                        <li><a href="#settings">9. Настройки приложения</a></li>
+                        <li><a href="#troubleshooting">10. Решение проблем</a></li>
+                        <li><a href="#privacy">11. Конфиденциальность и безопасность</a></li>
+                        <li><a href="#help">12. Нужна помощь?</a></li>
+                        </ol>
+                    </aside>
+
+                    <article class="docs-content">
+                    <section id="what-you-need" class="docs-section">
+                        <h2>1. Что понадобится</h2>
+                        <ul>
+                        <li><b>Совместимый сервер</b>: Любой NAS (Synology, QNAP, TrueNAS, Unraid), домашний сервер или личное облако (Nextcloud, ownCloud, WebDAV) с поддержкой <b>FTP</b>, <b>SFTP (SSH)</b> или <b>WebDAV (HTTP/HTTPS)</b>.</li>
+                        <li><b>Данные для входа</b>: Адрес сервера, порт (FTP <b>21</b>, SFTP <b>22</b>, WebDAV <b>443</b>/<b>80</b>), <b>Имя пользователя</b> и <b>Пароль</b> (или анонимный вход для FTP).</li>
+                        <li><b>Разрешения iOS</b>: Полный доступ к <b>Фото</b>, доступ к <b>Локальной сети</b> (для домашнего сервера) и <b>Уведомления</b>.</li>
+                        </ul>
+                    </section>
+
+                    <section id="backup-hub" class="docs-section">
+                        <h2>2. Обзор Центра копий</h2>
+                        <p>Главный экран <b>Центр копий</b> показывает состояние ваших резервных копий в реальном времени:</p>
+                        <ul>
+                        <li><b>Карточка статуса</b>: Показывает время последней синхронизации, следующую задачу, статус защиты, адрес сервера и зелёную кнопку <b>Запуск (▶)</b> для немедленного старта копирования.</li>
+                        <li><b>Здоровье копий</b>: Отображает процент успешных запусков, количество ошибок подряд, дату последней успешной копии и среднюю длительность.</li>
+                        <li><b>Сохраненные серверы</b>: Карточки ваших задач <b>FTP</b>, <b>SFTP</b> и <b>WebDAV</b> с быстрыми кнопками <b>Изменить (✏️)</b> и <b>Удалить (🗑️)</b>. Нажмите на карточку, чтобы открыть <b>Детали задачи</b>.</li>
+                        <li><b>Нижняя панель и Настройки</b>: Три кнопки внизу позволяют <b>Синхронизировать (🔄)</b>, открыть <b>Историю копий (🕒)</b> или создать <b>Новую копию (+)</b>. Значок <b>шестерёнки (⚙️)</b> в правом верхнем углу открывает <b>Настройки</b>.</li>
+                        </ul>
+                        <div class="docs-screens">
+                            <figure class="docs-screen-card"><img src="../../assets/screens/ru/1.jpg" width="300" height="649" loading="lazy" decoding="async" alt="2. Обзор Центра копий" /></figure>
+                        </div>
+                    </section>
+
+                    <section id="first-backup" class="docs-section">
+                        <h2>3. Создание новой резервной копии</h2>
+                        <p>Нажмите кнопку <b>+</b> внизу <b>Центра копий</b> (или <b>Добавить</b> рядом с <b>Сохраненные серверы</b>), чтобы открыть экран <b>Новая копия</b>:</p>
+                        <ol>
+                        <li><b>Источник</b>: Выберите <b>Фото медиатека</b> (только фото, только видео или всё вместе) или нажмите <b>Выбрать папку</b>, чтобы указать любую папку из приложения «Файлы».</li>
+                        <li><b>Тип цели</b>: Выберите <b>FTP</b>, <b>SFTP</b> или <b>WebDAV</b>. Введите адрес сервера, порт, <b>Имя пользователя</b>, <b>Пароль</b> и удалённый путь (например, <code>/remote.php/dav/files/</code>). Нажмите <b>Проверить соединение</b>, а затем при необходимости <b>Выбрать удаленную папку</b>.</li>
+                        <li><b>Расписание</b>: Выберите <b>Вручную</b>, <b>День</b>, <b>Неделя</b>, <b>Месяц</b> или <b>Интервал</b> и укажите время в поле <b>Выбрать время</b>.</li>
+                        <li><b>Поведение резервного копирования</b>: Настройте <b>Политику удаления</b>, <b>Контрольную сумму</b> и условия запуска, затем сохраните задачу.</li>
+                        </ol>
+                        <p>После первой полной копии передаются только новые или изменённые файлы, поэтому последующие копии выполняются намного быстрее.</p>
+                        <div class="docs-screens docs-screens-pair">
+                            <figure class="docs-screen-card"><img src="../../assets/screens/ru/6.jpg" width="300" height="649" loading="lazy" decoding="async" alt="3. Создание новой резервной копии" /></figure>
+                            <figure class="docs-screen-card"><img src="../../assets/screens/ru/9.jpg" width="300" height="649" loading="lazy" decoding="async" alt="3. Создание новой резервной копии" /></figure>
+                        </div>
+                    </section>
+
+                    <section id="task-details" class="docs-section">
+                        <h2>4. Детали задачи и управление</h2>
+                        <p>Нажмите на любую задачу в разделе <b>Сохраненные серверы</b>, чтобы открыть <b>Детали задачи</b>:</p>
+                        <ul>
+                        <li><b>Общие</b>: Просмотр источника, текущего статуса, расписания, <b>Политики удаления</b> и параметра <b>Контрольная сумма</b>.</li>
+                        <li><b>Сервер</b>: Просмотр адреса сервера, порта и имени пользователя.</li>
+                        <li><b>Последние копии</b>: Список последних запусков этой задачи с датой, статусом, числом файлов, объёмом и длительностью.</li>
+                        <li>Нажмите <b>Изменить</b> в левом верхнем углу для редактирования задачи.</li>
+                        </ul>
+                        <div class="docs-screens">
+                            <figure class="docs-screen-card"><img src="../../assets/screens/ru/5.jpg" width="300" height="649" loading="lazy" decoding="async" alt="4. Детали задачи и управление" /></figure>
+                        </div>
+                    </section>
+
+                    <section id="automatic-backups" class="docs-section">
+                        <h2>5. Расписание и условия запуска</h2>
+                        <p>В разделе <b>Расписание</b> доступны режимы: <b>Вручную</b>, <b>День</b>, <b>Неделя</b>, <b>Месяц</b> и <b>Интервал</b> с выбором точного времени (<b>Выбрать время</b>).</p>
+                        <p>В разделе <b>Поведение резервного копирования</b> можно задать условия для автоматического запуска:</p>
+                        <ul>
+                        <li><b>Требуется Wi-Fi</b>: Исключает использование мобильного интернета.</li>
+                        <li><b>Требуется внешнее питание</b>: Копирование выполняется только во время зарядки iPhone.</li>
+                        <li><b>Использовать разрешенное время</b>: Ограничивает работу выбранным временным окном (например, только ночью).</li>
+                        <li><b>Минимальный уровень батареи</b> (в <b>Настройки › Настройки батареи</b>): Откладывает копирование при низком заряде.</li>
+                        </ul>
+                    </section>
+
+                    <section id="deleted-files" class="docs-section">
+                        <h2>6. Политика удаления, Контрольная сумма и iCloud</h2>
+                        <p>В разделе <b>Поведение резервного копирования</b> настраивается обработка удалённых файлов и проверка целостности:</p>
+                        <dl>
+                        <dt>Политика удаления › Только добавлять</dt>
+                        <dd>С сервера никогда ничего не удаляется. <b>Рекомендуется</b>, если после резервного копирования вы планируете удалять фото с iPhone для освобождения памяти.</dd>
+                        <dt>Политика удаления › Зеркало</dt>
+                        <dd>Папка на сервере остаётся точной копией источника. Файлы, удалённые на iPhone, удаляются и с сервера.</dd>
+                        <dt>Политика удаления › Архивное удаление</dt>
+                        <dd>Удалённые на iPhone файлы не стираются, а перемещаются в папку <b>.backupflow_archive</b> с датой на сервере.</dd>
+                        <dt>Контрольная сумма</dt>
+                        <dd>Проверяет целостность каждого загруженного файла на сервере (по умолчанию <b>Выкл.</b> для максимальной скорости).</dd>
+                        </dl>
+                        <p class="note"><b>Совет для Фото iCloud:</b> Включите <b>Загружать элементы iCloud при необходимости</b>, чтобы копировать оригиналы фото и видео, которые хранятся только в iCloud.</p>
+                    </section>
+
+                    <section id="background" class="docs-section">
+                        <h2>7. Копирование в фоновом режиме</h2>
+                        <p>BackupFlow использует системный планировщик iOS <b>BGTaskScheduler</b>. Поскольку iOS сама выбирает точное время фонового запуска в зависимости от заряда и использования устройства, задача может запуститься чуть позже выбранной минуты или прислать уведомление.</p>
+                        <p>Если iOS приостановит передачу, просто откройте BackupFlow — копирование продолжится с того же места, а уже загруженные файлы будут пропущены. Для первой большой копии держите iPhone на Wi-Fi и зарядке.</p>
+                    </section>
+
+                    <section id="history" class="docs-section">
+                        <h2>8. История копий</h2>
+                        <p>Нажмите среднюю кнопку <b>История (🕒)</b> на нижней панели <b>Центра копий</b>:</p>
+                        <ul>
+                        <li><b>Сводные карточки</b>: Показывают общее количество успешных и неудачных запусков, а также общий объём переданных данных (ГБ/МБ).</li>
+                        <li><b>Подробный журнал</b>: В каждой записи указаны название задачи, дата, статус, количество файлов, размер и длительность. Значок <b>корзины (🗑️)</b> в правом верхнем углу очищает историю.</li>
+                        </ul>
+                        <div class="docs-screens">
+                            <figure class="docs-screen-card"><img src="../../assets/screens/ru/3.jpg" width="300" height="649" loading="lazy" decoding="async" alt="8. История копий" /></figure>
+                        </div>
+                    </section>
+
+                    <section id="settings" class="docs-section">
+                        <h2>9. Настройки приложения</h2>
+                        <p>Нажмите на значок <b>шестерёнки (⚙️)</b> в правом верхнем углу <b>Центра копий</b>, чтобы открыть <b>Настройки</b>:</p>
+                        <ul>
+                        <li><b>Хранение истории (дни)</b>: Срок хранения записей журнала (например, <b>30 дней</b>).</li>
+                        <li><b>Требуется внешнее питание</b> и <b>Настройки батареи</b>: Глобальные правила питания и минимального заряда.</li>
+                        <li><b>Язык</b>: Мгновенное переключение языка интерфейса среди 12 поддерживаемых языков.</li>
+                        <li><b>О приложении</b>: Номер <b>Версии</b>, кнопки <b>Оценить приложение</b> и <b>Связаться с поддержкой</b>.</li>
+                        <li><b>Сбросить все данные</b>: Удаляет все задачи, историю и сохранённые пароли с этого iPhone. Файлы на ваших серверах остаются нетронутыми.</li>
+                        </ul>
+                        <div class="docs-screens">
+                            <figure class="docs-screen-card"><img src="../../assets/screens/ru/10.jpg" width="300" height="649" loading="lazy" decoding="async" alt="9. Настройки приложения" /></figure>
+                        </div>
+                    </section>
+
+                    <section id="troubleshooting" class="docs-section">
+                        <h2>10. Решение проблем</h2>
+                        <dl>
+                        <dt>Не удаётся подключиться к серверу.</dt>
+                        <dd>Проверьте адрес, порт (FTP 21, SFTP 22, WebDAV 443/80), логин и пароль. Для домашнего сервера убедитесь, что iPhone подключён к той же сети Wi-Fi и доступ разрешён в <b>Настройки iPhone › Конфиденциальность и безопасность › Локальная сеть › BackupFlow</b>.</dd>
+                        <dt>Запланированная копия не запустилась.</dt>
+                        <dd>Проверьте условия в разделе <b>Поведение резервного копирования</b> (Wi-Fi, питание, временное окно, батарея) и разрешения на уведомления.</dd>
+                        <dt>Не хватает некоторых фотографий.</dt>
+                        <dd>Разрешите полный доступ к Фото и включите <b>Загружать элементы iCloud при необходимости</b>.</dd>
+                        <dt>Файлы пропали с сервера.</dt>
+                        <dd>Измените <b>Политику удаления</b> задачи с <b>Зеркало</b> на <b>Только добавлять</b> или <b>Архивное удаление</b>.</dd>
+                        <dt>Предупреждение безопасности SFTP.</dt>
+                        <dd>Изменился SSH-отпечаток сервера. Это нормально после переустановки сервера; иначе обратитесь к администратору сервера.</dd>
+                        </dl>
+                    </section>
+
+                    <section id="privacy" class="docs-section">
+                        <h2>11. Конфиденциальность и безопасность</h2>
+                        <p>Ваши файлы передаются напрямую с iPhone на ваш собственный сервер. У BackupFlow нет собственных серверов, приложение никогда не видит ваши файлы и не собирает никаких данных. Пароли надёжно зашифрованы в <b>Связке ключей iOS (Keychain)</b>. Подробности читайте в нашей <a href="../../privacy-policy.html">Политике конфиденциальности</a>.</p>
+                    </section>
+
+                    <section id="help" class="docs-section">
+                        <h2>12. Нужна помощь?</h2>
+                        <p>Откройте <b>Настройки › Связаться с поддержкой</b> в приложении (или напишите на <a href="mailto:tamersavasci@icloud.com">tamersavasci@icloud.com</a>). Версия приложения и модель устройства добавляются в письмо автоматически.</p>
+                    </section>
+                    </article>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <div class="container">
+                <div class="footer-content">
+                    <div class="footer-brand">
+                        <div class="footer-logo">
+                            <div class="logo-icon">
+                                <img src="../../web_logo.png" alt="" class="logo-image" />
+                            </div>
+                            <span class="logo-text">BackupFlow</span>
+                        </div>
+                        <p class="footer-description">Профессиональное резервное копирование для iOS с локальной конфиденциальностью и умной автоматизацией.</p>
+                    </div>
+                    <div class="footer-links">
+                        <div class="footer-column">
+                            <h4>Поддержка</h4>
+                            <a href="./">Документация</a>
+                            <a href="../../privacy-policy.html?lang=ru">Политика конфиденциальности</a>
+                            <a href="mailto:tamersavasci@icloud.com">Контакты</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <p>&copy; 2026 BackupFlow. Все права защищены.</p>
+                </div>
+            </div>
+        </footer>
+
+        <script src="../docs.js"></script>
+    </body>
+</html>
