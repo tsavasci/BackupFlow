@@ -1,0 +1,43 @@
+{
+  "antigravity-office-visualizer": {
+    "enabled": true,
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "python3 /Users/tamersavasci/Documents/MyAgents/office-visualizer/hook_receiver.py SessionStart",
+        "timeout": 5
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /Users/tamersavasci/Documents/MyAgents/office-visualizer/hook_receiver.py PreToolUse",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /Users/tamersavasci/Documents/MyAgents/office-visualizer/hook_receiver.py PostToolUse",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "python3 /Users/tamersavasci/Documents/MyAgents/office-visualizer/hook_receiver.py Stop",
+        "timeout": 5
+      }
+    ]
+  }
+}
