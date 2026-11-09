@@ -242,16 +242,17 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             complete(false)
         }
 
+        // UIKit beginBackgroundTask ~30 sn sonra sona erer; BGProcessingTask ise dakikalarca
+        // sürebilir. Bu nedenle UIKit süresinin dolması BGProcessingTask'ı iptal etmemeli,
+        // yalnızca kendi backgroundTaskID kaynağını serbest bırakmalıdır.
         backgroundTaskID = UIApplication.shared.beginBackgroundTask {
-            debugLog("⚠️ Arka plan süresi doluyor, işlem sonlandırılıyor...")
+            debugLog("ℹ️ UIKit arka plan assertion süresi doldu; BGProcessingTask devam ediyor...")
             Task { @MainActor in
-                BackupScheduler.shared.cancelActiveBackgroundBackup()
                 if backgroundTaskID != .invalid {
                     UIApplication.shared.endBackgroundTask(backgroundTaskID)
                     backgroundTaskID = .invalid
                 }
             }
-            complete(false)
         }
         
         let startTime = Date()

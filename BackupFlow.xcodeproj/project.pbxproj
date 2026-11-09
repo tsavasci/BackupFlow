@@ -32,6 +32,7 @@
 		F2DA234A2E7D5FD900B2727D /* BackupFlow.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BackupFlow.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F2DA23582E7D5FDA00B2727D /* BackupFlowTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BackupFlowTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F2DA23622E7D5FDA00B2727D /* BackupFlowUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BackupFlowUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		F2E8D6D9309E058800966B38 /* BackupFlow.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = BackupFlow.xctestplan; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -102,6 +103,7 @@
 		A08578502E231DAC008FF3ED = {
 			isa = PBXGroup;
 			children = (
+				F2E8D6D9309E058800966B38 /* BackupFlow.xctestplan */,
 				F2DA234B2E7D5FD900B2727D /* BackupFlow */,
 				F2DA235B2E7D5FDA00B2727D /* BackupFlowTests */,
 				F2DA23652E7D5FDA00B2727D /* BackupFlowUITests */,

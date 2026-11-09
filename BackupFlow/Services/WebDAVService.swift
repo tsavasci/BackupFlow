@@ -22,7 +22,6 @@ final class WebDAVService: NSObject, FileProviderDelegate {
     private var uploadsRequireWiFi = false
     private let backgroundTaskCoordinator = WebDAVBackgroundTaskCoordinator()
     private var isPerformingBackup = false
-    private var backgroundExpirationRequested = false
     private var ensuredRemoteDirectories: Set<String> = []
     private var pendingFinishEventsWorkItem: DispatchWorkItem?
     private var backgroundURLSession: URLSession?
@@ -95,14 +94,15 @@ final class WebDAVService: NSObject, FileProviderDelegate {
 
     private func handleBackgroundSessionDidFinishEvents() {
         // Because sequential uploads enqueue the next file right after the previous continuation
-        // resumes, calling the system completion handler immediately would let iOS suspend the app
-        // before the next uploadTask is created. Hold the background assertion and flush either
-        // when the next task starts, when the backup finishes, or after a short safety window.
+        // resumes (after exporting the next photo/video asset to tmp), calling the system completion
+        // handler too early would let iOS suspend the app while a multi-GB video is still exporting
+        // to disk before the next uploadTask is created. Hold the background assertion and flush
+        // either when the next uploadTask starts, when the backup finishes, or after a generous safety window.
         if isPerformingBackup {
             if UIApplication.shared.applicationState != .active {
                 backgroundTaskCoordinator.begin()
             }
-            scheduleBackgroundSessionCompletionFlush(after: 4.0)
+            scheduleBackgroundSessionCompletionFlush(after: 180.0)
         } else {
             flushBackgroundURLSessionCompletionHandler()
         }
@@ -223,14 +223,13 @@ final class WebDAVService: NSObject, FileProviderDelegate {
         let config = URLSessionConfiguration.background(withIdentifier: "com.backupflow.webdav.background")
         config.sessionSendsLaunchEvents = true
         config.isDiscretionary = false  // Kritik yüklemeler için hemen başla
-        config.timeoutIntervalForRequest = 60.0
-        config.timeoutIntervalForResource = 180.0  // Büyük dosyalar için daha uzun timeout
+        config.timeoutIntervalForRequest = 300.0
+        config.timeoutIntervalForResource = 7200.0  // Çoklu GB boyutundaki (ör. 2.4+ GB) videolar için 2 saat timeout
         config.httpMaximumConnectionsPerHost = 1
         
         // Resume desteği: Kısmi yüklemeler için HTTP 1.1 range requests
         config.allowsCellularAccess = true
         config.waitsForConnectivity = true  // WiFi bağlantısının gelmesini bekle
-        // Removed line: config.shouldUseExtendedBackgroundIdleMode = true  // Arka plan modda daha uzun süre bekle
         
         self.backgroundURLSession = URLSession(configuration: config, delegate: backgroundSessionDelegate, delegateQueue: nil)
         self.logger.info("🌐 WebDAV background URLSession initialized")
@@ -544,8 +543,8 @@ final class WebDAVService: NSObject, FileProviderDelegate {
         let isLikelyVideo = ["mp4", "mov", "m4v", "avi", "mkv", "hevc"].contains(ext)
         let base = isLikelyVideo ? 240.0 : 120.0
         let perMB = isLikelyVideo ? 14.0 : 8.0
-        // Video-heavy uploads on slow links need wider timeout budget.
-        return min(3600, max(120, base + (fileSizeMB * perMB)))
+        // Video-heavy uploads on slow links need wider timeout budget (up to 2 hours for multi-GB videos).
+        return min(7200, max(120, base + (fileSizeMB * perMB)))
     }
 
     private func isUploadTimeoutError(_ error: Error) -> Bool {
@@ -703,7 +702,7 @@ final class WebDAVService: NSObject, FileProviderDelegate {
             )
 
             let configuration = URLSessionConfiguration.default
-            configuration.timeoutIntervalForRequest = 60
+            configuration.timeoutIntervalForRequest = 300
             configuration.timeoutIntervalForResource = timeoutSeconds
             configuration.httpMaximumConnectionsPerHost = 1
             configuration.allowsCellularAccess = true
@@ -737,6 +736,10 @@ final class WebDAVService: NSObject, FileProviderDelegate {
         self.currentFile = localURL.lastPathComponent
         prepareCurrentUpload(localURL: localURL, progressHandler: progressHandler)
         self.logger.info("🌐 Enqueuing background PUT upload: \(request.url?.absoluteString ?? remotePath)")
+
+        if UIApplication.shared.applicationState != .active {
+            backgroundTaskCoordinator.begin()
+        }
 
         let uploadURL = try stageForBackgroundUpload(localURL)
         defer {
@@ -775,6 +778,10 @@ final class WebDAVService: NSObject, FileProviderDelegate {
     private func stageForBackgroundUpload(_ localURL: URL) throws -> URL {
         let tempRoot = fileManager.temporaryDirectory.standardizedFileURL.path
         if localURL.standardizedFileURL.path.hasPrefix(tempRoot) {
+            try? fileManager.setAttributes(
+                [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
+                ofItemAtPath: localURL.path
+            )
             return localURL
         }
 
@@ -816,16 +823,6 @@ final class WebDAVService: NSObject, FileProviderDelegate {
 
     private func throwIfCancelled() throws {
         if isCancelled { throw BackupServiceError.cancelled }
-    }
-
-    func cancelForBackgroundExpiration() {
-        backgroundExpirationRequested = true
-        cancelCurrentTask()
-    }
-
-    func consumeBackgroundExpiration() -> Bool {
-        defer { backgroundExpirationRequested = false }
-        return backgroundExpirationRequested
     }
 
     func cancelCurrentTask() {
@@ -1052,6 +1049,10 @@ final class WebDAVService: NSObject, FileProviderDelegate {
                 continue
             }
 
+            if UIApplication.shared.applicationState != .active {
+                backgroundTaskCoordinator.begin()
+            }
+
             let exportResult = await photoLibraryManager.exportAssetToTemporaryFile(
                 asset: asset,
                 fileName: fileName,
@@ -1175,7 +1176,7 @@ final class WebDAVService: NSObject, FileProviderDelegate {
                     localURL: retryTempURL,
                     remotePath: item.remotePath,
                     progressHandler: nil,
-                    allowBackgroundSession: false,
+                    allowBackgroundSession: true,
                     timeoutMultiplier: 2.5
                 )
                 if options.checksumMode == .verifyUploads {
@@ -1496,14 +1497,11 @@ final class WebDAVService: NSObject, FileProviderDelegate {
         progressHandler: @escaping (Double) -> Void
     ) async throws -> FTPService.SyncResult {
         isCancelled = false
-        backgroundExpirationRequested = false
         isPerformingBackup = true
         uploadsRequireWiFi = options.requiresWiFi
         ensuredRemoteDirectories.removeAll()
         backgroundTaskCoordinator.onExpiration = { [weak self] in
-            guard !ContinuedBackupRunner.isRunning else { return }
-            self?.logger.warning("WebDAV background time expired, cancelling transfer")
-            self?.cancelForBackgroundExpiration()
+            self?.logger.info("WebDAV UIKit background assertion expired; background URLSession and BGTask continue uninterrupted")
         }
         if UIApplication.shared.applicationState != .active && !options.isDryRun {
             backgroundTaskCoordinator.begin()
@@ -1675,6 +1673,3 @@ private final class WebDAVBackgroundTaskCoordinator {
         }
     }
 }
-
-
-

@@ -131,6 +131,10 @@ class PhotoLibraryManager: NSObject, ObservableObject {
         let tempRoot = FileManager.default.temporaryDirectory.appendingPathComponent("backupflow_exports", isDirectory: true)
         do {
             try FileManager.default.createDirectory(at: tempRoot, withIntermediateDirectories: true)
+            try? FileManager.default.setAttributes(
+                [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
+                ofItemAtPath: tempRoot.path
+            )
         } catch {
             logger.warning("⚠️ Geçici medya klasörü oluşturulamadı: \(error.localizedDescription)")
             return .unavailable
@@ -157,7 +161,8 @@ class PhotoLibraryManager: NSObject, ObservableObject {
             }
 
             Task {
-                let timeout: UInt64 = mediaType == .video ? 90_000_000_000 : 45_000_000_000
+                // Multi-GB videos (e.g. 2.4+ GB 4K recordings) need generous export time, especially in background/locked state.
+                let timeout: UInt64 = mediaType == .video ? 600_000_000_000 : 90_000_000_000
                 try? await Task.sleep(nanoseconds: timeout)
                 if tryResume(.timedOut) {
                     try? FileManager.default.removeItem(at: tempURL)
@@ -165,7 +170,7 @@ class PhotoLibraryManager: NSObject, ObservableObject {
                 }
             }
 
-            DispatchQueue.global(qos: .utility).async {
+            DispatchQueue.global(qos: .userInitiated).async {
                 guard let resource = self.primaryResource(for: asset) else {
                     _ = tryResume(.unavailable)
                     return
@@ -187,6 +192,10 @@ class PhotoLibraryManager: NSObject, ObservableObject {
                         return
                     }
 
+                    try? FileManager.default.setAttributes(
+                        [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
+                        ofItemAtPath: tempURL.path
+                    )
                     let fileSize = Int64((try? tempURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
                     if fileSize > 0 {
                         if !tryResume(.success(url: tempURL, size: fileSize)) {

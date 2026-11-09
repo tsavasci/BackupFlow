@@ -199,7 +199,6 @@ extension BackupScheduler {
         let expiredBySystem = backgroundExpirationTaskIDs.remove(task.id) != nil
             || (task.backupType == .ftp && FTPService.shared.consumeBackgroundExpiration())
             || (task.backupType == .sftp && SFTPService.shared.consumeBackgroundExpiration())
-            || (task.backupType == .webdav && WebDAVService.shared.consumeBackgroundExpiration())
         task.backupStatus = .cancelled
         task.lastError = message
         clearRunProgress(for: task)

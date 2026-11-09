@@ -1,0 +1,37 @@
+{
+  "configurations" : [
+    {
+      "id" : "0A4C4DDB-048B-4229-83E6-046723E9F86C",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:BackupFlow.xcodeproj",
+      "identifier" : "F2DA23492E7D5FD900B2727D",
+      "name" : "BackupFlow"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : false,
+      "target" : {
+        "containerPath" : "container:BackupFlow.xcodeproj",
+        "identifier" : "F2DA23572E7D5FDA00B2727D",
+        "name" : "BackupFlowTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:BackupFlow.xcodeproj",
+        "identifier" : "F2DA23612E7D5FDA00B2727D",
+        "name" : "BackupFlowUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

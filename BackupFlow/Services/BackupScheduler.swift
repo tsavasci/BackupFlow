@@ -142,19 +142,14 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         let requireExternal = UserDefaults.standard.bool(forKey: "RequireExternalPower")
         var earliestBeginDate: Date? = nil
 
-        // earliestBeginDate'i, en yakın nextRunTime'a göre ayarla (en az 15 dk kuralına uyarak)
+        // earliestBeginDate'i doğrudan en yakın aktif görevin nextRunTime saatine kur
         if let container = Self.sharedModelContainer {
             let context = ModelContext(container)
             if let tasks = try? context.fetch(FetchDescriptor<BackupTask>()) {
-                if let earliest = tasks.compactMap({ $0.nextRunTime }).sorted().first {
+                let activeTasks = tasks.filter { $0.isEnabled && !$0.isPaused && $0.frequency != .manual }
+                if let earliest = activeTasks.compactMap({ $0.nextRunTime }).sorted().first {
                     let now = Date()
-                    var candidate = earliest < now ? now.addingTimeInterval(300) : earliest
-                    let minimumLead: TimeInterval = 15 * 60
-                    if candidate.timeIntervalSince(now) < minimumLead {
-                        candidate = now.addingTimeInterval(minimumLead)
-                        debugLog("ℹ️ BGTaskScheduler: Processing earliest çok yakın, 15 dk'ya yuvarlandı -> \(userLocalDateFormatter.string(from: candidate))")
-                    }
-                    earliestBeginDate = candidate
+                    earliestBeginDate = earliest < now ? now.addingTimeInterval(60) : earliest
                 }
             }
         }
@@ -276,8 +271,9 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         debugLog("🚫 BackupFlow: Görev iptal edildi: \(task.displayName)")
     }
 
-    /// Called by BGTask expiration handlers. The transfer must be cancelled before
-    /// iOS reclaims the execution window; the task is then retried by a later run.
+    /// Called by BGTask expiration handlers. Raw socket transfers (FTP/SFTP) must be
+    /// cancelled before iOS reclaims the execution window; WebDAV uses a background
+    /// URLSession managed by the system daemon and should not be cancelled here.
     public func cancelActiveBackgroundBackup() {
         guard let taskID = activeBackgroundTaskID,
               let container = Self.sharedModelContainer else { return }
@@ -287,14 +283,16 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         guard let tasks = try? context.fetch(descriptor),
               let task = tasks.first(where: { $0.id == taskID }) else { return }
 
-        backgroundExpirationTaskIDs.insert(task.id)
         switch task.backupType {
         case .ftp:
+            backgroundExpirationTaskIDs.insert(task.id)
             FTPService.shared.cancelForBackgroundExpiration()
         case .sftp:
+            backgroundExpirationTaskIDs.insert(task.id)
             SFTPService.shared.cancelForBackgroundExpiration()
         case .webdav:
-            WebDAVService.shared.cancelForBackgroundExpiration()
+            debugLog("ℹ️ BGTaskScheduler: WebDAV arka plan URLSession ile devam ediyor, iptal edilmedi: \(task.displayName)")
+            return
         }
         task.backupStatus = .cancelled
         task.lastError = BackupServiceError.cancelled.localizedDescription
@@ -555,6 +553,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             let context = ModelContext(container)
             if let tasks = try? context.fetch(FetchDescriptor<BackupTask>()) {
                 return tasks
+                    .filter { $0.isEnabled && !$0.isPaused && $0.frequency != .manual }
                     .compactMap { $0.nextRunTime }
                     .sorted().first
             }
@@ -564,22 +563,14 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         let request = BGAppRefreshTaskRequest(identifier: identifier)
         if let earliestDate = earliestDate {
             let now = Date()
-            // Eğer earliestDate geçmişse 5 dk ileri al
-            var candidate = earliestDate < now ? now.addingTimeInterval(300) : earliestDate
-            // Apple genelde çok kısa aralıkları çalıştırmıyor; en az 15 dk kuralı (debug kolaylığı için)
-            let minimumLead: TimeInterval = 15 * 60
-            if candidate.timeIntervalSince(now) < minimumLead {
-                candidate = now.addingTimeInterval(minimumLead)
-                debugLog("ℹ️ BGTaskScheduler: Earliest çok yakın, 15 dk'ya yuvarlandı -> \(userLocalDateFormatter.string(from: candidate))")
-            }
-            request.earliestBeginDate = candidate
+            request.earliestBeginDate = earliestDate < now ? now.addingTimeInterval(60) : earliestDate
         } else {
             // Hiç görev yoksa 1 saat sonrası
             request.earliestBeginDate = Date().addingTimeInterval(3600)
         }
         
         let id = identifier
-        if let last = lastSubmitByIdentifier[id], Date().timeIntervalSince(last) < 900 { // 15 minutes
+        if let last = lastSubmitByIdentifier[id], Date().timeIntervalSince(last) < 60 {
             return
         }
 

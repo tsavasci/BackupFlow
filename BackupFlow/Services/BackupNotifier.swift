@@ -44,6 +44,9 @@ final class BackupNotifier {
 
     /// Zamanı gelen görev için bildirim gönderir (action button ile)
     func sendScheduledBackupNotification(for task: BackupTask) {
+        // WebDAV arka plan URLSession ile sessizce çalıştığından "Yedeklemeye Hazır" bildirimi gönderilmez
+        guard task.backupType == .ftp || task.backupType == .sftp else { return }
+
         // Son bildirimin üzerinden yeterli süre geçmediyse tekrarlama (debounce)
         if let last = lastScheduledNoticeAt[task.id], Date().timeIntervalSince(last) < 120 {
             debugLog("ℹ️ BackupFlow: Yakın zamanda aynı görev için bildirim gönderilmiş, tekrar edilmiyor")
@@ -65,17 +68,20 @@ final class BackupNotifier {
 
     /// Keeps a reminder queued in the system for the task's next scheduled run.
     ///
-    /// iOS can defer background tasks when the device is unplugged, and never launches a
-    /// force-quit app for background tasks. A notification scheduled with the system is
+    /// FTP and SFTP use raw sockets that cannot use a background `URLSession`, so iOS
+    /// can defer their `BGProcessingTask` when the device is unplugged, and never launches
+    /// a force-quit app for background tasks. A notification scheduled with the system is
     /// delivered if the run hasn't completed yet (and is cleared automatically by
     /// `removeDeliveredRunPrompts` if the background run finishes first).
     func refreshReminder(for task: BackupTask) {
         let identifier = Self.reminderIdentifier(for: task.id)
         center.removePendingNotificationRequests(withIdentifiers: [identifier])
 
+        let usesSocketTransfer = task.backupType == .ftp || task.backupType == .sftp
         // While waiting for Wi-Fi a reminder every retry would only start a run that
         // defers again; the task sent a single "waiting for Wi-Fi" notice instead.
-        guard task.isEnabled, !task.isPaused,
+        guard usesSocketTransfer,
+              task.isEnabled, !task.isPaused,
               task.frequency != .manual,
               task.wifiWaitDeadline == nil,
               let fireDate = task.nextRunTime, fireDate > Date() else { return }

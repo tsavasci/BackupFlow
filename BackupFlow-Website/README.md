@@ -1,11 +1,12 @@
 # BackupFlow Website
 
-A modern, responsive website for the BackupFlow iOS application - a professional backup solution with smart automation and multi-language support.
+A modern, responsive website for the **BackupFlow** iOS application — a privacy-first automated NAS, SFTP, WebDAV, and FTP backup solution with 12-language support and a one-time lifetime purchase model.
 
 ## 🌟 Features
 
-- **Modern Design**: Clean, professional layout with gradient animations
+- **Modern Design**: Clean, professional layout with gradient animations matching the iOS Liquid Glass design system
 - **Responsive**: Optimized for desktop, tablet, and mobile devices
+- **12-Language Support (`translations.js` & `privacy-translations.js`)**: Full localization across English, Turkish, German, French, Spanish, Portuguese, Russian, Arabic (RTL), Hindi, Japanese, Korean, and Chinese
 - **Interactive Elements**: Smooth animations, hover effects, and dynamic content
 - **Performance Optimized**: Lazy loading, throttled scroll handlers, and efficient animations
 - **Accessibility**: Keyboard navigation and screen reader friendly
@@ -14,8 +15,8 @@ A modern, responsive website for the BackupFlow iOS application - a professional
 ## 🎨 Design Elements
 
 The website reflects BackupFlow's brand identity with:
-- **Color Scheme**: Blue to purple gradient (`#00D4FF` → `#3B82F6` → `#8B5CF6`)
-- **Typography**: Inter font family for modern readability
+- **Color Scheme**: Primary electric blue to purple gradient (`#2E4CFA` → `#3B82F6` → `#854FFA`)
+- **Typography**: Inter / SF Pro font family for modern readability
 - **Icons**: Custom SVG icons matching the app's design language
 - **Animations**: Smooth transitions and floating elements
 
@@ -28,7 +29,7 @@ The website reflects BackupFlow's brand identity with:
 - Clear call-to-action buttons
 
 ### Features Section
-- Six key features with custom icons
+- Key features with custom icons (SFTP, WebDAV, FTP, Smart Incremental Sync, Dry-Run Preview, TOFU Security)
 - Hover animations and visual feedback
 - Detailed descriptions of app capabilities
 
@@ -38,72 +39,42 @@ The website reflects BackupFlow's brand identity with:
 - Feature explanations with visual context
 
 ### Pricing Section
-- Only 4,99 USD pricing model
+- **$2.99 USD One-Time Purchase (Paid Upfront Lifetime)** pricing model — No subscriptions, no in-app purchases, no transfer quotas
 - Complete feature list with checkmarks
-- Prominent download button
+- Prominent App Store download button
 
 ### Download Section
-- App Store download button
+- App Store download button (`id6753620051`)
 - QR code for easy mobile access
 - Animated floating icons
 - Central logo with rotation animation
 
-### Support Section
+### Support & Privacy Section
 - Contact information and support options
-- Documentation links
+- Multi-language Privacy Policy (`privacy-policy.html`)
 - Review encouragement
-
-### Footer
-- Brand information and description
-- Organized navigation links
-- Social media connections
-- Copyright and legal information
 
 ## 🛠️ Technical Stack
 
 - **HTML5**: Semantic markup for better accessibility
 - **CSS3**: Modern features including Grid, Flexbox, and CSS Custom Properties
-- **Vanilla JavaScript**: No external dependencies for optimal performance
+- **Vanilla JavaScript**: Zero external dependencies for optimal performance
 - **SVG Graphics**: Scalable vector graphics for crisp visuals
-- **Web Fonts**: Google Fonts (Inter) for consistent typography
 
 ## 📂 File Structure
 
-```
+```text
 BackupFlow-Website/
-├── index.html          # Main HTML file
-├── styles.css          # Complete CSS styles
-├── script.js           # JavaScript functionality
-├── favicon.svg         # Website favicon
-└── README.md          # This documentation
+├── index.html                # Main landing page HTML
+├── privacy-policy.html       # Privacy Policy page
+├── styles.css                # Complete CSS styles
+├── script.js                 # Main JavaScript functionality
+├── translations.js           # 12-language landing page translations
+├── privacy-translations.js   # 12-language privacy policy translations
+├── favicon.svg               # Website favicon
+├── web_logo.png              # Brand logo
+└── README.md                 # This documentation
 ```
-
-## 🚀 Features Implementation
-
-### Animations
-- Intersection Observer for scroll-triggered animations
-- CSS transitions and transforms
-- Keyframe animations for floating elements
-- Parallax scrolling effects
-
-### Interactivity
-- Smooth scrolling navigation
-- Mobile menu toggle
-- Button ripple effects
-- Hover state animations
-- Dynamic content updates
-
-### Performance
-- Lazy loading for images
-- Throttled scroll handlers
-- Efficient DOM manipulation
-- Optimized CSS animations
-
-### Responsive Design
-- Mobile-first approach
-- Flexible grid layouts
-- Responsive typography
-- Touch-friendly interactions
 
 ## 🌐 Browser Support
 
@@ -111,60 +82,6 @@ BackupFlow-Website/
 - Firefox 88+
 - Safari 14+
 - Edge 90+
-
-## 📱 Mobile Optimization
-
-The website is fully optimized for mobile devices with:
-- Touch-friendly button sizes
-- Optimized images and layouts
-- Fast loading times
-- Gesture-based navigation
-
-## 🎯 SEO Features
-
-- Semantic HTML structure
-- Meta tags for social sharing
-- Structured data markup ready
-- Fast loading times
-- Mobile-friendly design
-
-## 🔧 Customization
-
-The website is built with maintainability in mind:
-- CSS custom properties for easy theming
-- Modular JavaScript functions
-- Clear component structure
-- Consistent naming conventions
-
-## 📊 Analytics Ready
-
-The website includes tracking points for:
-- Download button clicks
-- Navigation interactions
-- Form submissions
-- Scroll depth tracking
-
-## 🚀 Deployment
-
-The website is ready for deployment to any static hosting service:
-- GitHub Pages
-- Netlify
-- Vercel
-- AWS S3
-- Traditional web hosting
-
-## 📄 License
-
-This website template is part of the BackupFlow project.
-
-## 🤝 Contributing
-
-When updating the website:
-1. Maintain the existing design language
-2. Test on multiple devices and browsers
-3. Optimize for performance
-4. Follow accessibility guidelines
-5. Update this README if adding new features
 
 ## 📞 Contact
 

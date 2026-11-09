@@ -20,7 +20,7 @@
   2. **Mirror:** Deletes remote orphan files that no longer exist on the device (with strict safety guards so an empty/revoked photo library permission never wipes remote photos).
   3. **Archive:** Instead of deleting remote orphans, moves them to `.backupflow_archive/<yyyyMMdd-HHmmss-uuid>/<relativePath>`.
 - **Dry-Run Preview:** Before running a manual backup, users can preview exact counts of *New*, *Updated*, *Skipped*, and *Deleted/Archived* files and total bytes without mutating the remote server.
-- **Incremental Checkpoints & Resume:** Tracks uploaded files in a checkpoint store so interrupted backups resume without re-uploading completed files.
+- **Incremental Checkpoints & Fast-Skip:** Tracks uploaded files in a checkpoint store and performs fast remote filename/size checks (`existingFileMap[fileName].size > 0`) before reading/exporting media so interrupted or repeat backups skip existing assets in seconds.
 - **Upload Integrity Verification:** Optional SHA-256 / remote size verification after upload (`verifyUploads`) and remote `.backupflow_manifest.json` generation.
 - **Smart Scheduling & Preconditions:** Manual, Daily, Weekly, Monthly, or Interval (every N hours) scheduling with guards for **Wi-Fi Only**, **Charging/External Power**, **Minimum Battery Level (%)**, and **Allowed Time Window** (e.g., 23:00–06:00).
 
@@ -216,14 +216,14 @@ The Android port **must** preserve these exact behaviors from the iOS codebase:
 ### 4.4. Sync Engine Algorithm (FTP / SFTP / WebDAV)
 Each protocol shares a unified 4-stage pipeline:
 1. **Stage 1 — Scan Source & Remote:**
-   - Collect local files (`relativePath -> LocalFileMetadata(uri, size, lastModified)`) or MediaStore assets (`IMG_yyyyMMdd_HHmmss_<id>.ext`).
+   - Collect local files (`relativePath -> LocalFileMetadata(uri, size, lastModified)`) or MediaStore assets (`yyyyMMdd_HHmmss_<id>.ext`).
    - Recursively list remote directory (`relativePath -> RemoteFileMetadata(name, path, size, modifiedDate)`).
 2. **Stage 2 — Compare & Upload:**
-   - Skip files present in the run's resume checkpoint if they already exist remotely.
+   - **Fast-Skip:** Skip files present in the run's resume checkpoint or already present in `remoteFileMap` (`size > 0` for media assets) before reading/exporting the file stream.
    - Compare `local.size == remote.size` (and filename). If identical -> increment `skippedFiles`.
    - If not in remote -> `newFiles`; if size differs -> `updatedFiles`.
    - If `isDryRun == true`: do **not** create remote directories or upload; only tally counts and bytes.
-   - If `isDryRun == false`: ensure parent directories exist, stream upload with live byte progress and transfer speed calculation (`TransferProgressSource`).
+   - If `isDryRun == false`: ensure parent directories exist, stream upload with live byte progress and transfer speed calculation (`TransferProgressSource`). Support multi-GB 4K video transfers with extended write/response timeouts (up to 2 hours per resource).
    - If `checksumMode == VERIFY_UPLOADS`: compute local SHA-256, verify remote file size (and re-read stream if supported), and append entry to `.backupflow_manifest.json`.
    - Record uploaded `relativePath` into persistent checkpoint store so interrupted runs can resume.
 3. **Stage 3 — Orphan Cleanup (only if `failedUploads == 0`):**
@@ -339,7 +339,7 @@ Follow these phases sequentially. After each phase, ensure the project compiles 
   - Create `BackupWorker : CoroutineWorker` for scheduled background runs and `BackupForegroundService` (with `FOREGROUND_SERVICE_TYPE_DATA_SYNC`) for user-initiated or long-running transfers.
   - Show an ongoing progress notification with live file name, percentage, transfer speed, and a **"Cancel"** action button (`PendingIntent`).
 - [ ] **4.3. Notifications (`BackupNotifier`):**
-  - Create Notification Channels: `backup_progress` (Low importance, ongoing), `backup_results` (Default importance, completion/failure alerts), and `backup_reminders` (Scheduled backup reminders).
+  - Create Notification Channels: `backup_progress` (Low importance, ongoing), `backup_results` (Default importance, completion/failure alerts), and `backup_reminders` (Scheduled backup reminders for socket protocols where needed, while allowing background WebDAV workers to run silently).
 
 ---
 
