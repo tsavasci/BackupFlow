@@ -713,11 +713,14 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
             debugLog("ℹ️ BGTaskScheduler: Çalışacak görev yok")
             return true
         }
+        // iOS arka plan uyandırmalarında saat birkaç dakika erken veya geç tetiklenebilir;
+        // 5 dakikalık tolerans penceresi (next <= now + 300) tanımlanır.
+        let executionWindow = now.addingTimeInterval(300)
         let dueTasks = tasks.filter { task in
             guard !task.isPaused, task.isEnabled else { return false }
             // Exclude manual tasks
             if case .manual = task.frequency { return false }
-            if let next = task.nextRunTime { return next <= now }
+            if let next = task.nextRunTime { return next <= executionWindow }
             return false
         }
         if dueTasks.isEmpty {

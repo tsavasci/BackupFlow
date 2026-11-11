@@ -10,7 +10,7 @@ from privacy_data_1 import PRIVACY_PART_1
 from privacy_data_2 import PRIVACY_PART_2
 
 ROOT = Path(__file__).resolve().parent.parent
-SITE_URL = "https://tsavasci.github.io/BackupFlowWeb"
+SITE_URL = "https://tsavasci.github.io/BackupFlow"
 PRIVACY_DATA = {**PRIVACY_PART_1, **PRIVACY_PART_2}
 
 

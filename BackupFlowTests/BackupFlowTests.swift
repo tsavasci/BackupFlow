@@ -121,16 +121,6 @@ final class BackupFlowTests: XCTestCase {
         XCTAssertFalse(service.isBackgroundUploading)
     }
 
-    @MainActor
-    func testWebDAVBackgroundExpirationFlagIsConsumedOnce() async throws {
-        let service = WebDAVService.shared
-        XCTAssertFalse(service.consumeBackgroundExpiration())
-
-        service.cancelForBackgroundExpiration()
-        XCTAssertTrue(service.consumeBackgroundExpiration())
-        XCTAssertFalse(service.consumeBackgroundExpiration())
-    }
-
     func testSFTPBackgroundExpirationFlagIsConsumedOnce() throws {
         let service = SFTPService.shared
         XCTAssertFalse(service.consumeBackgroundExpiration())

@@ -16,7 +16,7 @@ from docs_data_2 import DOCS_PART_2
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "docs"
-SITE_URL = "https://tsavasci.github.io/BackupFlowWeb"
+SITE_URL = "https://tsavasci.github.io/BackupFlow"
 
 DOCS_DATA = {**DOCS_PART_1, **DOCS_PART_2}
 

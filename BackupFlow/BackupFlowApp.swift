@@ -385,7 +385,8 @@ struct BackupFlowApp: App {
                 } else {
                     debugLog("🔄 App moved to background. Scheduling processing task.")
                 }
-                // Processing görevi ağ ve uzun işlem için daha uygun
+                // Hem periyodik AppRefresh hem de uzun süreli Processing arka plan görevlerini planla
+                BackupScheduler.shared.scheduleAppRefresh()
                 BackupScheduler.shared.scheduleProcessingTask()
             } else if newPhase == .active {
                 debugLog("📱 BackupFlow: App foreground'a geldi")

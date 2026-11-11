@@ -1256,6 +1256,7 @@ final class WebDAVService: NSObject, FileProviderDelegate {
     }
     
     func disconnect() {
+        isCancelled = false
         webdavProvider = nil
         currentBaseURL = nil
         currentCredential = nil
@@ -1271,8 +1272,9 @@ final class WebDAVService: NSObject, FileProviderDelegate {
     func testConnection(host: String, port: Int, username: String?, password: String?) async -> Bool {
         self.logger.info("Starting WebDAV connection test: \(host):\(port)")
         
-        // Clean up any existing connection first
+        // Clean up any existing connection first and ensure cancellation flag is cleared
         disconnect()
+        isCancelled = false
         
         do {
             // Önce ağ iznini bekle
