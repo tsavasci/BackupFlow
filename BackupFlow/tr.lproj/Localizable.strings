@@ -411,3 +411,10 @@
 "backup.wifi_confirm.message" = "Bu görev Wi-Fi gerektiriyor ancak şu anda Wi-Fi bağlantısı yok. Yine de başlatırsanız yedekleme mobil veri kullanabilir.";
 "backup.wifi_confirm.start_anyway" = "Yine de Başlat";
 "backup.status.deferred" = "Ertelendi";
+
+"backup.photo_folder_structure" = "Klasör düzeni";
+"backup.photo_folder_structure.flat" = "Tek klasör";
+"backup.photo_folder_structure.year_month_slash" = "Yıl / Ay (2026/10)";
+"backup.photo_folder_structure.year_month_dash" = "Yıl - Ay (2026-10)";
+"backup.preserve_original_format" = "Orijinal formatı koru (HEIC/RAW/MOV)";
+"backup.preserve_original_format_hint" = "Fotoğraf ve videoları .jpg/.mp4 yerine orijinal dosya uzantılarıyla kaydeder.";

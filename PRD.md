@@ -48,6 +48,11 @@
    - **iCloud Varlık Desteği (`includeICloudAssets`):** Cihazda optimize edilmiş/iCloud'da bulunan medya dosyalarını yedekleme sırasında tam kalitede indirerek aktarma.
    - **Deterministik İsimlendirme ve Fast-Skip:** Her fotoğraf ve video `yyyyMMdd_HHmmss_<12-haneli-UUID>.ext` formatıyla adlandırılır; sunucuda mevcut olan dosyalar yeniden dışa aktarılmadan saniyeler içinde atlanır (**Fast-Skip**).
    - **Çoklu-GB 4K Video Desteği:** 2+ GB boyutundaki uzun videolar için kilitli ekranda dosya koruma (`completeUntilFirstUserAuthentication`) ve genişletilmiş dışa aktarma/yükleme zaman aşımı desteği.
+   - **Klasör Organizasyonu (`PhotoFolderStructure`):**
+     - Düz (`flat` — Varsayılan): Tüm medya dosyaları doğrudan hedef klasörün köküne kaydedilir.
+     - Yıl / Ay Eğik Çizgi (`yearMonthSlash` — ör. `2026/10`): Fotoğrafın çekildiği yıl ve aya göre alt dizinler oluşturulur.
+     - Yıl - Ay Tire (`yearMonthDash` — ör. `2026-10`): Fotoğrafın çekildiği yıl ve aya göre tireli alt klasörler oluşturulur.
+   - **Orijinal Formatı Koruma (`preserveOriginalPhotoFormat`):** Fotoğraf ve videoları standart `.jpg` veya `.mp4` uzantılarına zorlamadan; cihazdaki orijinal dosya uzantılarıyla (`.heic`, `.raw`/`.dng`, `.mov`) kaydetme seçeneği.
 2. **Yerel Klasör ve Belgeler (`UIDocumentPicker` / Security-Scoped Bookmarks):**
    - iOS Dosyalar (Files) uygulaması üzerinden seçilen herhangi bir yerel klasörün alt dizin yapısını koruyarak sunucuya yedekleme.
 

@@ -209,25 +209,39 @@ struct SFTPSyncEngine {
             logger.info("SFTP resume checkpoint loaded (\(checkpoint.count) files)")
         }
         
+        var ensuredSubdirectories = Set<String>()
+
         for (index, asset) in assets.enumerated() {
             if isCancelled?() == true {
                 throw BackupServiceError.cancelled
             }
-            let fileName = photoManager.generateFileName(for: asset)
+            let fileName = photoManager.generateFileName(
+                for: asset,
+                preserveOriginalExtension: options.preserveOriginalPhotoFormat
+            )
+            let relativePath = photoManager.generateRelativePath(
+                for: asset,
+                folderStructure: options.photoFolderStructure,
+                preserveOriginalExtension: options.preserveOriginalPhotoFormat
+            )
 
-            if checkpoint.contains(fileName), existingFileMap[fileName] != nil {
+            if (checkpoint.contains(relativePath) || checkpoint.contains(fileName)),
+               (existingFileMap[relativePath] != nil || existingFileMap[fileName] != nil) {
                 result.skippedFiles += 1
                 let progress = Double(index + 1) / Double(max(totalCount, 1))
                 progressHandler?(progress)
                 continue
             }
 
-            if let remoteSize = existingFileMap[fileName], remoteSize > 0 {
+            if let remoteSize = existingFileMap[relativePath] ?? existingFileMap[fileName],
+               remoteSize > 0,
+               let expectedSize = photoManager.localResourceSize(for: asset),
+               expectedSize == remoteSize {
                 result.skippedFiles += 1
-                result.totalBytes += remoteSize
+                result.totalBytes += expectedSize
                 if !options.isDryRun {
-                    checkpoint.insert(fileName)
-                    await markCheckpoint?(fileName)
+                    checkpoint.insert(relativePath)
+                    await markCheckpoint?(relativePath)
                 }
                 let progress = Double(index + 1) / Double(max(totalCount, 1))
                 progressHandler?(progress)
@@ -257,16 +271,25 @@ struct SFTPSyncEngine {
             }
             defer { try? FileManager.default.removeItem(at: tempURL) }
 
-            let fileRemotePath = "\(photosDir)/\(fileName)"
+            let fileRemotePath = BackupArchive.safeRemotePath(basePath: photosDir, relativePath: relativePath)
+            let parentDir = (fileRemotePath as NSString).deletingLastPathComponent
+            if !options.isDryRun,
+               !parentDir.isEmpty,
+               parentDir != "/",
+               parentDir != photosDir,
+               !ensuredSubdirectories.contains(parentDir) {
+                try await createDirectory(parentDir)
+                ensuredSubdirectories.insert(parentDir)
+            }
 
-            if let remoteSize = existingFileMap[fileName], remoteSize == localSize {
+            if let remoteSize = existingFileMap[relativePath] ?? existingFileMap[fileName], remoteSize == localSize {
                 result.skippedFiles += 1
                 result.totalBytes += localSize
                 if !options.isDryRun {
-                    checkpoint.insert(fileName)
-                    await markCheckpoint?(fileName)
+                    checkpoint.insert(relativePath)
+                    await markCheckpoint?(relativePath)
                 }
-            } else if existingFileMap[fileName] != nil {
+            } else if existingFileMap[relativePath] != nil {
                 let didUpload = options.isDryRun ? true : try await uploadFile(tempURL, fileRemotePath, localSize, true) { fileProgress in
                     let assetShare = 1.0 / Double(max(totalCount, 1))
                     let overallProgress = (Double(index) / Double(max(totalCount, 1))) + (fileProgress * assetShare)
@@ -281,8 +304,8 @@ struct SFTPSyncEngine {
                     result.totalBytes += localSize
                     BackupRunTally.shared.recordUpload(bytes: localSize)
                     if !options.isDryRun {
-                        checkpoint.insert(fileName)
-                        await markCheckpoint?(fileName)
+                        checkpoint.insert(relativePath)
+                        await markCheckpoint?(relativePath)
                     }
                 } else {
                     result.skippedFiles += 1
@@ -303,8 +326,8 @@ struct SFTPSyncEngine {
                     result.totalBytes += localSize
                     BackupRunTally.shared.recordUpload(bytes: localSize)
                     if !options.isDryRun {
-                        checkpoint.insert(fileName)
-                        await markCheckpoint?(fileName)
+                        checkpoint.insert(relativePath)
+                        await markCheckpoint?(relativePath)
                     }
                 } else {
                     result.skippedFiles += 1
@@ -317,7 +340,16 @@ struct SFTPSyncEngine {
             progressHandler?(progress)
         }
 
-        let processedFiles = Set(assets.map { photoManager.generateFileName(for: $0) })
+        var processedFiles = Set<String>()
+        for asset in assets {
+            processedFiles.insert(photoManager.generateFileName(for: asset, preserveOriginalExtension: false))
+            processedFiles.insert(photoManager.generateFileName(for: asset, preserveOriginalExtension: options.preserveOriginalPhotoFormat))
+            processedFiles.insert(photoManager.generateRelativePath(
+                for: asset,
+                folderStructure: options.photoFolderStructure,
+                preserveOriginalExtension: options.preserveOriginalPhotoFormat
+            ))
+        }
         let canDeletePhotoOrphans = options.permitsPhotoOrphanDeletion(
             hasFullLibraryAccess: photoManager.hasFullLibraryAccess,
             visibleAssetCount: assets.count
@@ -326,7 +358,12 @@ struct SFTPSyncEngine {
             logger.warning("Skipping orphan photo deletion because full Photo Library access is unavailable or the visible library is empty.")
         }
         let orphans = existingFileMap.keys
-            .filter { !BackupArchive.isReserved(relativePath: $0) && !processedFiles.contains($0) }
+            .filter {
+                let baseName = ($0 as NSString).lastPathComponent
+                return !BackupArchive.isReserved(relativePath: $0)
+                    && !processedFiles.contains($0)
+                    && !processedFiles.contains(baseName)
+            }
             .map { PhotoOrphanCleanup.Orphan(relativePath: $0, fullRemotePath: BackupArchive.safeRemotePath(basePath: photosDir, relativePath: $0)) }
         result.deletedFiles += try await PhotoOrphanCleanup.apply(
             to: orphans,

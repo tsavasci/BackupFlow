@@ -14,6 +14,8 @@
 - **Multi-Protocol Support:** FTP (with Passive/Active & UTF-8 support), SFTP (SSHv2 with TOFU host key pinning), and WebDAV (HTTPS default with self-signed certificate TOFU pinning).
 - **Flexible Sources:**
   1. **Media Library:** Photos only, Videos only, or Photos & Videos (`MediaStore` on Android).
+     - **Folder Organization:** Flat (root destination), Year/Month (`YYYY/MM`), or Year-Month (`YYYY-MM`).
+     - **Format Preservation:** Keep original extensions (`.heic`, `.raw`/`.dng`, `.mov`) instead of forcing `.jpg`/`.mp4`.
   2. **Document / Folder Tree:** Any local or cloud-provider folder selected by the user (`Storage Access Framework` / DocumentTree on Android).
 - **Smart Sync & Deletion Policies:**
   1. **Append-Only (Safe Default):** Never deletes files on the remote server; only uploads new or modified files.

@@ -16,6 +16,8 @@ final class BackupFormModel {
     var isPhotoLibrarySelected = false
     var selectedMediaType: MediaType = .photosOnly
     var includeICloudAssets = true
+    var photoFolderStructure: PhotoFolderStructure = .flat
+    var preserveOriginalPhotoFormat = false
 
     // Hedef seçimi
     var selectedTarget: BackupTarget = .ftp
@@ -68,6 +70,8 @@ final class BackupFormModel {
         isPhotoLibrarySelected = task.sourcePath == "PHOTOS_LIBRARY"
         selectedMediaType = task.mediaType
         includeICloudAssets = task.includeICloudAssets
+        photoFolderStructure = task.photoFolderStructure
+        preserveOriginalPhotoFormat = task.preserveOriginalPhotoFormat
         switch task.backupType {
         case .ftp: selectedTarget = .ftp
         case .sftp: selectedTarget = .sftp
@@ -130,6 +134,8 @@ final class BackupFormModel {
         isPhotoLibrarySelected = false
         selectedMediaType = .photosOnly
         includeICloudAssets = true
+        photoFolderStructure = .flat
+        preserveOriginalPhotoFormat = false
         ftpHost = Self.defaultFTPHost
         ftpPort = "21"
         ftpUsername = ""
@@ -487,6 +493,8 @@ extension BackupFormModel {
             mediaType: isPhotoLibrarySelected ? selectedMediaType : .photosOnly,
             allowCellularForLocalServer: allowCellularForLocalServer,
             includeICloudAssets: isPhotoLibrarySelected ? includeICloudAssets : false,
+            photoFolderStructure: isPhotoLibrarySelected ? photoFolderStructure : .flat,
+            preserveOriginalPhotoFormat: isPhotoLibrarySelected ? preserveOriginalPhotoFormat : false,
             deletionPolicy: deletionPolicy,
             checksumMode: checksumMode,
             allowedStartTime: useAllowedWindow ? allowedStartTime : nil,
@@ -514,6 +522,8 @@ extension BackupFormModel {
         target.mediaType = source.mediaType
         target.allowCellularForLocalServer = source.allowCellularForLocalServer
         target.includeICloudAssets = source.includeICloudAssets
+        target.photoFolderStructure = source.photoFolderStructure
+        target.preserveOriginalPhotoFormat = source.preserveOriginalPhotoFormat
         target.deletionPolicy = source.deletionPolicy
         target.checksumMode = source.checksumMode
         target.allowedStartTime = source.allowedStartTime

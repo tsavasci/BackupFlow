@@ -432,3 +432,10 @@
 "backup.wifi_confirm.message" = "このタスクにはWi-Fiが必要ですが、現在Wi-Fiに接続されていません。このまま開始すると、バックアップでモバイルデータ通信が使われる場合があります。";
 "backup.wifi_confirm.start_anyway" = "このまま開始";
 "backup.status.deferred" = "延期";
+
+"backup.photo_folder_structure" = "フォルダ構成";
+"backup.photo_folder_structure.flat" = "単一フォルダ";
+"backup.photo_folder_structure.year_month_slash" = "年 / 月 (2026/10)";
+"backup.photo_folder_structure.year_month_dash" = "年 - 月 (2026-10)";
+"backup.preserve_original_format" = "元の形式を保持 (HEIC/RAW/MOV)";
+"backup.preserve_original_format_hint" = ".jpg/.mp4に変換せず、元のファイル拡張子のまま保存します。";

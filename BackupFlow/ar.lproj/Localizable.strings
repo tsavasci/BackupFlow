@@ -431,3 +431,10 @@
 "backup.wifi_confirm.message" = "تتطلب هذه المهمة اتصال Wi-Fi، ولكن لا يوجد اتصال Wi-Fi حاليًا. إذا بدأتها على أي حال، فقد يستخدم النسخ الاحتياطي بيانات الجوال.";
 "backup.wifi_confirm.start_anyway" = "البدء على أي حال";
 "backup.status.deferred" = "مؤجل";
+
+"backup.photo_folder_structure" = "تنظيم المجلدات";
+"backup.photo_folder_structure.flat" = "مجلد واحد";
+"backup.photo_folder_structure.year_month_slash" = "سنة / شهر (2026/10)";
+"backup.photo_folder_structure.year_month_dash" = "سنة - شهر (2026-10)";
+"backup.preserve_original_format" = "الحفاظ على الصيغة الأصلية (HEIC/RAW/MOV)";
+"backup.preserve_original_format_hint" = "يحفظ الصور والفيديوهات بامتدادها الأصلي بدلاً من .jpg/.mp4.";

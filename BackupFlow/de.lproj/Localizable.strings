@@ -431,3 +431,10 @@
 "backup.wifi_confirm.message" = "Diese Aufgabe erfordert WLAN, aber derzeit besteht keine WLAN-Verbindung. Wenn du sie trotzdem startest, kann das Backup mobile Daten verwenden.";
 "backup.wifi_confirm.start_anyway" = "Trotzdem starten";
 "backup.status.deferred" = "Verschoben";
+
+"backup.photo_folder_structure" = "Ordnerstruktur";
+"backup.photo_folder_structure.flat" = "Einzelner Ordner";
+"backup.photo_folder_structure.year_month_slash" = "Jahr / Monat (2026/10)";
+"backup.photo_folder_structure.year_month_dash" = "Jahr - Monat (2026-10)";
+"backup.preserve_original_format" = "Originalformat behalten (HEIC/RAW/MOV)";
+"backup.preserve_original_format_hint" = "Speichert Fotos und Videos mit ihrer ursprünglichen Dateiendung statt .jpg/.mp4.";

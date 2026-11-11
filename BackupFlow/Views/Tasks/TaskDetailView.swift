@@ -38,6 +38,12 @@ struct TaskDetailView: View {
                         ? "backup.photos_option".localized
                         : URL(fileURLWithPath: task.sourcePath ?? "").lastPathComponent
                 )
+                if task.sourcePath == "PHOTOS_LIBRARY" {
+                    LabeledContent("backup.photo_folder_structure".localized, value: task.photoFolderStructure.displayName)
+                    if task.preserveOriginalPhotoFormat {
+                        LabeledContent("backup.preserve_original_format".localized, value: "alert.ok".localized)
+                    }
+                }
                 LabeledContent("task.details.status".localized, value: task.backupStatus.displayName)
                 LabeledContent("task.details.schedule".localized, value: task.frequency.displayText)
                 LabeledContent("backup.deletion_policy".localized, value: task.deletionPolicy.displayName)

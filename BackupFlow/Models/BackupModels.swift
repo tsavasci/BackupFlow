@@ -143,6 +143,37 @@ enum MediaType: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+/// Remote subfolder layout when backing up the Photo Library.
+enum PhotoFolderStructure: String, Codable, CaseIterable, Identifiable, Sendable {
+    case flat = "flat"
+    case yearMonthSlash = "year_month_slash"
+    case yearMonthDash = "year_month_dash"
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .flat: return "backup.photo_folder_structure.flat".localized
+        case .yearMonthSlash: return "backup.photo_folder_structure.year_month_slash".localized
+        case .yearMonthDash: return "backup.photo_folder_structure.year_month_dash".localized
+        }
+    }
+
+    /// Formats the subfolder prefix (e.g. `2026/10` or `2026-10`) for a given creation date.
+    func subfolderPrefix(for date: Date, calendar: Calendar = Calendar(identifier: .gregorian)) -> String? {
+        let components = calendar.dateComponents([.year, .month], from: date)
+        guard let year = components.year, let month = components.month else { return nil }
+        switch self {
+        case .flat:
+            return nil
+        case .yearMonthSlash:
+            return String(format: "%04d/%02d", year, month)
+        case .yearMonthDash:
+            return String(format: "%04d-%02d", year, month)
+        }
+    }
+}
+
 nonisolated struct ScheduleTime: Codable, Equatable, Sendable {
     var hour: Int
     var minute: Int
@@ -278,6 +309,8 @@ final class BackupTask: Identifiable, Hashable {
     // Network policy
     var allowCellularForLocalServer: Bool = false // Yeni özellik
     var includeICloudAssets: Bool = true
+    var photoFolderStructureRaw: String?
+    var preserveOriginalPhotoFormatValue: Bool?
     var deletionPolicyRaw: String?
     var checksumModeRaw: String?
     var allowedStartTime: ScheduleTime?
@@ -324,8 +357,20 @@ final class BackupTask: Identifiable, Hashable {
     }
 
     @Transient
+    var photoFolderStructure: PhotoFolderStructure {
+        get { PhotoFolderStructure(rawValue: photoFolderStructureRaw ?? "") ?? .flat }
+        set { photoFolderStructureRaw = newValue.rawValue }
+    }
+
+    @Transient
+    var preserveOriginalPhotoFormat: Bool {
+        get { preserveOriginalPhotoFormatValue ?? false }
+        set { preserveOriginalPhotoFormatValue = newValue }
+    }
+
+    @Transient
     var deletionPolicy: BackupDeletionPolicy {
-        get { BackupDeletionPolicy(rawValue: deletionPolicyRaw ?? "") ?? .mirror }
+        get { BackupDeletionPolicy(rawValue: deletionPolicyRaw ?? "") ?? .appendOnly }
         set { deletionPolicyRaw = newValue.rawValue }
     }
 
@@ -426,6 +471,8 @@ final class BackupTask: Identifiable, Hashable {
         mediaType: MediaType = .photosOnly,
         allowCellularForLocalServer: Bool = false,
         includeICloudAssets: Bool = true,
+        photoFolderStructure: PhotoFolderStructure = .flat,
+        preserveOriginalPhotoFormat: Bool = false,
         deletionPolicy: BackupDeletionPolicy = .appendOnly,
         checksumMode: BackupChecksumMode = .off,
         allowedStartTime: ScheduleTime? = nil,
@@ -452,6 +499,8 @@ final class BackupTask: Identifiable, Hashable {
         self.mediaType = mediaType
         self.allowCellularForLocalServer = allowCellularForLocalServer
         self.includeICloudAssets = includeICloudAssets
+        self.photoFolderStructureRaw = photoFolderStructure.rawValue
+        self.preserveOriginalPhotoFormatValue = preserveOriginalPhotoFormat
         self.deletionPolicyRaw = deletionPolicy.rawValue
         self.checksumModeRaw = checksumMode.rawValue
         self.allowedStartTime = allowedStartTime

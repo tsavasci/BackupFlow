@@ -140,7 +140,8 @@ class PhotoLibraryManager: NSObject, ObservableObject {
             return .unavailable
         }
 
-        let tempURL = tempRoot.appendingPathComponent(fileName)
+        let safeTempName = (fileName as NSString).lastPathComponent
+        let tempURL = tempRoot.appendingPathComponent(safeTempName)
         if FileManager.default.fileExists(atPath: tempURL.path) {
             try? FileManager.default.removeItem(at: tempURL)
         }
@@ -210,27 +211,89 @@ class PhotoLibraryManager: NSObject, ObservableObject {
         }
     }
     
-    func generateFileName(for asset: PHAsset) -> String {
-        let date = asset.creationDate ?? Date()
-        let dateString = fileNameFormatterLock.withLock {
-            fileNameDateFormatter.string(from: date)
+    func generateFileName(for asset: PHAsset, preserveOriginalExtension: Bool = false) -> String {
+        let origExt: String? = preserveOriginalExtension ? originalFileExtension(for: asset) : nil
+        return Self.formatFileName(
+            creationDate: asset.creationDate ?? Date(),
+            localIdentifier: asset.localIdentifier,
+            mediaType: asset.mediaType,
+            originalExtension: origExt,
+            preserveOriginalExtension: preserveOriginalExtension,
+            formatterLock: fileNameFormatterLock,
+            dateFormatter: fileNameDateFormatter
+        )
+    }
+
+    func generateRelativePath(
+        for asset: PHAsset,
+        folderStructure: PhotoFolderStructure = .flat,
+        preserveOriginalExtension: Bool = false
+    ) -> String {
+        let creationDate = asset.creationDate ?? Date()
+        let fileName = generateFileName(for: asset, preserveOriginalExtension: preserveOriginalExtension)
+        if let prefix = folderStructure.subfolderPrefix(for: creationDate) {
+            return "\(prefix)/\(fileName)"
         }
-        
-        let fileExtension: String
-        if asset.mediaType == .image {
-            fileExtension = "jpg"
-        } else if asset.mediaType == .video {
-            fileExtension = "mp4"
+        return fileName
+    }
+
+    /// Reads the original file extension (e.g. `heic`, `dng`, `mov`, `png`) from asset metadata.
+    private func originalFileExtension(for asset: PHAsset) -> String? {
+        if let fastName = asset.value(forKey: "filename") as? String {
+            let ext = (fastName as NSString).pathExtension.lowercased()
+            if !ext.isEmpty { return ext }
+        }
+        if let resourceName = primaryResource(for: asset)?.originalFilename {
+            let ext = (resourceName as NSString).pathExtension.lowercased()
+            if !ext.isEmpty { return ext }
+        }
+        return nil
+    }
+
+    static func formatFileName(
+        creationDate: Date,
+        localIdentifier: String,
+        mediaType: PHAssetMediaType,
+        originalExtension: String? = nil,
+        preserveOriginalExtension: Bool = false,
+        formatterLock: NSLock? = nil,
+        dateFormatter: DateFormatter? = nil
+    ) -> String {
+        let dateString: String
+        if let lock = formatterLock, let formatter = dateFormatter {
+            dateString = lock.withLock { formatter.string(from: creationDate) }
         } else {
-            fileExtension = "unknown"
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyyMMdd_HHmmss"
+            dateString = formatter.string(from: creationDate)
         }
-        
-        let rawIdentifier = asset.localIdentifier
-        let sanitizedIdentifier = rawIdentifier
+
+        let defaultExtension: String
+        if mediaType == .image {
+            defaultExtension = "jpg"
+        } else if mediaType == .video {
+            defaultExtension = "mp4"
+        } else {
+            defaultExtension = "unknown"
+        }
+
+        let cleanedOriginal = originalExtension?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "."))
+            .lowercased()
+
+        let fileExtension: String
+        if preserveOriginalExtension, let cleanedOriginal, !cleanedOriginal.isEmpty {
+            fileExtension = cleanedOriginal
+        } else {
+            fileExtension = defaultExtension
+        }
+
+        let sanitizedIdentifier = localIdentifier
             .replacingOccurrences(of: "/", with: "_")
             .replacingOccurrences(of: ":", with: "_")
         let idFragment = String(sanitizedIdentifier.prefix(12))
-        
+
         return "\(dateString)_\(idFragment).\(fileExtension)"
     }
 }

@@ -372,24 +372,34 @@ struct FTPSyncEngine {
             logger.warning("⚠️ Legacy photo filenames detected on FTP. Orphan deletion will be skipped to avoid data loss.")
         }
 
+        var ensuredSubdirectories = Set<String>()
+
         for (index, asset) in assets.enumerated() {
             guard !isCancelled() else { throw BackupServiceError.cancelled }
             
-            let stableFileName = photoManager.generateFileName(for: asset)
+            let stableFileName = photoManager.generateFileName(
+                for: asset,
+                preserveOriginalExtension: options.preserveOriginalPhotoFormat
+            )
+            let relativePath = photoManager.generateRelativePath(
+                for: asset,
+                folderStructure: options.photoFolderStructure,
+                preserveOriginalExtension: options.preserveOriginalPhotoFormat
+            )
 
-            if fastPhotoNameSkipEnabled, let remoteFile = existingFileMap[stableFileName] {
+            if fastPhotoNameSkipEnabled, let remoteFile = existingFileMap[relativePath] ?? existingFileMap[stableFileName] {
                 result.skippedFiles += 1
                 result.totalBytes += max(remoteFile.size, 0)
                 setCurrentFile("backup.current_file.skipped_file".localized(with: stableFileName))
                 if isVerboseLoggingEnabled {
-                    logger.debug("Fast-skip by name: \(stableFileName)")
+                    logger.debug("Fast-skip by name: \(relativePath)")
                 }
                 let progress = Double(index + 1) / Double(max(totalCount, 1)) * 0.8
                 progressHandler?(progress)
                 continue
             }
 
-            if let remoteFile = existingFileMap[stableFileName],
+            if let remoteFile = existingFileMap[relativePath] ?? existingFileMap[stableFileName],
                remoteFile.size > 0,
                let expectedSize = photoManager.localResourceSize(for: asset),
                expectedSize == remoteFile.size {
@@ -427,20 +437,26 @@ struct FTPSyncEngine {
             }
             defer { try? FileManager.default.removeItem(at: localURL) }
 
-            let remotePath = "\(photosDir)/\(stableFileName)"
+            let remotePath = BackupArchive.safeRemotePath(basePath: photosDir, relativePath: relativePath)
+            let remoteSubdir = (remotePath as NSString).deletingLastPathComponent
+            if !options.isDryRun && !ensuredSubdirectories.contains(remoteSubdir) && remoteSubdir != photosDir {
+                try await createDirectory(remoteSubdir)
+                ensuredSubdirectories.insert(remoteSubdir)
+            }
 
-            let comparisonResult = compareFileEnhanced(
-                relativePath: stableFileName,
-                localSize: localSize,
-                existingFiles: existingFileMap
-            )
+            let comparison: FTPFileComparisonResult
+            if let remoteFile = existingFileMap[relativePath] ?? existingFileMap[stableFileName] {
+                comparison = (localSize == remoteFile.size) ? .unchanged : .updated
+            } else {
+                comparison = .new
+            }
 
-            switch comparisonResult {
+            switch comparison {
             case .unchanged:
                 result.skippedFiles += 1
                 result.totalBytes += localSize
                 setCurrentFile("backup.current_file.skipped_file".localized(with: stableFileName))
-                debugLog("⏭ BackupFlow: Aynı dosya pas geçildi: \(stableFileName) (\(formatBytes(localSize)))")
+                debugLog("⏭ BackupFlow: Aynı dosya pas geçildi: \(relativePath) (\(formatBytes(localSize)))")
             case .new:
                 setCurrentFile("backup.current_file.uploading_file".localized(with: stableFileName))
                 if !options.isDryRun {
@@ -453,7 +469,7 @@ struct FTPSyncEngine {
                 result.newFiles += 1
                 result.totalBytes += localSize
                 BackupRunTally.shared.recordUpload(bytes: localSize)
-                debugLog("📤 BackupFlow: Yeni dosya yüklendi: \(stableFileName) (\(formatBytes(localSize)))")
+                debugLog("📤 BackupFlow: Yeni dosya yüklendi: \(relativePath) (\(formatBytes(localSize)))")
             case .updated:
                 setCurrentFile("backup.current_file.updating_file".localized(with: stableFileName))
                 if !options.isDryRun {
@@ -466,7 +482,7 @@ struct FTPSyncEngine {
                 result.updatedFiles += 1
                 result.totalBytes += localSize
                 BackupRunTally.shared.recordUpload(bytes: localSize)
-                debugLog("🔄 BackupFlow: Güncellenmiş dosya yüklendi: \(stableFileName) (\(formatBytes(localSize)))")
+                debugLog("🔄 BackupFlow: Güncellenmiş dosya yüklendi: \(relativePath) (\(formatBytes(localSize)))")
             }
 
             let progress = Double(index + 1) / Double(max(totalCount, 1)) * 0.8
@@ -480,7 +496,16 @@ struct FTPSyncEngine {
         }
         
         logger.info("Checking for orphaned photo files to delete...")
-        let processedFiles = Set(assets.map { photoManager.generateFileName(for: $0) })
+        var processedFiles = Set<String>()
+        for asset in assets {
+            processedFiles.insert(photoManager.generateFileName(for: asset, preserveOriginalExtension: false))
+            processedFiles.insert(photoManager.generateFileName(for: asset, preserveOriginalExtension: options.preserveOriginalPhotoFormat))
+            processedFiles.insert(photoManager.generateRelativePath(
+                for: asset,
+                folderStructure: options.photoFolderStructure,
+                preserveOriginalExtension: options.preserveOriginalPhotoFormat
+            ))
+        }
         let canDeletePhotoOrphans = options.permitsPhotoOrphanDeletion(
             hasFullLibraryAccess: photoManager.hasFullLibraryAccess,
             visibleAssetCount: assets.count
@@ -490,10 +515,12 @@ struct FTPSyncEngine {
             logger.warning("Skipping orphan photo deletion because full Photo Library access is unavailable or the visible library is empty.")
         }
 
-        // FTP matches orphans by file name, so photos in subfolders are compared by name too.
+        // FTP matches orphans by file name or relative path, so photos in subfolders are compared safely too.
         let orphans = existingFileMap
             .filter { remotePath, remoteFile in
-                !BackupArchive.isReserved(relativePath: remotePath) && !processedFiles.contains(remoteFile.name)
+                !BackupArchive.isReserved(relativePath: remotePath)
+                    && !processedFiles.contains(remoteFile.name)
+                    && !processedFiles.contains(remotePath)
             }
             .map { remotePath, _ in
                 PhotoOrphanCleanup.Orphan(relativePath: remotePath, fullRemotePath: BackupArchive.safeRemotePath(basePath: photosDir, relativePath: remotePath))

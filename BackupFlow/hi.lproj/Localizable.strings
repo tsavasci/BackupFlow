@@ -432,3 +432,10 @@
 "backup.wifi_confirm.message" = "इस कार्य के लिए Wi-Fi ज़रूरी है, लेकिन अभी Wi-Fi कनेक्शन नहीं है। फिर भी शुरू करने पर बैकअप मोबाइल डेटा का उपयोग कर सकता है।";
 "backup.wifi_confirm.start_anyway" = "फिर भी शुरू करें";
 "backup.status.deferred" = "स्थगित";
+
+"backup.photo_folder_structure" = "फ़ोल्डर लेआउट";
+"backup.photo_folder_structure.flat" = "एकल फ़ोल्डर";
+"backup.photo_folder_structure.year_month_slash" = "वर्ष / माह (2026/10)";
+"backup.photo_folder_structure.year_month_dash" = "वर्ष - माह (2026-10)";
+"backup.preserve_original_format" = "मूल फ़ॉर्मेट रखें (HEIC/RAW/MOV)";
+"backup.preserve_original_format_hint" = "फ़ोटो और वीडियो को .jpg/.mp4 के बजाय उनके मूल एक्सटेंशन में सहेजता है।";

@@ -8,6 +8,8 @@ struct BackupExecutionOptions: Codable, Equatable {
     var requiresExternalPower: Bool
     var allowedStartTime: ScheduleTime?
     var allowedEndTime: ScheduleTime?
+    var photoFolderStructure: PhotoFolderStructure = .flat
+    var preserveOriginalPhotoFormat: Bool = false
 
     nonisolated static let defaults = BackupExecutionOptions(
         isDryRun: false,
@@ -16,7 +18,9 @@ struct BackupExecutionOptions: Codable, Equatable {
         requiresWiFi: false,
         requiresExternalPower: false,
         allowedStartTime: nil,
-        allowedEndTime: nil
+        allowedEndTime: nil,
+        photoFolderStructure: .flat,
+        preserveOriginalPhotoFormat: false
     )
 
     static func forTask(_ task: BackupTask, isDryRun: Bool = false) -> BackupExecutionOptions {
@@ -27,7 +31,9 @@ struct BackupExecutionOptions: Codable, Equatable {
             requiresWiFi: task.requiresWiFi,
             requiresExternalPower: task.requiresExternalPower,
             allowedStartTime: task.allowedStartTime,
-            allowedEndTime: task.allowedEndTime
+            allowedEndTime: task.allowedEndTime,
+            photoFolderStructure: task.photoFolderStructure,
+            preserveOriginalPhotoFormat: task.preserveOriginalPhotoFormat
         )
     }
 

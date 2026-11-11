@@ -932,7 +932,16 @@ final class WebDAVService: NSObject, FileProviderDelegate {
         }
 
         let existingFileMap = try await listAllRemoteFiles(at: remoteBasePath)
-        let processedRelativePaths = Set(assets.map { photoLibraryManager.generateFileName(for: $0) })
+        var processedRelativePaths = Set<String>()
+        for asset in assets {
+            processedRelativePaths.insert(photoLibraryManager.generateFileName(for: asset, preserveOriginalExtension: false))
+            processedRelativePaths.insert(photoLibraryManager.generateFileName(for: asset, preserveOriginalExtension: options.preserveOriginalPhotoFormat))
+            processedRelativePaths.insert(photoLibraryManager.generateRelativePath(
+                for: asset,
+                folderStructure: options.photoFolderStructure,
+                preserveOriginalExtension: options.preserveOriginalPhotoFormat
+            ))
+        }
 
         try fileManager.createDirectory(at: exportRootURL(), withIntermediateDirectories: true)
 
@@ -965,7 +974,12 @@ final class WebDAVService: NSObject, FileProviderDelegate {
         }
 
         let orphans = existingFileMap.keys
-            .filter { !processedRelativePaths.contains($0) && !BackupArchive.isReserved(relativePath: $0) }
+            .filter {
+                let baseName = ($0 as NSString).lastPathComponent
+                return !processedRelativePaths.contains($0)
+                    && !processedRelativePaths.contains(baseName)
+                    && !BackupArchive.isReserved(relativePath: $0)
+            }
             .map { relativePath in
                 PhotoOrphanCleanup.Orphan(
                     relativePath: relativePath,
@@ -999,6 +1013,7 @@ final class WebDAVService: NSObject, FileProviderDelegate {
     private struct PendingPhotoUpload {
         let asset: PHAsset
         let fileName: String
+        let relativePath: String
         let remotePath: String
     }
 
@@ -1035,16 +1050,27 @@ final class WebDAVService: NSObject, FileProviderDelegate {
                 lastHeartbeatAt = Date()
             }
 
-            let fileName = photoLibraryManager.generateFileName(for: asset)
-            let remotePath = remoteBasePath == "/" ? "/\(fileName)" : "\(remoteBasePath)/\(fileName)"
+            let fileName = photoLibraryManager.generateFileName(
+                for: asset,
+                preserveOriginalExtension: options.preserveOriginalPhotoFormat
+            )
+            let relativePath = photoLibraryManager.generateRelativePath(
+                for: asset,
+                folderStructure: options.photoFolderStructure,
+                preserveOriginalExtension: options.preserveOriginalPhotoFormat
+            )
+            let remotePath = remoteBasePath == "/" ? "/\(relativePath)" : "\(remoteBasePath)/\(relativePath)"
 
             // Photo filenames embed creation timestamp + PHAsset UUID prefix, so a non-empty
             // remote file with the same name is already backed up. Skipping before querying
             // PHAssetResource or exporting avoids main-thread PhotoKit XPC stalls and disk I/O.
-            if let remoteFile = existingFileMap[fileName], remoteFile.size > 0 {
+            if let remoteFile = existingFileMap[relativePath] ?? existingFileMap[fileName],
+               remoteFile.size > 0,
+               let expectedSize = photoLibraryManager.localResourceSize(for: asset),
+               expectedSize == remoteFile.size {
                 result.skippedFiles += 1
-                result.totalBytes += remoteFile.size
-                logger.debug("⏭️ Upload fast-skipped (\(index + 1)/\(totalAssets)): \(fileName) (\(remoteFile.size) bytes)")
+                result.totalBytes += expectedSize
+                logger.debug("⏭️ Upload fast-skipped (\(index + 1)/\(totalAssets)): \(relativePath) (\(remoteFile.size) bytes)")
                 reportProgress(afterAsset: index)
                 continue
             }
@@ -1079,17 +1105,21 @@ final class WebDAVService: NSObject, FileProviderDelegate {
             }
             defer { try? fileManager.removeItem(at: tempURL) }
 
-            if let remoteFile = existingFileMap[fileName], remoteFile.size == localSize {
+            if let remoteFile = existingFileMap[relativePath] ?? existingFileMap[fileName], remoteFile.size == localSize {
                 result.skippedFiles += 1
                 result.totalBytes += localSize
-                logger.debug("⏭️ Upload skipped (\(index + 1)/\(totalAssets)): \(fileName) (\(localSize) bytes)")
+                logger.debug("⏭️ Upload skipped (\(index + 1)/\(totalAssets)): \(relativePath) (\(localSize) bytes)")
                 reportProgress(afterAsset: index)
                 continue
             }
 
             do {
-                logger.info("⬆️ Upload starting (\(index + 1)/\(totalAssets)): \(fileName) (\(localSize) bytes)")
+                logger.info("⬆️ Upload starting (\(index + 1)/\(totalAssets)): \(relativePath) (\(localSize) bytes)")
                 if !options.isDryRun {
+                    let parentDir = (remotePath as NSString).deletingLastPathComponent
+                    if !parentDir.isEmpty && parentDir != "/" && parentDir != remoteBasePath {
+                        try await ensureDirectoryExists(at: parentDir)
+                    }
                     try await uploadFileAwaitingCompletion(localURL: tempURL, remotePath: remotePath) { fileProgress in
                         let assetShare = 0.8 / Double(max(totalAssets, 1))
                         let overallProgress = (Double(index) / Double(max(totalAssets, 1)) * 0.8) + (fileProgress * assetShare)
@@ -1100,20 +1130,20 @@ final class WebDAVService: NSObject, FileProviderDelegate {
                         result.verifiedFiles += 1
                     }
                 }
-                logger.info("✅ Upload completed (\(index + 1)/\(totalAssets)): \(fileName)")
+                logger.info("✅ Upload completed (\(index + 1)/\(totalAssets)): \(relativePath)")
             } catch {
                 if isUploadTimeoutError(error) {
-                    timedOutUploads.append(PendingPhotoUpload(asset: asset, fileName: fileName, remotePath: remotePath))
-                    logger.warning("⏱️ Upload timeout queued for retry: \(fileName)")
+                    timedOutUploads.append(PendingPhotoUpload(asset: asset, fileName: fileName, relativePath: relativePath, remotePath: remotePath))
+                    logger.warning("⏱️ Upload timeout queued for retry: \(relativePath)")
                 } else {
                     failedUploads += 1
-                    logger.error("Upload failed (continuing): \(fileName) - \(error.localizedDescription)")
+                    logger.error("Upload failed (continuing): \(relativePath) - \(error.localizedDescription)")
                 }
                 reportProgress(afterAsset: index)
                 continue
             }
 
-            if existingFileMap[fileName] != nil {
+            if existingFileMap[relativePath] != nil {
                 result.updatedFiles += 1
             } else {
                 result.newFiles += 1
@@ -1183,7 +1213,7 @@ final class WebDAVService: NSObject, FileProviderDelegate {
                     try await verifyUploadChecksum(localURL: retryTempURL, remotePath: item.remotePath)
                     result.verifiedFiles += 1
                 }
-                if existingFileMap[item.fileName] != nil {
+                if existingFileMap[item.relativePath] != nil || existingFileMap[item.fileName] != nil {
                     result.updatedFiles += 1
                 } else {
                     result.newFiles += 1

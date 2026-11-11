@@ -432,3 +432,10 @@
 "backup.wifi_confirm.message" = "Для этой задачи требуется Wi-Fi, но сейчас подключения к Wi-Fi нет. Если всё равно запустить её, резервное копирование может использовать мобильные данные.";
 "backup.wifi_confirm.start_anyway" = "Всё равно запустить";
 "backup.status.deferred" = "Отложено";
+
+"backup.photo_folder_structure" = "Структура папок";
+"backup.photo_folder_structure.flat" = "Одна папка";
+"backup.photo_folder_structure.year_month_slash" = "Год / Месяц (2026/10)";
+"backup.photo_folder_structure.year_month_dash" = "Год - Месяц (2026-10)";
+"backup.preserve_original_format" = "Сохранять исходный формат (HEIC/RAW/MOV)";
+"backup.preserve_original_format_hint" = "Сохраняет фото и видео с исходным расширением вместо .jpg/.mp4.";

@@ -430,3 +430,10 @@
 "backup.wifi_confirm.message" = "此任务需要 Wi-Fi，但当前没有 Wi-Fi 连接。如果仍要开始，备份可能会使用蜂窝数据。";
 "backup.wifi_confirm.start_anyway" = "仍要开始";
 "backup.status.deferred" = "已推迟";
+
+"backup.photo_folder_structure" = "文件夹结构";
+"backup.photo_folder_structure.flat" = "单个文件夹";
+"backup.photo_folder_structure.year_month_slash" = "年 / 月 (2026/10)";
+"backup.photo_folder_structure.year_month_dash" = "年 - 月 (2026-10)";
+"backup.preserve_original_format" = "保留原始格式 (HEIC/RAW/MOV)";
+"backup.preserve_original_format_hint" = "以原始文件扩展名保存照片和视频，而不转换为 .jpg/.mp4。";

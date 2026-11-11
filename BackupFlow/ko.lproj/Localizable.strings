@@ -434,3 +434,10 @@
 "backup.wifi_confirm.message" = "이 작업에는 Wi-Fi가 필요하지만 현재 Wi-Fi에 연결되어 있지 않습니다. 그래도 시작하면 백업에 모바일 데이터가 사용될 수 있습니다.";
 "backup.wifi_confirm.start_anyway" = "그래도 시작";
 "backup.status.deferred" = "연기됨";
+
+"backup.photo_folder_structure" = "폴더 구조";
+"backup.photo_folder_structure.flat" = "단일 폴더";
+"backup.photo_folder_structure.year_month_slash" = "연도 / 월 (2026/10)";
+"backup.photo_folder_structure.year_month_dash" = "연도 - 월 (2026-10)";
+"backup.preserve_original_format" = "원본 포맷 유지 (HEIC/RAW/MOV)";
+"backup.preserve_original_format_hint" = "사진과 동영상을 .jpg/.mp4 대신 원본 파일 확장자로 저장합니다.";

@@ -1,4 +1,5 @@
 import XCTest
+import Photos
 @testable import BackupFlow
 
 final class BackupFlowTests: XCTestCase {
@@ -307,5 +308,56 @@ final class BackupFlowTests: XCTestCase {
         let built = try WebDAVConnectionBuilder.build(host: keenetic.host, port: keenetic.port)
         XCTAssertEqual(built.url.absoluteString, "https://tamersavasci.keenetic.link/webdav/")
         XCTAssertEqual(built.path, "/webdav/")
+    }
+
+    func testPhotoFolderStructureSubfolderPrefixes() throws {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let date = calendar.date(from: DateComponents(year: 2026, month: 10, day: 28, hour: 14, minute: 30))!
+
+        XCTAssertNil(PhotoFolderStructure.flat.subfolderPrefix(for: date, calendar: calendar))
+        XCTAssertEqual(PhotoFolderStructure.yearMonthSlash.subfolderPrefix(for: date, calendar: calendar), "2026/10")
+        XCTAssertEqual(PhotoFolderStructure.yearMonthDash.subfolderPrefix(for: date, calendar: calendar), "2026-10")
+    }
+
+    func testPhotoFileNamePreservesOriginalExtensionWhenEnabled() throws {
+        let date = Date(timeIntervalSince1970: 1_761_652_200)
+        let defaultName = PhotoLibraryManager.formatFileName(
+            creationDate: date,
+            localIdentifier: "ABCD1234-5678-90EF/L0/001",
+            mediaType: .image,
+            originalExtension: "HEIC",
+            preserveOriginalExtension: false
+        )
+        XCTAssertTrue(defaultName.hasSuffix("_ABCD1234-567.jpg"))
+
+        let preservedHeic = PhotoLibraryManager.formatFileName(
+            creationDate: date,
+            localIdentifier: "ABCD1234-5678-90EF/L0/001",
+            mediaType: .image,
+            originalExtension: ".HEIC",
+            preserveOriginalExtension: true
+        )
+        XCTAssertTrue(preservedHeic.hasSuffix("_ABCD1234-567.heic"))
+
+        let preservedMov = PhotoLibraryManager.formatFileName(
+            creationDate: date,
+            localIdentifier: "ABCD1234-5678-90EF/L0/001",
+            mediaType: .video,
+            originalExtension: "MOV",
+            preserveOriginalExtension: true
+        )
+        XCTAssertTrue(preservedMov.hasSuffix("_ABCD1234-567.mov"))
+    }
+
+    func testBackupExecutionOptionsPropagatesPhotoFolderAndFormatSettings() throws {
+        let task = BackupTask(
+            sourcePath: "PHOTOS_LIBRARY",
+            photoFolderStructure: .yearMonthSlash,
+            preserveOriginalPhotoFormat: true
+        )
+        let options = BackupExecutionOptions.forTask(task)
+        XCTAssertEqual(options.photoFolderStructure, .yearMonthSlash)
+        XCTAssertTrue(options.preserveOriginalPhotoFormat)
     }
 }

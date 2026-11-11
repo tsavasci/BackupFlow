@@ -132,6 +132,29 @@ struct BackupSourceSection: View {
                         Text("backup.photo_backup_include_icloud_hint".localized)
                             .font(.caption)
                             .foregroundStyle(.secondary)
+
+                        Divider()
+                            .padding(.vertical, 2)
+
+                        HStack {
+                            Text("backup.photo_folder_structure".localized)
+                                .font(.subheadline)
+                                .accessibilityHidden(true)
+                            Spacer()
+                            Picker("backup.photo_folder_structure".localized, selection: $form.photoFolderStructure) {
+                                ForEach(PhotoFolderStructure.allCases) { structure in
+                                    Text(structure.displayName).tag(structure)
+                                }
+                            }
+                            .labelsHidden()
+                        }
+
+                        Toggle("backup.preserve_original_format".localized, isOn: $form.preserveOriginalPhotoFormat)
+                            .tint(theme.primary)
+
+                        Text("backup.preserve_original_format_hint".localized)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                     .padding(12)
                     .background(theme.primary.opacity(0.06))

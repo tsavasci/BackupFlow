@@ -431,3 +431,10 @@
 "backup.wifi_confirm.message" = "Esta tarea requiere Wi-Fi, pero ahora no hay conexión Wi-Fi. Si la inicias de todos modos, la copia puede usar datos móviles.";
 "backup.wifi_confirm.start_anyway" = "Iniciar de todos modos";
 "backup.status.deferred" = "Aplazada";
+
+"backup.photo_folder_structure" = "Estructura de carpetas";
+"backup.photo_folder_structure.flat" = "Carpeta única";
+"backup.photo_folder_structure.year_month_slash" = "Año / Mes (2026/10)";
+"backup.photo_folder_structure.year_month_dash" = "Año - Mes (2026-10)";
+"backup.preserve_original_format" = "Conservar formato original (HEIC/RAW/MOV)";
+"backup.preserve_original_format_hint" = "Guarda fotos y vídeos con su extensión original en lugar de .jpg/.mp4.";
