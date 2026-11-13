@@ -235,7 +235,7 @@ struct SFTPSyncEngine {
             if (checkpoint.contains(relativePath) || checkpoint.contains(fileName)),
                (existingFileMap[relativePath] != nil || existingFileMap[fileName] != nil) {
                 result.skippedFiles += 1
-                let progress = Double(index + 1) / Double(max(totalCount, 1))
+                let progress = Double(index + 1) / Double(max(totalCount, 1)) * 0.8
                 progressHandler?(progress)
                 continue
             }
@@ -250,7 +250,7 @@ struct SFTPSyncEngine {
                     checkpoint.insert(relativePath)
                     await markCheckpoint?(relativePath)
                 }
-                let progress = Double(index + 1) / Double(max(totalCount, 1))
+                let progress = Double(index + 1) / Double(max(totalCount, 1)) * 0.8
                 progressHandler?(progress)
                 continue
             }
@@ -289,6 +289,12 @@ struct SFTPSyncEngine {
                 ensuredSubdirectories.insert(parentDir)
             }
 
+            let reportAssetUploadProgress: @Sendable (Double) -> Void = { fileProgress in
+                let assetShare = (1.0 / Double(max(totalCount, 1))) * 0.8
+                let overallProgress = (Double(index) / Double(max(totalCount, 1)) * 0.8) + (fileProgress * assetShare)
+                progressHandler?(min(max(overallProgress, 0.0), 0.8))
+            }
+
             if let remoteSize = existingFileMap[relativePath] ?? existingFileMap[fileName], remoteSize == localSize {
                 result.skippedFiles += 1
                 result.totalBytes += localSize
@@ -297,11 +303,7 @@ struct SFTPSyncEngine {
                     await markCheckpoint?(relativePath)
                 }
             } else if existingFileMap[relativePath] != nil {
-                let didUpload = options.isDryRun ? true : try await uploadFile(tempURL, fileRemotePath, localSize, true) { fileProgress in
-                    let assetShare = 1.0 / Double(max(totalCount, 1))
-                    let overallProgress = (Double(index) / Double(max(totalCount, 1))) + (fileProgress * assetShare)
-                    progressHandler?(min(max(overallProgress, 0.0), 1.0))
-                }
+                let didUpload = options.isDryRun ? true : try await uploadFile(tempURL, fileRemotePath, localSize, true, reportAssetUploadProgress)
                 if didUpload {
                     if !options.isDryRun && options.checksumMode == .verifyUploads {
                         try await verifyUpload(tempURL, fileRemotePath)
@@ -319,11 +321,7 @@ struct SFTPSyncEngine {
                     result.totalBytes += localSize
                 }
             } else {
-                let didUpload = options.isDryRun ? true : try await uploadFile(tempURL, fileRemotePath, localSize, true) { fileProgress in
-                    let assetShare = 1.0 / Double(max(totalCount, 1))
-                    let overallProgress = (Double(index) / Double(max(totalCount, 1))) + (fileProgress * assetShare)
-                    progressHandler?(min(max(overallProgress, 0.0), 1.0))
-                }
+                let didUpload = options.isDryRun ? true : try await uploadFile(tempURL, fileRemotePath, localSize, true, reportAssetUploadProgress)
                 if didUpload {
                     if !options.isDryRun && options.checksumMode == .verifyUploads {
                         try await verifyUpload(tempURL, fileRemotePath)
