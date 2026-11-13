@@ -1,0 +1,13 @@
+"widget.gallery.title" = "BackupFlow";
+"widget.gallery.description" = "يعرض حالة آخر نسخ احتياطي والبروتوكول والتقدم المباشر والتشغيل المجدول التالي.";
+"widget.empty" = "لا توجد نسخ احتياطية بعد";
+"widget.backup_default" = "نسخ احتياطي";
+"widget.placeholder.task" = "الصور والفيديو";
+"widget.placeholder.summary" = "107 ملف • 136.3 MB";
+"widget.status.completed" = "مكتمل";
+"widget.status.failed" = "فشل";
+"widget.status.cancelled" = "ملغى";
+"widget.status.running" = "جارٍ النسخ الاحتياطي...";
+"widget.label.last_sync" = "آخر نسخ";
+"widget.label.next_run" = "التالي";
+"widget.action.open" = "فتح التطبيق";

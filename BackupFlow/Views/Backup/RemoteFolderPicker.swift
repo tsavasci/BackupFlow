@@ -7,6 +7,8 @@ struct RemoteFolderPicker: View {
     let port: Int
     let username: String?
     let password: String?
+    var privateKey: String? = nil
+    var passphrase: String? = nil
     let onSelect: (String) -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -70,7 +72,14 @@ struct RemoteFolderPicker: View {
             case .ftp:
                 try await FTPService.shared.connect(host: host, port: port, username: username, password: password)
             case .sftp:
-                try await SFTPService.shared.connect(host: host, port: port, username: username, password: password)
+                try await SFTPService.shared.connect(
+                    host: host,
+                    port: port,
+                    username: username,
+                    password: password,
+                    privateKey: privateKey,
+                    passphrase: passphrase
+                )
             case .webdav:
                 try await WebDAVService.shared.connect(host: host, port: port, username: username, password: password)
             }

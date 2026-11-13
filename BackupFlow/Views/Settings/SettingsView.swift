@@ -95,6 +95,8 @@ struct SettingsView: View {
                 }) {
                     Text("settings.contact_support".localized)
                 }
+
+                ShareLink("settings.export_diagnostics".localized, item: BackupDiagnosticsExporter.buildReport())
             }
             .liquidListRow()
             
@@ -225,7 +227,7 @@ struct SettingsView: View {
 }
 
 #Preview {
-    NavigationView {
+    NavigationStack {
         SettingsView()
     }
 }

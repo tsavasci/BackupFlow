@@ -147,6 +147,22 @@ extension BackupScheduler {
             resetCurrentFileProgress(for: task)
         }
         task.lastError = nil
+
+        BackupLiveActivityManager.shared.start(
+            taskName: task.displayName,
+            protocolName: task.backupType.rawValue,
+            statusText: "backup.status.preparing".localized
+        )
+        WidgetSnapshotProgressThrottle.reset(initialProgress: task.progress)
+        BackupWidgetSnapshotStore.save(
+            makeWidgetSnapshot(
+                for: task,
+                status: "running",
+                activeTaskName: task.displayName,
+                activeProgress: task.progress,
+                activeFileName: task.currentFile
+            )
+        )
     }
 
     /// Runs the backup (or dry run) through the service matching the task's protocol.
@@ -189,6 +205,19 @@ extension BackupScheduler {
         )
         await notifier.sendBackupCompletionNotification(task: task, syncResult: syncResult)
 
+        BackupLiveActivityManager.shared.end(
+            statusText: "backup.status.completed".localized,
+            success: true
+        )
+        BackupWidgetSnapshotStore.save(
+            makeWidgetSnapshot(
+                for: task,
+                status: "completed",
+                activeProgress: 1.0,
+                syncResult: syncResult
+            )
+        )
+
         debugLog("✅ BackupFlow: Yedekleme tamamlandı: \(task.displayName)")
     }
 
@@ -205,6 +234,18 @@ extension BackupScheduler {
         task.nextRunTime = expiredBySystem
             ? Date().addingTimeInterval(15 * 60)
             : calculateNextRunTime(for: task)
+
+        BackupLiveActivityManager.shared.end(
+            statusText: "backup.status.cancelled".localized,
+            success: false
+        )
+        BackupWidgetSnapshotStore.save(
+            makeWidgetSnapshot(
+                for: task,
+                status: "cancelled",
+                activeProgress: 0.0
+            )
+        )
 
         BackupHistoryRecorder.record(
             for: task,
@@ -266,6 +307,19 @@ extension BackupScheduler {
         let failureCategory = categorizeFailure(error)
         task.lastFailureCategory = failureCategory
         task.consecutiveFailureCount += 1
+
+        BackupLiveActivityManager.shared.end(
+            statusText: "backup.status.failed".localized,
+            success: false
+        )
+        BackupWidgetSnapshotStore.save(
+            makeWidgetSnapshot(
+                for: task,
+                status: "failed",
+                activeProgress: 0.0,
+                errorMessage: error.localizedDescription
+            )
+        )
 
         debugLog("❌ BackupFlow: Yedekleme başarısız: \(task.displayName) - \(error)")
 
@@ -449,11 +503,17 @@ extension BackupScheduler {
             let sftpService = SFTPService.shared
             task.currentFile = "backup.current_file.connecting_sftp".localized
             
+            let credentialStore = BackupCredentialStore.shared
+            let privateKey = task.sftpAuthMethod == .privateKey ? credentialStore.privateKey(for: task.id) : nil
+            let passphrase = task.sftpAuthMethod == .privateKey ? credentialStore.passphrase(for: task.id) : nil
+
             let syncResult = try await sftpService.performBackup(
                 host: task.serverHost,
                 port: task.serverPort,
                 username: task.serverUsername,
                 password: task.resolvedServerPassword,
+                privateKey: privateKey,
+                passphrase: passphrase,
                 sourcePath: task.sourcePath ?? "",
                 destinationPath: task.destinationPath,
                 mediaType: task.mediaType,
@@ -481,21 +541,84 @@ extension BackupScheduler {
         for task: BackupTask,
         source: some TransferProgressSource,
         usePlaceholderForEmptyFile: Bool = true
-    ) -> (Double) -> Void {
-        { progress in
+    ) -> @Sendable (Double) -> Void {
+        nonisolated(unsafe) let mainActorTask = task
+        return { progress in
             Task { @MainActor in
                 // NaN kontrolü ile güvenli progress update
-                task.progress = progress.isNaN || progress.isInfinite ? 0.0 : max(0.0, min(1.0, progress))
+                mainActorTask.progress = progress.isNaN || progress.isInfinite ? 0.0 : max(0.0, min(1.0, progress))
                 let currentFile = source.currentFile
-                task.currentFile = usePlaceholderForEmptyFile && currentFile.isEmpty
+                mainActorTask.currentFile = usePlaceholderForEmptyFile && currentFile.isEmpty
                     ? "backup.current_file.uploading".localized
                     : currentFile
-                task.currentFileProgress = source.progress
-                task.currentFileBytesTransferred = source.currentFileBytesTransferred
-                task.currentFileTotalBytes = source.currentFileTotalBytes
-                task.transferSpeedBytesPerSecond = source.transferSpeedBytesPerSecond
+                mainActorTask.currentFileProgress = source.progress
+                mainActorTask.currentFileBytesTransferred = source.currentFileBytesTransferred
+                mainActorTask.currentFileTotalBytes = source.currentFileTotalBytes
+                mainActorTask.transferSpeedBytesPerSecond = source.transferSpeedBytesPerSecond
+
+                BackupLiveActivityManager.shared.update(
+                    progress: mainActorTask.progress,
+                    fileName: mainActorTask.currentFile ?? "",
+                    statusText: "backup.status.uploading".localized
+                )
+
+                if WidgetSnapshotProgressThrottle.shouldUpdate(progress: mainActorTask.progress) {
+                    BackupWidgetSnapshotStore.save(
+                        self.makeWidgetSnapshot(
+                            for: mainActorTask,
+                            status: "running",
+                            activeTaskName: mainActorTask.displayName,
+                            activeProgress: mainActorTask.progress,
+                            activeFileName: mainActorTask.currentFile
+                        )
+                    )
+                }
             }
         }
+    }
+
+    private func makeWidgetSnapshot(
+        for task: BackupTask,
+        status: String,
+        activeTaskName: String? = nil,
+        activeProgress: Double,
+        activeFileName: String? = nil,
+        syncResult: FTPService.SyncResult? = nil,
+        errorMessage: String? = nil
+    ) -> BackupWidgetSnapshot {
+        let statusDisplayText: String = {
+            switch status {
+            case "running": return "widget.status.running".localized
+            case "completed": return "backup.status.completed".localized
+            case "cancelled": return "backup.status.cancelled".localized
+            case "failed": return "backup.status.failed".localized
+            default: return status
+            }
+        }()
+
+        let filesSummaryText: String? = syncResult.map { result in
+            let sizeText = ByteCountFormatter.string(fromByteCount: result.totalBytes, countStyle: .file)
+            return "widget.label.files_summary".localized(with: result.totalProcessed, sizeText)
+        }
+
+        return BackupWidgetSnapshot(
+            lastBackupDate: task.lastBackupDate,
+            lastStatus: status,
+            lastTaskName: task.displayName,
+            nextRunDate: task.nextRunTime,
+            nextTaskName: task.displayName,
+            activeTaskName: activeTaskName,
+            activeProgress: activeProgress,
+            activeFileName: activeFileName,
+            updatedAt: Date(),
+            protocolName: task.backupType.rawValue,
+            statusDisplayText: statusDisplayText,
+            filesSummaryText: filesSummaryText,
+            lastErrorSummary: errorMessage,
+            lastSyncLabel: "widget.label.last_sync".localized,
+            nextRunLabel: "widget.label.next_run".localized,
+            openActionLabel: "widget.action.open".localized
+        )
     }
 
     func resetCurrentFileProgress(for task: BackupTask) {
@@ -568,5 +691,26 @@ extension BackupScheduler {
             return .server
         }
         return .unknown
+    }
+}
+
+@MainActor
+private enum WidgetSnapshotProgressThrottle {
+    private static var lastUpdateAt: Date = .distantPast
+    private static var lastProgress: Double = -1
+
+    static func reset(initialProgress: Double = 0) {
+        lastUpdateAt = Date()
+        lastProgress = initialProgress
+    }
+
+    static func shouldUpdate(progress: Double, now: Date = Date()) -> Bool {
+        let delta = abs(progress - lastProgress)
+        guard now.timeIntervalSince(lastUpdateAt) >= 3.0 || delta >= 0.05 || (progress >= 1.0 && lastProgress < 1.0) else {
+            return false
+        }
+        lastUpdateAt = now
+        lastProgress = progress
+        return true
     }
 }

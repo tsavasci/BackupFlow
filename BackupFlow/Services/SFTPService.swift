@@ -10,7 +10,7 @@ struct SFTPHostKeyResult {
     let fingerprint: String?
 }
 
-import Citadel
+@preconcurrency import Citadel
 import NIO
 import UserNotifications
 
@@ -122,49 +122,23 @@ private func classifySFTPError(_ error: Error, defaultKind: SFTPFailureKind) -> 
     return makeSFTPError(defaultKind, details: nsError.localizedDescription, underlying: error)
 }
 
-private actor SFTPResumeCheckpointStore {
-    private let defaults = UserDefaults.standard
-    private let keyPrefix = "sftp.resume.checkpoint."
-
-    private func storageKey(for id: String) -> String {
-        let encoded = Data(id.utf8)
-            .base64EncodedString()
-            .replacingOccurrences(of: "/", with: "_")
-            .replacingOccurrences(of: "+", with: "-")
-            .replacingOccurrences(of: "=", with: "")
-        return keyPrefix + encoded
-    }
-
-    func load(id: String) -> Set<String> {
-        let key = storageKey(for: id)
-        guard let list = defaults.array(forKey: key) as? [String] else {
-            return []
-        }
-        return Set(list)
-    }
-
-    func mark(id: String, item: String) {
-        let normalized = item.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !normalized.isEmpty else { return }
-        var values = load(id: id)
-        values.insert(normalized)
-        defaults.set(Array(values), forKey: storageKey(for: id))
-    }
-
-    func clear(id: String) {
-        defaults.removeObject(forKey: storageKey(for: id))
-    }
-}
-
 final class SFTPService: NSObject, @unchecked Sendable {
     static let shared = SFTPService()
     private let logger = Logger(subsystem: "com.backupflow.app", category: "SFTPService")
     private let cancellationLock = NSLock()
     private let stateLock = NSLock()
-    private var isCancelled = false
+    nonisolated(unsafe) private var isCancelled = false
     private var backgroundExpirationRequested = false
     private let connectionLock = NSLock()
-    private var lastConnection: (host: String, port: Int, username: String, password: String)?
+    private struct StoredConnection {
+        let host: String
+        let port: Int
+        let username: String
+        let password: String?
+        let privateKey: String?
+        let passphrase: String?
+    }
+    private var lastConnection: StoredConnection?
     
     private var sshClient: SSHClient?
     private var sftpClient: SFTPClient?
@@ -177,7 +151,7 @@ final class SFTPService: NSObject, @unchecked Sendable {
     private var currentUploadProgressHandler: ((Double) -> Void)?
     private let backgroundTaskCoordinator = SFTPBackgroundTaskCoordinator()
     private let prefetchTimeoutSeconds: TimeInterval = 60
-    private let resumeCheckpointStore = SFTPResumeCheckpointStore()
+    private let resumeCheckpointStore = ResumeCheckpointStore(keyPrefix: "sftp.resume.checkpoint.")
     
     private override init() {
         super.init()
@@ -272,34 +246,59 @@ final class SFTPService: NSObject, @unchecked Sendable {
         return host
     }
     
-    func testConnection(host: String, port: Int, username: String, password: String) async throws -> SFTPHostKeyResult {
+    func testConnection(
+        host: String,
+        port: Int,
+        username: String,
+        password: String,
+        privateKey: String? = nil,
+        passphrase: String? = nil
+    ) async throws -> SFTPHostKeyResult {
         let normalizedHost = try normalizedHost(host)
         let result = try await connectInternal(
             host: normalizedHost,
             port: port,
             username: username,
             password: password,
+            privateKey: privateKey,
+            passphrase: passphrase,
             notifyOnNewHostKey: false
         )
         await disconnectInternal()
         return result ?? SFTPHostKeyResult(isNewHostKey: false, fingerprint: nil)
     }
     
-    func connect(host: String, port: Int, username: String?, password: String?) async throws {
+    func connect(
+        host: String,
+        port: Int,
+        username: String?,
+        password: String?,
+        privateKey: String? = nil,
+        passphrase: String? = nil
+    ) async throws {
         let normalizedHost = try normalizedHost(host)
         if let username {
-            storeConnection(host: normalizedHost, port: port, username: username, password: password ?? "")
+            storeConnection(
+                host: normalizedHost,
+                port: port,
+                username: username,
+                password: password,
+                privateKey: privateKey,
+                passphrase: passphrase
+            )
         }
         _ = try await connectInternal(
             host: normalizedHost,
             port: port,
             username: username,
             password: password,
+            privateKey: privateKey,
+            passphrase: passphrase,
             notifyOnNewHostKey: true
         )
     }
     
-    func uploadFile(localURL: URL, remotePath: String, progressHandler: ((Double) -> Void)?) async throws {
+    func uploadFile(localURL: URL, remotePath: String, progressHandler: (@Sendable (Double) -> Void)?) async throws {
         let size = try localURL.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
         _ = try await uploadFileWithRetry(
             localURL: localURL,
@@ -447,17 +446,33 @@ final class SFTPService: NSObject, @unchecked Sendable {
         port: Int,
         username: String,
         password: String,
+        privateKey: String? = nil,
+        passphrase: String? = nil,
         sourcePath: String,
         destinationPath: String,
         mediaType: MediaType,
         includeICloudAssets: Bool,
         options: BackupExecutionOptions = .defaults,
-        progressHandler: ((Double) -> Void)?
+        progressHandler: (@Sendable (Double) -> Void)?
     ) async throws -> FTPService.SyncResult {
         resetCancellation()
         let normalizedHost = try normalizedHost(host)
-        storeConnection(host: normalizedHost, port: port, username: username, password: password)
-        try await connect(host: normalizedHost, port: port, username: username, password: password)
+        storeConnection(
+            host: normalizedHost,
+            port: port,
+            username: username,
+            password: password,
+            privateKey: privateKey,
+            passphrase: passphrase
+        )
+        try await connect(
+            host: normalizedHost,
+            port: port,
+            username: username,
+            password: password,
+            privateKey: privateKey,
+            passphrase: passphrase
+        )
         defer { disconnect() }
         
         let isPhotosSource = sourcePath == "PHOTOS_LIBRARY"
@@ -560,6 +575,26 @@ final class SFTPService: NSObject, @unchecked Sendable {
             try await uploadManifest(syncResult: result, remoteBasePath: effectiveRemotePath, options: options)
         }
         return result
+    }
+
+    func downloadFile(remotePath: String, to localURL: URL) async throws {
+        guard let sftp = currentSFTPClient() else {
+            throw makeSFTPError(.connection)
+        }
+        FileManager.default.createFile(atPath: localURL.path, contents: nil)
+        let handle = try FileHandle(forWritingTo: localURL)
+        defer { try? handle.close() }
+
+        try await sftp.withFile(filePath: remotePath, flags: .read) { remoteFile in
+            var offset: UInt64 = 0
+            while true {
+                try Task.checkCancellation()
+                let buffer = try await remoteFile.read(from: offset, length: 256 * 1024)
+                guard buffer.readableBytes > 0 else { break }
+                try handle.write(contentsOf: Data(buffer.readableBytesView))
+                offset += UInt64(buffer.readableBytes)
+            }
+        }
     }
 
     private func verifyUploadChecksum(localURL: URL, remotePath: String) async throws {
@@ -691,13 +726,27 @@ final class SFTPService: NSObject, @unchecked Sendable {
         ].joined(separator: "|")
     }
 
-    private func storeConnection(host: String, port: Int, username: String, password: String) {
+    private func storeConnection(
+        host: String,
+        port: Int,
+        username: String,
+        password: String?,
+        privateKey: String?,
+        passphrase: String?
+    ) {
         connectionLock.lock()
-        lastConnection = (host, port, username, password)
+        lastConnection = StoredConnection(
+            host: host,
+            port: port,
+            username: username,
+            password: password,
+            privateKey: privateKey,
+            passphrase: passphrase
+        )
         connectionLock.unlock()
     }
 
-    private func fetchConnection() -> (host: String, port: Int, username: String, password: String)? {
+    private func fetchConnection() -> StoredConnection? {
         connectionLock.lock()
         let value = lastConnection
         connectionLock.unlock()
@@ -769,6 +818,8 @@ final class SFTPService: NSObject, @unchecked Sendable {
             port: conn.port,
             username: conn.username,
             password: conn.password,
+            privateKey: conn.privateKey,
+            passphrase: conn.passphrase,
             notifyOnNewHostKey: false
         )
     }
@@ -847,7 +898,7 @@ final class SFTPService: NSObject, @unchecked Sendable {
         localURL: URL,
         remotePath: String,
         expectedSize: Int64,
-        progressHandler: ((Double) -> Void)?
+        progressHandler: (@Sendable (Double) -> Void)?
     ) async throws {
         guard let sftp = currentSFTPClient() else {
             throw makeSFTPError(.connection)
@@ -866,7 +917,7 @@ final class SFTPService: NSObject, @unchecked Sendable {
                 flags: [.write, .create, .truncate]
             ) { remoteFile in
                 var offset: UInt64 = 0
-                while !(await self.isCancelledState()) {
+                while !self.isCancelledState() {
                     guard let chunk = try handle.read(upToCount: 64 * 1024), !chunk.isEmpty else {
                         break
                     }
@@ -874,9 +925,11 @@ final class SFTPService: NSObject, @unchecked Sendable {
                     buffer.writeBytes(chunk)
                     try await remoteFile.write(buffer, at: offset)
                     offset += UInt64(chunk.count)
+                    let safeProgress = expectedSize > 0 ? min(max(Double(offset) / Double(expectedSize), 0.0), 1.0) : 0.0
+                    progressHandler?(safeProgress)
                     await self.updateCurrentUploadProgress(bytesSent: Int64(offset), totalBytes: expectedSize)
                 }
-                if await self.isCancelledState() {
+                if self.isCancelledState() {
                     throw BackupServiceError.cancelled
                 }
             }
@@ -892,7 +945,7 @@ final class SFTPService: NSObject, @unchecked Sendable {
         remotePath: String,
         expectedSize: Int64,
         skipRemoteStat: Bool,
-        progressHandler: ((Double) -> Void)? = nil
+        progressHandler: (@Sendable (Double) -> Void)? = nil
     ) async throws -> Bool {
         let retryDelays: [TimeInterval] = [5, 10, 10]
         
@@ -969,20 +1022,48 @@ final class SFTPService: NSObject, @unchecked Sendable {
         }
     }
 
+    static func makeAuthenticationMethod(
+        username: String,
+        password: String?,
+        privateKey: String?,
+        passphrase: String?
+    ) throws -> SSHAuthenticationMethod {
+        if let rawKey = privateKey?.trimmingCharacters(in: .whitespacesAndNewlines), !rawKey.isEmpty {
+            let decryptionKey = passphrase.flatMap { $0.isEmpty ? nil : $0.data(using: .utf8) }
+            if let ed25519Key = try? Curve25519.Signing.PrivateKey(sshEd25519: rawKey, decryptionKey: decryptionKey) {
+                return .ed25519(username: username, privateKey: ed25519Key)
+            }
+            if let rsaKey = try? Insecure.RSA.PrivateKey(sshRsa: rawKey, decryptionKey: decryptionKey) {
+                return .rsa(username: username, privateKey: rsaKey)
+            }
+            throw makeSFTPError(.authentication, details: "Invalid or unsupported SSH private key (Ed25519/RSA).")
+        }
+
+        guard let password else {
+            throw makeSFTPError(.authentication)
+        }
+        return .passwordBased(username: username, password: password)
+    }
+
     private func connectInternal(
         host: String,
         port: Int,
         username: String?,
         password: String?,
+        privateKey: String? = nil,
+        passphrase: String? = nil,
         notifyOnNewHostKey: Bool
     ) async throws -> SFTPHostKeyResult? {
         guard let username else {
             throw makeSFTPError(.authentication)
         }
 
-        guard let password else {
-            throw makeSFTPError(.authentication)
-        }
+        let authMethod = try Self.makeAuthenticationMethod(
+            username: username,
+            password: password,
+            privateKey: privateKey,
+            passphrase: passphrase
+        )
 
         let hostKeyValidator = SFTPHostKeyValidator(host: host, port: port)
         do {
@@ -991,7 +1072,7 @@ final class SFTPService: NSObject, @unchecked Sendable {
             var settings = SSHClientSettings(
                 host: host,
                 port: port,
-                authenticationMethod: { .passwordBased(username: username, password: password) },
+                authenticationMethod: { authMethod },
                 hostKeyValidator: .custom(hostKeyValidator)
             )
             settings.algorithms = SSHAlgorithms()
@@ -1062,7 +1143,7 @@ final class SFTPService: NSObject, @unchecked Sendable {
         cancellationLock.unlock()
     }
 
-    private func isCancelledState() -> Bool {
+    nonisolated private func isCancelledState() -> Bool {
         cancellationLock.lock()
         let value = isCancelled
         cancellationLock.unlock()

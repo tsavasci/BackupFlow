@@ -131,9 +131,9 @@ extension BackupScheduler {
         }
 
         switch actionIdentifier {
-        case "START_BACKUP_ACTION":
-            // The action opens the app; start once it is active so the run counts as
-            // user-initiated and can continue in the background.
+        case "START_BACKUP_ACTION", UNNotificationDefaultActionIdentifier:
+            // Opening or tapping "Start" on the reminder brings the app active so the run
+            // counts as user-initiated and can continue in the background.
             pendingStartTaskID = taskId
             if UIApplication.shared.applicationState == .active {
                 startPendingNotificationBackup()

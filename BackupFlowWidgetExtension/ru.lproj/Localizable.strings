@@ -1,0 +1,13 @@
+"widget.gallery.title" = "BackupFlow";
+"widget.gallery.description" = "Показывает статус последнего копирования, протокол, прогресс и следующий запуск.";
+"widget.empty" = "Резервных копий нет";
+"widget.backup_default" = "Копия";
+"widget.placeholder.task" = "Фото и видео";
+"widget.placeholder.summary" = "107 файлов • 136,3 МБ";
+"widget.status.completed" = "Завершено";
+"widget.status.failed" = "Ошибка";
+"widget.status.cancelled" = "Отменено";
+"widget.status.running" = "Копирование...";
+"widget.label.last_sync" = "Последнее";
+"widget.label.next_run" = "Следующее";
+"widget.action.open" = "Открыть";

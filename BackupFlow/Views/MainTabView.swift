@@ -32,8 +32,14 @@ struct MainTabView: View {
     }
 
     private var recentBackupRows: [DashboardRecentBackupRow] {
-        history.prefix(3).map {
-            DashboardRecentBackupRow(id: $0.persistentModelID, displayName: $0.taskDisplayName, timestamp: $0.timestamp, status: $0.status)
+        history.prefix(3).map { item in
+            DashboardRecentBackupRow(
+                id: item.persistentModelID,
+                displayName: item.taskDisplayName,
+                timestamp: item.timestamp,
+                status: item.status,
+                backupType: item.inferredBackupType
+            )
         }
     }
 
@@ -58,6 +64,7 @@ struct MainTabView: View {
     @State private var previewIgnoresWiFi = false
     /// A Wi-Fi-only task the user tried to start while not on Wi-Fi.
     @State private var wifiConfirmationTask: BackupTask?
+    @State private var restoreTask: BackupTask?
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     // MARK: - Dashboard State
@@ -262,7 +269,10 @@ struct MainTabView: View {
                         theme: dashboardTheme,
                         onSync: syncActiveTasks,
                         onShowHistory: { showHistory = true },
-                        onAdd: { showBackupSheet = true }
+                        onAdd: { showBackupSheet = true },
+                        onRestore: tasks.isEmpty ? nil : {
+                            restoreTask = tasks.first(where: { $0.isEnabled }) ?? tasks.first
+                        }
                     )
 
                     DashboardStorageSection(
@@ -322,6 +332,9 @@ struct MainTabView: View {
                     .navigationTitle("task.details.title".localized)
                     .navigationBarTitleDisplayMode(.inline)
             }
+        }
+        .sheet(item: $restoreTask) { task in
+            RestoreBrowserView(task: task)
         }
         .sheet(item: $selectedHistory) { item in
             NavigationStack {

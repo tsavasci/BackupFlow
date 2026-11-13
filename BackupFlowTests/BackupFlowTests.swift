@@ -360,4 +360,176 @@ final class BackupFlowTests: XCTestCase {
         XCTAssertEqual(options.photoFolderStructure, .yearMonthSlash)
         XCTAssertTrue(options.preserveOriginalPhotoFormat)
     }
+
+    func testResumeCheckpointStorePersistsAndIsolatesProtocols() async {
+        let suiteName = "BackupFlowTests.Checkpoint.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let ftpStore = ResumeCheckpointStore(keyPrefix: "ftp.resume.checkpoint.", defaults: defaults)
+        let sftpStore = ResumeCheckpointStore(keyPrefix: "sftp.resume.checkpoint.", defaults: defaults)
+        let id = ResumeCheckpointStore.makeID(
+            scheme: "ftp",
+            host: "nas.local",
+            port: 21,
+            username: "tamer",
+            source: "PHOTOS_LIBRARY",
+            destination: "/Backup"
+        )
+
+        await ftpStore.mark(id: id, item: "2026/01/IMG_001.jpg")
+        let ftpLoaded = await ftpStore.load(id: id)
+        let sftpLoaded = await sftpStore.load(id: id)
+        XCTAssertEqual(ftpLoaded, ["2026/01/IMG_001.jpg"])
+        XCTAssertTrue(sftpLoaded.isEmpty)
+
+        await ftpStore.clear(id: id)
+        let ftpCleared = await ftpStore.load(id: id)
+        XCTAssertTrue(ftpCleared.isEmpty)
+    }
+
+    func testDiagnosticsExporterRedactsSecretsAndIncludesLogs() {
+        DebugLogBuffer.shared.clear()
+        debugLog("Connecting to sftp://tamer:SuperSecretPass@nas.local:22 password=MyPassword123")
+        let report = BackupDiagnosticsExporter.buildReport()
+        XCTAssertFalse(report.contains("SuperSecretPass"))
+        XCTAssertFalse(report.contains("MyPassword123"))
+        XCTAssertTrue(report.contains("sftp://tamer:***@nas.local:22"))
+        XCTAssertTrue(report.contains("password=***"))
+    }
+
+    func testConcurrentTransferQueueRespectsLimitAndPreservesOrder() async throws {
+        let items = Array(0..<10)
+        let results = try await ConcurrentTransferQueue.run(items: items, maxConcurrency: 3) { index, item in
+            try await Task.sleep(nanoseconds: UInt64((10 - item) * 1_000_000))
+            return index * 2
+        }
+        XCTAssertEqual(results, items.map { $0 * 2 })
+    }
+
+    func testSFTPAuthMethodSupportsEd25519PasswordAndRejectsInvalidKey() throws {
+        // Password fallback
+        _ = try SFTPService.makeAuthenticationMethod(
+            username: "tamer",
+            password: "secret",
+            privateKey: nil,
+            passphrase: nil
+        )
+
+        // Valid OpenSSH Ed25519 private key (throwaway test fixture)
+        let testEd25519Key = """
+        -----BEGIN OPENSSH PRIVATE KEY-----
+        b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+        QyNTUxOQAAACDBGYBbmd3j2EZRzvdBqb+nT4x7fxKbzaCbL9BMiN144AAAAKglPKgoJTyo
+        KAAAAAtzc2gtZWQyNTUxOQAAACDBGYBbmd3j2EZRzvdBqb+nT4x7fxKbzaCbL9BMiN144A
+        AAAECzwNvJ7Nw02/QF7ugM2MUfbNRZdIkuYEZFC0pUW2I7TcEZgFuZ3ePYRlHO90Gpv6dP
+        jHt/EpvNoJsv0EyI3XjgAAAAJHRhbWVyc2F2YXNjaUBHb3pkZS1NYWNCb29rLUFpci5sb2
+        NhbAE=
+        -----END OPENSSH PRIVATE KEY-----
+        """
+        _ = try SFTPService.makeAuthenticationMethod(
+            username: "tamer",
+            password: nil,
+            privateKey: testEd25519Key,
+            passphrase: nil
+        )
+
+        // Invalid key must throw
+        XCTAssertThrowsError(
+            try SFTPService.makeAuthenticationMethod(
+                username: "tamer",
+                password: nil,
+                privateKey: "not-a-valid-ssh-key",
+                passphrase: nil
+            )
+        )
+    }
+
+    func testCredentialStorePrivateKeyAndPassphraseCRUD() {
+        let taskID = UUID()
+        defer {
+            BackupCredentialStore.shared.deletePrivateKey(for: taskID)
+            BackupCredentialStore.shared.deletePassphrase(for: taskID)
+        }
+
+        BackupCredentialStore.shared.savePrivateKey("TEST-KEY-PEM", for: taskID)
+        BackupCredentialStore.shared.savePassphrase("TEST-PASSPHRASE", for: taskID)
+
+        XCTAssertEqual(BackupCredentialStore.shared.privateKey(for: taskID), "TEST-KEY-PEM")
+        XCTAssertEqual(BackupCredentialStore.shared.passphrase(for: taskID), "TEST-PASSPHRASE")
+
+        BackupCredentialStore.shared.deletePrivateKey(for: taskID)
+        BackupCredentialStore.shared.deletePassphrase(for: taskID)
+
+        XCTAssertNil(BackupCredentialStore.shared.privateKey(for: taskID))
+        XCTAssertNil(BackupCredentialStore.shared.passphrase(for: taskID))
+    }
+
+    func testBonjourTargetMappingAndFallbackHostName() {
+        let ftp = LocalServerDiscoveryService.targetInfo(for: "_ftp._tcp")
+        XCTAssertEqual(ftp.target, .ftp)
+        XCTAssertEqual(ftp.defaultPort, 21)
+        XCTAssertFalse(ftp.usesHTTPS)
+
+        let sftp = LocalServerDiscoveryService.targetInfo(for: "_sftp-ssh._tcp")
+        XCTAssertEqual(sftp.target, .sftp)
+        XCTAssertEqual(sftp.defaultPort, 22)
+        XCTAssertFalse(sftp.usesHTTPS)
+
+        let webdavs = LocalServerDiscoveryService.targetInfo(for: "_webdavs._tcp")
+        XCTAssertEqual(webdavs.target, .webdav)
+        XCTAssertEqual(webdavs.defaultPort, 443)
+        XCTAssertTrue(webdavs.usesHTTPS)
+
+        let webdav = LocalServerDiscoveryService.targetInfo(for: "_webdav._tcp")
+        XCTAssertEqual(webdav.target, .webdav)
+        XCTAssertEqual(webdav.defaultPort, 80)
+        XCTAssertFalse(webdav.usesHTTPS)
+
+        XCTAssertEqual(LocalServerDiscoveryService.fallbackHostName(for: "Synology NAS"), "Synology-NAS.local")
+        XCTAssertEqual(LocalServerDiscoveryService.fallbackHostName(for: "macmini.local"), "macmini.local")
+    }
+
+    func testRestoreServiceArchivePathAndMediaExtensionHelpers() {
+        XCTAssertEqual(
+            RestoreService.archiveRootPath(for: "/Backups"),
+            "/Backups/.backupflow_archive"
+        )
+        XCTAssertEqual(
+            RestoreService.archiveRootPath(for: "/"),
+            "/.backupflow_archive"
+        )
+        XCTAssertTrue(RestoreService.isImageExtension("HEIC"))
+        XCTAssertTrue(RestoreService.isImageExtension("jpg"))
+        XCTAssertFalse(RestoreService.isImageExtension("pdf"))
+        XCTAssertTrue(RestoreService.isVideoExtension("MOV"))
+        XCTAssertTrue(RestoreService.isVideoExtension("mp4"))
+        XCTAssertFalse(RestoreService.isVideoExtension("txt"))
+    }
+
+    func testWidgetSnapshotStoreRoundTripAndClear() {
+        let suiteName = "BackupFlowTests.WidgetSnapshot.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let now = Date(timeIntervalSince1970: 1_760_000_000)
+        let snapshot = BackupWidgetSnapshot(
+            lastBackupDate: now,
+            lastStatus: "completed",
+            lastTaskName: "NAS Photos",
+            nextRunDate: now.addingTimeInterval(3600),
+            nextTaskName: "NAS Photos",
+            activeTaskName: nil,
+            activeProgress: 1.0,
+            activeFileName: nil,
+            updatedAt: now
+        )
+
+        BackupWidgetSnapshotStore.save(snapshot, defaults: defaults)
+        let loaded = BackupWidgetSnapshotStore.load(defaults: defaults)
+        XCTAssertEqual(loaded, snapshot)
+
+        BackupWidgetSnapshotStore.clear(defaults: defaults)
+        XCTAssertNil(BackupWidgetSnapshotStore.load(defaults: defaults))
+    }
 }

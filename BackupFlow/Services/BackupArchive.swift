@@ -1,6 +1,6 @@
 import Foundation
 
-enum BackupArchive {
+nonisolated enum BackupArchive {
     static let directoryName = ".backupflow_archive"
     static let manifestName = ".backupflow_manifest.json"
 

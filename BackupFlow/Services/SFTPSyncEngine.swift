@@ -8,14 +8,15 @@ struct SFTPSyncEngine {
     let createDirectory: (String) async throws -> Void
     let deleteFile: (String) async throws -> Void
     let archiveFile: (String, String) async throws -> Void
-    let uploadFile: (URL, String, Int64, Bool, ((Double) -> Void)?) async throws -> Bool
-    let verifyUpload: (URL, String) async throws -> Void
+    let uploadFile: @Sendable (URL, String, Int64, Bool, (@Sendable (Double) -> Void)?) async throws -> Bool
+    let verifyUpload: @Sendable (URL, String) async throws -> Void
     let beginTransferBackgroundTask: (() -> Void)?
     let endTransferBackgroundTask: (() -> Void)?
-    let isCancelled: (() -> Bool)?
+    let isCancelled: (@Sendable () -> Bool)?
     let loadCheckpoint: (() async -> Set<String>)?
-    let markCheckpoint: ((String) async -> Void)?
+    let markCheckpoint: (@Sendable (String) async -> Void)?
     let clearCheckpoint: (() async -> Void)?
+    var maxConcurrentUploads: Int = 2
     
     private let logger = Logger(subsystem: "com.backupflow.app", category: "SFTPSyncEngine")
     
@@ -23,7 +24,7 @@ struct SFTPSyncEngine {
         localURL: URL,
         remotePath: String,
         options: BackupExecutionOptions = .defaults,
-        progressHandler: ((Double) -> Void)? = nil
+        progressHandler: (@Sendable (Double) -> Void)? = nil
     ) async throws -> FTPService.SyncResult {
         var result = FTPService.SyncResult()
         let remoteBase = remotePath
@@ -39,9 +40,18 @@ struct SFTPSyncEngine {
             logger.info("SFTP resume checkpoint loaded (\(checkpoint.count) files)")
         }
         
+        struct PendingUpload: Sendable {
+            let relativePath: String
+            let localFileURL: URL
+            let targetPath: String
+            let localSize: Int64
+            let isUpdate: Bool
+        }
+
         var transferred: Int64 = 0
         let archiveRunIdentifier = BackupArchive.makeRunIdentifier()
-        
+        var pendingUploads: [PendingUpload] = []
+
         for (index, (relativePath, localFileURL)) in localFileMap.enumerated() {
             if isCancelled?() == true {
                 throw BackupServiceError.cancelled
@@ -56,7 +66,7 @@ struct SFTPSyncEngine {
             if !options.isDryRun && !parentPath.isEmpty && parentPath != "/" {
                 try await createDirectory(parentPath)
             }
-            
+
             let resourceValues = try localFileURL.resourceValues(forKeys: [.fileSizeKey])
             let localSize = Int64(resourceValues.fileSize ?? 0)
 
@@ -66,7 +76,7 @@ struct SFTPSyncEngine {
                 progressHandler?(Double(index + 1) / Double(max(totalFiles, 1)) * 0.8)
                 continue
             }
-            
+
             if let remoteSize = remoteFileMap[relativePath], remoteSize == localSize {
                 result.skippedFiles += 1
                 result.totalBytes += localSize
@@ -74,55 +84,52 @@ struct SFTPSyncEngine {
                     checkpoint.insert(relativePath)
                     await markCheckpoint?(relativePath)
                 }
-            } else if remoteFileMap[relativePath] != nil {
-                let didUpload = options.isDryRun ? true : try await uploadFile(localFileURL, targetPath, localSize, true) { fileProgress in
-                    let fileShare = 0.8 / Double(max(totalFiles, 1))
-                    let overallProgress = (Double(index) / Double(max(totalFiles, 1)) * 0.8) + (fileProgress * fileShare)
-                    progressHandler?(min(max(overallProgress, 0.0), 0.8))
-                }
-                if didUpload {
-                    if !options.isDryRun && options.checksumMode == .verifyUploads {
-                        try await verifyUpload(localFileURL, targetPath)
-                        result.verifiedFiles += 1
-                    }
-                    result.updatedFiles += 1
-                    result.totalBytes += localSize
-                    BackupRunTally.shared.recordUpload(bytes: localSize)
-                    transferred += localSize
-                    if !options.isDryRun {
-                        checkpoint.insert(relativePath)
-                        await markCheckpoint?(relativePath)
-                    }
-                } else {
-                    result.skippedFiles += 1
-                    result.totalBytes += localSize
-                }
+                progressHandler?(Double(index + 1) / Double(max(totalFiles, 1)) * 0.8)
             } else {
-                let didUpload = options.isDryRun ? true : try await uploadFile(localFileURL, targetPath, localSize, true) { fileProgress in
-                    let fileShare = 0.8 / Double(max(totalFiles, 1))
-                    let overallProgress = (Double(index) / Double(max(totalFiles, 1)) * 0.8) + (fileProgress * fileShare)
-                    progressHandler?(min(max(overallProgress, 0.0), 0.8))
-                }
-                if didUpload {
-                    if !options.isDryRun && options.checksumMode == .verifyUploads {
-                        try await verifyUpload(localFileURL, targetPath)
-                        result.verifiedFiles += 1
-                    }
-                    result.newFiles += 1
-                    result.totalBytes += localSize
-                    BackupRunTally.shared.recordUpload(bytes: localSize)
-                    transferred += localSize
-                    if !options.isDryRun {
-                        checkpoint.insert(relativePath)
-                        await markCheckpoint?(relativePath)
-                    }
-                } else {
-                    result.skippedFiles += 1
-                    result.totalBytes += localSize
-                }
+                pendingUploads.append(PendingUpload(
+                    relativePath: relativePath,
+                    localFileURL: localFileURL,
+                    targetPath: targetPath,
+                    localSize: localSize,
+                    isUpdate: remoteFileMap[relativePath] != nil
+                ))
             }
-            
-            progressHandler?(Double(index + 1) / Double(max(totalFiles, 1)) * 0.8)
+        }
+
+        let skippedBeforeUploads = result.skippedFiles
+        let outcomes = try await ConcurrentTransferQueue.run(
+            items: pendingUploads,
+            maxConcurrency: maxConcurrentUploads,
+            isCancelled: { [isCancelled] in isCancelled?() == true }
+        ) { [uploadFile, verifyUpload, markCheckpoint] itemIndex, item -> (newFiles: Int, updatedFiles: Int, skippedFiles: Int, verifiedFiles: Int, bytes: Int64) in
+            let didUpload = options.isDryRun ? true : try await uploadFile(item.localFileURL, item.targetPath, item.localSize, true) { _ in }
+            if didUpload {
+                var verified = 0
+                if !options.isDryRun && options.checksumMode == .verifyUploads {
+                    try await verifyUpload(item.localFileURL, item.targetPath)
+                    verified = 1
+                }
+                BackupRunTally.shared.recordUpload(bytes: item.localSize)
+                if !options.isDryRun {
+                    await markCheckpoint?(item.relativePath)
+                }
+                progressHandler?(min(Double(skippedBeforeUploads + itemIndex + 1) / Double(max(totalFiles, 1)) * 0.8, 0.8))
+                return item.isUpdate ? (0, 1, 0, verified, item.localSize) : (1, 0, 0, verified, item.localSize)
+            } else {
+                progressHandler?(min(Double(skippedBeforeUploads + itemIndex + 1) / Double(max(totalFiles, 1)) * 0.8, 0.8))
+                return (0, 0, 1, 0, item.localSize)
+            }
+        }
+
+        for outcome in outcomes {
+            result.newFiles += outcome.newFiles
+            result.updatedFiles += outcome.updatedFiles
+            result.skippedFiles += outcome.skippedFiles
+            result.verifiedFiles += outcome.verifiedFiles
+            result.totalBytes += outcome.bytes
+            if outcome.newFiles > 0 || outcome.updatedFiles > 0 {
+                transferred += outcome.bytes
+            }
         }
         
         logger.info("Checking for orphaned files to delete...")

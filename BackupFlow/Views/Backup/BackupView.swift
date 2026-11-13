@@ -62,38 +62,43 @@ enum FrequencyType: String, CaseIterable, Identifiable {
 struct TimePicker: View {
     @Binding var time: ScheduleTime
 
-    var body: some View {
-        VStack(alignment: .leading) {
-            Text("backup.select_time".localized)
-                .font(.caption)
-                .foregroundColor(.secondary)
-
-            HStack {
-                Picker("backup.hour".localized, selection: $time.hour) {
-                    ForEach(0..<24, id: \ .self) { hour in
-                        Text(String(format: "%02d", hour)).tag(hour)
-                    }
-                }
-                .pickerStyle(WheelPickerStyle())
-                .frame(width: 80)
-                .clipped()
-
-                Text(":")
-                    .font(.title2)
-                    .padding(.horizontal, -10)
-
-                Picker("backup.minute".localized, selection: $time.minute) {
-                    ForEach(0..<60, id: \ .self) { minute in
-                        Text(String(format: "%02d", minute)).tag(minute)
-                    }
-                }
-                .pickerStyle(WheelPickerStyle())
-                .frame(width: 80)
-                .clipped()
+    private var dateBinding: Binding<Date> {
+        Binding(
+            get: {
+                Calendar.current.date(from: DateComponents(hour: time.hour, minute: time.minute)) ?? Date()
+            },
+            set: { newDate in
+                let components = Calendar.current.dateComponents([.hour, .minute], from: newDate)
+                time.hour = components.hour ?? 0
+                time.minute = components.minute ?? 0
             }
-            .frame(height: 100)
+        )
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "clock")
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+
+            Text("backup.select_time".localized)
+                .font(.subheadline.weight(.medium))
+                .accessibilityHidden(true)
+
+            Spacer()
+
+            DatePicker(
+                "backup.select_time".localized,
+                selection: dateBinding,
+                displayedComponents: .hourAndMinute
+            )
+            .labelsHidden()
+            .datePickerStyle(.compact)
         }
+        .padding(.horizontal, 12)
         .padding(.vertical, 8)
+        .background(Color(.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 
@@ -113,20 +118,28 @@ struct DayPicker: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading) {
+        HStack(spacing: 12) {
+            Image(systemName: "calendar")
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+
             Text("backup.select_day".localized)
-                .font(.caption)
-                .foregroundColor(.secondary)
+                .font(.subheadline.weight(.medium))
+                .accessibilityHidden(true)
+
+            Spacer()
 
             Picker("backup.day".localized, selection: $selectedDay) {
                 ForEach(days, id: \.0) { day, name in
                     Text(name).tag(day)
                 }
             }
-            .frame(height: 100)
-            .clipped()
+            .pickerStyle(.menu)
         }
+        .padding(.horizontal, 12)
         .padding(.vertical, 8)
+        .background(Color(.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 
@@ -151,6 +164,7 @@ struct BackupView: View {
     @State private var showingSFTPHostKeyAlert = false
     @State private var sftpHostKeyAlertMessage = ""
     @State private var showingRemoteFolderPicker = false
+    @State private var showingLocalServerDiscovery = false
 
     private var screenTitle: String {
         editingTask == nil ? "backup.new_backup".localized : "common.edit".localized
@@ -208,7 +222,8 @@ struct BackupView: View {
                                 await testConnection()
                             }
                         },
-                        onBrowseRemoteFolder: { showingRemoteFolderPicker = true }
+                        onBrowseRemoteFolder: { showingRemoteFolderPicker = true },
+                        onScanNetwork: { showingLocalServerDiscovery = true }
                     )
 
                     BackupScheduleSection(form: form, theme: targetTheme)
@@ -290,6 +305,18 @@ struct BackupView: View {
         } message: {
             Text(sftpHostKeyAlertMessage)
         }
+        .sheet(isPresented: $showingLocalServerDiscovery) {
+            LocalServerDiscoverySheet(
+                onSelectDiscovered: { server, host, port in
+                    form.applyDiscoveredServer(server, host: host, port: port)
+                    connectionStatus = .idle
+                },
+                onSelectSavedProfile: { profile in
+                    form.applySavedProfile(profile)
+                    connectionStatus = .idle
+                }
+            )
+        }
         .sheet(isPresented: $showingRemoteFolderPicker) {
             let config = form.remoteFolderConfig
             RemoteFolderPicker(
@@ -297,7 +324,9 @@ struct BackupView: View {
                 host: config.host,
                 port: config.port,
                 username: config.username,
-                password: config.password
+                password: config.password,
+                privateKey: config.privateKey,
+                passphrase: config.passphrase
             ) { selectedPath in
                 switch form.selectedTarget {
                 case .ftp:

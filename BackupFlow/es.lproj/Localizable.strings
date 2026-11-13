@@ -438,3 +438,45 @@
 "backup.photo_folder_structure.year_month_dash" = "Año - Mes (2026-10)";
 "backup.preserve_original_format" = "Conservar formato original (HEIC/RAW/MOV)";
 "backup.preserve_original_format_hint" = "Guarda fotos y vídeos con su extensión original en lugar de .jpg/.mp4.";
+"settings.export_diagnostics" = "Exportar registros de diagnóstico";
+"history.report.share_diagnostics" = "Compartir diagnóstico";
+
+/* SFTP SSH Private Key */
+"backup.sftp_auth_method" = "Autenticación";
+"backup.sftp_auth_password" = "Contraseña";
+"backup.sftp_auth_private_key" = "Clave SSH";
+"backup.sftp_import_key" = "Importar clave privada";
+"backup.sftp_key_loaded" = "Clave cargada: %@";
+"backup.sftp_key_passphrase" = "Frase de contraseña (opcional)";
+"backup.sftp_key_import_failed" = "No se pudo leer el archivo de clave SSH seleccionado.";
+
+/* Bonjour Discovery & Server Profiles */
+"backup.scan_network" = "Escanear red local";
+"backup.discovery.title" = "Descubrir servidores";
+"backup.discovery.local_devices" = "Red local (Bonjour)";
+"backup.discovery.saved_profiles" = "Perfiles de servidor guardados";
+"backup.discovery.searching" = "Buscando dispositivos NAS en la red local…";
+"backup.discovery.footer" = "Requiere permiso de red local y Bonjour/mDNS activado en tu NAS o Mac.";
+
+/* Restore & Archive Recovery */
+"restore.action" = "Restaurar";
+"restore.title" = "Restaurar archivos";
+"restore.open_archive" = "Abrir archivo";
+"restore.loading" = "Cargando carpeta remota…";
+"restore.empty_folder" = "Esta carpeta está vacía.";
+"restore.search_prompt" = "Buscar archivos o carpetas";
+"restore.destination" = "Destino";
+"restore.destination.files" = "Archivos";
+"restore.destination.photos" = "Fotos";
+"restore.download_selected" = "Descargar (%d)";
+"restore.export_files" = "Guardar / Compartir";
+"restore.ready_to_export" = "%d archivo(s) descargado(s). Toca Guardar / Compartir.";
+"restore.saved_to_photos" = "%d elemento(s) guardado(s) en Fotos.";
+"restore.partial_failures" = "No se pudieron descargar %d archivo(s).";
+"common.back" = "Atrás";
+"history.filter.all" = "Todo";
+"widget.status.running" = "Respaldando...";
+"widget.label.last_sync" = "Última copia";
+"widget.label.next_run" = "Siguiente";
+"widget.label.files_summary" = "%d archivos • %@";
+"widget.action.open" = "Abrir app";

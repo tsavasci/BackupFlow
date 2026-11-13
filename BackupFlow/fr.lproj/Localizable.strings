@@ -441,3 +441,45 @@
 "backup.photo_folder_structure.year_month_dash" = "Année - Mois (2026-10)";
 "backup.preserve_original_format" = "Conserver le format d'origine (HEIC/RAW/MOV)";
 "backup.preserve_original_format_hint" = "Enregistre les photos et vidéos avec leur extension d'origine au lieu de .jpg/.mp4.";
+"settings.export_diagnostics" = "Exporter les journaux de diagnostic";
+"history.report.share_diagnostics" = "Partager le diagnostic";
+
+/* SFTP SSH Private Key */
+"backup.sftp_auth_method" = "Authentification";
+"backup.sftp_auth_password" = "Mot de passe";
+"backup.sftp_auth_private_key" = "Clé SSH";
+"backup.sftp_import_key" = "Importer une clé privée";
+"backup.sftp_key_loaded" = "Clé chargée : %@";
+"backup.sftp_key_passphrase" = "Phrase secrète de la clé (facultatif)";
+"backup.sftp_key_import_failed" = "Impossible de lire le fichier de clé SSH sélectionné.";
+
+/* Bonjour Discovery & Server Profiles */
+"backup.scan_network" = "Analyser le réseau local";
+"backup.discovery.title" = "Découvrir des serveurs";
+"backup.discovery.local_devices" = "Réseau local (Bonjour)";
+"backup.discovery.saved_profiles" = "Profils de serveur enregistrés";
+"backup.discovery.searching" = "Recherche d'appareils NAS sur le réseau local…";
+"backup.discovery.footer" = "Nécessite l'autorisation Réseau local et Bonjour/mDNS activé sur votre NAS ou Mac.";
+
+/* Restore & Archive Recovery */
+"restore.action" = "Restaurer";
+"restore.title" = "Restaurer des fichiers";
+"restore.open_archive" = "Ouvrir l'archive";
+"restore.loading" = "Chargement du dossier distant…";
+"restore.empty_folder" = "Ce dossier est vide.";
+"restore.search_prompt" = "Rechercher des fichiers ou dossiers";
+"restore.destination" = "Destination";
+"restore.destination.files" = "Fichiers";
+"restore.destination.photos" = "Photos";
+"restore.download_selected" = "Télécharger (%d)";
+"restore.export_files" = "Enregistrer / Partager";
+"restore.ready_to_export" = "%d fichier(s) téléchargé(s). Touchez Enregistrer / Partager.";
+"restore.saved_to_photos" = "%d élément(s) enregistré(s) dans Photos.";
+"restore.partial_failures" = "%d fichier(s) n'ont pas pu être téléchargés.";
+"common.back" = "Retour";
+"history.filter.all" = "Tout";
+"widget.status.running" = "Sauvegarde...";
+"widget.label.last_sync" = "Dernière";
+"widget.label.next_run" = "Suivante";
+"widget.label.files_summary" = "%d fichiers • %@";
+"widget.action.open" = "Ouvrir l'app";

@@ -3,7 +3,7 @@
 - **Uygulama Adı:** BackupFlow
 - **App Store ID:** 6753620051
 - **Bundle ID:** `tamersavasci.BackupFlow`
-- **Sürüm:** 6.5 (Build 2)
+- **Sürüm:** 6.7 (Build 1)
 - **Fiyatlandırma Modeli:** Tek Seferlik Satın Alım (Paid Upfront Lifetime - $2.99). Uygulama İçi Satın Alma (IAP) YOK, Abonelik YOK, Transfer Kotası YOK.
 
 ---

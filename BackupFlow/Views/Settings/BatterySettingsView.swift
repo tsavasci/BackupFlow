@@ -54,7 +54,7 @@ struct BatterySettingsView: View {
                         Spacer()
                         Text((tempBatteryLevel / 100).formatted(.percent))
                             .font(.headline)
-                            .foregroundColor(.blue)
+                            .foregroundColor(DesignSystem.Colors.primary)
                     }
                     
                     Slider(
@@ -64,14 +64,14 @@ struct BatterySettingsView: View {
                     ) {
                         Text("battery.minimum_level".localized)
                     }
-                    .tint(.blue)
+                    .tint(DesignSystem.Colors.primary)
                     .onChange(of: tempBatteryLevel) { _, newValue in
                         batteryManager.setMinimumBatteryLevel(Int(newValue))
                     }
                     
                     HStack(spacing: 4) {
                         Image(systemName: "info.circle")
-                            .foregroundColor(.blue)
+                            .foregroundColor(DesignSystem.Colors.primary)
                             .font(.caption)
                             .accessibilityHidden(true)
                         
@@ -197,7 +197,7 @@ struct BatteryHelpRow: View {
 }
 
 #Preview {
-    NavigationView {
+    NavigationStack {
         BatterySettingsView()
     }
 }

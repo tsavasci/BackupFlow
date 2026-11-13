@@ -1,0 +1,13 @@
+"widget.gallery.title" = "BackupFlow";
+"widget.gallery.description" = "最新のバックアップ状況、プロトコル、進行状況、次回予定を表示します。";
+"widget.empty" = "バックアップはまだありません";
+"widget.backup_default" = "バックアップ";
+"widget.placeholder.task" = "写真とビデオ";
+"widget.placeholder.summary" = "107 件 • 136.3 MB";
+"widget.status.completed" = "完了";
+"widget.status.failed" = "失敗";
+"widget.status.cancelled" = "キャンセル";
+"widget.status.running" = "バックアップ中...";
+"widget.label.last_sync" = "前回の同期";
+"widget.label.next_run" = "次回実行";
+"widget.action.open" = "アプリを開く";

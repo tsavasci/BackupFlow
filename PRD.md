@@ -8,7 +8,7 @@
 - **App Store ID:** `6753620051`
 - **Bundle Identifier:** `tamersavasci.BackupFlow`
 - **Platform:** iOS / iPadOS (Swift 6, SwiftUI, SwiftData, iOS 17+)
-- **Mevcut Sürüm:** v6.5 (Build 2)
+- **Mevcut Sürüm:** v6.7 (Build 1)
 - **Desteklenen Diller (12 Dil):** Türkçe (`tr`), İngilizce (`en`), Almanca (`de`), Fransızca (`fr`), İspanyolca (`es`), Portekizce (`pt`), Rusça (`ru`), Arapça (`ar`), Çince (`zh`), Japonca (`ja`), Korece (`ko`), Hintçe (`hi`).
 - **İş Modeli:** **Tek Seferlik Peşin Satın Alma (One-Time Purchase • Paid Upfront Lifetime — $2.99).** Uygulama içi satın alma (IAP), abonelik, reklam veya dosya aktarım kotası kesinlikle yoktur. Satın alan kullanıcı tüm özelliklere sınırsız ve ömür boyu sahip olur.
 

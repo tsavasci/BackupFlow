@@ -150,6 +150,7 @@ struct DashboardActionButton: View {
                 Image(systemName: icon)
                     .font(.title3)
                     .frame(width: 52, height: 52)
+                    .accessibilityHidden(true)
                     .background(
                         LinearGradient(
                             colors: [theme.primary.opacity(0.15), theme.secondary.opacity(0.12)],

@@ -1,0 +1,13 @@
+"widget.gallery.title" = "BackupFlow";
+"widget.gallery.description" = "显示最近备份状态、协议、实时进度和下次计划运行时间。";
+"widget.empty" = "暂无备份";
+"widget.backup_default" = "备份";
+"widget.placeholder.task" = "照片和视频";
+"widget.placeholder.summary" = "107 个文件 • 136.3 MB";
+"widget.status.completed" = "已完成";
+"widget.status.failed" = "失败";
+"widget.status.cancelled" = "已取消";
+"widget.status.running" = "正在备份...";
+"widget.label.last_sync" = "上次备份";
+"widget.label.next_run" = "下次运行";
+"widget.action.open" = "打开应用";

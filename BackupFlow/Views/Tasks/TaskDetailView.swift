@@ -8,6 +8,7 @@ struct TaskDetailView: View {
     @State private var histories: [BackupHistory] = []
     @State private var isLoading = true
     @State private var showingEdit = false
+    @State private var showingRestore = false
     
     init(task: BackupTask) {
         self.task = task
@@ -41,7 +42,7 @@ struct TaskDetailView: View {
                 if task.sourcePath == "PHOTOS_LIBRARY" {
                     LabeledContent("backup.photo_folder_structure".localized, value: task.photoFolderStructure.displayName)
                     if task.preserveOriginalPhotoFormat {
-                        LabeledContent("backup.preserve_original_format".localized, value: "alert.ok".localized)
+                        LabeledContent("backup.preserve_original_format".localized, value: "backup.ok".localized)
                     }
                 }
                 LabeledContent("task.details.status".localized, value: task.backupStatus.displayName)
@@ -108,8 +109,15 @@ struct TaskDetailView: View {
         }
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button("common.edit".localized) {
-                    showingEdit = true
+                HStack(spacing: 12) {
+                    Button("common.edit".localized) {
+                        showingEdit = true
+                    }
+                    Button {
+                        showingRestore = true
+                    } label: {
+                        Label("restore.action".localized, systemImage: "arrow.down.doc")
+                    }
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -121,6 +129,9 @@ struct TaskDetailView: View {
             NavigationStack {
                 BackupView(editingTask: task)
             }
+        }
+        .sheet(isPresented: $showingRestore) {
+            RestoreBrowserView(task: task)
         }
         .scrollContentBackground(.hidden)
         .liquidBackground()

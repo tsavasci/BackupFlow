@@ -439,3 +439,45 @@
 "backup.photo_folder_structure.year_month_dash" = "年 - 月 (2026-10)";
 "backup.preserve_original_format" = "元の形式を保持 (HEIC/RAW/MOV)";
 "backup.preserve_original_format_hint" = ".jpg/.mp4に変換せず、元のファイル拡張子のまま保存します。";
+"settings.export_diagnostics" = "診断ログを書き出す";
+"history.report.share_diagnostics" = "診断を共有";
+
+/* SFTP SSH Private Key */
+"backup.sftp_auth_method" = "認証方式";
+"backup.sftp_auth_password" = "パスワード";
+"backup.sftp_auth_private_key" = "SSH 鍵";
+"backup.sftp_import_key" = "秘密鍵を読み込む";
+"backup.sftp_key_loaded" = "鍵を読み込みました: %@";
+"backup.sftp_key_passphrase" = "鍵のパスフレーズ（任意）";
+"backup.sftp_key_import_failed" = "選択した SSH 鍵ファイルを読み取れませんでした。";
+
+/* Bonjour Discovery & Server Profiles */
+"backup.scan_network" = "ローカルネットワークをスキャン";
+"backup.discovery.title" = "サーバーを検出";
+"backup.discovery.local_devices" = "ローカルネットワーク (Bonjour)";
+"backup.discovery.saved_profiles" = "保存済みサーバープロファイル";
+"backup.discovery.searching" = "ローカルネットワーク上の NAS デバイスを検索中…";
+"backup.discovery.footer" = "ローカルネットワーク権限と NAS または Mac での Bonjour/mDNS の有効化が必要です。";
+
+/* Restore & Archive Recovery */
+"restore.action" = "復元";
+"restore.title" = "ファイルを復元";
+"restore.open_archive" = "アーカイブを開く";
+"restore.loading" = "リモートフォルダを読み込み中…";
+"restore.empty_folder" = "このフォルダは空です。";
+"restore.search_prompt" = "ファイルまたはフォルダを検索";
+"restore.destination" = "保存先";
+"restore.destination.files" = "ファイル";
+"restore.destination.photos" = "写真";
+"restore.download_selected" = "ダウンロード (%d)";
+"restore.export_files" = "保存 / 共有";
+"restore.ready_to_export" = "%d 件のファイルをダウンロードしました。「保存 / 共有」をタップしてください。";
+"restore.saved_to_photos" = "%d 件を写真に保存しました。";
+"restore.partial_failures" = "%d 件のファイルをダウンロードできませんでした。";
+"common.back" = "戻る";
+"history.filter.all" = "すべて";
+"widget.status.running" = "バックアップ中...";
+"widget.label.last_sync" = "前回の同期";
+"widget.label.next_run" = "次回実行";
+"widget.label.files_summary" = "%d 件 • %@";
+"widget.action.open" = "アプリを開く";

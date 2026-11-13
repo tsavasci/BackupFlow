@@ -418,3 +418,45 @@
 "backup.photo_folder_structure.year_month_dash" = "Yıl - Ay (2026-10)";
 "backup.preserve_original_format" = "Orijinal formatı koru (HEIC/RAW/MOV)";
 "backup.preserve_original_format_hint" = "Fotoğraf ve videoları .jpg/.mp4 yerine orijinal dosya uzantılarıyla kaydeder.";
+"settings.export_diagnostics" = "Tanılama Loglarını Dışa Aktar";
+"history.report.share_diagnostics" = "Tanılama Raporunu Paylaş";
+
+/* SFTP SSH Private Key */
+"backup.sftp_auth_method" = "Kimlik Doğrulama";
+"backup.sftp_auth_password" = "Parola";
+"backup.sftp_auth_private_key" = "SSH Anahtarı";
+"backup.sftp_import_key" = "Özel Anahtar İçe Aktar";
+"backup.sftp_key_loaded" = "Anahtar yüklendi: %@";
+"backup.sftp_key_passphrase" = "Anahtar parolası (isteğe bağlı)";
+"backup.sftp_key_import_failed" = "Seçilen SSH anahtar dosyası okunamadı.";
+
+/* Bonjour Discovery & Server Profiles */
+"backup.scan_network" = "Yerel Ağı Tara";
+"backup.discovery.title" = "Sunucu Keşfi";
+"backup.discovery.local_devices" = "Yerel Ağ (Bonjour)";
+"backup.discovery.saved_profiles" = "Kayıtlı Sunucu Profilleri";
+"backup.discovery.searching" = "Yerel ağdaki NAS cihazları taranıyor…";
+"backup.discovery.footer" = "Yerel Ağ izni ve NAS veya Mac cihazınızda Bonjour/mDNS açık olmalıdır.";
+
+/* Restore & Archive Recovery */
+"restore.action" = "Geri Yükle";
+"restore.title" = "Dosyaları Geri Yükle";
+"restore.open_archive" = "Arşivi Aç";
+"restore.loading" = "Uzak klasör yükleniyor…";
+"restore.empty_folder" = "Bu klasör boş.";
+"restore.search_prompt" = "Dosya veya klasör ara";
+"restore.destination" = "Hedef";
+"restore.destination.files" = "Dosyalar";
+"restore.destination.photos" = "Fotoğraflar";
+"restore.download_selected" = "İndir (%d)";
+"restore.export_files" = "Kaydet / Paylaş";
+"restore.ready_to_export" = "%d dosya indirildi. Kaydetmek için Kaydet / Paylaş'a dokunun.";
+"restore.saved_to_photos" = "%d öğe Fotoğraflar'a kaydedildi.";
+"restore.partial_failures" = "%d dosya indirilemedi.";
+"common.back" = "Geri";
+"history.filter.all" = "Tümü";
+"widget.status.running" = "Yedekleniyor...";
+"widget.label.last_sync" = "Son yedek";
+"widget.label.next_run" = "Sonraki";
+"widget.label.files_summary" = "%d dosya • %@";
+"widget.action.open" = "Uygulamayı Aç";

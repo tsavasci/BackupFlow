@@ -40,6 +40,9 @@ struct FTPSyncEngine {
     let formatBytes: (Int64) -> String
     let mapError: (Error) -> FTPError
     let uploadPhotoFile: (URL, String, String) async throws -> Void
+    var loadCheckpoint: (() async -> Set<String>)? = nil
+    var markCheckpoint: ((String) async -> Void)? = nil
+    var clearCheckpoint: (() async -> Void)? = nil
 
     func syncUploadDirectory(
         localURL: URL,
@@ -69,6 +72,10 @@ struct FTPSyncEngine {
         let remoteBasePath = remotePath.isEmpty ? "/" : remotePath
         let remoteFileMap = try await listAllFiles(at: remoteBasePath)
         logger.info("Found \(remoteFileMap.count) remote files")
+        var checkpoint = await loadCheckpoint?() ?? []
+        if !checkpoint.isEmpty {
+            logger.info("FTP resume checkpoint loaded (\(checkpoint.count) files)")
+        }
 
         var uploadedCount = 0, skippedCount = 0, failedCount = 0, deletedCount = 0
         var archivedCount = 0
@@ -97,6 +104,15 @@ struct FTPSyncEngine {
             let localSize = Int64(resourceValues.fileSize ?? 0)
             let fileName = localFileURL.lastPathComponent
 
+            if checkpoint.contains(relativePath), remoteFileMap[relativePath] != nil {
+                result.skippedFiles += 1
+                result.totalBytes += localSize
+                skippedCount += 1
+                setCurrentFile("backup.current_file.skipped_file".localized(with: fileName))
+                progressHandler?(Double(index + 1) / Double(max(totalFiles, 1)) * 0.8)
+                continue
+            }
+
             let comparisonResult = compareFileEnhanced(
                 relativePath: relativePath,
                 localSize: localSize,
@@ -109,6 +125,10 @@ struct FTPSyncEngine {
                 result.totalBytes += localSize
                 skippedCount += 1
                 setCurrentFile("backup.current_file.skipped_file".localized(with: fileName))
+                if !options.isDryRun {
+                    checkpoint.insert(relativePath)
+                    await markCheckpoint?(relativePath)
+                }
                 if isVerboseLoggingEnabled {
                     logger.debug("Skipping identical file: \(relativePath) (\(ByteCountFormatter.string(fromByteCount: localSize, countStyle: .file)))")
                 }
@@ -124,6 +144,8 @@ struct FTPSyncEngine {
                         try await verifyUpload(localFileURL, targetPath)
                         result.verifiedFiles += 1
                     }
+                    checkpoint.insert(relativePath)
+                    await markCheckpoint?(relativePath)
                 }
                 result.newFiles += 1
                 result.totalBytes += localSize
@@ -147,6 +169,8 @@ struct FTPSyncEngine {
                         try await verifyUpload(localFileURL, targetPath)
                         result.verifiedFiles += 1
                     }
+                    checkpoint.insert(relativePath)
+                    await markCheckpoint?(relativePath)
                 }
                 result.updatedFiles += 1
                 result.totalBytes += localSize
@@ -212,6 +236,9 @@ struct FTPSyncEngine {
             }
         }
 
+        if !options.isDryRun {
+            await clearCheckpoint?()
+        }
         progressHandler?(1.0)
 
         debugLog("✅ BackupFlow: FTP enhanced mirror sync completed")
@@ -360,6 +387,10 @@ struct FTPSyncEngine {
 
         let existingFileMap = try await listAllFiles(at: photosDir)
         logger.info("Found \(existingFileMap.count) existing photo files on FTP")
+        var checkpoint = await loadCheckpoint?() ?? []
+        if !checkpoint.isEmpty {
+            logger.info("FTP photo resume checkpoint loaded (\(checkpoint.count) files)")
+        }
         if fastPhotoNameSkipEnabled {
             logger.info("Fast photo skip mode enabled (name-based)")
         }
@@ -386,6 +417,15 @@ struct FTPSyncEngine {
                 folderStructure: options.photoFolderStructure,
                 preserveOriginalExtension: options.preserveOriginalPhotoFormat
             )
+
+            if (checkpoint.contains(relativePath) || checkpoint.contains(stableFileName)),
+               let remoteFile = existingFileMap[relativePath] ?? existingFileMap[stableFileName] {
+                result.skippedFiles += 1
+                result.totalBytes += max(remoteFile.size, 0)
+                setCurrentFile("backup.current_file.skipped_file".localized(with: stableFileName))
+                progressHandler?(Double(index + 1) / Double(max(totalCount, 1)) * 0.8)
+                continue
+            }
 
             if fastPhotoNameSkipEnabled, let remoteFile = existingFileMap[relativePath] ?? existingFileMap[stableFileName] {
                 result.skippedFiles += 1
@@ -456,6 +496,10 @@ struct FTPSyncEngine {
                 result.skippedFiles += 1
                 result.totalBytes += localSize
                 setCurrentFile("backup.current_file.skipped_file".localized(with: stableFileName))
+                if !options.isDryRun {
+                    checkpoint.insert(relativePath)
+                    await markCheckpoint?(relativePath)
+                }
                 debugLog("⏭ BackupFlow: Aynı dosya pas geçildi: \(relativePath) (\(formatBytes(localSize)))")
             case .new:
                 setCurrentFile("backup.current_file.uploading_file".localized(with: stableFileName))
@@ -465,6 +509,8 @@ struct FTPSyncEngine {
                         try await verifyUpload(localURL, remotePath)
                         result.verifiedFiles += 1
                     }
+                    checkpoint.insert(relativePath)
+                    await markCheckpoint?(relativePath)
                 }
                 result.newFiles += 1
                 result.totalBytes += localSize
@@ -478,6 +524,8 @@ struct FTPSyncEngine {
                         try await verifyUpload(localURL, remotePath)
                         result.verifiedFiles += 1
                     }
+                    checkpoint.insert(relativePath)
+                    await markCheckpoint?(relativePath)
                 }
                 result.updatedFiles += 1
                 result.totalBytes += localSize
@@ -491,7 +539,10 @@ struct FTPSyncEngine {
 
         if hasLegacyNames {
             logger.warning("Skipping orphan deletion while legacy filenames exist to prevent accidental data loss.")
-            progressHandler?(1.0)
+            if !options.isDryRun {
+            await clearCheckpoint?()
+        }
+        progressHandler?(1.0)
             return result
         }
         
@@ -536,6 +587,9 @@ struct FTPSyncEngine {
             archiveFile: archiveFile
         )
 
+        if !options.isDryRun {
+            await clearCheckpoint?()
+        }
         progressHandler?(1.0)
         return result
     }

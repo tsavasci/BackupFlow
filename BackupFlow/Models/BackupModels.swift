@@ -284,6 +284,20 @@ nonisolated enum BackupFrequency: Codable, Equatable, Hashable, Identifiable, Ca
 }
 
 /// Represents a backup task that can be scheduled and executed
+enum SFTPAuthMethod: String, CaseIterable, Identifiable, Codable, Sendable {
+    case password
+    case privateKey
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .password: return "backup.sftp_auth_password".localized
+        case .privateKey: return "backup.sftp_auth_private_key".localized
+        }
+    }
+}
+
 @Model
 final class BackupTask: Identifiable, Hashable {
     // MARK: - Properties
@@ -330,6 +344,8 @@ final class BackupTask: Identifiable, Hashable {
     var serverUsername: String
     var serverPassword: String
     var destinationPath: String
+    var sftpAuthMethodRaw: String?
+    var sftpKeyName: String?
     
     // Media type to backup
     var mediaType: MediaType
@@ -340,6 +356,15 @@ final class BackupTask: Identifiable, Hashable {
     var scheduledWeekday: Int? // 1: Sunday, 2: Monday, ..., 7: Saturday
     
     // MARK: - Computed Properties
+
+    @Transient
+    var sftpAuthMethod: SFTPAuthMethod {
+        get {
+            guard let rawValue = sftpAuthMethodRaw else { return .password }
+            return SFTPAuthMethod(rawValue: rawValue) ?? .password
+        }
+        set { sftpAuthMethodRaw = newValue.rawValue }
+    }
 
     @Transient
     var lastFailureCategory: BackupFailureCategory? {
@@ -588,6 +613,22 @@ final class BackupHistory: Identifiable {
             return BackupFailureCategory(rawValue: rawValue)
         }
         set { failureCategoryRaw = newValue?.rawValue }
+    }
+
+    var inferredBackupType: BackupType? {
+        if let taskType = task?.backupType {
+            return taskType
+        }
+        switch taskServerPort {
+        case 21:
+            return .ftp
+        case 22:
+            return .sftp
+        case 80, 443, 5005, 5006:
+            return .webdav
+        default:
+            return nil
+        }
     }
     
     init(

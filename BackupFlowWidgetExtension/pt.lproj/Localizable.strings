@@ -1,0 +1,13 @@
+"widget.gallery.title" = "BackupFlow";
+"widget.gallery.description" = "Mostra o status do último backup, protocolo, progresso ao vivo e próxima execução.";
+"widget.empty" = "Nenhum backup ainda";
+"widget.backup_default" = "Backup";
+"widget.placeholder.task" = "Fotos e vídeos";
+"widget.placeholder.summary" = "107 arquivos • 136,3 MB";
+"widget.status.completed" = "Concluído";
+"widget.status.failed" = "Falhou";
+"widget.status.cancelled" = "Cancelado";
+"widget.status.running" = "Fazendo backup...";
+"widget.label.last_sync" = "Último backup";
+"widget.label.next_run" = "Próximo";
+"widget.action.open" = "Abrir app";

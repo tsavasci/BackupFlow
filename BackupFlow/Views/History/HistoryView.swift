@@ -7,6 +7,12 @@ struct HistoryView: View {
     @Query(sort: [SortDescriptor(\BackupHistory.timestamp, order: .reverse)]) private var history: [BackupHistory]
     
     @State private var showingClearConfirmation = false
+    @State private var selectedProtocol: BackupType?
+
+    private var filteredHistory: [BackupHistory] {
+        guard let selectedProtocol else { return history }
+        return history.filter { $0.inferredBackupType == selectedProtocol }
+    }
     
     var body: some View {
         NavigationStack {
@@ -54,15 +60,19 @@ struct HistoryView: View {
             VStack(spacing: DesignSystem.Spacing.large) {
                 // Summary Stats
                 summaryStatsView
+
+                // Protocol Filter Bar
+                protocolFilterBar
                 
                 // History Items
                 LazyVStack(spacing: DesignSystem.Spacing.medium) {
-                    ForEach(history, id: \.persistentModelID) { item in
+                    ForEach(filteredHistory, id: \.persistentModelID) { item in
                         NavigationLink {
                             HistoryDetailView(item: item)
                         } label: {
                             HistoryItemCard(item: item, onDelete: { deleteItem(item) })
                         }
+                        .buttonStyle(.plain)
                         .accessibilityIdentifier("history.item")
                     }
                 }
@@ -70,7 +80,53 @@ struct HistoryView: View {
             }
             .padding(.vertical, DesignSystem.Spacing.base)
         }
+        .animation(DesignSystem.Animation.swift, value: selectedProtocol)
         .animation(DesignSystem.Animation.swift, value: history)
+    }
+
+    private var protocolFilterBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: DesignSystem.Spacing.small) {
+                filterChip(title: "history.filter.all".localized, backupType: nil)
+
+                ForEach(BackupType.allCases, id: \.self) { type in
+                    filterChip(title: type.rawValue, backupType: type)
+                }
+            }
+            .padding(.horizontal, DesignSystem.Spacing.base)
+        }
+    }
+
+    private func filterChip(title: String, backupType: BackupType?) -> some View {
+        let isSelected = selectedProtocol == backupType
+        let chipTheme = DashboardTheme.theme(for: backupType)
+        let activeColor = backupType == nil ? DesignSystem.Colors.primary : chipTheme.primary
+
+        return Button {
+            selectedProtocol = backupType
+        } label: {
+            HStack(spacing: 6) {
+                if backupType != nil {
+                    Circle()
+                        .fill(isSelected ? Color.white : chipTheme.primary)
+                        .frame(width: 7, height: 7)
+                }
+                Text(title)
+                    .font(.caption.weight(.semibold))
+            }
+            .foregroundStyle(isSelected ? .white : .primary)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(
+                Capsule()
+                    .fill(isSelected ? activeColor : Color(.secondarySystemGroupedBackground))
+            )
+            .overlay(
+                Capsule()
+                    .stroke(isSelected ? activeColor.opacity(0.2) : Color.primary.opacity(0.08), lineWidth: 0.8)
+            )
+        }
+        .buttonStyle(.plain)
     }
     
     private var summaryStatsView: some View {
@@ -197,6 +253,7 @@ struct HistoryDetailView: View {
             Section("history.report.section".localized) {
                 ShareLink("history.report.share_json".localized, item: reportJSON(for: item))
                 ShareLink("history.report.share_csv".localized, item: reportCSV(for: item))
+                ShareLink("history.report.share_diagnostics".localized, item: BackupDiagnosticsExporter.buildReport(historyItem: item))
             }
             .liquidListRow()
         }
@@ -282,67 +339,179 @@ struct HistoryItemCard: View {
     }
     
     var body: some View {
-        ModernCard(
-            cornerRadius: DesignSystem.CornerRadius.large,
-            padding: DesignSystem.Spacing.base
-        ) {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.medium) {
-                // Header with title and status
-                HStack(spacing: DesignSystem.Spacing.medium) {
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.extraSmall) {
+        let cardTheme = DashboardTheme.theme(for: item.inferredBackupType)
+        let cornerRadius = DesignSystem.CornerRadius.large
+        let isFailed = item.status.lowercased() == "failed"
+        let isCancelled = item.status.lowercased() == "cancelled"
+        let iconName = isFailed
+            ? "exclamationmark.triangle.fill"
+            : (isCancelled ? "xmark.circle.fill" : "checkmark.seal.fill")
+        let iconColor: Color = isFailed ? .red : (isCancelled ? .orange : cardTheme.primary)
+        let ratio = item.totalFiles > 0
+            ? min(1.0, max(0.0, Double(item.filesProcessed) / Double(item.totalFiles)))
+            : 0.0
+
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.medium) {
+            // Header with protocol icon, title, protocol pill, chevron, timestamp and status
+            HStack(alignment: .top, spacing: DesignSystem.Spacing.medium) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(cardTheme.primary.opacity(0.15))
+                        .frame(width: 42, height: 42)
+                    Image(systemName: iconName)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(iconColor)
+                }
+                .accessibilityHidden(true)
+
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(alignment: .firstTextBaseline, spacing: DesignSystem.Spacing.small) {
                         Text(item.taskDisplayName ?? "history.unknown_task".localized)
                             .font(DesignSystem.Typography.headline)
-                            .lineLimit(1)
-                        
+                            .foregroundStyle(.primary)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.85)
+                            .layoutPriority(1)
+
+                        Spacer(minLength: 4)
+
+                        if let backupType = item.inferredBackupType {
+                            Text(backupType.rawValue)
+                                .font(.caption2.weight(.bold))
+                                .foregroundStyle(cardTheme.primary)
+                                .padding(.horizontal, 7)
+                                .padding(.vertical, 3)
+                                .background(Capsule().fill(cardTheme.primary.opacity(0.16)))
+                                .fixedSize()
+                        }
+
+                        Image(systemName: "chevron.right")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                            .accessibilityHidden(true)
+                    }
+
+                    HStack(spacing: DesignSystem.Spacing.small) {
                         Text(item.timestamp.formatted(date: .abbreviated, time: .shortened))
                             .font(DesignSystem.Typography.caption2)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
+
+                        Spacer(minLength: 4)
+
+                        StatusBadge(
+                            text: BackupHistory.localizedStatus(item.status),
+                            style: statusStyle
+                        )
+                        .fixedSize()
                     }
-                    
-                    Spacer()
-                    
-                    StatusBadge(
-                        text: BackupHistory.localizedStatus(item.status),
-                        style: statusStyle
-                    )
                 }
+            }
+            
+            Divider()
+                .opacity(0.5)
+            
+            // Stats Grid (3 equal-width columns)
+            HStack(spacing: DesignSystem.Spacing.small) {
+                StatItem(
+                    icon: "doc.fill",
+                    label: "history.item.files".localized,
+                    value: "\(item.filesProcessed)/\(item.totalFiles)",
+                    accentColor: cardTheme.primary
+                )
                 
-                Divider()
-                    .padding(.vertical, DesignSystem.Spacing.extraSmall)
+                StatItem(
+                    icon: "arrow.up.circle.fill",
+                    label: "history.item.transferred".localized,
+                    value: formatFileSize(item.bytesTransferred),
+                    accentColor: cardTheme.primary
+                )
                 
-                // Stats Grid
-                HStack(spacing: DesignSystem.Spacing.medium) {
-                    StatItem(
-                        icon: "doc.fill",
-                        label: "history.item.files".localized,
-                        value: "\(item.filesProcessed)/\(item.totalFiles)"
-                    )
-                    
-                    StatItem(
-                        icon: "arrow.up.circle.fill",
-                        label: "history.item.transferred".localized,
-                        value: formatFileSize(item.bytesTransferred)
-                    )
-                    
-                    StatItem(
-                        icon: "timer",
-                        label: "history.item.duration".localized,
-                        value: formatDuration(item.duration)
-                    )
-                    
-                    Spacer()
+                StatItem(
+                    icon: "timer",
+                    label: "history.item.duration".localized,
+                    value: formatDuration(item.duration),
+                    accentColor: cardTheme.primary
+                )
+            }
+
+            if isFailed, let errorMessage = item.errorMessage, !errorMessage.isEmpty {
+                HStack(spacing: 6) {
+                    Image(systemName: "info.circle.fill")
+                        .font(.caption2)
+                        .foregroundStyle(.red)
+                    Text(errorMessage)
+                        .font(.caption2)
+                        .foregroundStyle(.red)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
                 }
-                
-                // Progress bar
-                if item.totalFiles > 0 {
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.red.opacity(0.08))
+                )
+            }
+            
+            // Progress bar
+            if item.totalFiles > 0 {
+                HStack(spacing: 8) {
                     ModernProgressBar(
-                        progress: Double(item.filesProcessed) / Double(item.totalFiles),
-                        style: item.status == "completed" ? .success : .primary,
-                        height: 6
+                        progress: ratio,
+                        style: item.status == "completed" ? .success : (isFailed ? .error : .primary),
+                        height: 5
                     )
+                    Text("\(Int(ratio * 100))%")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
                 }
             }
         }
+        .padding(DesignSystem.Spacing.base)
+        .background(
+            RoundedRectangle(cornerRadius: cornerRadius)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            cardTheme.primary.opacity(0.14),
+                            cardTheme.secondary.opacity(0.07),
+                            Color(.secondarySystemGroupedBackground)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .overlay(alignment: .bottomTrailing) {
+                    if let backupType = item.inferredBackupType {
+                        Text(backupType.rawValue)
+                            .font(.system(size: 44, weight: .black, design: .rounded))
+                            .foregroundStyle(cardTheme.primary.opacity(0.06))
+                            .padding(.trailing, 14)
+                            .offset(y: 6)
+                            .allowsHitTesting(false)
+                    }
+                }
+                .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: cornerRadius)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            cardTheme.primary.opacity(0.35),
+                            cardTheme.secondary.opacity(0.20)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 0.9
+                )
+        )
+        .shadow(color: cardTheme.primary.opacity(0.08), radius: 8, x: 0, y: 4)
         .contextMenu {
             Button(role: .destructive) {
                 onDelete()
@@ -375,21 +544,29 @@ struct StatItem: View {
     let icon: String
     let label: String
     let value: String
+    var accentColor: Color = DesignSystem.Colors.primary
     
     var body: some View {
         VStack(alignment: .center, spacing: 4) {
             Image(systemName: icon)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(DesignSystem.Colors.primary)
+                .font(.subheadline.weight(.semibold))
+                .foregroundColor(accentColor)
+                .accessibilityHidden(true)
             
             Text(label)
                 .font(DesignSystem.Typography.caption2)
                 .foregroundColor(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
             
             Text(value)
                 .font(DesignSystem.Typography.caption1)
                 .fontWeight(.semibold)
+                .foregroundStyle(.primary)
+                .monospacedDigit()
                 .lineLimit(1)
+                .minimumScaleFactor(0.85)
         }
+        .frame(maxWidth: .infinity)
     }
 }

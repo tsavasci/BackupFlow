@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
 struct BackupTargetView: View {
     @Binding var selectedTarget: BackupTarget
@@ -17,7 +18,14 @@ struct BackupTargetView: View {
     @Binding var sftpPort: String
     @Binding var sftpUsername: String
     @Binding var sftpPassword: String
+    @Binding var sftpAuthMethod: SFTPAuthMethod
+    @Binding var sftpPrivateKey: String
+    @Binding var sftpKeyPassphrase: String
+    @Binding var sftpKeyName: String
     @Binding var sftpPath: String
+
+    @State private var showingKeyImporter = false
+    @State private var keyImportError: String?
 
     // WebDAV Properties
     @Binding var webdavURL: String
@@ -83,8 +91,52 @@ struct BackupTargetView: View {
                         .disableAutocorrection(true)
                         .textContentType(.username)
 
-                    SecureField("backup.password".localized, text: $sftpPassword)
-                        .textContentType(.password)
+                    Picker("backup.sftp_auth_method".localized, selection: $sftpAuthMethod) {
+                        Text("backup.sftp_auth_password".localized).tag(SFTPAuthMethod.password)
+                        Text("backup.sftp_auth_private_key".localized).tag(SFTPAuthMethod.privateKey)
+                    }
+                    .pickerStyle(.segmented)
+
+                    if sftpAuthMethod == .password {
+                        SecureField("backup.password".localized, text: $sftpPassword)
+                            .textContentType(.password)
+                    } else {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(spacing: 8) {
+                                Button {
+                                    showingKeyImporter = true
+                                } label: {
+                                    Label("backup.sftp_import_key".localized, systemImage: "key.fill")
+                                }
+                                .buttonStyle(.bordered)
+
+                                if !sftpPrivateKey.isEmpty {
+                                    let displayName = sftpKeyName.isEmpty ? "SSH" : sftpKeyName
+                                    Label("backup.sftp_key_loaded".localized(with: displayName), systemImage: "checkmark.circle.fill")
+                                        .font(.caption)
+                                        .foregroundStyle(DesignSystem.Colors.success)
+                                        .lineLimit(1)
+                                        .truncationMode(.middle)
+                                }
+                            }
+
+                            SecureField("backup.sftp_key_passphrase".localized, text: $sftpKeyPassphrase)
+                                .textContentType(.password)
+
+                            if let keyImportError {
+                                Text(keyImportError)
+                                    .font(.caption)
+                                    .foregroundStyle(DesignSystem.Colors.error)
+                            }
+                        }
+                        .fileImporter(
+                            isPresented: $showingKeyImporter,
+                            allowedContentTypes: [.data, .plainText, .item],
+                            allowsMultipleSelection: false
+                        ) { result in
+                            handleKeyImport(result)
+                        }
+                    }
 
                     TextField("backup.destination_folder".localized, text: $sftpPath)
                         .autocapitalization(.none)
@@ -123,6 +175,33 @@ struct BackupTargetView: View {
         }
         .textFieldStyle(.roundedBorder)
     }
+
+    private func handleKeyImport(_ result: Result<[URL], Error>) {
+        keyImportError = nil
+        switch result {
+        case .success(let urls):
+            guard let url = urls.first else { return }
+            let accessed = url.startAccessingSecurityScopedResource()
+            defer {
+                if accessed { url.stopAccessingSecurityScopedResource() }
+            }
+            do {
+                let data = try Data(contentsOf: url)
+                guard let pem = String(data: data, encoding: .utf8)?
+                    .trimmingCharacters(in: .whitespacesAndNewlines),
+                    !pem.isEmpty else {
+                    keyImportError = "backup.sftp_key_import_failed".localized
+                    return
+                }
+                sftpPrivateKey = pem
+                sftpKeyName = url.lastPathComponent
+            } catch {
+                keyImportError = "backup.sftp_key_import_failed".localized
+            }
+        case .failure:
+            keyImportError = "backup.sftp_key_import_failed".localized
+        }
+    }
 }
 
 struct BackupTargetView_Previews: PreviewProvider {
@@ -143,6 +222,10 @@ struct BackupTargetView_Previews: PreviewProvider {
         @State private var sftpPort = "22"
         @State private var sftpUsername = ""
         @State private var sftpPassword = ""
+        @State private var sftpAuthMethod: SFTPAuthMethod = .password
+        @State private var sftpPrivateKey = ""
+        @State private var sftpKeyPassphrase = ""
+        @State private var sftpKeyName = ""
         @State private var sftpPath = ""
 
         @State private var webdavURL = ""
@@ -164,6 +247,10 @@ struct BackupTargetView_Previews: PreviewProvider {
                 sftpPort: $sftpPort,
                 sftpUsername: $sftpUsername,
                 sftpPassword: $sftpPassword,
+                sftpAuthMethod: $sftpAuthMethod,
+                sftpPrivateKey: $sftpPrivateKey,
+                sftpKeyPassphrase: $sftpKeyPassphrase,
+                sftpKeyName: $sftpKeyName,
                 sftpPath: $sftpPath,
                 webdavURL: $webdavURL,
                 webdavPort: $webdavPort,

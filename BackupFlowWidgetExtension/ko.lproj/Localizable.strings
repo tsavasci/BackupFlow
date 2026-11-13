@@ -1,0 +1,13 @@
+"widget.gallery.title" = "BackupFlow";
+"widget.gallery.description" = "최근 백업 상태, 프로토콜, 실시간 진행률 및 다음 예약 실행을 표시합니다.";
+"widget.empty" = "아직 백업이 없습니다";
+"widget.backup_default" = "백업";
+"widget.placeholder.task" = "사진 및 비디오";
+"widget.placeholder.summary" = "107개 파일 • 136.3 MB";
+"widget.status.completed" = "완료됨";
+"widget.status.failed" = "실패";
+"widget.status.cancelled" = "취소됨";
+"widget.status.running" = "백업 중...";
+"widget.label.last_sync" = "마지막 백업";
+"widget.label.next_run" = "다음 실행";
+"widget.action.open" = "앱 열기";

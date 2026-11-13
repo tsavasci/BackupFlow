@@ -9,16 +9,17 @@ struct WebDAVSyncEngine {
     let ensureDirectoryExists: (String) async throws -> Void
     let deleteFile: (String) async throws -> Void
     let archiveFile: (String, String) async throws -> Void
-    let setCurrentFile: (String) -> Void
+    let setCurrentFile: @MainActor @Sendable (String) -> Void
     let isCancelled: () -> Bool
-    let uploadFile: (URL, String, ((Double) -> Void)?) async throws -> Void
-    let verifyUpload: (URL, String) async throws -> Void
+    let uploadFile: @Sendable (URL, String, (@Sendable (Double) -> Void)?) async throws -> Void
+    let verifyUpload: @Sendable (URL, String) async throws -> Void
+    var maxConcurrentUploads: @Sendable () -> Int = { 1 }
 
     func syncUploadDirectory(
         localPath: String,
         remoteBasePath: String,
         options: BackupExecutionOptions = .defaults,
-        progressHandler: @escaping (Double) -> Void
+        progressHandler: @escaping @Sendable (Double) -> Void
     ) async throws -> (filesUploaded: Int, filesSkipped: Int, filesFailed: Int, bytesTransferred: Int64, deletedFiles: Int, verifiedFiles: Int) {
         logger.info("Starting mirror sync: \(localPath) -> \(remoteBasePath)")
 
@@ -33,9 +34,18 @@ struct WebDAVSyncEngine {
         let remoteFileMap = try await listAllFiles(at: remoteBasePath)
         logger.info("Found \(remoteFileMap.count) remote files")
 
+        struct PendingUpload: Sendable {
+            let relativePath: String
+            let localFileURL: URL
+            let remotePath: String
+            let localSize: Int64
+            let fileName: String
+        }
+
         var uploaded = 0, skipped = 0, failed = 0, deleted = 0, verified = 0, archived = 0
         var transferred: Int64 = 0
         let archiveRunIdentifier = BackupArchive.makeRunIdentifier()
+        var pendingUploads: [PendingUpload] = []
 
         for (index, (relativePath, localFileURL)) in localFileMap.enumerated() {
             guard !isCancelled() else { throw BackupServiceError.cancelled }
@@ -52,40 +62,63 @@ struct WebDAVSyncEngine {
 
             let localSize = Int64((try? localFileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
             let fileName = (relativePath as NSString).lastPathComponent
-            setCurrentFile(fileName)
 
             if let remoteFile = remoteFileMap[relativePath],
                remoteFile.size == localSize,
                remoteFile.name == fileName {
                 logger.debug("Skipping identical file: \(relativePath) (\(ByteCountFormatter.string(fromByteCount: localSize, countStyle: .file)))")
                 skipped += 1
+                progressHandler(Double(index + 1) / Double(max(totalFiles, 1)) * 0.8)
             } else {
-                do {
-                    logger.info("Uploading: \(relativePath) (\(ByteCountFormatter.string(fromByteCount: localSize, countStyle: .file)))")
-                    if !options.isDryRun {
-                        try await uploadFile(localFileURL, remotePath) { fileProgress in
+                pendingUploads.append(PendingUpload(
+                    relativePath: relativePath,
+                    localFileURL: localFileURL,
+                    remotePath: remotePath,
+                    localSize: localSize,
+                    fileName: fileName
+                ))
+            }
+        }
+
+        let skippedCount = skipped
+        let concurrency = maxConcurrentUploads()
+        let outcomes = try await ConcurrentTransferQueue.run(
+            items: pendingUploads,
+            maxConcurrency: concurrency,
+            isCancelled: isCancelled
+        ) { [logger, uploadFile, verifyUpload, setCurrentFile] itemIndex, item -> (uploaded: Int, failed: Int, verified: Int, bytes: Int64) in
+            await setCurrentFile(item.fileName)
+            do {
+                logger.info("Uploading: \(item.relativePath) (\(ByteCountFormatter.string(fromByteCount: item.localSize, countStyle: .file)))")
+                if !options.isDryRun {
+                    try await uploadFile(item.localFileURL, item.remotePath) { fileProgress in
+                        if concurrency == 1 {
                             let fileShare = 0.8 / Double(max(totalFiles, 1))
-                            let overallProgress = (Double(index) / Double(max(totalFiles, 1)) * 0.8) + (fileProgress * fileShare)
+                            let overallProgress = (Double(skippedCount + itemIndex) / Double(max(totalFiles, 1)) * 0.8) + (fileProgress * fileShare)
                             progressHandler(min(max(overallProgress, 0.0), 0.8))
                         }
-                        if options.checksumMode == .verifyUploads {
-                            try await verifyUpload(localFileURL, remotePath)
-                            verified += 1
-                        }
                     }
-                    logger.debug("Successfully uploaded: \(relativePath)")
-                    uploaded += 1
-                    if !options.isDryRun {
-                        transferred += localSize
-                        BackupRunTally.shared.recordUpload(bytes: localSize)
+                    var itemVerified = 0
+                    if options.checksumMode == .verifyUploads {
+                        try await verifyUpload(item.localFileURL, item.remotePath)
+                        itemVerified = 1
                     }
-                } catch {
-                    logger.error("Upload failed for \(relativePath): \(error.localizedDescription)")
-                    failed += 1
+                    BackupRunTally.shared.recordUpload(bytes: item.localSize)
+                    progressHandler(min(Double(skippedCount + itemIndex + 1) / Double(max(totalFiles, 1)) * 0.8, 0.8))
+                    return (1, 0, itemVerified, item.localSize)
                 }
+                return (1, 0, 0, 0)
+            } catch {
+                logger.error("Upload failed for \(item.relativePath): \(error.localizedDescription)")
+                return (0, 1, 0, 0)
             }
+        }
 
-            progressHandler(Double(index + 1) / Double(max(totalFiles, 1)) * 0.8)
+        for outcome in outcomes {
+            uploaded += outcome.uploaded
+            failed += outcome.failed
+            verified += outcome.verified
+            transferred += outcome.bytes
         }
 
         logger.info("Checking for orphaned files to delete...")

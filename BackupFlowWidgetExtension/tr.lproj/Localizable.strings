@@ -1,0 +1,13 @@
+"widget.gallery.title" = "BackupFlow";
+"widget.gallery.description" = "Son yedekleme durumunu, protokolü, canlı ilerlemeyi ve sonraki planlı çalışmayı gösterir.";
+"widget.empty" = "Henüz yedekleme yok";
+"widget.backup_default" = "Yedekleme";
+"widget.placeholder.task" = "Fotoğraflar ve Videolar";
+"widget.placeholder.summary" = "107 dosya • 136,3 MB";
+"widget.status.completed" = "Tamamlandı";
+"widget.status.failed" = "Başarısız";
+"widget.status.cancelled" = "İptal Edildi";
+"widget.status.running" = "Yedekleniyor...";
+"widget.label.last_sync" = "Son yedek";
+"widget.label.next_run" = "Sonraki";
+"widget.action.open" = "Uygulamayı Aç";

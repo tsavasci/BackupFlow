@@ -92,13 +92,15 @@ struct ModernEmptyState: View {
     let icon: String
     let title: String
     let description: String
+    @ScaledMetric(relativeTo: .largeTitle) private var iconSize: CGFloat = 64
     
     var body: some View {
         VStack(spacing: DesignSystem.Spacing.large) {
             Image(systemName: icon)
-                .font(.system(size: 64))
+                .font(.system(size: iconSize))
                 .foregroundColor(DesignSystem.Colors.primary.opacity(0.5))
                 .padding(.top, DesignSystem.Spacing.xLarge)
+                .accessibilityHidden(true)
             
             VStack(spacing: DesignSystem.Spacing.medium) {
                 Text(title)
@@ -173,8 +175,9 @@ struct StatCard: View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.small) {
             HStack(spacing: DesignSystem.Spacing.small) {
                 Image(systemName: icon)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.subheadline.weight(.semibold))
                     .foregroundColor(style.color)
+                    .accessibilityHidden(true)
                 
                 Text(label)
                     .font(DesignSystem.Typography.caption1)

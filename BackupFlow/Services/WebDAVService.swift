@@ -485,19 +485,19 @@ final class WebDAVService: NSObject, FileProviderDelegate {
         )
     }
     
-    func uploadFile(localURL: URL, remotePath: String, progressHandler: ((Double) -> Void)? = nil) async throws {
+    func uploadFile(localURL: URL, remotePath: String, progressHandler: (@Sendable (Double) -> Void)? = nil) async throws {
         try await uploadFile(localURL: localURL, remotePath: remotePath, progressHandler: progressHandler, allowBackgroundSession: true)
     }
     
     /// Sync engine gibi "başarılı" sayılmadan önce gerçek tamamlanma bekleyen akışlar için.
-    func uploadFileAwaitingCompletion(localURL: URL, remotePath: String, progressHandler: ((Double) -> Void)? = nil) async throws {
+    func uploadFileAwaitingCompletion(localURL: URL, remotePath: String, progressHandler: (@Sendable (Double) -> Void)? = nil) async throws {
         try await uploadFile(localURL: localURL, remotePath: remotePath, progressHandler: progressHandler, allowBackgroundSession: true, timeoutMultiplier: 1.0)
     }
     
     private func uploadFile(
         localURL: URL,
         remotePath: String,
-        progressHandler: ((Double) -> Void)?,
+        progressHandler: (@Sendable (Double) -> Void)?,
         allowBackgroundSession: Bool,
         timeoutMultiplier: Double = 1.0
     ) async throws {
@@ -524,7 +524,8 @@ final class WebDAVService: NSObject, FileProviderDelegate {
                 try await self.uploadFileUsingForegroundSession(
                     localURL: localURL,
                     remotePath: remotePath,
-                    timeoutSeconds: timeoutSeconds
+                    timeoutSeconds: timeoutSeconds,
+                    progressHandler: progressHandler
                 )
             }
         } catch {
@@ -622,7 +623,8 @@ final class WebDAVService: NSObject, FileProviderDelegate {
     private func uploadFileUsingForegroundSession(
         localURL: URL,
         remotePath: String,
-        timeoutSeconds: TimeInterval
+        timeoutSeconds: TimeInterval,
+        progressHandler: (@Sendable (Double) -> Void)? = nil
     ) async throws {
         // Ensure parent directory exists before foreground upload
         let parentPath_fg = (remotePath as NSString).deletingLastPathComponent
@@ -631,7 +633,7 @@ final class WebDAVService: NSObject, FileProviderDelegate {
         }
 
         let request = try makeUploadRequest(remotePath: remotePath)
-        let fileSize = currentFileTotalBytes
+        let fileSize = Int64((try? localURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
 
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             let resumeLock = NSLock()
@@ -664,10 +666,11 @@ final class WebDAVService: NSObject, FileProviderDelegate {
                 logger: logger,
                 allowSelfSigned: self.allowSelfSignedCertificates,
                 onTaskProgress: { [weak self] _, totalBytesSent, totalBytesExpected in
-                    guard let self else { return }
                     let expectedBytes = totalBytesExpected > 0 ? totalBytesExpected : fileSize
                     guard expectedBytes > 0 else { return }
-                    let progress = Double(totalBytesSent) / Double(expectedBytes)
+                    let progress = min(max(Double(totalBytesSent) / Double(expectedBytes), 0.0), 1.0)
+                    progressHandler?(progress)
+                    guard let self else { return }
                     Task { @MainActor in
                         self.updateCurrentUploadProgress(
                             progress: progress,
@@ -876,7 +879,7 @@ final class WebDAVService: NSObject, FileProviderDelegate {
         localPath: String,
         remoteBasePath: String,
         options: BackupExecutionOptions = .defaults,
-        progressHandler: @escaping (Double) -> Void
+        progressHandler: @escaping @Sendable (Double) -> Void
     ) async throws -> (filesUploaded: Int, filesSkipped: Int, filesFailed: Int, bytesTransferred: Int64, deletedFiles: Int, verifiedFiles: Int) {
         let engine = try makeSyncEngine()
         return try await engine.syncUploadDirectory(
@@ -917,7 +920,7 @@ final class WebDAVService: NSObject, FileProviderDelegate {
         mediaType: MediaType,
         includeICloudAssets: Bool,
         options: BackupExecutionOptions = .defaults,
-        progressHandler: @escaping (Double) -> Void
+        progressHandler: @escaping @Sendable (Double) -> Void
     ) async throws -> FTPService.SyncResult {
         if !options.isDryRun {
             try await ensureDirectoryExists(at: remoteBasePath)
@@ -1436,6 +1439,7 @@ final class WebDAVService: NSObject, FileProviderDelegate {
         guard let provider = webdavProvider else {
             throw BackupServiceError.connectionFailed
         }
+        let maxConcurrency = isBackgroundUploading ? 1 : 3
         return WebDAVSyncEngine(
             provider: provider,
             fileManager: fileManager,
@@ -1465,21 +1469,19 @@ final class WebDAVService: NSObject, FileProviderDelegate {
             verifyUpload: { [weak self] localURL, remotePath in
                 guard let self else { throw BackupServiceError.connectionFailed }
                 try await self.verifyUploadChecksum(localURL: localURL, remotePath: remotePath)
+            },
+            maxConcurrentUploads: {
+                maxConcurrency
             }
         )
     }
 
-    private func verifyUploadChecksum(localURL: URL, remotePath: String) async throws {
+    func downloadFile(remotePath: String, to localURL: URL) async throws {
         guard let provider = webdavProvider else {
             throw BackupServiceError.connectionFailed
         }
-
-        let temporaryURL = fileManager.temporaryDirectory
-            .appendingPathComponent("backupflow-verify-\(UUID().uuidString)")
-        defer { try? fileManager.removeItem(at: temporaryURL) }
-
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            provider.copyItem(path: remotePath, toLocalURL: temporaryURL) { error in
+            provider.copyItem(path: remotePath, toLocalURL: localURL) { error in
                 if let error {
                     continuation.resume(throwing: error)
                 } else {
@@ -1487,6 +1489,14 @@ final class WebDAVService: NSObject, FileProviderDelegate {
                 }
             }
         }
+    }
+
+    private func verifyUploadChecksum(localURL: URL, remotePath: String) async throws {
+        let temporaryURL = fileManager.temporaryDirectory
+            .appendingPathComponent("backupflow-verify-\(UUID().uuidString)")
+        defer { try? fileManager.removeItem(at: temporaryURL) }
+
+        try await downloadFile(remotePath: remotePath, to: temporaryURL)
 
         let localChecksum = try BackupChecksum.sha256(of: localURL)
         let remoteChecksum = try BackupChecksum.sha256(of: temporaryURL)
@@ -1526,7 +1536,7 @@ final class WebDAVService: NSObject, FileProviderDelegate {
         mediaType: MediaType,
         includeICloudAssets: Bool = true,
         options: BackupExecutionOptions = .defaults,
-        progressHandler: @escaping (Double) -> Void
+        progressHandler: @escaping @Sendable (Double) -> Void
     ) async throws -> FTPService.SyncResult {
         isCancelled = false
         isPerformingBackup = true

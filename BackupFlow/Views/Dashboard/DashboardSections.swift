@@ -20,11 +20,12 @@ struct DashboardHeader: View {
                     .foregroundStyle(.secondary)
                 Text("dashboard.backup_hub".localized)
                     .font(.title2.weight(.bold))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.7)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
-            Spacer()
+            Spacer(minLength: 8)
 
             HStack(spacing: 8) {
                 Capsule()
@@ -34,7 +35,9 @@ struct DashboardHeader: View {
                 Text(statusText)
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
             }
+            .fixedSize(horizontal: true, vertical: false)
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
             .background(.ultraThinMaterial)
@@ -522,12 +525,16 @@ struct DashboardQuickActions: View {
     let onSync: () -> Void
     let onShowHistory: () -> Void
     let onAdd: () -> Void
+    var onRestore: (() -> Void)? = nil
 
     var body: some View {
         HStack(spacing: 12) {
             DashboardActionButton(icon: "arrow.triangle.2.circlepath", title: "dashboard.action.sync".localized, theme: theme, action: onSync)
             DashboardActionButton(icon: "clock.arrow.circlepath", title: "nav.history".localized, theme: theme, action: onShowHistory)
                 .accessibilityIdentifier("dashboard.history")
+            if let onRestore {
+                DashboardActionButton(icon: "arrow.down.doc", title: "restore.action".localized, theme: theme, action: onRestore)
+            }
             DashboardActionButton(icon: "plus.circle.fill", title: "dashboard.add".localized, theme: theme, action: onAdd)
         }
         .padding(.vertical, 2)
@@ -579,6 +586,7 @@ struct DashboardRecentBackupRow: Identifiable {
     let displayName: String?
     let timestamp: Date
     let status: String
+    let backupType: BackupType?
 }
 
 struct DashboardRecentBackupsSection: View {
@@ -645,35 +653,90 @@ struct DashboardRecentBackupsSection: View {
     }
 
     private func recentRow(_ record: DashboardRecentBackupRow) -> some View {
-        HStack(spacing: 12) {
+        let rowTheme = DashboardTheme.theme(for: record.backupType)
+        let isFailed = record.status == "failed"
+        let isCancelled = record.status == "cancelled"
+        let statusColor: Color = isFailed ? .red : (isCancelled ? .orange : .green)
+        let iconName = isFailed
+            ? "exclamationmark.triangle.fill"
+            : (isCancelled ? "xmark.circle.fill" : "checkmark.seal.fill")
+        let iconColor: Color = isFailed ? .red : (isCancelled ? .orange : rowTheme.primary)
+
+        return HStack(spacing: 12) {
             ZStack {
                 RoundedRectangle(cornerRadius: 14)
-                    .fill(theme.primary.opacity(0.1))
+                    .fill(rowTheme.primary.opacity(0.14))
                     .frame(width: 48, height: 48)
-                Image(systemName: record.status == "failed" ? "exclamationmark.triangle.fill" : "checkmark.seal.fill")
-                    .foregroundStyle(record.status == "failed" ? .red : theme.primary)
+                Image(systemName: iconName)
+                    .foregroundStyle(iconColor)
             }
             .accessibilityHidden(true)
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(record.displayName ?? "dashboard.backup".localized)
-                    .font(.subheadline.weight(.semibold))
-                    .lineLimit(1)
-                Text(DashboardFormat.date(record.timestamp))
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(record.displayName ?? "dashboard.backup".localized)
+                        .font(.subheadline.weight(.semibold))
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.85)
+                        .layoutPriority(1)
+
+                    Spacer(minLength: 4)
+
+                    if let backupType = record.backupType {
+                        Text(backupType.rawValue)
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(rowTheme.primary)
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 3)
+                            .background(Capsule().fill(rowTheme.primary.opacity(0.16)))
+                            .fixedSize()
+                    }
+                }
+
+                HStack(spacing: 8) {
+                    Text(DashboardFormat.date(record.timestamp))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+
+                    Spacer(minLength: 4)
+
+                    Text(BackupHistory.localizedStatus(record.status))
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(statusColor)
+                        .fixedSize()
+                }
             }
-
-            Spacer()
-
-            Text(BackupHistory.localizedStatus(record.status))
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(record.status == "failed" ? .red : .green)
         }
         .padding(14)
         .background(
             RoundedRectangle(cornerRadius: 18)
-                .fill(Color(.systemBackground).opacity(0.55))
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            rowTheme.primary.opacity(0.14),
+                            rowTheme.secondary.opacity(0.08),
+                            Color(.systemBackground).opacity(0.65)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            rowTheme.primary.opacity(0.35),
+                            rowTheme.secondary.opacity(0.22)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 0.9
+                )
         )
         .contentShape(RoundedRectangle(cornerRadius: 18))
     }

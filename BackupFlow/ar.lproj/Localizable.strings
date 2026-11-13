@@ -438,3 +438,45 @@
 "backup.photo_folder_structure.year_month_dash" = "سنة - شهر (2026-10)";
 "backup.preserve_original_format" = "الحفاظ على الصيغة الأصلية (HEIC/RAW/MOV)";
 "backup.preserve_original_format_hint" = "يحفظ الصور والفيديوهات بامتدادها الأصلي بدلاً من .jpg/.mp4.";
+"settings.export_diagnostics" = "تصدير سجلات التشخيص";
+"history.report.share_diagnostics" = "مشاركة التشخيص";
+
+/* SFTP SSH Private Key */
+"backup.sftp_auth_method" = "المصادقة";
+"backup.sftp_auth_password" = "كلمة المرور";
+"backup.sftp_auth_private_key" = "مفتاح SSH";
+"backup.sftp_import_key" = "استيراد مفتاح خاص";
+"backup.sftp_key_loaded" = "تم تحميل المفتاح: %@";
+"backup.sftp_key_passphrase" = "عبارة مرور المفتاح (اختياري)";
+"backup.sftp_key_import_failed" = "تعذر قراءة ملف مفتاح SSH المحدد.";
+
+/* Bonjour Discovery & Server Profiles */
+"backup.scan_network" = "فحص الشبكة المحلية";
+"backup.discovery.title" = "اكتشاف الخوادم";
+"backup.discovery.local_devices" = "الشبكة المحلية (Bonjour)";
+"backup.discovery.saved_profiles" = "ملفات الخوادم المحفوظة";
+"backup.discovery.searching" = "جارٍ البحث عن أجهزة NAS في الشبكة المحلية…";
+"backup.discovery.footer" = "يتطلب إذن الشبكة المحلية وتفعيل Bonjour/mDNS على جهاز NAS أو Mac.";
+
+/* Restore & Archive Recovery */
+"restore.action" = "استعادة";
+"restore.title" = "استعادة الملفات";
+"restore.open_archive" = "فتح الأرشيف";
+"restore.loading" = "جارٍ تحميل المجلد البعيد…";
+"restore.empty_folder" = "هذا المجلد فارغ.";
+"restore.search_prompt" = "البحث عن ملفات أو مجلدات";
+"restore.destination" = "الوجهة";
+"restore.destination.files" = "الملفات";
+"restore.destination.photos" = "الصور";
+"restore.download_selected" = "تنزيل (%d)";
+"restore.export_files" = "حفظ / مشاركة";
+"restore.ready_to_export" = "تم تنزيل %d ملف(ات). اضغط على حفظ / مشاركة.";
+"restore.saved_to_photos" = "تم حفظ %d عنصر(عناصر) في الصور.";
+"restore.partial_failures" = "تعذر تنزيل %d ملف(ات).";
+"common.back" = "رجوع";
+"history.filter.all" = "الكل";
+"widget.status.running" = "جارٍ النسخ الاحتياطي...";
+"widget.label.last_sync" = "آخر نسخ";
+"widget.label.next_run" = "التالي";
+"widget.label.files_summary" = "%d ملف • %@";
+"widget.action.open" = "فتح التطبيق";

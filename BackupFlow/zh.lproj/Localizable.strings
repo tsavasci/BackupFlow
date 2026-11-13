@@ -437,3 +437,45 @@
 "backup.photo_folder_structure.year_month_dash" = "年 - 月 (2026-10)";
 "backup.preserve_original_format" = "保留原始格式 (HEIC/RAW/MOV)";
 "backup.preserve_original_format_hint" = "以原始文件扩展名保存照片和视频，而不转换为 .jpg/.mp4。";
+"settings.export_diagnostics" = "导出诊断日志";
+"history.report.share_diagnostics" = "分享诊断报告";
+
+/* SFTP SSH Private Key */
+"backup.sftp_auth_method" = "身份验证";
+"backup.sftp_auth_password" = "密码";
+"backup.sftp_auth_private_key" = "SSH 密钥";
+"backup.sftp_import_key" = "导入私钥";
+"backup.sftp_key_loaded" = "已加载密钥：%@";
+"backup.sftp_key_passphrase" = "密钥密码（可选）";
+"backup.sftp_key_import_failed" = "无法读取所选的 SSH 密钥文件。";
+
+/* Bonjour Discovery & Server Profiles */
+"backup.scan_network" = "扫描局域网";
+"backup.discovery.title" = "发现服务器";
+"backup.discovery.local_devices" = "局域网 (Bonjour)";
+"backup.discovery.saved_profiles" = "已保存的服务器配置文件";
+"backup.discovery.searching" = "正在局域网中搜索 NAS 设备…";
+"backup.discovery.footer" = "需要本地网络权限，并在 NAS 或 Mac 上启用 Bonjour/mDNS。";
+
+/* Restore & Archive Recovery */
+"restore.action" = "恢复";
+"restore.title" = "恢复文件";
+"restore.open_archive" = "打开归档";
+"restore.loading" = "正在加载远程文件夹…";
+"restore.empty_folder" = "此文件夹为空。";
+"restore.search_prompt" = "搜索文件或文件夹";
+"restore.destination" = "目标";
+"restore.destination.files" = "文件";
+"restore.destination.photos" = "照片";
+"restore.download_selected" = "下载 (%d)";
+"restore.export_files" = "保存 / 共享";
+"restore.ready_to_export" = "已下载 %d 个文件。点击“保存 / 共享”进行保存。";
+"restore.saved_to_photos" = "已将 %d 个项目保存到照片。";
+"restore.partial_failures" = "有 %d 个文件无法下载。";
+"common.back" = "返回";
+"history.filter.all" = "全部";
+"widget.status.running" = "正在备份...";
+"widget.label.last_sync" = "上次备份";
+"widget.label.next_run" = "下次运行";
+"widget.label.files_summary" = "%d 个文件 • %@";
+"widget.action.open" = "打开应用";

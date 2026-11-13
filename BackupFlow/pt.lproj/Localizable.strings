@@ -437,3 +437,45 @@
 "backup.photo_folder_structure.year_month_dash" = "Ano - Mês (2026-10)";
 "backup.preserve_original_format" = "Manter formato original (HEIC/RAW/MOV)";
 "backup.preserve_original_format_hint" = "Salva fotos e vídeos com a extensão original em vez de .jpg/.mp4.";
+"settings.export_diagnostics" = "Exportar logs de diagnóstico";
+"history.report.share_diagnostics" = "Compartilhar diagnóstico";
+
+/* SFTP SSH Private Key */
+"backup.sftp_auth_method" = "Autenticação";
+"backup.sftp_auth_password" = "Senha";
+"backup.sftp_auth_private_key" = "Chave SSH";
+"backup.sftp_import_key" = "Importar chave privada";
+"backup.sftp_key_loaded" = "Chave carregada: %@";
+"backup.sftp_key_passphrase" = "Senha da chave (opcional)";
+"backup.sftp_key_import_failed" = "Não foi possível ler o arquivo de chave SSH selecionado.";
+
+/* Bonjour Discovery & Server Profiles */
+"backup.scan_network" = "Escanear rede local";
+"backup.discovery.title" = "Descobrir servidores";
+"backup.discovery.local_devices" = "Rede local (Bonjour)";
+"backup.discovery.saved_profiles" = "Perfis de servidor salvos";
+"backup.discovery.searching" = "Procurando dispositivos NAS na rede local…";
+"backup.discovery.footer" = "Requer permissão de Rede Local e Bonjour/mDNS ativado no seu NAS ou Mac.";
+
+/* Restore & Archive Recovery */
+"restore.action" = "Restaurar";
+"restore.title" = "Restaurar arquivos";
+"restore.open_archive" = "Abrir arquivo";
+"restore.loading" = "Carregando pasta remota…";
+"restore.empty_folder" = "Esta pasta está vazia.";
+"restore.search_prompt" = "Buscar arquivos ou pastas";
+"restore.destination" = "Destino";
+"restore.destination.files" = "Arquivos";
+"restore.destination.photos" = "Fotos";
+"restore.download_selected" = "Baixar (%d)";
+"restore.export_files" = "Salvar / Compartilhar";
+"restore.ready_to_export" = "%d arquivo(s) baixado(s). Toque em Salvar / Compartilhar.";
+"restore.saved_to_photos" = "%d item(ns) salvo(s) em Fotos.";
+"restore.partial_failures" = "Não foi possível baixar %d arquivo(s).";
+"common.back" = "Voltar";
+"history.filter.all" = "Todos";
+"widget.status.running" = "Fazendo backup...";
+"widget.label.last_sync" = "Último backup";
+"widget.label.next_run" = "Próximo";
+"widget.label.files_summary" = "%d arquivos • %@";
+"widget.action.open" = "Abrir app";

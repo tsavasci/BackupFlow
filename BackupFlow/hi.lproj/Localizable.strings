@@ -439,3 +439,45 @@
 "backup.photo_folder_structure.year_month_dash" = "वर्ष - माह (2026-10)";
 "backup.preserve_original_format" = "मूल फ़ॉर्मेट रखें (HEIC/RAW/MOV)";
 "backup.preserve_original_format_hint" = "फ़ोटो और वीडियो को .jpg/.mp4 के बजाय उनके मूल एक्सटेंशन में सहेजता है।";
+"settings.export_diagnostics" = "निदान लॉग निर्यात करें";
+"history.report.share_diagnostics" = "निदान साझा करें";
+
+/* SFTP SSH Private Key */
+"backup.sftp_auth_method" = "प्रमाणीकरण";
+"backup.sftp_auth_password" = "पासवर्ड";
+"backup.sftp_auth_private_key" = "SSH कुंजी";
+"backup.sftp_import_key" = "निजी कुंजी आयात करें";
+"backup.sftp_key_loaded" = "कुंजी लोड हो गई: %@";
+"backup.sftp_key_passphrase" = "कुंजी पासफ़्रेज़ (वैकल्पिक)";
+"backup.sftp_key_import_failed" = "चयनित SSH कुंजी फ़ाइल पढ़ी नहीं जा सकी।";
+
+/* Bonjour Discovery & Server Profiles */
+"backup.scan_network" = "स्थानीय नेटवर्क स्कैन करें";
+"backup.discovery.title" = "सर्वर खोजें";
+"backup.discovery.local_devices" = "स्थानीय नेटवर्क (Bonjour)";
+"backup.discovery.saved_profiles" = "सहेजे गए सर्वर प्रोफ़ाइल";
+"backup.discovery.searching" = "स्थानीय नेटवर्क पर NAS डिवाइस खोजे जा रहे हैं…";
+"backup.discovery.footer" = "स्थानीय नेटवर्क अनुमति और आपके NAS या Mac पर Bonjour/mDNS सक्षम होना आवश्यक है।";
+
+/* Restore & Archive Recovery */
+"restore.action" = "पुनर्स्थापित करें";
+"restore.title" = "फ़ाइलें पुनर्स्थापित करें";
+"restore.open_archive" = "संग्रह खोलें";
+"restore.loading" = "रिमोट फ़ोल्डर लोड हो रहा है…";
+"restore.empty_folder" = "यह फ़ोल्डर खाली है।";
+"restore.search_prompt" = "फ़ाइलें या फ़ोल्डर खोजें";
+"restore.destination" = "गंतव्य";
+"restore.destination.files" = "फ़ाइलें";
+"restore.destination.photos" = "फ़ोटो";
+"restore.download_selected" = "डाउनलोड (%d)";
+"restore.export_files" = "सहेजें / साझा करें";
+"restore.ready_to_export" = "%d फ़ाइल(ें) डाउनलोड हो गईं। सहेजने के लिए सहेजें / साझा करें पर टैप करें।";
+"restore.saved_to_photos" = "%d आइटम फ़ोटो में सहेजे गए।";
+"restore.partial_failures" = "%d फ़ाइल(ें) डाउनलोड नहीं हो सकीं।";
+"common.back" = "वापस";
+"history.filter.all" = "सभी";
+"widget.status.running" = "बैकअप हो रहा है...";
+"widget.label.last_sync" = "अंतिम बैकअप";
+"widget.label.next_run" = "अगला";
+"widget.label.files_summary" = "%d फ़ाइलें • %@";
+"widget.action.open" = "ऐप खोलें";

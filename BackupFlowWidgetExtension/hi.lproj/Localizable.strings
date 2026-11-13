@@ -1,0 +1,13 @@
+"widget.gallery.title" = "BackupFlow";
+"widget.gallery.description" = "नवीनतम बैकअप स्थिति, प्रोटोकॉल, लाइव प्रगति और अगला शेड्यूल दिखाता है।";
+"widget.empty" = "अभी कोई बैकअप नहीं";
+"widget.backup_default" = "बैकअप";
+"widget.placeholder.task" = "फ़ोटो और वीडियो";
+"widget.placeholder.summary" = "107 फ़ाइलें • 136.3 MB";
+"widget.status.completed" = "पूर्ण";
+"widget.status.failed" = "विफल";
+"widget.status.cancelled" = "रद्द";
+"widget.status.running" = "बैकअप हो रहा है...";
+"widget.label.last_sync" = "अंतिम बैकअप";
+"widget.label.next_run" = "अगला";
+"widget.action.open" = "ऐप खोलें";

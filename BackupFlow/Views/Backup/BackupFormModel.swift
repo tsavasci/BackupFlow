@@ -36,6 +36,10 @@ final class BackupFormModel {
     var sftpUsername = ""
     var sftpPassword = ""
     var sftpPath = ""
+    var sftpAuthMethod: SFTPAuthMethod = .password
+    var sftpPrivateKey = ""
+    var sftpKeyPassphrase = ""
+    var sftpKeyName = ""
 
     // WebDAV ayarları
     var webdavURL = ""
@@ -91,6 +95,10 @@ final class BackupFormModel {
             sftpPort = "\(task.serverPort)"
             sftpUsername = task.serverUsername
             sftpPath = task.destinationPath
+            sftpAuthMethod = task.sftpAuthMethod
+            sftpKeyName = task.sftpKeyName ?? ""
+            sftpPrivateKey = BackupCredentialStore.shared.privateKey(for: task.id) ?? ""
+            sftpKeyPassphrase = BackupCredentialStore.shared.passphrase(for: task.id) ?? ""
         case .webdav:
             webdavURL = task.serverHost
             webdavPort = "\(task.serverPort)"
@@ -146,6 +154,10 @@ final class BackupFormModel {
         sftpPort = "22"
         sftpUsername = ""
         sftpPassword = ""
+        sftpAuthMethod = .password
+        sftpPrivateKey = ""
+        sftpKeyPassphrase = ""
+        sftpKeyName = ""
         sftpPath = ""
         webdavURL = ""
         webdavPort = "443"
@@ -178,6 +190,10 @@ final class BackupFormModel {
         sftpPort = "22"
         sftpUsername = ""
         sftpPassword = ""
+        sftpAuthMethod = .password
+        sftpPrivateKey = ""
+        sftpKeyPassphrase = ""
+        sftpKeyName = ""
         sftpPath = ""
     }
 }
@@ -267,7 +283,8 @@ extension BackupFormModel {
         case .ftp:
             return !ftpHost.isEmpty && (isAnonymous || (!ftpUsername.isEmpty && !ftpPassword.isEmpty))
         case .sftp:
-            return !sftpHost.isEmpty && !sftpUsername.isEmpty && !sftpPassword.isEmpty
+            let hasSecret = sftpAuthMethod == .privateKey ? !sftpPrivateKey.isEmpty : !sftpPassword.isEmpty
+            return !sftpHost.isEmpty && !sftpUsername.isEmpty && hasSecret
         case .webdav:
             return !webdavURL.isEmpty && !webdavUsername.isEmpty
         }
@@ -280,16 +297,67 @@ extension BackupFormModel {
             : "backup.fill_required_fields".localized
     }
 
+    func applyDiscoveredServer(
+        _ server: LocalServerDiscoveryService.DiscoveredServer,
+        host: String,
+        port: Int
+    ) {
+        selectedTarget = server.target
+        switch server.target {
+        case .ftp:
+            ftpHost = host
+            ftpPort = "\(port)"
+        case .sftp:
+            sftpHost = host
+            sftpPort = "\(port)"
+        case .webdav:
+            let scheme = server.usesHTTPS ? "https" : "http"
+            webdavURL = "\(scheme)://\(host)"
+            webdavPort = "\(port)"
+        }
+    }
+
+    func applySavedProfile(_ profile: SavedServerProfile) {
+        selectedTarget = profile.target
+        switch profile.target {
+        case .ftp:
+            ftpHost = profile.host
+            ftpPort = "\(profile.port)"
+            ftpUsername = profile.username
+            ftpPassword = BackupCredentialStore.shared.password(for: profile.taskID) ?? ""
+            isAnonymous = profile.username.isEmpty
+            destinationPath = profile.destinationPath
+        case .sftp:
+            sftpHost = profile.host
+            sftpPort = "\(profile.port)"
+            sftpUsername = profile.username
+            sftpAuthMethod = profile.sftpAuthMethod
+            sftpKeyName = profile.sftpKeyName
+            sftpPassword = BackupCredentialStore.shared.password(for: profile.taskID) ?? ""
+            sftpPrivateKey = BackupCredentialStore.shared.privateKey(for: profile.taskID) ?? ""
+            sftpKeyPassphrase = BackupCredentialStore.shared.passphrase(for: profile.taskID) ?? ""
+            sftpPath = profile.destinationPath
+        case .webdav:
+            webdavURL = profile.host
+            webdavPort = "\(profile.port)"
+            webdavUsername = profile.username
+            webdavPassword = BackupCredentialStore.shared.password(for: profile.taskID) ?? ""
+            webdavPath = profile.destinationPath
+        }
+    }
+
     /// Server values for browsing remote folders; WebDAV addresses are normalized first.
-    var remoteFolderConfig: (host: String, port: Int, username: String?, password: String?) {
+    var remoteFolderConfig: (host: String, port: Int, username: String?, password: String?, privateKey: String?, passphrase: String?) {
         switch selectedTarget {
         case .ftp:
-            return (ftpHost, Int(ftpPort) ?? 21, isAnonymous ? nil : ftpUsername, isAnonymous ? nil : ftpPassword)
+            return (ftpHost, Int(ftpPort) ?? 21, isAnonymous ? nil : ftpUsername, isAnonymous ? nil : ftpPassword, nil, nil)
         case .sftp:
-            return (sftpHost, Int(sftpPort) ?? 22, sftpUsername, sftpPassword)
+            let key = sftpAuthMethod == .privateKey ? sftpPrivateKey : nil
+            let pass = (sftpAuthMethod == .privateKey && !sftpKeyPassphrase.isEmpty) ? sftpKeyPassphrase : nil
+            return (sftpHost, Int(sftpPort) ?? 22, sftpUsername, sftpAuthMethod == .password ? sftpPassword : nil, key, pass)
         case .webdav:
             let parsed = Self.parseWebDAVURL(webdavURL, portOverride: webdavPort, fallbackPath: webdavPath)
-            return (parsed.host, parsed.port, webdavUsername, webdavPassword)
+            return (parsed.host, parsed.port, webdavUsername, webdavPassword, nil, nil)
         }
     }
 
@@ -375,7 +443,9 @@ extension BackupFormModel {
                     host: sftpHost,
                     port: Int(sftpPort) ?? 22,
                     username: sftpUsername,
-                    password: sftpPassword
+                    password: sftpPassword,
+                    privateKey: sftpAuthMethod == .privateKey ? sftpPrivateKey : nil,
+                    passphrase: sftpAuthMethod == .privateKey ? sftpKeyPassphrase : nil
                 )
                 return ConnectionTestResult(
                     status: .success("backup.connection_success_sftp".localized),
@@ -476,7 +546,7 @@ extension BackupFormModel {
     /// Builds a task from the form. Creating it stores the entered password in the Keychain.
     func makeTask() -> BackupTask {
         let server = server
-        return BackupTask(
+        let created = BackupTask(
             sourcePath: sourcePath,
             backupType: server.backupType,
             serverHost: server.host,
@@ -502,6 +572,18 @@ extension BackupFormModel {
             requiresExternalPower: requiresExternalPower,
             requiresWiFi: requiresWiFi
         )
+        if selectedTarget == .sftp {
+            created.sftpAuthMethod = sftpAuthMethod
+            if sftpAuthMethod == .privateKey {
+                created.sftpKeyName = sftpKeyName.isEmpty ? nil : sftpKeyName
+                BackupCredentialStore.shared.savePrivateKey(sftpPrivateKey, for: created.id)
+                BackupCredentialStore.shared.savePassphrase(sftpKeyPassphrase, for: created.id)
+            } else {
+                BackupCredentialStore.shared.deletePrivateKey(for: created.id)
+                BackupCredentialStore.shared.deletePassphrase(for: created.id)
+            }
+        }
+        return created
     }
 
     /// Copies the editable settings of `source` onto an existing task.
@@ -514,6 +596,22 @@ extension BackupFormModel {
         if !source.resolvedServerPassword.isEmpty {
             target.saveServerPassword(source.resolvedServerPassword)
         }
+        target.sftpAuthMethod = source.sftpAuthMethod
+        target.sftpKeyName = source.sftpKeyName
+        let credentialStore = BackupCredentialStore.shared
+        if source.backupType == .sftp && source.sftpAuthMethod == .privateKey {
+            if let key = credentialStore.privateKey(for: source.id) {
+                credentialStore.savePrivateKey(key, for: target.id)
+            }
+            if let pass = credentialStore.passphrase(for: source.id) {
+                credentialStore.savePassphrase(pass, for: target.id)
+            }
+        } else {
+            credentialStore.deletePrivateKey(for: target.id)
+            credentialStore.deletePassphrase(for: target.id)
+        }
+        credentialStore.deletePrivateKey(for: source.id)
+        credentialStore.deletePassphrase(for: source.id)
         target.destinationPath = source.destinationPath
         target.displayName = source.displayName
         target.frequency = source.frequency

@@ -136,17 +136,14 @@ struct BackupSourceSection: View {
                         Divider()
                             .padding(.vertical, 2)
 
-                        HStack {
-                            Text("backup.photo_folder_structure".localized)
-                                .font(.subheadline)
-                                .accessibilityHidden(true)
-                            Spacer()
-                            Picker("backup.photo_folder_structure".localized, selection: $form.photoFolderStructure) {
-                                ForEach(PhotoFolderStructure.allCases) { structure in
-                                    Text(structure.displayName).tag(structure)
-                                }
+                        BackupMenuPickerRow(
+                            title: "backup.photo_folder_structure".localized,
+                            font: .subheadline,
+                            selection: $form.photoFolderStructure
+                        ) {
+                            ForEach(PhotoFolderStructure.allCases) { structure in
+                                Text(structure.displayName).tag(structure)
                             }
-                            .labelsHidden()
                         }
 
                         Toggle("backup.preserve_original_format".localized, isOn: $form.preserveOriginalPhotoFormat)
@@ -202,6 +199,7 @@ struct BackupTargetSection: View {
     let connectionStatus: ConnectionStatus
     let onTestConnection: () -> Void
     let onBrowseRemoteFolder: () -> Void
+    var onScanNetwork: (() -> Void)? = nil
 
     var body: some View {
         BackupSetupCard(
@@ -210,6 +208,14 @@ struct BackupTargetSection: View {
             theme: theme
         ) {
             VStack(alignment: .leading, spacing: 12) {
+                if let onScanNetwork {
+                    Button(action: onScanNetwork) {
+                        Label("backup.scan_network".localized, systemImage: "bonjour")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                }
+
                 BackupTargetView(
                     selectedTarget: $form.selectedTarget,
                     ftpHost: $form.ftpHost,
@@ -222,6 +228,10 @@ struct BackupTargetSection: View {
                     sftpPort: $form.sftpPort,
                     sftpUsername: $form.sftpUsername,
                     sftpPassword: $form.sftpPassword,
+                    sftpAuthMethod: $form.sftpAuthMethod,
+                    sftpPrivateKey: $form.sftpPrivateKey,
+                    sftpKeyPassphrase: $form.sftpKeyPassphrase,
+                    sftpKeyName: $form.sftpKeyName,
                     sftpPath: $form.sftpPath,
                     webdavURL: $form.webdavURL,
                     webdavPort: $form.webdavPort,
@@ -326,30 +336,22 @@ struct BackupBehaviorSection: View {
             theme: theme
         ) {
             VStack(alignment: .leading, spacing: 12) {
-                // Menu pickers outside a Form show only the value, so draw the label
-                // beside them; the picker itself still carries it for VoiceOver.
-                HStack {
-                    Text("backup.deletion_policy".localized)
-                        .accessibilityHidden(true)
-                    Spacer()
-                    Picker("backup.deletion_policy".localized, selection: $form.deletionPolicy) {
-                        ForEach(BackupDeletionPolicy.allCases) { policy in
-                            Text(policy.displayName).tag(policy)
-                        }
+                BackupMenuPickerRow(
+                    title: "backup.deletion_policy".localized,
+                    selection: $form.deletionPolicy
+                ) {
+                    ForEach(BackupDeletionPolicy.allCases) { policy in
+                        Text(policy.displayName).tag(policy)
                     }
-                    .labelsHidden()
                 }
 
-                HStack {
-                    Text("backup.checksum".localized)
-                        .accessibilityHidden(true)
-                    Spacer()
-                    Picker("backup.checksum".localized, selection: $form.checksumMode) {
-                        ForEach(BackupChecksumMode.allCases) { mode in
-                            Text(mode.displayName).tag(mode)
-                        }
+                BackupMenuPickerRow(
+                    title: "backup.checksum".localized,
+                    selection: $form.checksumMode
+                ) {
+                    ForEach(BackupChecksumMode.allCases) { mode in
+                        Text(mode.displayName).tag(mode)
                     }
-                    .labelsHidden()
                 }
 
                 Toggle("backup.require_wifi".localized, isOn: $form.requiresWiFi)
@@ -554,5 +556,50 @@ private struct BackupChoiceRow: View {
         .padding(12)
         .background(isSelected ? theme.primary.opacity(0.08) : Color(.secondarySystemBackground).opacity(0.62))
         .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+}
+
+/// Renders a labeled menu picker on one line when both fit cleanly, stacking vertically
+/// instead of wrapping a localized option mid-word on narrower widths or larger text sizes.
+private struct BackupMenuPickerRow<SelectionValue: Hashable, Content: View>: View {
+    let title: String
+    var font: Font = .body
+    @Binding var selection: SelectionValue
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 8) {
+                Text(title)
+                    .font(font)
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .accessibilityHidden(true)
+
+                Spacer(minLength: 8)
+
+                pickerControl
+                    .fixedSize(horizontal: true, vertical: false)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(font)
+                    .accessibilityHidden(true)
+
+                HStack {
+                    Spacer()
+                    pickerControl
+                }
+            }
+        }
+    }
+
+    private var pickerControl: some View {
+        Picker(title, selection: $selection) {
+            content()
+        }
+        .labelsHidden()
+        .pickerStyle(.menu)
     }
 }

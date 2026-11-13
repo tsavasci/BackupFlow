@@ -1,0 +1,13 @@
+"widget.gallery.title" = "BackupFlow";
+"widget.gallery.description" = "Affiche l'état de la dernière sauvegarde, le protocole, la progression en direct et la prochaine exécution.";
+"widget.empty" = "Aucune sauvegarde";
+"widget.backup_default" = "Sauvegarde";
+"widget.placeholder.task" = "Photos et vidéos";
+"widget.placeholder.summary" = "107 fichiers • 136,3 Mo";
+"widget.status.completed" = "Terminé";
+"widget.status.failed" = "Échec";
+"widget.status.cancelled" = "Annulé";
+"widget.status.running" = "Sauvegarde...";
+"widget.label.last_sync" = "Dernière";
+"widget.label.next_run" = "Suivante";
+"widget.action.open" = "Ouvrir l'app";

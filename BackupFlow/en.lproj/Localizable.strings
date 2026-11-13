@@ -435,3 +435,45 @@
 "backup.photo_folder_structure.year_month_dash" = "Year - Month (2026-10)";
 "backup.preserve_original_format" = "Keep original format (HEIC/RAW/MOV)";
 "backup.preserve_original_format_hint" = "Saves photos and videos with their original file extension instead of converting names to .jpg/.mp4.";
+"settings.export_diagnostics" = "Export Diagnostics Logs";
+"history.report.share_diagnostics" = "Share Diagnostics";
+
+/* SFTP SSH Private Key */
+"backup.sftp_auth_method" = "Authentication";
+"backup.sftp_auth_password" = "Password";
+"backup.sftp_auth_private_key" = "SSH Key";
+"backup.sftp_import_key" = "Import Private Key";
+"backup.sftp_key_loaded" = "Key loaded: %@";
+"backup.sftp_key_passphrase" = "Key passphrase (optional)";
+"backup.sftp_key_import_failed" = "Could not read the selected SSH key file.";
+
+/* Bonjour Discovery & Server Profiles */
+"backup.scan_network" = "Scan Local Network";
+"backup.discovery.title" = "Discover Servers";
+"backup.discovery.local_devices" = "Local Network (Bonjour)";
+"backup.discovery.saved_profiles" = "Saved Server Profiles";
+"backup.discovery.searching" = "Scanning local network for NAS devices…";
+"backup.discovery.footer" = "Requires Local Network permission and Bonjour/mDNS enabled on your NAS or Mac.";
+
+/* Restore & Archive Recovery */
+"restore.action" = "Restore";
+"restore.title" = "Restore Files";
+"restore.open_archive" = "Open Archive";
+"restore.loading" = "Loading remote folder…";
+"restore.empty_folder" = "This folder is empty.";
+"restore.search_prompt" = "Search files or folders";
+"restore.destination" = "Destination";
+"restore.destination.files" = "Files";
+"restore.destination.photos" = "Photos";
+"restore.download_selected" = "Download (%d)";
+"restore.export_files" = "Save / Share";
+"restore.ready_to_export" = "%d file(s) downloaded. Tap Save / Share to store them.";
+"restore.saved_to_photos" = "%d item(s) saved to Photos.";
+"restore.partial_failures" = "%d file(s) could not be downloaded.";
+"common.back" = "Back";
+"history.filter.all" = "All";
+"widget.status.running" = "Backing up...";
+"widget.label.last_sync" = "Last sync";
+"widget.label.next_run" = "Next run";
+"widget.label.files_summary" = "%d files • %@";
+"widget.action.open" = "Open App";

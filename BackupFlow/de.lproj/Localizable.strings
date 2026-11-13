@@ -438,3 +438,45 @@
 "backup.photo_folder_structure.year_month_dash" = "Jahr - Monat (2026-10)";
 "backup.preserve_original_format" = "Originalformat behalten (HEIC/RAW/MOV)";
 "backup.preserve_original_format_hint" = "Speichert Fotos und Videos mit ihrer ursprünglichen Dateiendung statt .jpg/.mp4.";
+"settings.export_diagnostics" = "Diagnoseprotokolle exportieren";
+"history.report.share_diagnostics" = "Diagnose teilen";
+
+/* SFTP SSH Private Key */
+"backup.sftp_auth_method" = "Authentifizierung";
+"backup.sftp_auth_password" = "Passwort";
+"backup.sftp_auth_private_key" = "SSH-Schlüssel";
+"backup.sftp_import_key" = "Privaten Schlüssel importieren";
+"backup.sftp_key_loaded" = "Schlüssel geladen: %@";
+"backup.sftp_key_passphrase" = "Schlüssel-Passphrase (optional)";
+"backup.sftp_key_import_failed" = "Die ausgewählte SSH-Schlüsseldatei konnte nicht gelesen werden.";
+
+/* Bonjour Discovery & Server Profiles */
+"backup.scan_network" = "Lokales Netzwerk scannen";
+"backup.discovery.title" = "Server entdecken";
+"backup.discovery.local_devices" = "Lokales Netzwerk (Bonjour)";
+"backup.discovery.saved_profiles" = "Gespeicherte Serverprofile";
+"backup.discovery.searching" = "Suche nach NAS-Geräten im lokalen Netzwerk…";
+"backup.discovery.footer" = "Erfordert die Berechtigung für das lokale Netzwerk und aktiviertes Bonjour/mDNS.";
+
+/* Restore & Archive Recovery */
+"restore.action" = "Wiederherstellen";
+"restore.title" = "Dateien wiederherstellen";
+"restore.open_archive" = "Archiv öffnen";
+"restore.loading" = "Entfernter Ordner wird geladen…";
+"restore.empty_folder" = "Dieser Ordner ist leer.";
+"restore.search_prompt" = "Dateien oder Ordner suchen";
+"restore.destination" = "Ziel";
+"restore.destination.files" = "Dateien";
+"restore.destination.photos" = "Fotos";
+"restore.download_selected" = "Laden (%d)";
+"restore.export_files" = "Speichern / Teilen";
+"restore.ready_to_export" = "%d Datei(en) heruntergeladen. Tippen Sie auf Speichern / Teilen.";
+"restore.saved_to_photos" = "%d Element(e) in Fotos gesichert.";
+"restore.partial_failures" = "%d Datei(en) konnten nicht geladen werden.";
+"common.back" = "Zurück";
+"history.filter.all" = "Alle";
+"widget.status.running" = "Wird gesichert...";
+"widget.label.last_sync" = "Letzte Sicherung";
+"widget.label.next_run" = "Nächste";
+"widget.label.files_summary" = "%d Dateien • %@";
+"widget.action.open" = "App öffnen";

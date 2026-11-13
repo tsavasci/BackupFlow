@@ -58,6 +58,7 @@ final class FTPService: NSObject, @unchecked Sendable {
     private var lastProgressSample: (date: Date, bytes: Int64)?
     
     private let networkMonitor = FTPNetworkMonitor()
+    private let resumeCheckpointStore = ResumeCheckpointStore(keyPrefix: "ftp.resume.checkpoint.")
     private var lastLoggedNetworkStatus: NWPath.Status?
     private var fastPhotoNameSkipEnabled: Bool {
         if UserDefaults.standard.object(forKey: "FTPFastPhotoNameSkipEnabled") == nil {
@@ -848,7 +849,8 @@ final class FTPService: NSObject, @unchecked Sendable {
         options: BackupExecutionOptions = .defaults,
         progressHandler: ((Double) -> Void)? = nil
     ) async throws -> SyncResult {
-        let engine = try makeSyncEngine()
+        let checkpointID = makeResumeCheckpointID(source: localURL.path, destination: remotePath)
+        let engine = try makeSyncEngine(checkpointID: checkpointID)
         return try await engine.syncUploadDirectory(
             localURL: localURL,
             remotePath: remotePath,
@@ -857,7 +859,19 @@ final class FTPService: NSObject, @unchecked Sendable {
         )
     }
 
-    private func makeSyncEngine() throws -> FTPSyncEngine {
+    private func makeResumeCheckpointID(source: String, destination: String) -> String {
+        let baseURL = ftpProvider?.baseURL
+        return ResumeCheckpointStore.makeID(
+            scheme: "ftp",
+            host: baseURL?.host ?? "",
+            port: baseURL?.port ?? 21,
+            username: baseURL?.user ?? "",
+            source: source,
+            destination: destination
+        )
+    }
+
+    private func makeSyncEngine(checkpointID: String) throws -> FTPSyncEngine {
         guard let ftp = ftpProvider else {
             throw FTPError.connectionFailed
         }
@@ -901,21 +915,28 @@ final class FTPService: NSObject, @unchecked Sendable {
             uploadPhotoFile: { [weak self] localURL, remotePath, fileName in
                 guard let self else { throw FTPError.connectionFailed }
                 try await self.uploadPhotoFile(localURL: localURL, remotePath: remotePath, fileName: fileName)
+            },
+            loadCheckpoint: { [weak self] in
+                guard let self else { return [] }
+                return await self.resumeCheckpointStore.load(id: checkpointID)
+            },
+            markCheckpoint: { [weak self] relativePath in
+                guard let self else { return }
+                await self.resumeCheckpointStore.mark(id: checkpointID, item: relativePath)
+            },
+            clearCheckpoint: { [weak self] in
+                guard let self else { return }
+                await self.resumeCheckpointStore.clear(id: checkpointID)
             }
         )
     }
 
-    private func verifyUploadChecksum(localURL: URL, remotePath: String) async throws {
+    func downloadFile(remotePath: String, to localURL: URL) async throws {
         guard let ftp = ftpProvider else {
             throw FTPError.connectionFailed
         }
-
-        let temporaryURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("backupflow-verify-\(UUID().uuidString)")
-        defer { try? FileManager.default.removeItem(at: temporaryURL) }
-
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            ftp.copyItem(path: remotePath, toLocalURL: temporaryURL) { [weak self] error in
+            ftp.copyItem(path: remotePath, toLocalURL: localURL) { [weak self] error in
                 if let error {
                     continuation.resume(throwing: self?.mapError(error) ?? FTPError.unknown(error))
                 } else {
@@ -923,6 +944,14 @@ final class FTPService: NSObject, @unchecked Sendable {
                 }
             }
         }
+    }
+
+    private func verifyUploadChecksum(localURL: URL, remotePath: String) async throws {
+        let temporaryURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("backupflow-verify-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: temporaryURL) }
+
+        try await downloadFile(remotePath: remotePath, to: temporaryURL)
 
         let localChecksum = try BackupChecksum.sha256(of: localURL)
         let remoteChecksum = try BackupChecksum.sha256(of: temporaryURL)
@@ -1110,7 +1139,8 @@ final class FTPService: NSObject, @unchecked Sendable {
                 await createDirectoryTree(at: photosBase)
                 await cleanupStaleTemporaryFiles(at: photosBase)
             }
-            let engine = try makeSyncEngine()
+            let checkpointID = makeResumeCheckpointID(source: "PHOTOS_LIBRARY", destination: photosBase)
+            let engine = try makeSyncEngine(checkpointID: checkpointID)
             syncResult = try await engine.syncBackupPhotoLibrary(
                 remoteBasePath: photosBase,
                 mediaType: mediaType,
