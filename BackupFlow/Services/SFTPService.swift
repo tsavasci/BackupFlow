@@ -1110,6 +1110,37 @@ final class SFTPService: NSObject, @unchecked Sendable {
         return hostKeyResult
     }
 
+    private enum PreflightOutcome: Sendable {
+        case success
+        case timedOut
+        case failed(details: String, error: NWError?)
+    }
+
+    private nonisolated final class PreflightState: @unchecked Sendable {
+        private let lock = NSLock()
+        private var continuation: CheckedContinuation<PreflightOutcome, Never>?
+        private let connection: NWConnection
+
+        init(connection: NWConnection, continuation: CheckedContinuation<PreflightOutcome, Never>) {
+            self.connection = connection
+            self.continuation = continuation
+        }
+
+        func finish(_ outcome: PreflightOutcome) {
+            lock.lock()
+            guard let cont = continuation else {
+                lock.unlock()
+                return
+            }
+            continuation = nil
+            lock.unlock()
+
+            connection.stateUpdateHandler = nil
+            connection.cancel()
+            cont.resume(returning: outcome)
+        }
+    }
+
     private func preflightTCPConnection(host: String, port: Int) async throws {
         guard (1...65535).contains(port), let nwPort = NWEndpoint.Port(rawValue: UInt16(port)) else {
             throw makeSFTPError(.connection, details: "Invalid port: \(port)")
@@ -1118,41 +1149,22 @@ final class SFTPService: NSObject, @unchecked Sendable {
         let connection = NWConnection(host: NWEndpoint.Host(host), port: nwPort, using: .tcp)
         let queue = DispatchQueue(label: "com.backupflow.sftp.preflight")
 
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            let lock = NSLock()
-            var finished = false
+        let outcome = await withCheckedContinuation { (continuation: CheckedContinuation<PreflightOutcome, Never>) in
+            let state = PreflightState(connection: connection, continuation: continuation)
 
-            @Sendable func finish(_ result: Result<Void, Error>) {
-                lock.lock()
-                if finished {
-                    lock.unlock()
-                    return
-                }
-                finished = true
-                lock.unlock()
-                connection.stateUpdateHandler = nil
-                connection.cancel()
-                switch result {
-                case .success:
-                    continuation.resume()
-                case .failure(let error):
-                    continuation.resume(throwing: error)
-                }
-            }
-
-            connection.stateUpdateHandler = { state in
-                switch state {
+            connection.stateUpdateHandler = { connState in
+                switch connState {
                 case .ready:
-                    finish(.success(()))
+                    state.finish(.success)
                 case .waiting(let error):
                     debugLog("⚠️ SFTP preflight waiting (\(host):\(port)): \(error.localizedDescription)")
                     // Local network permission denied or no route surfaces immediately in .waiting
                     if case .posix(let code) = error, code == .EPERM || code == .EACCES || code == .ENETUNREACH || code == .EHOSTUNREACH {
-                        finish(.failure(makeSFTPError(.connection, details: error.localizedDescription, underlying: error)))
+                        state.finish(.failed(details: error.localizedDescription, error: error))
                     }
                 case .failed(let error):
                     debugLog("❌ SFTP preflight failed (\(host):\(port)): \(error.localizedDescription)")
-                    finish(.failure(makeSFTPError(.connection, details: error.localizedDescription, underlying: error)))
+                    state.finish(.failed(details: error.localizedDescription, error: error))
                 case .cancelled:
                     break
                 default:
@@ -1163,8 +1175,17 @@ final class SFTPService: NSObject, @unchecked Sendable {
             connection.start(queue: queue)
 
             queue.asyncAfter(deadline: .now() + 6) {
-                finish(.failure(makeSFTPError(.timeout, details: "TCP preflight timed out for \(host):\(port)")))
+                state.finish(.timedOut)
             }
+        }
+
+        switch outcome {
+        case .success:
+            return
+        case .timedOut:
+            throw makeSFTPError(.timeout, details: "TCP preflight timed out for \(host):\(port)")
+        case .failed(let details, let error):
+            throw makeSFTPError(.connection, details: details, underlying: error)
         }
     }
 
