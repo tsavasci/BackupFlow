@@ -31,7 +31,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         UserDefaults.standard.set(false, forKey: "_UIConstraintBasedLayoutLogUnsatisfied")
         #endif
         
-        TemporaryStorageMaintenance.cleanupStaleFiles()
+        TemporaryStorageMaintenance.cleanupOnLaunch()
         
         registerBackgroundTask()
         

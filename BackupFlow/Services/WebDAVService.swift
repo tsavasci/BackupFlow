@@ -1498,8 +1498,8 @@ final class WebDAVService: NSObject, FileProviderDelegate {
 
         try await downloadFile(remotePath: remotePath, to: temporaryURL)
 
-        let localChecksum = try BackupChecksum.sha256(of: localURL)
-        let remoteChecksum = try BackupChecksum.sha256(of: temporaryURL)
+        let localChecksum = try await BackupChecksum.sha256Async(of: localURL)
+        let remoteChecksum = try await BackupChecksum.sha256Async(of: temporaryURL)
         guard localChecksum == remoteChecksum else {
             throw BackupIntegrityError.checksumMismatch(path: remotePath)
         }

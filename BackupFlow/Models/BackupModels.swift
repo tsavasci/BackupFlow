@@ -584,6 +584,7 @@ final class BackupHistory: Identifiable {
     var taskUsername: String?
     var taskIsAnonymous: Bool?
     var taskMediaTypeRaw: String?
+    var taskBackupTypeRaw: String?
     
     // Relationship to the task that created this history entry
     @Relationship var task: BackupTask?
@@ -616,8 +617,18 @@ final class BackupHistory: Identifiable {
     }
 
     var inferredBackupType: BackupType? {
-        if let taskType = task?.backupType {
-            return taskType
+        if let raw = taskBackupTypeRaw, let type = BackupType(rawValue: raw) {
+            return type
+        }
+        if let task, let context = modelContext {
+            let targetID = task.persistentModelID
+            var descriptor = FetchDescriptor<BackupTask>(
+                predicate: #Predicate { $0.persistentModelID == targetID }
+            )
+            descriptor.fetchLimit = 1
+            if let liveTask = try? context.fetch(descriptor).first {
+                return liveTask.backupType
+            }
         }
         switch taskServerPort {
         case 21:
@@ -655,6 +666,7 @@ final class BackupHistory: Identifiable {
         taskUsername: String? = nil,
         taskIsAnonymous: Bool? = nil,
         taskMediaTypeRaw: String? = nil,
+        taskBackupTypeRaw: String? = nil,
         task: BackupTask? = nil
     ) {
         self.id = id
@@ -680,6 +692,7 @@ final class BackupHistory: Identifiable {
         self.taskUsername = taskUsername
         self.taskIsAnonymous = taskIsAnonymous
         self.taskMediaTypeRaw = taskMediaTypeRaw
+        self.taskBackupTypeRaw = taskBackupTypeRaw ?? task?.backupType.rawValue
         self.task = task
     }
 }

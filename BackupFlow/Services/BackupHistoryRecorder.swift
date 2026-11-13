@@ -49,7 +49,8 @@ enum BackupHistoryRecorder {
                 taskServerPort: task.serverPort,
                 taskUsername: task.serverUsername,
                 taskIsAnonymous: task.isAnonymous,
-                taskMediaTypeRaw: task.mediaType.rawValue
+                taskMediaTypeRaw: task.mediaType.rawValue,
+                taskBackupTypeRaw: task.backupType.rawValue
             )
         }
 

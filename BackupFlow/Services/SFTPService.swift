@@ -614,7 +614,7 @@ final class SFTPService: NSObject, @unchecked Sendable {
             return remoteHasher.finalize().map { String(format: "%02x", $0) }.joined()
         }
 
-        let localChecksum = try BackupChecksum.sha256(of: localURL)
+        let localChecksum = try await BackupChecksum.sha256Async(of: localURL)
         guard localChecksum == remoteChecksum else {
             throw BackupIntegrityError.checksumMismatch(path: remotePath)
         }
@@ -918,7 +918,10 @@ final class SFTPService: NSObject, @unchecked Sendable {
             ) { remoteFile in
                 var offset: UInt64 = 0
                 while !self.isCancelledState() {
-                    guard let chunk = try handle.read(upToCount: 64 * 1024), !chunk.isEmpty else {
+                    let chunk: Data? = try autoreleasepool {
+                        try handle.read(upToCount: 64 * 1024)
+                    }
+                    guard let chunk, !chunk.isEmpty else {
                         break
                     }
                     var buffer = ByteBufferAllocator().buffer(capacity: chunk.count)
@@ -1065,6 +1068,13 @@ final class SFTPService: NSObject, @unchecked Sendable {
             passphrase: passphrase
         )
 
+        let authLabel = privateKey != nil ? "privateKey" : "password"
+        debugLog("🔐 SFTP connecting to \(host):\(port) as \(username) (auth: \(authLabel))")
+
+        // Trigger iOS Local Network permission & surface LAN/VPN routing errors
+        // before Citadel's NIOPosix ClientBootstrap opens a raw BSD socket.
+        try await preflightTCPConnection(host: host, port: port)
+
         let hostKeyValidator = SFTPHostKeyValidator(host: host, port: port)
         do {
             await disconnectInternal()
@@ -1081,7 +1091,9 @@ final class SFTPService: NSObject, @unchecked Sendable {
             let ssh = try await SSHClient.connect(to: settings)
             let sftp = try await ssh.openSFTP()
             setClients(ssh: ssh, sftp: sftp)
+            debugLog("✅ SFTP connected and subsystem opened: \(host):\(port)")
         } catch {
+            debugLog("❌ SFTP connect failed (\(host):\(port)): \(String(reflecting: error))")
             await disconnectInternal()
             throw classifySFTPError(error, defaultKind: .connection)
         }
@@ -1096,6 +1108,64 @@ final class SFTPService: NSObject, @unchecked Sendable {
         }
 
         return hostKeyResult
+    }
+
+    private func preflightTCPConnection(host: String, port: Int) async throws {
+        guard (1...65535).contains(port), let nwPort = NWEndpoint.Port(rawValue: UInt16(port)) else {
+            throw makeSFTPError(.connection, details: "Invalid port: \(port)")
+        }
+
+        let connection = NWConnection(host: NWEndpoint.Host(host), port: nwPort, using: .tcp)
+        let queue = DispatchQueue(label: "com.backupflow.sftp.preflight")
+
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            let lock = NSLock()
+            var finished = false
+
+            @Sendable func finish(_ result: Result<Void, Error>) {
+                lock.lock()
+                if finished {
+                    lock.unlock()
+                    return
+                }
+                finished = true
+                lock.unlock()
+                connection.stateUpdateHandler = nil
+                connection.cancel()
+                switch result {
+                case .success:
+                    continuation.resume()
+                case .failure(let error):
+                    continuation.resume(throwing: error)
+                }
+            }
+
+            connection.stateUpdateHandler = { state in
+                switch state {
+                case .ready:
+                    finish(.success(()))
+                case .waiting(let error):
+                    debugLog("⚠️ SFTP preflight waiting (\(host):\(port)): \(error.localizedDescription)")
+                    // Local network permission denied or no route surfaces immediately in .waiting
+                    if case .posix(let code) = error, code == .EPERM || code == .EACCES || code == .ENETUNREACH || code == .EHOSTUNREACH {
+                        finish(.failure(makeSFTPError(.connection, details: error.localizedDescription, underlying: error)))
+                    }
+                case .failed(let error):
+                    debugLog("❌ SFTP preflight failed (\(host):\(port)): \(error.localizedDescription)")
+                    finish(.failure(makeSFTPError(.connection, details: error.localizedDescription, underlying: error)))
+                case .cancelled:
+                    break
+                default:
+                    break
+                }
+            }
+
+            connection.start(queue: queue)
+
+            queue.asyncAfter(deadline: .now() + 6) {
+                finish(.failure(makeSFTPError(.timeout, details: "TCP preflight timed out for \(host):\(port)")))
+            }
+        }
     }
 
     private func beginTransferBackgroundTask() {

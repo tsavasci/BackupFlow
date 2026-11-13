@@ -7,11 +7,23 @@ enum TemporaryStorageMaintenance {
     private static let defaultMaxAge: TimeInterval = 2 * 60 * 60
     private static let allowedMediaExtensions: Set<String> = ["jpg", "jpeg", "mp4", "mov", "heic", "png"]
 
+    static func cleanupOnLaunch(fileManager: FileManager = .default) {
+        let tempRoot = fileManager.temporaryDirectory
+        // At app launch no export or checksum verification is running yet, so any
+        // leftover export/verify/manifest files are from a finished or crashed run.
+        cleanupExportRoot(tempRoot: tempRoot, cutoff: .distantFuture, fileManager: fileManager)
+        cleanupTopLevelTempArtifacts(tempRoot: tempRoot, cutoff: .distantFuture, fileManager: fileManager)
+        cleanupWebDAVUploadStaging(tempRoot: tempRoot, cutoff: Date().addingTimeInterval(-defaultMaxAge), fileManager: fileManager)
+        cleanupLegacyWebDAVStaging(tempRoot: tempRoot, cutoff: Date().addingTimeInterval(-defaultMaxAge), fileManager: fileManager)
+    }
+
     static func cleanupStaleFiles(maxAge: TimeInterval = defaultMaxAge, fileManager: FileManager = .default) {
         let tempRoot = fileManager.temporaryDirectory
         let cutoff = Date().addingTimeInterval(-maxAge)
 
         cleanupExportRoot(tempRoot: tempRoot, cutoff: cutoff, fileManager: fileManager)
+        cleanupTopLevelTempArtifacts(tempRoot: tempRoot, cutoff: cutoff, fileManager: fileManager)
+        cleanupWebDAVUploadStaging(tempRoot: tempRoot, cutoff: cutoff, fileManager: fileManager)
         cleanupLegacyWebDAVStaging(tempRoot: tempRoot, cutoff: cutoff, fileManager: fileManager)
     }
 
@@ -40,6 +52,57 @@ enum TemporaryStorageMaintenance {
             }
         } catch {
             logger.error("Failed cleaning export root: \(error.localizedDescription)")
+        }
+    }
+
+    private static func cleanupTopLevelTempArtifacts(tempRoot: URL, cutoff: Date, fileManager: FileManager) {
+        do {
+            let items = try fileManager.contentsOfDirectory(
+                at: tempRoot,
+                includingPropertiesForKeys: [.contentModificationDateKey, .creationDateKey],
+                options: [.skipsHiddenFiles]
+            )
+
+            for item in items {
+                let name = item.lastPathComponent
+                let isManagedTempArtifact =
+                    name.hasPrefix("backupflow-verify-") ||
+                    name.hasPrefix("backupflow_manifest_")
+                guard isManagedTempArtifact else { continue }
+                if cutoff == .distantFuture || isStale(item, cutoff: cutoff) {
+                    try? fileManager.removeItem(at: item)
+                }
+            }
+        } catch {
+            logger.error("Failed cleaning temp artifacts: \(error.localizedDescription)")
+        }
+    }
+
+    private static func cleanupWebDAVUploadStaging(tempRoot: URL, cutoff: Date, fileManager: FileManager) {
+        let stagingRoot = tempRoot.appendingPathComponent("backupflow-webdav-upload", isDirectory: true)
+        guard fileManager.fileExists(atPath: stagingRoot.path) else { return }
+
+        do {
+            let items = try fileManager.contentsOfDirectory(
+                at: stagingRoot,
+                includingPropertiesForKeys: [.contentModificationDateKey, .creationDateKey],
+                options: [.skipsHiddenFiles]
+            )
+
+            for item in items where isStale(item, cutoff: cutoff) {
+                try? fileManager.removeItem(at: item)
+            }
+
+            let remaining = try fileManager.contentsOfDirectory(
+                at: stagingRoot,
+                includingPropertiesForKeys: nil,
+                options: [.skipsHiddenFiles]
+            )
+            if remaining.isEmpty {
+                try? fileManager.removeItem(at: stagingRoot)
+            }
+        } catch {
+            logger.error("Failed cleaning WebDAV staging root: \(error.localizedDescription)")
         }
     }
 
