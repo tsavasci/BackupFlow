@@ -13,6 +13,7 @@
 "settings.reset_all_data" = "सभी डेटा रीसेट करें";
 "settings.reset_unavailable_while_backing_up" = "बैकअप चलने के दौरान उपलब्ध नहीं।";
 "alert.cancel" = "रद्द करें";
+"common.cancel" = "रद्द करें";
 "dashboard.next_task" = "अगला कार्य";
 "dashboard.never" = "कभी नहीं";
 "dashboard.overdue" = "विलंबित";

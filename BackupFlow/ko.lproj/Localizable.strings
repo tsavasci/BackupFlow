@@ -13,6 +13,7 @@
 "settings.reset_all_data" = "모든 데이터 초기화";
 "settings.reset_unavailable_while_backing_up" = "백업 중에는 사용할 수 없습니다.";
 "alert.cancel" = "취소";
+"common.cancel" = "취소";
 "dashboard.next_task" = "다음 작업";
 "dashboard.never" = "안 함";
 "dashboard.overdue" = "지연됨";

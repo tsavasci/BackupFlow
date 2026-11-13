@@ -13,6 +13,7 @@
 "settings.reset_all_data" = "Tüm Verileri Sıfırla";
 "settings.reset_unavailable_while_backing_up" = "Yedekleme sürerken kullanılamaz.";
 "alert.cancel" = "İptal";
+"common.cancel" = "İptal";
 "dashboard.next_task" = "Sonraki Görev";
 "dashboard.never" = "Hiç";
 "dashboard.overdue" = "Gecikmiş";

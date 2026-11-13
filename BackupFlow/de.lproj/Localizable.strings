@@ -13,6 +13,7 @@
 "settings.reset_all_data" = "Alle Daten zurücksetzen";
 "settings.reset_unavailable_while_backing_up" = "Während einer laufenden Sicherung nicht verfügbar.";
 "alert.cancel" = "Abbrechen";
+"common.cancel" = "Abbrechen";
 "dashboard.next_task" = "Nächste Aufgabe";
 "dashboard.never" = "Nie";
 "dashboard.overdue" = "Überfällig";

@@ -13,6 +13,7 @@
 "settings.reset_all_data" = "Сбросить все данные";
 "settings.reset_unavailable_while_backing_up" = "Недоступно во время резервного копирования.";
 "alert.cancel" = "Отмена";
+"common.cancel" = "Отмена";
 "dashboard.next_task" = "Следующая задача";
 "dashboard.never" = "Никогда";
 "dashboard.overdue" = "Просрочено";

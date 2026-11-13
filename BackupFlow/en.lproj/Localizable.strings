@@ -13,6 +13,7 @@
 "settings.reset_all_data" = "Reset All Data";
 "settings.reset_unavailable_while_backing_up" = "Unavailable while a backup is running.";
 "alert.cancel" = "Cancel";
+"common.cancel" = "Cancel";
 "dashboard.next_task" = "Next Task";
 "dashboard.never" = "Never";
 "dashboard.overdue" = "Overdue";

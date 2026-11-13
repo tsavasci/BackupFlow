@@ -13,6 +13,7 @@
 "settings.reset_all_data" = "重置所有数据";
 "settings.reset_unavailable_while_backing_up" = "备份进行时不可用。";
 "alert.cancel" = "取消";
+"common.cancel" = "取消";
 "dashboard.next_task" = "下一个任务";
 "dashboard.never" = "从未";
 "dashboard.overdue" = "已过期";

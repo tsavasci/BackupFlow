@@ -13,6 +13,7 @@
 "settings.reset_all_data" = "すべてのデータをリセット";
 "settings.reset_unavailable_while_backing_up" = "バックアップ中は使用できません。";
 "alert.cancel" = "キャンセル";
+"common.cancel" = "キャンセル";
 "dashboard.next_task" = "次のタスク";
 "dashboard.never" = "なし";
 "dashboard.overdue" = "期限切れ";

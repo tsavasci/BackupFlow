@@ -13,6 +13,7 @@
 "settings.reset_all_data" = "Réinitialiser toutes les données";
 "settings.reset_unavailable_while_backing_up" = "Indisponible pendant une sauvegarde.";
 "alert.cancel" = "Annuler";
+"common.cancel" = "Annuler";
 "dashboard.next_task" = "Prochaine tâche";
 "dashboard.never" = "Jamais";
 "dashboard.overdue" = "En retard";
