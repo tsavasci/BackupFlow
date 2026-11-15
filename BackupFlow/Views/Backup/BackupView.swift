@@ -260,9 +260,18 @@ struct BackupView: View {
             }
         }
         .sheet(isPresented: $showingDocumentPicker) {
-            DocumentPicker(url: $form.selectedURL) {
-                showingDocumentPicker = false
-            }
+            DocumentPicker(
+                url: $form.selectedURL,
+                onDismiss: {
+                    showingDocumentPicker = false
+                },
+                onError: { message in
+                    saveAlertMessage = message
+                    closeAfterSaveAlert = false
+                    showingSaveAlert = true
+                }
+            )
+            .ignoresSafeArea()
         }
         .alert("backup.info_title".localized, isPresented: $showingSaveAlert) {
             Button("backup.ok".localized, role: .cancel) {

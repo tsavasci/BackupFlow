@@ -14,11 +14,16 @@ import UIKit
 
 extension BackupScheduler {
     // MARK: - Backup Execution
-    public func performBackup(task: BackupTask, bypassThrottle: Bool = false) async throws {
+    public func performBackup(
+        task: BackupTask,
+        bypassThrottle: Bool = false,
+        bypassConditions: Bool = false
+    ) async throws {
         userStartedTaskIDs[task.id] = nil
         // Claim the task before the first await so a second caller sees it running.
-        guard !runningTaskIDs.contains(task.id) else {
-            debugLog("ℹ️ BackupFlow: Görev zaten çalışıyor, ikinci başlatma yok sayıldı: \(task.displayName)")
+        guard !runningTaskIDs.contains(task.id),
+              !SmartRestoreTaskLock.shared.isRestoreActive(for: task.id) else {
+            debugLog("ℹ️ BackupFlow: Görev zaten çalışıyor (veya restore aktif), ikinci başlatma yok sayıldı: \(task.displayName)")
             return
         }
         runningTaskIDs.insert(task.id)
@@ -31,7 +36,8 @@ extension BackupScheduler {
         guard let executionOptions = await preparedExecutionOptions(
             for: task,
             runStart: runStart,
-            bypassThrottle: bypassThrottle
+            bypassThrottle: bypassThrottle,
+            bypassConditions: bypassConditions
         ) else { return }
 
         // Set processing flag to prevent interruption
@@ -80,7 +86,8 @@ extension BackupScheduler {
     private func preparedExecutionOptions(
         for task: BackupTask,
         runStart: Date,
-        bypassThrottle: Bool
+        bypassThrottle: Bool,
+        bypassConditions: Bool
     ) async -> BackupExecutionOptions? {
         var executionOptions = BackupExecutionOptions.forTask(task)
         // The user confirmed starting this run without Wi-Fi; a stale confirmation
@@ -98,10 +105,15 @@ extension BackupScheduler {
             task.wifiWaitDeadline = nil
         }
 
-        if let blockReason = await blockedReason(for: task, options: executionOptions) {
+        if let blockReason = blockedReason(for: executionOptions, bypassConditions: bypassConditions) {
             debugLog("⏸️ BackupFlow: Görev koşullar nedeniyle ertelendi: \(blockReason)")
             task.lastError = blockReason
-            task.nextRunTime = Date().addingTimeInterval(15 * 60)
+            if task.frequency != .manual {
+                task.nextRunTime = Date().addingTimeInterval(15 * 60)
+                rearmTimer(for: task)
+                scheduleAppRefresh()
+                scheduleProcessingTask()
+            }
             BackupHistoryRecorder.record(
                 for: task,
                 syncResult: Self.emptySyncResult,
@@ -629,19 +641,30 @@ extension BackupScheduler {
     }
 
     /// Conditions other than Wi-Fi, which performBackup handles through `waitForWiFi`.
-    private func blockedReason(for task: BackupTask, options: BackupExecutionOptions) async -> String? {
+    /// User-initiated runs (`bypassConditions == true`) ignore low-battery, external-power,
+    /// and allowed-window restrictions so "Start Now" executes immediately.
+    func blockedReason(
+        for options: BackupExecutionOptions,
+        bypassConditions: Bool = false,
+        batteryState: UIDevice.BatteryState? = nil,
+        batteryReason: String?? = nil,
+        now: Date = Date()
+    ) -> String? {
+        guard !bypassConditions else { return nil }
+
+        let resolvedBatteryState = batteryState ?? BatteryManager.shared.batteryState
         if options.requiresExternalPower {
-            let batteryState = BatteryManager.shared.batteryState
-            if batteryState != .charging && batteryState != .full {
+            if resolvedBatteryState != .charging && resolvedBatteryState != .full {
                 return "backup.defer.external_power_required".localized
             }
         }
 
-        if let batteryReason = BatteryManager.shared.getReasonForBlockedBackup() {
-            return batteryReason
+        let resolvedBatteryReason = batteryReason ?? BatteryManager.shared.getReasonForBlockedBackup()
+        if let resolvedBatteryReason {
+            return resolvedBatteryReason
         }
 
-        if let start = options.allowedStartTime, let end = options.allowedEndTime, !isNowWithinAllowedWindow(start: start, end: end) {
+        if let start = options.allowedStartTime, let end = options.allowedEndTime, !isNowWithinAllowedWindow(start: start, end: end, now: now) {
             return "backup.defer.outside_allowed_window".localized
         }
 

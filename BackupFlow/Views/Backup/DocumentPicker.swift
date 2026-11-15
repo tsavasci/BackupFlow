@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 struct DocumentPicker: UIViewControllerRepresentable {
     @Binding var url: URL?
     var onDismiss: () -> Void = {}
+    var onError: (String) -> Void = { _ in }
     
     private var bookmarkCreationOptions: URL.BookmarkCreationOptions {
         return [.minimalBookmark]
@@ -14,11 +15,14 @@ struct DocumentPicker: UIViewControllerRepresentable {
     }
     
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+        // Include .item alongside .folder so iOS opens folders on tap for subfolder navigation
+        // instead of immediately selecting and dismissing on the first tapped folder.
         let documentPicker = UIDocumentPickerViewController(
-            forOpeningContentTypes: [.folder],
+            forOpeningContentTypes: [.folder, .item],
             asCopy: false
         )
         documentPicker.allowsMultipleSelection = false
+        documentPicker.shouldShowFileExtensions = true
         documentPicker.delegate = context.coordinator
         return documentPicker
     }
@@ -51,6 +55,14 @@ struct DocumentPicker: UIViewControllerRepresentable {
                     selectedURL.stopAccessingSecurityScopedResource()
                     debugLog("🔒 Security scoped access stopped")
                 }
+            }
+
+            let resourceValues = try? selectedURL.resourceValues(forKeys: [.isDirectoryKey])
+            if resourceValues?.isDirectory == false {
+                debugLog("⚠️ Selected item is not a folder: \(path)")
+                parent.onError("backup.folder_only_error".localized)
+                parent.onDismiss()
+                return
             }
             
             // Save bookmark before updating the URL

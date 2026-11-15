@@ -129,7 +129,7 @@ final class ContinuedBackupRunner {
             }
         }
 
-        try? await BackupScheduler.shared.performBackup(task: task, bypassThrottle: true)
+        try? await BackupScheduler.shared.performBackup(task: task, bypassThrottle: true, bypassConditions: true)
         monitor.cancel()
 
         let succeeded = task.backupStatus == .completed

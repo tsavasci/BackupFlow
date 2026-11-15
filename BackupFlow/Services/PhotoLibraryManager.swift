@@ -212,6 +212,9 @@ class PhotoLibraryManager: NSObject, ObservableObject {
     }
     
     func generateFileName(for asset: PHAsset, preserveOriginalExtension: Bool = false) -> String {
+        if let ledgerEntry = RestoredPhotoLedgerStore.shared.entry(forLocalIdentifier: asset.localIdentifier) {
+            return ledgerEntry.originalFileName
+        }
         let origExt: String? = preserveOriginalExtension ? originalFileExtension(for: asset) : nil
         return Self.formatFileName(
             creationDate: asset.creationDate ?? Date(),
@@ -229,8 +232,54 @@ class PhotoLibraryManager: NSObject, ObservableObject {
         folderStructure: PhotoFolderStructure = .flat,
         preserveOriginalExtension: Bool = false
     ) -> String {
+        if let ledgerEntry = RestoredPhotoLedgerStore.shared.entry(forLocalIdentifier: asset.localIdentifier) {
+            return ledgerEntry.relativePath
+        }
         let creationDate = asset.creationDate ?? Date()
         let fileName = generateFileName(for: asset, preserveOriginalExtension: preserveOriginalExtension)
+        if let prefix = folderStructure.subfolderPrefix(for: creationDate) {
+            return "\(prefix)/\(fileName)"
+        }
+        return fileName
+    }
+
+    static func resolveFileName(
+        creationDate: Date,
+        localIdentifier: String,
+        mediaType: PHAssetMediaType,
+        originalExtension: String? = nil,
+        preserveOriginalExtension: Bool = false
+    ) -> String {
+        if let ledgerEntry = RestoredPhotoLedgerStore.shared.entry(forLocalIdentifier: localIdentifier) {
+            return ledgerEntry.originalFileName
+        }
+        return formatFileName(
+            creationDate: creationDate,
+            localIdentifier: localIdentifier,
+            mediaType: mediaType,
+            originalExtension: originalExtension,
+            preserveOriginalExtension: preserveOriginalExtension
+        )
+    }
+
+    static func resolveRelativePath(
+        creationDate: Date,
+        localIdentifier: String,
+        mediaType: PHAssetMediaType,
+        folderStructure: PhotoFolderStructure = .flat,
+        originalExtension: String? = nil,
+        preserveOriginalExtension: Bool = false
+    ) -> String {
+        if let ledgerEntry = RestoredPhotoLedgerStore.shared.entry(forLocalIdentifier: localIdentifier) {
+            return ledgerEntry.relativePath
+        }
+        let fileName = resolveFileName(
+            creationDate: creationDate,
+            localIdentifier: localIdentifier,
+            mediaType: mediaType,
+            originalExtension: originalExtension,
+            preserveOriginalExtension: preserveOriginalExtension
+        )
         if let prefix = folderStructure.subfolderPrefix(for: creationDate) {
             return "\(prefix)/\(fileName)"
         }
@@ -295,5 +344,52 @@ class PhotoLibraryManager: NSObject, ObservableObject {
         let idFragment = String(sanitizedIdentifier.prefix(12))
 
         return "\(dateString)_\(idFragment).\(fileExtension)"
+    }
+}
+
+nonisolated struct LocalPhotoAssetSnapshot: Sendable, Hashable {
+    let localIdentifier: String
+    let idFragment: String
+    let creationDate: Date?
+    let isVideo: Bool
+    let resourceSize: Int64?
+
+    init(
+        localIdentifier: String,
+        creationDate: Date?,
+        isVideo: Bool,
+        resourceSize: Int64?
+    ) {
+        self.localIdentifier = localIdentifier
+        let sanitized = localIdentifier
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: ":", with: "_")
+        self.idFragment = String(sanitized.prefix(12))
+        self.creationDate = creationDate
+        self.isVideo = isVideo
+        self.resourceSize = resourceSize
+    }
+}
+
+protocol PhotoLibraryInventoryProviding: Sendable {
+    func currentAuthorizationStatus() async -> PHAuthorizationStatus
+    func fetchAssetSnapshots(mediaType: MediaType) async throws -> [LocalPhotoAssetSnapshot]
+}
+
+extension PhotoLibraryManager: @unchecked Sendable, PhotoLibraryInventoryProviding {
+    func currentAuthorizationStatus() async -> PHAuthorizationStatus {
+        PHPhotoLibrary.authorizationStatus(for: .readWrite)
+    }
+
+    func fetchAssetSnapshots(mediaType: MediaType) async throws -> [LocalPhotoAssetSnapshot] {
+        let assets = try await getAllAssets(mediaType: mediaType)
+        return assets.map { asset in
+            LocalPhotoAssetSnapshot(
+                localIdentifier: asset.localIdentifier,
+                creationDate: asset.creationDate,
+                isVideo: asset.mediaType == .video,
+                resourceSize: localResourceSize(for: asset)
+            )
+        }
     }
 }

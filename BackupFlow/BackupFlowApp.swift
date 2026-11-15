@@ -297,7 +297,9 @@ struct BackupFlowApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             BackupTask.self,
-            BackupHistory.self
+            BackupHistory.self,
+            RestoredPhotoRecord.self,
+            RestoreIgnoreRecord.self
         ])
         
         let inMemory: Bool = {
@@ -364,6 +366,7 @@ struct BackupFlowApp: App {
     init() {
         // BackupScheduler'a shared container'ı inject et
         BackupScheduler.sharedModelContainer = sharedModelContainer
+        RestoredPhotoLedgerStore.shared.bootstrap(container: sharedModelContainer)
     }
     
     var body: some Scene {

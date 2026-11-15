@@ -16,6 +16,11 @@ struct RestoreBrowserView: View {
     @State private var statusMessage: String?
     @State private var exportedURLs: [URL] = []
     @State private var tempDirectoryToCleanup: URL?
+    @State private var showingSmartRestoreSheet = false
+
+    private var isSmartRestoreAvailable: Bool {
+        task.sourcePath != "PHOTOS_LIBRARY" || SmartRestoreConfiguration.isPhotoSmartRestoreEnabled
+    }
 
     private static let byteFormatter: ByteCountFormatter = {
         let formatter = ByteCountFormatter()
@@ -46,22 +51,50 @@ struct RestoreBrowserView: View {
 
                 List {
                     Section {
-                        HStack(spacing: 8) {
-                            if !pathHistory.isEmpty {
+                        VStack(alignment: .leading, spacing: 10) {
+                            if isSmartRestoreAvailable {
                                 Button {
-                                    navigateBack()
+                                    showingSmartRestoreSheet = true
                                 } label: {
-                                    Label("common.back".localized, systemImage: "chevron.left")
+                                    HStack(spacing: 10) {
+                                        Image(systemName: "wand.and.stars")
+                                            .font(.headline)
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("smart_restore.open_button".localized)
+                                                .font(.subheadline.weight(.semibold))
+                                            Text("smart_restore.open_subtitle".localized)
+                                                .font(.caption2)
+                                                .foregroundStyle(.secondary)
+                                        }
+                                        Spacer()
+                                        Image(systemName: "chevron.right")
+                                            .font(.caption.weight(.semibold))
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    .padding(10)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .tint(DashboardTheme.theme(for: task.backupType).primary)
+                            }
+
+                            HStack(spacing: 8) {
+                                if !pathHistory.isEmpty {
+                                    Button {
+                                        navigateBack()
+                                    } label: {
+                                        Label("common.back".localized, systemImage: "chevron.left")
+                                    }
+                                    .buttonStyle(.bordered)
+                                }
+
+                                Button {
+                                    navigate(to: archiveRoot, pushHistory: true)
+                                } label: {
+                                    Label("restore.open_archive".localized, systemImage: "archivebox")
                                 }
                                 .buttonStyle(.bordered)
                             }
-
-                            Button {
-                                navigate(to: archiveRoot, pushHistory: true)
-                            } label: {
-                                Label("restore.open_archive".localized, systemImage: "archivebox")
-                            }
-                            .buttonStyle(.bordered)
                         }
                         .listRowBackground(Color.clear)
                     } header: {
@@ -128,6 +161,9 @@ struct RestoreBrowserView: View {
             }
             .onDisappear {
                 cleanupTempDirectory()
+            }
+            .sheet(isPresented: $showingSmartRestoreSheet) {
+                SmartRestoreSheetView(task: task)
             }
         }
     }

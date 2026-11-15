@@ -315,7 +315,7 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         }
         if ContinuedBackupRunner.shared.start(task: task) { return }
         Task {
-            try? await performBackup(task: task, bypassThrottle: true)
+            try? await performBackup(task: task, bypassThrottle: true, bypassConditions: true)
         }
     }
 
@@ -755,5 +755,37 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         scheduleAppRefresh()
         scheduleProcessingTask()
         return anySuccess
+    }
+}
+
+// MARK: - In-Memory Task Lock (Prevents Concurrent Backup & Restore on Same Task)
+
+nonisolated final class SmartRestoreTaskLock: @unchecked Sendable {
+    static let shared = SmartRestoreTaskLock()
+
+    private let lock = NSLock()
+    private var activeRestoreTaskIDs: Set<UUID> = []
+
+    private init() {}
+
+    func isRestoreActive(for taskID: UUID) -> Bool {
+        lock.withLock {
+            activeRestoreTaskIDs.contains(taskID)
+        }
+    }
+
+    @discardableResult
+    func acquireRestoreLock(for taskID: UUID) -> Bool {
+        lock.withLock {
+            guard !activeRestoreTaskIDs.contains(taskID) else { return false }
+            activeRestoreTaskIDs.insert(taskID)
+            return true
+        }
+    }
+
+    func releaseRestoreLock(for taskID: UUID) {
+        lock.withLock {
+            activeRestoreTaskIDs.remove(taskID)
+        }
     }
 }

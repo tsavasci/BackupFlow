@@ -532,4 +532,357 @@ final class BackupFlowTests: XCTestCase {
         BackupWidgetSnapshotStore.clear(defaults: defaults)
         XCTAssertNil(BackupWidgetSnapshotStore.load(defaults: defaults))
     }
+
+    @MainActor
+    func testUserInitiatedRunBypassesBatteryPowerAndWindowConditions() {
+        let scheduler = BackupScheduler.shared
+        let calendar = Calendar.current
+        let noon = calendar.date(from: DateComponents(year: 2026, month: 5, day: 1, hour: 12, minute: 0))!
+        var options = BackupExecutionOptions.defaults
+        options.requiresExternalPower = true
+        options.allowedStartTime = ScheduleTime(hour: 23, minute: 0)
+        options.allowedEndTime = ScheduleTime(hour: 6, minute: 0)
+
+        // Scheduled run (bypassConditions: false) should be blocked by external power, low battery, or time window.
+        XCTAssertNotNil(
+            scheduler.blockedReason(
+                for: options,
+                bypassConditions: false,
+                batteryState: .unplugged,
+                batteryReason: .some(nil),
+                now: noon
+            )
+        )
+
+        var batteryOnlyOptions = BackupExecutionOptions.defaults
+        XCTAssertEqual(
+            scheduler.blockedReason(
+                for: batteryOnlyOptions,
+                bypassConditions: false,
+                batteryState: .unplugged,
+                batteryReason: .some("Pil seviyesi düşük (%25), en az %30 gerekli"),
+                now: noon
+            ),
+            "Pil seviyesi düşük (%25), en az %30 gerekli"
+        )
+
+        batteryOnlyOptions.allowedStartTime = ScheduleTime(hour: 23, minute: 0)
+        batteryOnlyOptions.allowedEndTime = ScheduleTime(hour: 6, minute: 0)
+        XCTAssertNotNil(
+            scheduler.blockedReason(
+                for: batteryOnlyOptions,
+                bypassConditions: false,
+                batteryState: .charging,
+                batteryReason: .some(nil),
+                now: noon
+            )
+        )
+
+        // User-initiated run (bypassConditions: true) must bypass all three conditions.
+        XCTAssertNil(
+            scheduler.blockedReason(
+                for: options,
+                bypassConditions: true,
+                batteryState: .unplugged,
+                batteryReason: .some("Pil seviyesi düşük (%25), en az %30 gerekli"),
+                now: noon
+            )
+        )
+    }
+
+    // MARK: - Smart Differential Restore Tests
+
+    func testNormalizedPathKeyUnicodeAndCaseCollision() {
+        // NFD ("s + cedilla", "g + breve") vs NFC ("ş", "ğ")
+        let nfd = "Belgeler/s\u{0327}ag\u{0306}_rapor.PDF"
+        let nfc = "belgeler/şağ_rapor.pdf"
+        XCTAssertEqual(NormalizedPathKey(nfd), NormalizedPathKey(nfc))
+
+        // Locale-agnostic ASCII I/i folding must keep "IMG_0001.JPG" == "img_0001.jpg"
+        XCTAssertEqual(NormalizedPathKey("IMG_0001.JPG"), NormalizedPathKey("img_0001.jpg"))
+
+        // Server case-collision detection: both "Rapor.pdf" and "rapor.pdf" must be preserved
+        let remoteItems = [
+            RemoteRestoreItem(relativePath: "Rapor.pdf", fullRemotePath: "/Backup/Rapor.pdf", size: 120),
+            RemoteRestoreItem(relativePath: "rapor.pdf", fullRemotePath: "/Backup/rapor.pdf", size: 240)
+        ]
+        let plan = SmartRestoreEngine.computeFolderDiff(
+            taskID: UUID(),
+            remoteRootPath: "/Backup",
+            remoteItems: remoteItems,
+            localItems: [:],
+            ignoredKeys: []
+        )
+        XCTAssertEqual(plan.caseCollisionCount, 2)
+        XCTAssertEqual(plan.missingItems.count, 2)
+    }
+
+    func testPhotoDiffTwoPassAndBurstSizeDisambiguation() throws {
+        let ledger = RestoredPhotoLedgerStore()
+        let taskID = UUID()
+        let utc = TimeZone(secondsFromGMT: 0)!
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = utc
+        let burstDate = cal.date(from: DateComponents(year: 2026, month: 11, day: 14, hour: 12, minute: 0, second: 0))!
+
+        // 1. Two-Pass Verification:
+        // Remote A (missing) and Remote B (present locally by exact idFragment) share the same timestamp & size.
+        // Pass 1 must claim asset B for Remote B so Pass 2 does NOT pair asset B with Remote A.
+        let remoteA = RemoteRestoreItem(
+            relativePath: "20261114_120000_AAAAAAAAAAAA.heic",
+            fullRemotePath: "/photos/20261114_120000_AAAAAAAAAAAA.heic",
+            size: 1_000
+        )
+        let remoteB = RemoteRestoreItem(
+            relativePath: "20261114_120000_BBBBBBBBBBBB.heic",
+            fullRemotePath: "/photos/20261114_120000_BBBBBBBBBBBB.heic",
+            size: 1_000
+        )
+        let localOnlyB = [
+            LocalPhotoAssetSnapshot(
+                localIdentifier: "BBBBBBBBBBBB-0000-1111/L0/001",
+                creationDate: burstDate,
+                isVideo: false,
+                resourceSize: 1_000
+            )
+        ]
+
+        let twoPassPlan = try SmartRestoreEngine.computePhotoDiff(
+            taskID: taskID,
+            remoteRootPath: "/photos",
+            remoteItems: [remoteA, remoteB],
+            localAssets: localOnlyB,
+            authorizationStatus: .authorized,
+            ledgerStore: ledger,
+            timeZone: utc
+        )
+        XCTAssertEqual(twoPassPlan.unchangedCount, 1)
+        XCTAssertEqual(twoPassPlan.missingItems.map(\.remoteItem.name), ["20261114_120000_AAAAAAAAAAAA.heic"])
+
+        // 2. Burst Exact-Size Disambiguation on a New Device (different localIdentifiers):
+        // 4 burst photos at the exact same second with sizes 100, 200, 300, 400.
+        // Only sizes 200 and 400 exist on the new device -> sizes 100 and 300 must be identified as missing.
+        let burstRemotes = [
+            RemoteRestoreItem(relativePath: "20261114_120000_111111111111.jpg", fullRemotePath: "/p/1.jpg", size: 100),
+            RemoteRestoreItem(relativePath: "20261114_120000_222222222222.jpg", fullRemotePath: "/p/2.jpg", size: 200),
+            RemoteRestoreItem(relativePath: "20261114_120000_333333333333.jpg", fullRemotePath: "/p/3.jpg", size: 300),
+            RemoteRestoreItem(relativePath: "20261114_120000_444444444444.jpg", fullRemotePath: "/p/4.jpg", size: 400)
+        ]
+        let newDeviceBurstLocals = [
+            LocalPhotoAssetSnapshot(localIdentifier: "NEWDEV_ID_01/L0/001", creationDate: burstDate, isVideo: false, resourceSize: 200),
+            LocalPhotoAssetSnapshot(localIdentifier: "NEWDEV_ID_02/L0/001", creationDate: burstDate, isVideo: false, resourceSize: 400)
+        ]
+
+        let burstPlan = try SmartRestoreEngine.computePhotoDiff(
+            taskID: taskID,
+            remoteRootPath: "/p",
+            remoteItems: burstRemotes,
+            localAssets: newDeviceBurstLocals,
+            authorizationStatus: .authorized,
+            ledgerStore: RestoredPhotoLedgerStore(),
+            timeZone: utc
+        )
+        XCTAssertEqual(burstPlan.unchangedCount, 2)
+        XCTAssertEqual(
+            burstPlan.missingItems.map(\.remoteItem.relativePath),
+            ["20261114_120000_111111111111.jpg", "20261114_120000_333333333333.jpg"]
+        )
+    }
+
+    func testPhotoDiffAmbiguousWhenSizeDiffers() throws {
+        let utc = TimeZone(secondsFromGMT: 0)!
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = utc
+        let photoDate = cal.date(from: DateComponents(year: 2026, month: 11, day: 14, hour: 15, minute: 30, second: 0))!
+
+        let remote = RemoteRestoreItem(
+            relativePath: "20261114_153000_OLDDEVICE123.heic",
+            fullRemotePath: "/photos/20261114_153000_OLDDEVICE123.heic",
+            size: 4_200_000
+        )
+        // Same timestamp and mediaType on a new device, but size differs (e.g. edited or re-encoded)
+        let local = LocalPhotoAssetSnapshot(
+            localIdentifier: "NEWDEVICE999-AAAA/L0/001",
+            creationDate: photoDate,
+            isVideo: false,
+            resourceSize: 3_100_000
+        )
+
+        let plan = try SmartRestoreEngine.computePhotoDiff(
+            taskID: UUID(),
+            remoteRootPath: "/photos",
+            remoteItems: [remote],
+            localAssets: [local],
+            authorizationStatus: .authorized,
+            ledgerStore: RestoredPhotoLedgerStore(),
+            timeZone: utc
+        )
+        XCTAssertTrue(plan.missingItems.isEmpty)
+        XCTAssertEqual(plan.ambiguousItems.count, 1)
+        XCTAssertFalse(plan.ambiguousItems[0].isSelected)
+    }
+
+    func testPhotoDiffBlockedWhenAccessIsLimited() {
+        XCTAssertThrowsError(
+            try SmartRestoreEngine.computePhotoDiff(
+                taskID: UUID(),
+                remoteRootPath: "/photos",
+                remoteItems: [],
+                localAssets: [],
+                authorizationStatus: .limited
+            )
+        ) { error in
+            XCTAssertEqual(error as? SmartRestoreError, .photoAccessLimited)
+        }
+    }
+
+    func testRestoredPhotoDoesNotDuplicateOnNextBackup() throws {
+        let store = RestoredPhotoLedgerStore.shared
+        store.clearAllForTesting()
+        defer { store.clearAllForTesting() }
+
+        let taskID = UUID()
+        let originalRelative = "2026/11/20261114_153022_OLDID1234567.heic"
+        let originalFileName = "20261114_153022_OLDID1234567.heic"
+        let newAssetID = "NEWASSET987654321/L0/001"
+
+        store.recordRestoredPhoto(
+            taskID: taskID,
+            relativePath: originalRelative,
+            originalFileName: originalFileName,
+            newLocalIdentifier: newAssetID,
+            remoteSize: 2_048_000
+        )
+
+        // 1. Next backup run: PhotoLibraryManager must resolve the restored asset to its original server filename & path
+        let resolvedName = PhotoLibraryManager.resolveFileName(
+            creationDate: Date(),
+            localIdentifier: newAssetID,
+            mediaType: .image,
+            originalExtension: "heic",
+            preserveOriginalExtension: true
+        )
+        let resolvedRelPath = PhotoLibraryManager.resolveRelativePath(
+            creationDate: Date(),
+            localIdentifier: newAssetID,
+            mediaType: .image,
+            folderStructure: .yearMonthSlash,
+            originalExtension: "heic",
+            preserveOriginalExtension: true
+        )
+        XCTAssertEqual(resolvedName, originalFileName)
+        XCTAssertEqual(resolvedRelPath, originalRelative)
+
+        // 2. Next Smart Restore scan: must recognize the restored photo via Ledger Pass 1 and report 0 missing
+        let remoteItem = RemoteRestoreItem(
+            relativePath: originalRelative,
+            fullRemotePath: "/photos/\(originalRelative)",
+            size: 2_048_000
+        )
+        let localSnapshot = LocalPhotoAssetSnapshot(
+            localIdentifier: newAssetID,
+            creationDate: Date(),
+            isVideo: false,
+            resourceSize: 2_048_000
+        )
+        let plan = try SmartRestoreEngine.computePhotoDiff(
+            taskID: taskID,
+            remoteRootPath: "/photos",
+            remoteItems: [remoteItem],
+            localAssets: [localSnapshot],
+            authorizationStatus: .authorized,
+            ledgerStore: store
+        )
+        XCTAssertEqual(plan.alreadyRestoredCount, 1)
+        XCTAssertTrue(plan.missingItems.isEmpty)
+    }
+
+    func testCrashRecoverySkipsAlreadyMaterializedItem() async throws {
+        final class CountingMockClient: RemoteStorageClient, @unchecked Sendable {
+            var downloadCalls = 0
+            func connect() async throws {}
+            func disconnect() async {}
+            func resolveEffectiveBackupRoot() async throws -> String { "/Backup" }
+            func listDirectory(at path: String) async throws -> [RemoteStorageEntry] { [] }
+            func downloadFile(remotePath: String, to localURL: URL, resumeOffset: Int64) async throws {
+                downloadCalls += 1
+                try Data("hello".utf8).write(to: localURL)
+            }
+        }
+
+        let tempFolder = FileManager.default.temporaryDirectory
+            .appendingPathComponent("SmartRestoreCrashTest-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: tempFolder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempFolder) }
+
+        // Simulate a file that was already materialized on disk before a crash (size == 5 bytes)
+        let existingFile = tempFolder.appendingPathComponent("notes.txt")
+        try Data("hello".utf8).write(to: existingFile)
+
+        let remoteItem = RemoteRestoreItem(
+            relativePath: "notes.txt",
+            fullRemotePath: "/Backup/notes.txt",
+            size: 5
+        )
+        let candidate = SmartRestoreCandidate(
+            remoteItem: remoteItem,
+            state: .missingLocally,
+            isSelected: true
+        )
+        let plan = SmartRestorePlan(
+            taskID: UUID(),
+            isPhotoLibrarySource: false,
+            remoteRootPath: "/Backup",
+            totalRemoteFiles: 1,
+            unchangedCount: 0,
+            alreadyRestoredCount: 0,
+            caseCollisionCount: 0,
+            autoSelectionDisabledByThreshold: false,
+            missingItems: [candidate],
+            ambiguousItems: [],
+            conflictItems: [],
+            ignoredItems: []
+        )
+        let snapshot = SmartRestoreTaskSnapshot(sourcePath: tempFolder.path, destinationPath: "/Backup")
+        let mockClient = CountingMockClient()
+
+        let result = try await SmartRestoreEngine.executeRestorePlan(
+            snapshot: snapshot,
+            plan: plan,
+            client: mockClient
+        )
+        XCTAssertEqual(mockClient.downloadCalls, 0)
+        XCTAssertEqual(result.skippedCount, 1)
+        XCTAssertEqual(result.restoredCount, 0)
+    }
+
+    func testLargeMissingCountStartsUnselectedAndKeepBothName() {
+        let remotes = (1...5).map { idx in
+            RemoteRestoreItem(
+                relativePath: "doc_\(idx).pdf",
+                fullRemotePath: "/Backup/doc_\(idx).pdf",
+                size: 100
+            )
+        }
+        let plan = SmartRestoreEngine.computeFolderDiff(
+            taskID: UUID(),
+            remoteRootPath: "/Backup",
+            remoteItems: remotes,
+            localItems: [:],
+            ignoredKeys: [],
+            autoSelectThreshold: 3
+        )
+        XCTAssertTrue(plan.autoSelectionDisabledByThreshold)
+        XCTAssertTrue(plan.missingItems.allSatisfy { !$0.isSelected })
+
+        let existing: Set<NormalizedPathKey> = [
+            NormalizedPathKey("sub/rapor.pdf"),
+            NormalizedPathKey("sub/rapor (Restored).pdf")
+        ]
+        let keepBothName = NormalizedPathKey.makeKeepBothRelativePath(
+            for: "sub/rapor.pdf",
+            existingKeys: existing
+        )
+        XCTAssertEqual(keepBothName, "sub/rapor (Restored 2).pdf")
+    }
 }
