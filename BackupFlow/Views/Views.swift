@@ -3,20 +3,21 @@ import SwiftUI
 // MARK: - App Surface Theme
 
 struct LiquidTheme {
-    static let cardCornerRadius: CGFloat = 18
+    static let cardCornerRadius: CGFloat = 20
     static let cardStroke = LinearGradient(
         colors: [
-            Color.white.opacity(0.65),
-            Color.white.opacity(0.25),
-            Color.white.opacity(0.08)
+            DesignSystem.Colors.primary.opacity(0.65),
+            DesignSystem.Colors.rimBorderMuted.opacity(0.65),
+            DesignSystem.Colors.electricBlue.opacity(0.45)
         ],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
     static let subtleStroke = LinearGradient(
         colors: [
-            Color.white.opacity(0.35),
-            Color.white.opacity(0.12)
+            DesignSystem.Colors.primary.opacity(0.42),
+            DesignSystem.Colors.rimBorderMuted.opacity(0.45),
+            DesignSystem.Colors.electricBlue.opacity(0.28)
         ],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
@@ -24,35 +25,64 @@ struct LiquidTheme {
 }
 
 private struct LiquidBackgroundModifier: ViewModifier {
-    // systemBackground adapts to light/dark mode on its own.
     private let gradient = LinearGradient(
         colors: [
-            Color(.systemBackground),
-            Color(.systemBackground).opacity(0.94)
+            DesignSystem.Colors.canvasTop,
+            DesignSystem.Colors.canvasBottom
         ],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
 
     func body(content: Content) -> some View {
-        content.background(gradient.ignoresSafeArea())
+        content
+            .background(
+                ZStack {
+                    gradient
+                    RadialGradient(
+                        colors: [
+                            DesignSystem.Colors.primary.opacity(0.08),
+                            Color.clear
+                        ],
+                        center: .topLeading,
+                        startRadius: 10,
+                        endRadius: 340
+                    )
+                    RadialGradient(
+                        colors: [
+                            DesignSystem.Colors.electricBlue.opacity(0.07),
+                            Color.clear
+                        ],
+                        center: .bottomTrailing,
+                        startRadius: 20,
+                        endRadius: 360
+                    )
+                }
+                .ignoresSafeArea()
+            )
+            .preferredColorScheme(.dark)
     }
 }
 
 private struct LiquidListRowModifier: ViewModifier {
-    @Environment(\.colorScheme) private var colorScheme
     let cornerRadius: CGFloat
 
     func body(content: Content) -> some View {
         content.listRowBackground(
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .fill(colorScheme == .dark ? .regularMaterial : .ultraThinMaterial)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            DesignSystem.Colors.cardSurfaceElevated.opacity(0.92),
+                            DesignSystem.Colors.cardSurface.opacity(0.96)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
                 .overlay(
                     RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                        .stroke(
-                            colorScheme == .dark ? LiquidTheme.subtleStroke : LiquidTheme.cardStroke,
-                            lineWidth: colorScheme == .dark ? 0.8 : 0.9
-                        )
+                        .stroke(LiquidTheme.subtleStroke, lineWidth: 1)
                 )
         )
     }

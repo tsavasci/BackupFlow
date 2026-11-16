@@ -98,12 +98,23 @@
   - **FTP / SFTP Etkileşimli Hatırlatıcılar:** `BackupNotifier` ile FTP/SFTP görevleri için interaktif bildirimler (*Şimdi Başlat*, *1 Saat Ertele*, *Detayları Aç*) ve tüm protokoller için tamamlanma/hata bildirimleri.
 
 ### 4.5. Gösterge Paneli (Dashboard) ve Kullanıcı Deneyimi
-- **Tek Sayfada Zengin Dashboard (`MainTabView`):**
-  - **Hero Kartı:** Aktif görevin durumu, son senkronizasyon tarihi, bir sonraki göreve canlı geri sayım sayacı ve tek dokunuşla başlatma/durdurma.
+- **Cyber-Telemetry Dark Glass Kokpit (`MainTabView`):**
+  - **Üst Başlık (`DashboardHeader`):** Karşılama mesajı, canlı aktif görev durumu kapsülü, *"Yedekleme Merkezi"* başlığı ve Ayarlar kısayolu.
+  - **Hero Kartı (`DashboardHeroCard`):** Aktif görevin durumu, son senkronizasyon tarihi, bir sonraki göreve canlı geri sayım sayacı, son çalışmalara dayalı çift dalgalı `TelemetrySparklineView` ve tek dokunuşla başlatma/durdurma.
   - **Canlı İlerleme Kartı (`DashboardProgressCard`):** Aktarım anında genel yüzde, aktarım hızı (`MB/s`), aktif dosya adı ve $\ge 50\text{ MB}$ dosyalar için ikincil mini dosya ilerleme çubuğu.
-  - **Sağlık Kartı (`DashboardHealthCard`):** Başarı oranı ve son durum özeti.
-  - **Sunucu ve Görev Listesi:** Kayıtlı görevleri listeleme, duraklatma, önizleme ve düzenleme.
+  - **Sağlık & Performans Bento Kartları (`DashboardHealthCard`):** Son 6 çalışmayı gösteren etkileşimli `TelemetrySplineChartView`, dairesel başarı halkası (`TelemetryRingGauge`), ardışık hata ve ortalama süre satırları.
+  - **Sunucu ve Görev Listesi (`DashboardServersSection`):** Kayıtlı görevleri listeleme, hızlı başlatma, düzenleme, silme ve duraklatma.
+  - **4'lü Alt Kokpit Dock (`DashboardActionDock`):** *Senkronize Et*, *Sunucular*, *Geçmiş* ve *Geri Yükle* kısayolları.
   - **Geçmiş Listesi ve Detayı (`HistoryView`):** Tüm geçmiş aktarımların süre, aktarılan bayt, yüklenen/atlanan dosya detayları ve hata analizleri.
+- **4 Slaytlık Tanıtım ve Yenilikler Rehberi (`OnboardingView`):**
+  - Yeni kurulum yapan ve eski sürümden v6.7'ye güncelleyen tüm kullanıcılara ilk açılışta otomatik gösterilen (ve Ayarlar → Hakkında bölümünden istenildiğinde tekrar açılabilen) 4 slaytlık etkileşimli rehber.
+
+### 4.6. Uzak Sunucu Gezgini ve Akıllı Geri Yükleme (Restore & Smart Diff Engine)
+- **Uzak Sunucu Gezgini (`RestoreBrowserView` & `RestoreService`):**
+  - Kullanıcılar FTP, SFTP veya WebDAV sunucularındaki klasörlere canlı olarak göz atabilir, arama yapabilir, birden fazla fotoğraf/video/dosya seçerek doğrudan **Fotoğraflar Galerisi**'ne veya **Dosyalar (Files)** uygulamasına indirebilir.
+- **Akıllı Geri Yükleme ve Fark Analizi (`SmartRestoreSheetView` & `SmartRestoreEngine`):**
+  - Sunucudaki yedekleri cihazdaki mevcut fotoğraf kütüphanesi veya yerel klasörle karşılaştırır; **Sağlam (`intact`)**, **Eksik (`missing`)**, **Belirsiz (`ambiguous`)** ve **Çakışan (`conflicts`)** dosyaları sınıflandırır.
+  - Tarih aralığı filtresi (`DatePicker`), SHA-256 / dosya boyutu doğrulaması ve `RestoredPhotoLedgerStore` / `RestoreIgnoreRecord` desteğiyle silinmiş medyaları güvenle kurtarır.
 
 ---
 

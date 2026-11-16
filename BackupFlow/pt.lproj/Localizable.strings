@@ -527,3 +527,28 @@
 "smart_restore.error.folder_access" = "A permissão da pasta expirou ou a pasta não pôde ser acessada.";
 "smart_restore.error.folder_readonly" = "A pasta de origem é somente leitura. Selecione uma pasta gravável.";
 "smart_restore.error.disk_space" = "Espaço livre insuficiente. Necessário: %@, Disponível: %@.";
+
+// MARK: - Onboarding v6.7
+"settings.whats_new" = "Novidades e Guia de Recursos";
+"onboarding.skip" = "Pular";
+"onboarding.next" = "Avançar";
+"onboarding.get_started" = "Começar";
+"onboarding.slide1.badge" = "NOVA INTERFACE • v6.7";
+"onboarding.slide1.title" = "Central Cyber-Telemetry";
+"onboarding.slide1.subtitle" = "Monitore seus backups em tempo real com o novo painel em vidro escuro, gráficos de transferência ao vivo e anel de integridade.";
+"onboarding.slide2.badge" = "NOVO • RESTAURAÇÃO INTELIGENTE";
+"onboarding.slide2.title" = "Smart Restore e Análise de Diferenças";
+"onboarding.slide2.subtitle" = "Compare os backups do servidor com o seu aparelho. Detecte fotos ou arquivos ausentes e restaure-os com filtro por período.";
+"onboarding.slide2.highlight" = "Filtro por datas e verificação SHA-256";
+"onboarding.slide3.badge" = "NAVEGADOR DE SERVIDOR";
+"onboarding.slide3.title" = "Recuperação Direta para o Aparelho";
+"onboarding.slide3.subtitle" = "Navegue pelas pastas do seu servidor FTP, SFTP ou WebDAV e baixe mídias diretamente para a galeria Fotos ou app Arquivos.";
+"onboarding.slide4.badge" = "PRIVACIDADE E SEGURANÇA TOTAL";
+"onboarding.slide4.title" = "100% Seu Servidor, Zero Cotas";
+"onboarding.slide4.subtitle" = "Seus dados vão direto para o seu NAS ou servidor sem nuvens de terceiros. Licença vitalícia única sem assinaturas.";
+"onboarding.slide4.item1.title" = "Chaveiro e Fixação TOFU";
+"onboarding.slide4.item1.subtitle" = "Impressão digital SHA-256 e credenciais protegidas no Keychain";
+"onboarding.slide4.item2.title" = "Sincronização em Segundo Plano";
+"onboarding.slide4.item2.subtitle" = "Sessões WebDAV contínuas em segundo plano e agendamento";
+"onboarding.slide4.item3.title" = "Proteção contra Perda de Dados";
+"onboarding.slide4.item3.subtitle" = "O modo padrão Apenas Adicionar protege seu arquivo no NAS";

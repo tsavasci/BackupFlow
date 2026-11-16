@@ -48,6 +48,8 @@ struct MainTabView: View {
         tasks.first { $0.id == id }
     }
 
+    @AppStorage("onboardingLastSeenVersion") private var onboardingLastSeenVersion = ""
+    @State private var showOnboarding = false
     @State private var showBackupSheet = false
     @State private var showHistory = false
     @State private var showSettings = false
@@ -185,31 +187,57 @@ struct MainTabView: View {
         }
     }
 
+    private var heroSparklinePrimary: [Double] {
+        let recent = Array(history.prefix(8).reversed())
+        let maxFiles = Double(recent.map { max($0.filesProcessed, 1) }.max() ?? 1)
+        var series = recent.map { item -> Double in
+            guard item.filesProcessed > 0 else { return 0.08 }
+            return min(max(0.14 + (Double(item.filesProcessed) / max(maxFiles, 1)) * 0.80, 0.12), 0.94)
+        }
+        if let active = activeTask {
+            series.append(min(max(active.progress, 0.12), 0.96))
+        }
+        return series
+    }
+
+    private var heroSparklineSecondary: [Double] {
+        let recent = Array(history.prefix(8).reversed())
+        let maxBytes = Double(recent.map { max($0.bytesTransferred, 1) }.max() ?? 1)
+        var series = recent.map { item -> Double in
+            guard item.bytesTransferred > 0 else { return 0.06 }
+            return min(max(0.10 + (Double(item.bytesTransferred) / max(maxBytes, 1)) * 0.72, 0.10), 0.88)
+        }
+        if let active = activeTask {
+            series.append(min(max(active.currentFileProgress > 0 ? active.currentFileProgress : active.progress * 0.75, 0.10), 0.90))
+        }
+        return series
+    }
+
     // MARK: - Body
 
     var body: some View {
         ZStack {
             LinearGradient(
                 colors: [
-                    Color(.systemBackground),
-                    Color(.systemBackground).opacity(0.94),
+                    DesignSystem.Colors.canvasTop,
+                    DesignSystem.Colors.canvasBottom,
                 ],
                 startPoint: .top,
                 endPoint: .bottom
             )
             .ignoresSafeArea()
 
-            RoundedRectangle(cornerRadius: 40)
-                .fill(dashboardTheme.primary.opacity(0.03))
-                .blur(radius: 40)
-                .frame(width: 260, height: 260)
-                .offset(x: -110, y: -300)
+            Circle()
+                .fill(dashboardTheme.primary.opacity(0.08))
+                .blur(radius: 55)
+                .frame(width: 280, height: 280)
+                .offset(x: -115, y: -300)
 
-            RoundedRectangle(cornerRadius: 40)
-                .fill(dashboardTheme.secondary.opacity(0.04))
-                .blur(radius: 50)
-                .frame(width: 220, height: 220)
-                .offset(x: 130, y: -140)
+            Circle()
+                .fill(dashboardTheme.secondary.opacity(0.08))
+                .blur(radius: 65)
+                .frame(width: 250, height: 250)
+                .offset(x: 130, y: -130)
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 18) {
@@ -217,6 +245,16 @@ struct MainTabView: View {
                         greeting: greetingText,
                         statusText: lastConnectionStatus,
                         statusColor: statusDotColor,
+                        onTapHub: openPrimaryOrSetup,
+                        onTapStatus: {
+                            if let activeTask {
+                                selectedTask = activeTask
+                            } else if !tasks.isEmpty {
+                                showHistory = true
+                            } else {
+                                showBackupSheet = true
+                            }
+                        },
                         onOpenSettings: { showSettings = true }
                     )
 
@@ -239,13 +277,27 @@ struct MainTabView: View {
                         progress: backupProgress,
                         headline: heroHeadline,
                         subtitle: isBackingUp ? backupMessage : selectedServerName,
+                        sparklinePoints: heroSparklinePrimary,
+                        sparklineSecondaryPoints: heroSparklineSecondary,
                         actionIconName: heroActionIconName,
                         actionColor: heroActionColor,
                         actionAccessibilityLabel: heroActionAccessibilityLabel,
-                        onAction: performHeroAction
+                        onAction: performHeroAction,
+                        onOpenTask: { selectedTask = $0 },
+                        onOpenPrimaryTask: openPrimaryOrSetup,
+                        onOpenHistory: { showHistory = true }
                     )
 
-                    DashboardHealthCard(history: history, tasks: tasks)
+                    DashboardHealthCard(
+                        history: history,
+                        tasks: tasks,
+                        onOpenHistory: { showHistory = true },
+                        onSelectHistory: { id in
+                            selectedHistory = history.first { $0.persistentModelID == id }
+                        },
+                        onOpenFailedTask: { selectedTask = $0 },
+                        onEmptyAction: performHeroAction
+                    )
 
                     DashboardServersSection(
                         rows: savedServerRows,
@@ -282,7 +334,21 @@ struct MainTabView: View {
                         storageProgress: latestHistoryProgress,
                         currentCount: currentBackupCount,
                         totalCount: totalBackupCount,
-                        hasTasks: !tasks.isEmpty
+                        hasTasks: !tasks.isEmpty,
+                        onTapUsed: {
+                            if let latest = history.first {
+                                selectedHistory = latest
+                            } else {
+                                openPrimaryOrSetup()
+                            }
+                        },
+                        onTapFiles: {
+                            if let target = tasks.first(where: { $0.isEnabled }) ?? tasks.first {
+                                restoreTask = target
+                            } else {
+                                showBackupSheet = true
+                            }
+                        }
                     )
 
                     DashboardRecentBackupsSection(
@@ -292,7 +358,8 @@ struct MainTabView: View {
                         onSelect: { id in
                             // Resolve the snapshot back to its live record at tap time.
                             selectedHistory = history.first { $0.persistentModelID == id }
-                        }
+                        },
+                        onEmptyTap: performHeroAction
                     )
                 }
                 .padding(.horizontal, 20)
@@ -307,11 +374,24 @@ struct MainTabView: View {
             VStack(spacing: 0) {
                 Color.clear
                     .frame(height: 0)
-                    .background(Color(.systemBackground).ignoresSafeArea(edges: .top))
+                    .background(DesignSystem.Colors.canvasTop.ignoresSafeArea(edges: .top))
                 Spacer()
             }
             .allowsHitTesting(false)
             .accessibilityHidden(true)
+        }
+        .preferredColorScheme(.dark)
+        .onAppear {
+            if onboardingLastSeenVersion != OnboardingView.currentOnboardingVersion,
+               !Self.isRunningAutomatedTests {
+                showOnboarding = true
+            }
+        }
+        .fullScreenCover(isPresented: $showOnboarding) {
+            OnboardingView {
+                onboardingLastSeenVersion = OnboardingView.currentOnboardingVersion
+                showOnboarding = false
+            }
         }
         .sheet(isPresented: $showBackupSheet) {
             NavigationStack {
@@ -404,6 +484,16 @@ struct MainTabView: View {
     }
 
     // MARK: - Actions
+
+    private func openPrimaryOrSetup() {
+        if let activeTask {
+            selectedTask = activeTask
+        } else if let firstTask = tasks.first {
+            selectedTask = firstTask
+        } else {
+            showBackupSheet = true
+        }
+    }
 
     private func performHeroAction() {
         if isBackingUp { return }
@@ -532,5 +622,16 @@ struct MainTabView: View {
 
         let name = URL(fileURLWithPath: sourcePath).lastPathComponent
         return name.isEmpty ? "backup" : name
+    }
+
+    private static var isRunningAutomatedTests: Bool {
+        let env = ProcessInfo.processInfo.environment
+        if env["XCTestConfigurationFilePath"] != nil || env["XCTestSessionIdentifier"] != nil {
+            return true
+        }
+        #if DEBUG
+        if ScreenshotDemoData.isEnabled { return true }
+        #endif
+        return false
     }
 }

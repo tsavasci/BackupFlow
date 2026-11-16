@@ -528,3 +528,28 @@
 "smart_restore.error.folder_access" = "El permiso de la carpeta caducó o no se puede acceder a ella.";
 "smart_restore.error.folder_readonly" = "La carpeta de origen es de solo lectura. Autoriza una carpeta con escritura.";
 "smart_restore.error.disk_space" = "Espacio libre insuficiente. Requerido: %@, Disponible: %@.";
+
+// MARK: - Onboarding v6.7
+"settings.whats_new" = "Novedades y guía de funciones";
+"onboarding.skip" = "Omitir";
+"onboarding.next" = "Siguiente";
+"onboarding.get_started" = "Empezar";
+"onboarding.slide1.badge" = "NUEVA INTERFAZ • v6.7";
+"onboarding.slide1.title" = "Centro de Control Cyber-Telemetry";
+"onboarding.slide1.subtitle" = "Supervisa tus copias en tiempo real con el nuevo diseño de cristal oscuro, gráficas de transferencia en vivo y anillo de salud por protocolo.";
+"onboarding.slide2.badge" = "NUEVO • RESTAURACIÓN INTELIGENTE";
+"onboarding.slide2.title" = "Smart Restore y Análisis de Diferencias";
+"onboarding.slide2.subtitle" = "Compara las copias del servidor con tu dispositivo. Detecta al instante fotos o archivos faltantes y restáuralos filtrando por fechas.";
+"onboarding.slide2.highlight" = "Filtro de fechas y verificación SHA-256";
+"onboarding.slide3.badge" = "EXPLORADOR DE SERVIDOR";
+"onboarding.slide3.title" = "Recuperación Directa al Dispositivo";
+"onboarding.slide3.subtitle" = "Explora carpetas en tu servidor FTP, SFTP o WebDAV y descarga tus archivos directamente en la galería Fotos o en la app Archivos.";
+"onboarding.slide4.badge" = "PRIVACIDAD Y SEGURIDAD TOTAL";
+"onboarding.slide4.title" = "100 % Tu Servidor, Sin Cuotas";
+"onboarding.slide4.subtitle" = "Tus datos van directo a tu propio NAS o servidor sin nubes de terceros. Compra única de por vida sin suscripciones.";
+"onboarding.slide4.item1.title" = "Keychain y Fijación TOFU";
+"onboarding.slide4.item1.subtitle" = "Huella SHA-256 y credenciales cifradas en el llavero de iOS";
+"onboarding.slide4.item2.title" = "Sincronización en Segundo Plano";
+"onboarding.slide4.item2.subtitle" = "Sesiones WebDAV continuas y programador automático";
+"onboarding.slide4.item3.title" = "Protección contra Pérdida de Datos";
+"onboarding.slide4.item3.subtitle" = "El modo Solo Añadir por defecto mantiene seguro tu archivo NAS";

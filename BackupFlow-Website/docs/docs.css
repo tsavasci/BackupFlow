@@ -9,9 +9,10 @@
 
 /* Title card */
 .docs-hero {
-    background: rgba(255, 255, 255, 0.9);
+    background: linear-gradient(145deg, rgba(31, 43, 60, 0.92), rgba(25, 35, 49, 0.96));
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.4);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(44, 229, 255, 0.24);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-md);
     padding: 2.75rem 3rem;
@@ -21,7 +22,7 @@
 .docs-hero h1 {
     font-size: 2.75rem;
     font-weight: 700;
-    color: #1a202c;
+    color: #f8fafc;
     margin-bottom: 0.75rem;
 }
 
@@ -41,13 +42,14 @@
 .docs-section h3 {
     font-size: 1.15rem;
     font-weight: 600;
-    color: #1a202c;
+    color: #f1f5f9;
     margin: 1.25rem 0 0.5rem;
 }
 
 .privacy-summary-card {
-    background: var(--brand-gradient);
-    color: #ffffff;
+    background: linear-gradient(135deg, rgba(44, 229, 255, 0.14), rgba(30, 123, 255, 0.16));
+    border: 1px solid rgba(44, 229, 255, 0.38);
+    color: #f8fafc;
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-md);
     padding: 2rem 2.25rem;
@@ -56,12 +58,12 @@
 .privacy-summary-card h2 {
     font-size: 1.45rem;
     font-weight: 700;
-    color: #ffffff;
+    color: #2ce5ff;
     margin-bottom: 0.65rem;
 }
 
 .privacy-summary-card p {
-    color: rgba(255, 255, 255, 0.94);
+    color: #e2e8f0;
     font-size: 1.05rem;
     line-height: 1.65;
     margin: 0;
@@ -115,13 +117,13 @@
 }
 
 .docs-toc a:hover {
-    background: rgba(59, 130, 246, 0.08);
-    color: var(--brand-blue);
+    background: rgba(44, 229, 255, 0.12);
+    color: #2ce5ff;
 }
 
 .docs-toc a.active {
-    background: rgba(59, 130, 246, 0.12);
-    color: var(--brand-blue);
+    background: rgba(44, 229, 255, 0.16);
+    color: #2ce5ff;
     font-weight: 600;
 }
 
@@ -133,7 +135,7 @@
 
 .docs-section {
     background: var(--surface-strong);
-    border: 1px solid var(--border-soft);
+    border: 1px solid rgba(44, 229, 255, 0.18);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-sm);
     padding: 2rem 2.25rem;
@@ -145,7 +147,7 @@
     position: relative;
     font-size: 1.5rem;
     font-weight: 700;
-    color: #1a202c;
+    color: #f8fafc;
     padding-inline-start: 1rem;
     margin-bottom: 1rem;
 }
@@ -182,18 +184,18 @@
 }
 
 .docs-section li::marker {
-    color: var(--brand-blue);
+    color: #2ce5ff;
     font-weight: 600;
 }
 
 .docs-section b {
-    color: #1a202c;
+    color: #f8fafc;
     font-weight: 600;
 }
 
 .docs-section dt {
     font-weight: 600;
-    color: #1a202c;
+    color: #f8fafc;
     margin-top: 1rem;
 }
 
@@ -208,15 +210,15 @@
 }
 
 .docs-section .note {
-    background: #fff7e6;
-    border: 1px solid #f5c66e;
+    background: rgba(255, 173, 56, 0.12);
+    border: 1px solid rgba(255, 173, 56, 0.45);
     border-radius: var(--radius-md);
     padding: 0.9rem 1.1rem;
-    color: #6b4a10;
+    color: #ffd584;
 }
 
 .docs-section a {
-    color: var(--brand-blue);
+    color: #2ce5ff;
 }
 
 /* Inline app screenshot previews inside docs sections */
@@ -233,9 +235,9 @@
     max-width: 240px;
     border-radius: 22px;
     overflow: hidden;
-    border: 1px solid var(--border-soft);
+    border: 1px solid rgba(44, 229, 255, 0.28);
     box-shadow: var(--shadow-sm);
-    background: #f8fafc;
+    background: #0b0f16;
 }
 
 .docs-screen-card img {

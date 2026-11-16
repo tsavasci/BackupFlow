@@ -183,7 +183,7 @@ struct BatteryHelpRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: icon)
-                .foregroundColor(.blue)
+                .foregroundStyle(DesignSystem.Colors.primary)
                 .font(.body)
                 .frame(width: 20)
                 .accessibilityHidden(true)

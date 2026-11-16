@@ -528,3 +528,28 @@
 "smart_restore.error.folder_access" = "Berechtigung für Quellordner abgelaufen oder Ordner nicht erreichbar.";
 "smart_restore.error.folder_readonly" = "Der Quellordner ist schreibgeschützt. Bitte wählen Sie einen beschreibbaren Ordner.";
 "smart_restore.error.disk_space" = "Nicht genügend freier Speicherplatz. Erforderlich: %@, Verfügbar: %@.";
+
+// MARK: - Onboarding v6.7
+"settings.whats_new" = "Neuigkeiten & Funktionsübersicht";
+"onboarding.skip" = "Überspringen";
+"onboarding.next" = "Weiter";
+"onboarding.get_started" = "Loslegen";
+"onboarding.slide1.badge" = "NEUES DESIGN • v6.7";
+"onboarding.slide1.title" = "Cyber-Telemetry Kontrollzentrum";
+"onboarding.slide1.subtitle" = "Überwachen Sie alle Backups in Echtzeit mit dem neuen Dark-Glass-Cockpit, Live-Transferkurven und dem Protokoll-Statusring.";
+"onboarding.slide2.badge" = "NEU • INTELLIGENTE WIEDERHERSTELLUNG";
+"onboarding.slide2.title" = "Smart Restore & Differenzanalyse";
+"onboarding.slide2.subtitle" = "Vergleichen Sie Server-Backups mit Ihrem Gerät. Erkennen Sie fehlende Fotos oder Dateien sofort und stellen Sie sie nach Zeitraum wieder her.";
+"onboarding.slide2.highlight" = "Datumsfilter & SHA-256-Integritätsprüfung";
+"onboarding.slide3.badge" = "SERVER-DATEIBROWSER";
+"onboarding.slide3.title" = "Direkte Wiederherstellung vom Server";
+"onboarding.slide3.subtitle" = "Durchsuchen Sie Ordner auf Ihrem FTP-, SFTP- oder WebDAV-Server und laden Sie ausgewählte Medien direkt in Fotos oder Dateien herunter.";
+"onboarding.slide4.badge" = "VOLLER DATENSCHUTZ";
+"onboarding.slide4.title" = "100 % Ihr Server, Keine Limits";
+"onboarding.slide4.subtitle" = "Ihre Daten werden direkt auf Ihr eigenes NAS übertragen – ohne Drittanbieter-Cloud, ohne Abo und ohne Transferlimits.";
+"onboarding.slide4.item1.title" = "Keychain & TOFU-Schutz";
+"onboarding.slide4.item1.subtitle" = "SHA-256-Fingerabdruckprüfung & sicherer Schlüsselbund";
+"onboarding.slide4.item2.title" = "Hintergrund-Synchronisierung";
+"onboarding.slide4.item2.subtitle" = "Unterbrechungsfreie WebDAV-Hintergrundsitzungen & Zeitpläne";
+"onboarding.slide4.item3.title" = "Schutz vor Datenverlust";
+"onboarding.slide4.item3.subtitle" = "Standardmodus „Nur anhängen“ schützt Ihr Server-Archiv zuverlässig";

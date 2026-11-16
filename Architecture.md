@@ -15,8 +15,10 @@ flowchart TD
     subgraph UI["Sunum Katmanı (SwiftUI Views)"]
         MTV["MainTabView & DashboardSections"]
         BV["BackupView & BackupFormModel"]
+        RBV["RestoreBrowserView & SmartRestoreSheetView"]
         TDV["TaskDetailView & BackupPreviewSheet"]
         HV["HistoryView & SettingsView"]
+        OBV["OnboardingView (v6.7)"]
     end
 
     subgraph Orchestration["Orkestrasyon ve Zamanlama Katmanı"]
@@ -26,10 +28,11 @@ flowchart TD
         BM["BatteryManager & NWPathMonitor"]
     end
 
-    subgraph SyncEngines["Senkronizasyon Motorları (Sync Engines)"]
+    subgraph SyncEngines["Senkronizasyon ve Kurtarma Motorları"]
         FSE["FTPSyncEngine"]
         SSE["SFTPSyncEngine"]
         WSE["WebDAVSyncEngine"]
+        SRE["RestoreService & SmartRestoreEngine"]
         BRT["BackupRunTally & Checkpoints"]
         BC["BackupChecksum (SHA-256) & BackupArchive"]
         POC["PhotoOrphanCleanup"]
@@ -70,10 +73,11 @@ BackupFlow/
 │   ├── BackupTarget.swift              # Protokol hedef türleri (FTP, SFTP, WebDAV) ve ikon/görünüm eşlemeleri
 │   └── BackupExecutionModels.swift     # Dry-run önizleme (BackupPreviewResult) ve çalışma zamanı modelleri
 ├── Views/
-│   ├── MainTabView.swift               # Ana Dashboard ekranı ve genel durum koordinasyonu
+│   ├── MainTabView.swift               # Ana Cyber-Telemetry Dashboard ekranı ve genel durum koordinasyonu
+│   ├── Onboarding/                     # OnboardingView.swift (v6.7 4 slaytlık tanıtım ve yenilikler rehberi)
 │   ├── Dashboard/                      # DashboardSections.swift & DashboardComponents.swift
 │   ├── Backup/                         # BackupView, BackupFormModel, BackupFormSections, RemoteFolderPicker, DocumentPicker
-│   ├── Tasks/                          # TaskDetailView, BackupPreviewSheet
+│   ├── Tasks/                          # TaskDetailView, BackupPreviewSheet, RestoreBrowserView, SmartRestoreSheetView
 │   ├── History/                        # HistoryView
 │   ├── Settings/                       # SettingsView, BatterySettingsView
 │   └── Views.swift                     # Ortak görünüm yardımcıları ve stil uzantıları
@@ -93,6 +97,9 @@ BackupFlow/
 │   ├── BackupArchive.swift             # Arşivleme mantığı, yol temizleme (path sanitization) ve rezerve dizin koruması
 │   ├── BackupChecksum.swift            # SHA-256 bütünlük özeti hesaplama
 │   ├── BackupCredentialStore.swift     # iOS Keychain güvenli parola saklama
+│   ├── RestoreService.swift            # Uzak sunucu dosya listeleme ve Fotoğraflar/Dosyalar hedefli indirme
+│   ├── SmartRestoreEngine.swift        # Cihaz-sunucu fark analizi (intact/missing/ambiguous/conflicts)
+│   ├── RestoredPhotoLedgerStore.swift  # Geri yüklenen fotoğraf kayıt defteri ve yoksayma kuralları
 │   ├── SFTPHostKeyStore.swift          # SSH Host Key parmak izi TOFU sabitleme
 │   ├── WebDAVCertificateStore.swift    # TLS/SSL kendinden imzalı sertifika TOFU sabitleme
 │   ├── TemporaryStorageMaintenance.swift # /tmp geçici dosya temizlik servisi

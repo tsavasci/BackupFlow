@@ -5,13 +5,25 @@ import SwiftUI
 struct DesignSystem {
     // MARK: - Colors
     struct Colors {
-        // Primary palette
-        static let primary = Color(red: 0.18, green: 0.30, blue: 0.98)
+        // Cyber-Telemetry Dark Glass palette (modeled after the dark obsidian + luminous cyan reference)
+        static let canvasTop = Color(red: 0.055, green: 0.078, blue: 0.110)        // #0E141C
+        static let canvasBottom = Color(red: 0.078, green: 0.110, blue: 0.157)     // #141C28
+        static let cardSurface = Color(red: 0.098, green: 0.137, blue: 0.192)      // #192331
+        static let cardSurfaceElevated = Color(red: 0.122, green: 0.169, blue: 0.235) // #1F2B3C
+        static let rimBorderMuted = Color(red: 0.165, green: 0.235, blue: 0.325)   // #2A3C53
+        static let slateMuted = Color(red: 0.56, green: 0.65, blue: 0.76)          // #8FA6C2
+
+        // Luminous accents
+        static let primary = Color(red: 0.17, green: 0.90, blue: 1.00)             // #2CE5FF Luminous Cyan
+        static let accentAqua = Color(red: 0.17, green: 0.90, blue: 1.00)          // #2CE5FF
+        static let electricBlue = Color(red: 0.12, green: 0.48, blue: 1.00)        // #1E7BFF Electric Ocean Blue
+        static let mintNeon = Color(red: 0.22, green: 0.95, blue: 0.78)            // #38F2C6 Mint Telemetry
+        static let slateSurface = Color(red: 0.098, green: 0.137, blue: 0.192)
 
         // Status colors
-        static let success = Color(red: 0.34, green: 0.84, blue: 0.40)
-        static let warning = Color(red: 0.95, green: 0.77, blue: 0.06)
-        static let error = Color(red: 0.91, green: 0.30, blue: 0.24)
+        static let success = Color(red: 0.20, green: 0.92, blue: 0.68)
+        static let warning = Color(red: 1.00, green: 0.68, blue: 0.20)
+        static let error = Color(red: 1.00, green: 0.36, blue: 0.36)
     }
 
     // MARK: - Typography

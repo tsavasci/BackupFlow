@@ -103,9 +103,7 @@ final class RestoreService {
         return items
             .filter { $0.name != "." && $0.name != ".." }
             .map { item in
-                let fullPath = item.path.isEmpty
-                    ? BackupArchive.safeRemotePath(basePath: path, relativePath: item.name)
-                    : item.path
+                let fullPath = BackupArchive.safeRemotePath(basePath: path, relativePath: item.name)
                 return RemoteEntry(
                     id: fullPath,
                     name: item.name,

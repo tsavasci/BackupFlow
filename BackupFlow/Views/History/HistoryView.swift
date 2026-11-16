@@ -17,9 +17,6 @@ struct HistoryView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(.systemBackground)
-                    .ignoresSafeArea()
-                
                 historyContent
                     .navigationTitle("history.title".localized)
                     .navigationBarTitleDisplayMode(.large)
@@ -31,6 +28,7 @@ struct HistoryView: View {
                         ToolbarItem(placement: .navigationBarTrailing) { clearHistoryButton }
                     }
             }
+            .liquidBackground()
         }
         .alert("history.clear_confirmation".localized, isPresented: $showingClearConfirmation) {
             Button("alert.cancel".localized, role: .cancel) {}
@@ -167,6 +165,7 @@ struct HistoryView: View {
             showingClearConfirmation = true
         } label: {
             Image(systemName: "trash.fill")
+                .accessibilityHidden(true)
         }
         .accessibilityLabel("history.delete_all".localized)
         .disabled(history.isEmpty)
@@ -361,6 +360,7 @@ struct HistoryItemCard: View {
                     Image(systemName: iconName)
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(iconColor)
+                        .accessibilityHidden(true)
                 }
                 .accessibilityHidden(true)
 
@@ -441,6 +441,7 @@ struct HistoryItemCard: View {
                     Image(systemName: "info.circle.fill")
                         .font(.caption2)
                         .foregroundStyle(.red)
+                        .accessibilityHidden(true)
                     Text(errorMessage)
                         .font(.caption2)
                         .foregroundStyle(.red)

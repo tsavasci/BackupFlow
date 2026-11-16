@@ -105,9 +105,7 @@ extension RemoteStorageClient {
         items
             .filter { $0.name != "." && $0.name != ".." && !$0.name.isEmpty }
             .map { item in
-                let fullPath = item.path.isEmpty
-                    ? BackupArchive.safeRemotePath(basePath: parentPath, relativePath: item.name)
-                    : item.path
+                let fullPath = BackupArchive.safeRemotePath(basePath: parentPath, relativePath: item.name)
                 return RemoteStorageEntry(
                     name: item.name.precomposedStringWithCanonicalMapping,
                     fullPath: fullPath,
@@ -193,22 +191,14 @@ nonisolated struct SFTPRestoreClient: RemoteStorageClient {
     }
 
     func disconnect() async {
-        await MainActor.run {
-            SFTPService.shared.disconnect()
-        }
+        await SFTPService.shared.disconnectAsync()
     }
 
     func resolveEffectiveBackupRoot() async throws -> String {
-        let trimmed = snapshot.destinationPath.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmed.isEmpty && trimmed != "/" {
-            return trimmed
-        }
-        if snapshot.isPhotoLibrarySource {
-            return "photos"
-        }
-        let folder = URL(fileURLWithPath: snapshot.sourcePath).lastPathComponent
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        return folder.isEmpty ? "backup" : folder
+        try await SFTPService.shared.resolveEffectiveRemotePath(
+            destinationPath: snapshot.destinationPath,
+            sourcePath: snapshot.sourcePath
+        )
     }
 
     func listDirectory(at path: String) async throws -> [RemoteStorageEntry] {

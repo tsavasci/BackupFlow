@@ -529,3 +529,28 @@
 "smart_restore.error.folder_access" = "Доступ к исходной папке истек или папка недоступна.";
 "smart_restore.error.folder_readonly" = "Исходная папка доступна только для чтения. Выберите папку с правом записи.";
 "smart_restore.error.disk_space" = "Недостаточно свободного места. Требуется: %@, Доступно: %@.";
+
+// MARK: - Onboarding v6.7
+"settings.whats_new" = "Что нового и обзор функций";
+"onboarding.skip" = "Пропустить";
+"onboarding.next" = "Далее";
+"onboarding.get_started" = "Начать";
+"onboarding.slide1.badge" = "НОВЫЙ ИНТЕРФЕЙС • v6.7";
+"onboarding.slide1.title" = "Центр управления Cyber-Telemetry";
+"onboarding.slide1.subtitle" = "Контролируйте резервные копии в реальном времени с новой панелью из темного стекла, живыми графиками и кольцом состояния.";
+"onboarding.slide2.badge" = "НОВОЕ • УМНОЕ ВОССТАНОВЛЕНИЕ";
+"onboarding.slide2.title" = "Smart Restore и анализ различий";
+"onboarding.slide2.subtitle" = "Сравнивайте копии на сервере с устройством. Мгновенно находите недостающие фото или файлы и восстанавливайте их по датам.";
+"onboarding.slide2.highlight" = "Фильтр по датам и проверка SHA-256";
+"onboarding.slide3.badge" = "ОБЗОР СЕРВЕРА";
+"onboarding.slide3.title" = "Прямое восстановление на устройство";
+"onboarding.slide3.subtitle" = "Просматривайте папки на сервере FTP, SFTP или WebDAV и скачивайте медиафайлы прямо в галерею «Фото» или «Файлы».";
+"onboarding.slide4.badge" = "ПОЛНАЯ ПРИВАТНОСТЬ";
+"onboarding.slide4.title" = "100% ваш сервер, без квот";
+"onboarding.slide4.subtitle" = "Данные передаются напрямую на ваш NAS или сервер без сторонних облаков. Разовая покупка навсегда без подписок.";
+"onboarding.slide4.item1.title" = "Связка ключей и TOFU";
+"onboarding.slide4.item1.subtitle" = "Проверка отпечатка SHA-256 и безопасное хранение паролей";
+"onboarding.slide4.item2.title" = "Фоновая синхронизация";
+"onboarding.slide4.item2.subtitle" = "Непрерывные фоновые сессии WebDAV и автопланировщик";
+"onboarding.slide4.item3.title" = "Защита от потери данных";
+"onboarding.slide4.item3.subtitle" = "Режим «Только добавление» по умолчанию бережет архив на NAS";

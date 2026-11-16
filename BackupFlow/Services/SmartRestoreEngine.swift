@@ -682,7 +682,7 @@ nonisolated enum SmartRestoreEngine {
         snapshot: SmartRestoreTaskSnapshot,
         plan: SmartRestorePlan,
         client: any RemoteStorageClient,
-        photoProvider: any PhotoLibraryInventoryProviding = PhotoLibraryManager.shared,
+        photoProvider: (any PhotoLibraryInventoryProviding)? = nil,
         ledgerStore: RestoredPhotoLedgerStore = .shared,
         onProgress: (@Sendable (Int, Int, String) -> Void)? = nil
     ) async throws -> SmartRestoreExecutionResult {
@@ -695,30 +695,38 @@ nonisolated enum SmartRestoreEngine {
         let stagingDir = try stagingDirectory(for: snapshot.id)
 
         try await client.connect()
-        defer {
-            Task {
-                await client.disconnect()
+        do {
+            let result: SmartRestoreExecutionResult
+            if snapshot.isPhotoLibrarySource {
+                let resolvedPhotoProvider: any PhotoLibraryInventoryProviding
+                if let photoProvider {
+                    resolvedPhotoProvider = photoProvider
+                } else {
+                    resolvedPhotoProvider = await MainActor.run { PhotoLibraryManager.shared }
+                }
+                result = try await executePhotoRestore(
+                    snapshot: snapshot,
+                    candidates: selected,
+                    stagingDir: stagingDir,
+                    client: client,
+                    photoProvider: resolvedPhotoProvider,
+                    ledgerStore: ledgerStore,
+                    onProgress: onProgress
+                )
+            } else {
+                result = try await executeFolderRestore(
+                    snapshot: snapshot,
+                    candidates: selected,
+                    stagingDir: stagingDir,
+                    client: client,
+                    onProgress: onProgress
+                )
             }
-        }
-
-        if snapshot.isPhotoLibrarySource {
-            return try await executePhotoRestore(
-                snapshot: snapshot,
-                candidates: selected,
-                stagingDir: stagingDir,
-                client: client,
-                photoProvider: photoProvider,
-                ledgerStore: ledgerStore,
-                onProgress: onProgress
-            )
-        } else {
-            return try await executeFolderRestore(
-                snapshot: snapshot,
-                candidates: selected,
-                stagingDir: stagingDir,
-                client: client,
-                onProgress: onProgress
-            )
+            await client.disconnect()
+            return result
+        } catch {
+            await client.disconnect()
+            throw error
         }
     }
 
@@ -1221,19 +1229,21 @@ final class SmartRestoreCoordinator {
         // 2. Connect & scan remote inventory via protocol-agnostic adapter
         let client = RemoteRestoreClientFactory.makeClient(for: snapshot)
         try await client.connect()
-        defer {
-            Task {
-                await client.disconnect()
-            }
+        let effectiveRoot: String
+        let remoteItems: [RemoteRestoreItem]
+        do {
+            effectiveRoot = try await client.resolveEffectiveBackupRoot()
+            remoteItems = try await SmartRestoreEngine.scanRemoteInventory(
+                client: client,
+                rootPath: effectiveRoot,
+                includeArchive: includeArchive,
+                onProgress: onProgress
+            )
+            await client.disconnect()
+        } catch {
+            await client.disconnect()
+            throw error
         }
-
-        let effectiveRoot = try await client.resolveEffectiveBackupRoot()
-        let remoteItems = try await SmartRestoreEngine.scanRemoteInventory(
-            client: client,
-            rootPath: effectiveRoot,
-            includeArchive: includeArchive,
-            onProgress: onProgress
-        )
 
         try Task.checkCancellation()
 

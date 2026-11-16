@@ -1,5 +1,6 @@
 import XCTest
 import Photos
+import FilesProvider
 @testable import BackupFlow
 
 final class BackupFlowTests: XCTestCase {
@@ -884,5 +885,18 @@ final class BackupFlowTests: XCTestCase {
             existingKeys: existing
         )
         XCTAssertEqual(keepBothName, "sub/rapor (Restored 2).pdf")
+    }
+
+    func testSFTPMapFileObjectsPreservesParentPath() {
+        var values: [URLResourceKey: Any] = [:]
+        values[.nameKey] = "20260101_120000_ABCDEF123456.jpg"
+        values[.pathKey] = "20260101_120000_ABCDEF123456.jpg" // Bare filename as returned by SFTP readdir
+        values[.fileSizeKey] = Int64(2048)
+        values[.fileResourceTypeKey] = URLFileResourceType.regular
+        let fileObject = FileObject(allValues: values)
+
+        let entries = SFTPRestoreClient.mapFileObjects([fileObject], parentPath: "/Users/test/photos")
+        XCTAssertEqual(entries.count, 1)
+        XCTAssertEqual(entries.first?.fullPath, "/Users/test/photos/20260101_120000_ABCDEF123456.jpg")
     }
 }

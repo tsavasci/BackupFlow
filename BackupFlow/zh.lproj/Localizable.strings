@@ -527,3 +527,28 @@
 "smart_restore.error.folder_access" = "源文件夹权限已过期或无法访问。";
 "smart_restore.error.folder_readonly" = "源文件夹为只读状态，请重新授权可写文件夹。";
 "smart_restore.error.disk_space" = "可用存储空间不足。需要：%@，可用：%@。";
+
+// MARK: - Onboarding v6.7
+"settings.whats_new" = "新功能与使用指南";
+"onboarding.skip" = "跳过";
+"onboarding.next" = "下一步";
+"onboarding.get_started" = "立即体验";
+"onboarding.slide1.badge" = "全新界面 • v6.7";
+"onboarding.slide1.title" = "Cyber-Telemetry 控制中心";
+"onboarding.slide1.subtitle" = "全新暗黑玻璃驾驶舱、实时传输曲线与协议健康环，让您在一屏之内实时掌控所有备份任务。";
+"onboarding.slide2.badge" = "新功能 • 智能恢复";
+"onboarding.slide2.title" = "智能恢复与差异对比 (Smart Restore)";
+"onboarding.slide2.subtitle" = "将远程服务器备份与当前设备智能比对，一键找出缺失的照片或文件，并支持按日期范围精准恢复。";
+"onboarding.slide2.highlight" = "日期范围筛选与 SHA-256 完整性校验";
+"onboarding.slide3.badge" = "远程服务器浏览器";
+"onboarding.slide3.title" = "从服务器直接恢复到设备";
+"onboarding.slide3.subtitle" = "直接浏览 FTP、SFTP 或 WebDAV 服务器文件夹，将选中的照片与视频一键下载到系统相册或“文件”应用。";
+"onboarding.slide4.badge" = "极致隐私与安全";
+"onboarding.slide4.title" = "100% 自有服务器，零配额限制";
+"onboarding.slide4.subtitle" = "数据直达您的私有 NAS 或服务器，无需经过第三方云端。一次买断终身解锁全部功能，无订阅与容量限制。";
+"onboarding.slide4.item1.title" = "钥匙串与 TOFU 证书固定";
+"onboarding.slide4.item1.subtitle" = "SHA-256 指纹核验与 iOS 硬件级密钥存储";
+"onboarding.slide4.item2.title" = "不间断后台传输";
+"onboarding.slide4.item2.subtitle" = "支持 WebDAV 后台会话与定时自动备份计划";
+"onboarding.slide4.item3.title" = "防数据丢失保护";
+"onboarding.slide4.item3.subtitle" = "默认“仅追加”模式确保您的 NAS 归档永不被误删";

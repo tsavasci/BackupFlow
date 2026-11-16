@@ -10,6 +10,7 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var scheduler = BackupScheduler.shared
     @State private var showingResetAlert = false
+    @State private var showingOnboarding = false
     @AppStorage("keepHistoryDays") private var keepHistoryDays = 30
     @AppStorage("selectedLanguageCode") private var selectedLanguageCode = "system"
     @AppStorage("RequireExternalPower") private var requireExternalPower = false
@@ -83,6 +84,14 @@ struct SettingsView: View {
                     Text("\(appVersion) (\(buildNumber))")
                         .foregroundColor(.secondary)
                 }
+
+                Button {
+                    showingOnboarding = true
+                } label: {
+                    Label("settings.whats_new".localized, systemImage: "sparkles")
+                        .foregroundStyle(DesignSystem.Colors.primary)
+                }
+                .accessibilityIdentifier("settings.whats_new")
                 
                 Button(action: {
                     openAppStoreReview()
@@ -144,6 +153,11 @@ struct SettingsView: View {
             }
         } message: {
             Text("settings.reset_confirm_message".localized)
+        }
+        .fullScreenCover(isPresented: $showingOnboarding) {
+            OnboardingView {
+                showingOnboarding = false
+            }
         }
     }
     

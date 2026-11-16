@@ -785,7 +785,7 @@ nonisolated final class SmartRestoreTaskLock: @unchecked Sendable {
 
     func releaseRestoreLock(for taskID: UUID) {
         lock.withLock {
-            activeRestoreTaskIDs.remove(taskID)
+            _ = activeRestoreTaskIDs.remove(taskID)
         }
     }
 }

@@ -16,24 +16,34 @@
   `Auto Sync Photos, WebDAV, FTP`
 - Keywords (97 karakter):
   `synology,nextcloud,qnap,truenas,owncloud,server,cloud,ssh,transfer,folder,photo,video,homelab,heic`
-- Promotional Text (166 karakter):
-  `Back up iPhone photos & files directly to your NAS, SFTP, WebDAV, or FTP server with zero cloud subscriptions. One-time purchase — lifetime unlimited access.`
-- What's New in This Version (Sürüm 6.5):
+- Promotional Text (168 karakter):
+  `New Cyber-Telemetry UI & Smart Restore! Back up and recover iPhone photos & files directly with your NAS over SFTP, WebDAV, or FTP. One-time purchase — lifetime access.`
+- What's New in This Version (Sürüm 6.7):
 ```text
-- Version 6.5: Full return to a pure One-Time Purchase (Lifetime) model. No subscriptions, no in-app purchases, and zero file transfer limits.
-- Restored seamless background WebDAV auto-backup and multi-GB 4K video transfer support while locked.
-- Instant Fast-Skip engine for previously backed-up photos and videos.
+- New Cyber-Telemetry Dark Glass UI: Real-time transfer sparklines, interactive spline performance charts, Bento health ring gauge, and a 4-slide feature guide.
+- Smart Restore & Diff Analysis: Compare your remote server backups with your device to instantly detect and restore missing photos or files with date-range filtering.
+- Direct Remote Server Browser: Browse FTP, SFTP, and WebDAV directories and download selected media straight into your Photos library or Files app.
+- Pure One-Time Purchase: Zero subscriptions, zero in-app purchases, and zero transfer quotas.
 ```
 - Description (Açıklama):
 ```text
-Break free from recurring cloud storage fees. Back up your iPhone and iPad photos, videos, and local folders directly to your own NAS, home server, or private cloud.
+Break free from recurring cloud storage fees. Back up—and smartly restore—your iPhone and iPad photos, videos, and local folders directly with your own NAS, home server, or private cloud.
 
-BackupFlow is a privacy-first, automated backup utility built natively for iOS. It connects directly to your server over SFTP (SSH), WebDAV (HTTP/HTTPS), and FTP without any middleman servers or third-party accounts.
+BackupFlow is a privacy-first, automated backup and recovery utility built natively for iOS. It connects directly to your server over SFTP (SSH), WebDAV (HTTP/HTTPS), and FTP without any middleman servers or third-party accounts.
 
 ONE-TIME PURCHASE — LIFETIME OWNERSHIP
 No subscriptions, no in-app purchases, no hidden tiers, and no file transfer quotas. Buy BackupFlow once and own every feature forever.
 
 KEY FEATURES
+
+Cyber-Telemetry Control Hub
+Monitor your backup health at a glance with real-time transfer sparklines, interactive spline history charts, a protocol health ring gauge, and an actionable 4-tab cockpit dock.
+
+Smart Restore & Diff Analysis
+Compare your NAS or remote server directly against your device library. Instantly spot missing, intact, or conflicting items, filter by date range, and recover deleted photos or files in one tap.
+
+Direct Remote File Browser
+Browse folders on any FTP, SFTP, or WebDAV server and download selected photos, videos, or documents straight to your Photos Library or Files app.
 
 Multi-Protocol NAS & Server Support
 Connect effortlessly to Synology NAS, Nextcloud, ownCloud, TrueNAS, QNAP, Keenetic, and any standard SFTP (SSHv2), WebDAV, or FTP server with an interactive remote folder picker.
@@ -47,11 +57,8 @@ Only new or modified files are uploaded, skipping already backed-up photos in se
 Flexible Deletion & Archive Policies
 Choose Append-Only (default safe mode), Mirror Mode (with strict photo library safety checks), or Archive Mode to safely move deleted files into a dedicated .backupflow_archive folder on your server.
 
-Safe Dry-Run Preview Mode
-Simulate any backup task before transferring a single byte. Preview exactly which files will be uploaded, updated, skipped, or archived.
-
-Seamless Background Automation
-Schedule daily, weekly, monthly, or interval backups. Restrict automatic transfers to Wi-Fi only, while charging, above a minimum battery level, or within designated quiet hours. WebDAV tasks run silently in the background via native iOS background sessions.
+Safe Dry-Run Preview & Background Automation
+Simulate any backup task before transferring a single byte. Schedule daily, weekly, monthly, or interval backups limited to Wi-Fi, charging, or quiet hours—with seamless background WebDAV sessions.
 
 Local-First Security & Privacy
 Server credentials are encrypted inside the iOS Keychain. SFTP Host Key Pinning and WebDAV SSL Certificate Pinning (TOFU) protect your transfers against man-in-the-middle attacks. Zero analytics, zero trackers, and zero external cloud servers.
@@ -67,24 +74,34 @@ Server credentials are encrypted inside the iOS Keychain. SFTP Host Key Pinning 
   `Fotoğraf, WebDAV & FTP Senk.`
 - Keywords (96 karakter):
   `synology,nextcloud,qnap,truenas,owncloud,sunucu,bulut,yedekleme,dosya,klasör,aktarım,ssh,galeri`
-- Promotional Text (162 karakter):
-  `Aylık bulut aboneliklerine son verin! Fotoğraf ve dosyalarınızı SFTP, WebDAV ve FTP ile kendi NAS sunucunuza yedekleyin. Tek seferlik ödeme, ömür boyu sınırsız.`
-- What's New in This Version (Sürüm 6.5):
+- Promotional Text (166 karakter):
+  `Yeni Cyber-Telemetry arayüzü ve Akıllı Geri Yükleme! Fotoğraf ve dosyalarınızı SFTP, WebDAV ve FTP ile kendi NAS sunucunuza yedekleyin ve kurtarın. Tek seferlik ödeme.`
+- What's New in This Version (Sürüm 6.7):
 ```text
-- Sürüm 6.5: Tamamen Tek Seferlik Satın Alma (Ömür Boyu) modeline geçildi. Abonelik yok, uygulama içi satın alma yok ve dosya sınırı yok.
-- Ekran kilitliyken kesintisiz arka plan WebDAV otomatik yedekleme ve çoklu-GB (4K) büyük video aktarım desteği iyileştirildi.
-- Sunucuda mevcut olan fotoğraf ve videolar için saniyeler içinde hızlı atlama (Fast-Skip) motoru eklendi.
+- Yeni Cyber-Telemetry Dark Glass Arayüzü: Canlı aktarım grafikleri, etkileşimli performans eğrileri, Bento sağlık halkası ve 4 slaytlık tanıtım rehberi.
+- Akıllı Geri Yükleme & Fark Analizi: Sunucudaki yedeklerinizi cihazınızla karşılaştırın; eksik fotoğraf ve dosyaları tarih aralığına göre tespit edip tek dokunuşla kurtarın.
+- Doğrudan Uzak Sunucu Gezgini: FTP, SFTP ve WebDAV klasörlerine göz atarak seçtiğiniz medyaları doğrudan Fotoğraflar galerisine veya Dosyalar uygulamasına indirin.
+- Tek Seferlik Satın Alma: Abonelik yok, uygulama içi satın alma yok ve transfer kotası yok.
 ```
 - Description (Açıklama):
 ```text
-Her ay tekrarlayan bulut depolama aboneliklerinden kurtulun. iPhone ve iPad'inizdeki fotoğrafları, videoları ve klasörleri doğrudan kendi NAS cihazınıza, ev sunucunuza veya kişisel bulutunuza yedekleyin.
+Her ay tekrarlayan bulut depolama aboneliklerinden kurtulun. iPhone ve iPad'inizdeki fotoğrafları, videoları ve klasörleri doğrudan kendi NAS cihazınıza, ev sunucunuza veya kişisel bulutunuza yedekleyin ve istediğiniz zaman akıllıca geri yükleyin.
 
-BackupFlow, iOS için yerel olarak geliştirilmiş, gizlilik odaklı otomatik yedekleme uygulamasıdır. Verilerinizi aracı bir sunucu olmadan doğrudan SFTP (SSH), WebDAV (HTTP/HTTPS) ve FTP protokolleri üzerinden kendi sunucunuza aktarır.
+BackupFlow, iOS için yerel olarak geliştirilmiş, gizlilik odaklı otomatik yedekleme ve kurtarma uygulamasıdır. Verilerinizi aracı bir sunucu olmadan doğrudan SFTP (SSH), WebDAV (HTTP/HTTPS) ve FTP protokolleri üzerinden kendi sunucunuza aktarır.
 
 TEK SEFERLİK SATIN ALIM — ÖMÜR BOYU KULLANIM
 Abonelik yok, uygulama içi satın alma yok, gizli ücret yok ve dosya transfer kotası yok. Uygulamayı bir kez satın alın, tüm özelliklere ömür boyu sınırsız sahip olun.
 
 ÖNE ÇIKAN ÖZELLİKLER
+
+Cyber-Telemetry Kontrol Merkezi
+Canlı aktarım grafikleri, son yedeklemeleri gösteren etkileşimli performans eğrileri, protokol bazlı sağlık halkası ve 4'lü kokpit dock'u ile tüm yedeklemelerinizi tek ekrandan gerçek zamanlı yönetin.
+
+Akıllı Geri Yükleme & Fark Analizi (Smart Restore)
+Sunucudaki yedeklerinizi cihazınızla karşılaştırın. Sağlam, eksik veya çakışan dosyaları anında görün; tarih aralığı filtresiyle silinmiş fotoğraf ve videoları tek dokunuşla geri yükleyin.
+
+Doğrudan Uzak Sunucu Gezgini
+FTP, SFTP veya WebDAV sunucunuzdaki klasörlere göz atın; seçtiğiniz medya ve belgeleri doğrudan Fotoğraflar galerisine veya Dosyalar uygulamasına indirin.
 
 Çoklu Protokol ve NAS Uyumluluğu
 Synology NAS, Nextcloud, ownCloud, TrueNAS, QNAP, Keenetic ve tüm standart SFTP, WebDAV veya FTP sunucularına canlı uzak klasör seçici ile kolayca bağlanın.
@@ -95,17 +112,11 @@ Fotoğraf galerinizdeki (iCloud arşiviniz dahil) fotoğraf ve yüksek boyutlu 4
 Akıllı Artımlı Senkronizasyon ve Hızlı Atlama (Fast-Skip)
 Yalnızca yeni veya değişen dosyalar yüklenir; önceden yedeklenmiş yüzlerce medya dosyası saniyeler içinde atlanır. İsteğe bağlı SHA-256 bütünlük doğrulaması ile dosyalarınızın eksiksiz aktarıldığından emin olun.
 
-Esnek Silme ve Arşiv Politikaları
-Sadece Ekle (varsayılan güvenli mod), Ayna Modu (galeri izin korumalı) veya Arşiv Modu (.backupflow_archive klasörüne güvenli taşıma) seçenekleriyle verilerinizi tam kontrol altında tutun.
+Esnek Silme Politikaları ve Dry-Run Önizleme
+Sadece Ekle (varsayılan güvenli mod), Ayna Modu (galeri izin korumalı) veya Arşiv Modu (.backupflow_archive) seçeneklerini kullanın; aktarım öncesi Dry-Run simülasyonu ile her adımı önceden görün.
 
-Güvenli Önizleme Modu (Dry-Run)
-Yedeklemeyi başlatmadan önce simülasyon çalıştırarak hangi dosyaların yükleneceğini, güncelleneceğini veya atlanacağını önceden görün.
-
-Kesintisiz Arka Plan Otomasyonu
-Günlük, haftalık, aylık veya saat aralıklı görevler kurun. Yedeklemeleri yalnızca Wi-Fi bağlıyken, cihaz şarjdayken, belirli pil seviyesinin üzerindeyken veya gece saatlerinde çalışacak şekilde sınırlandırın. WebDAV görevleri ekran kilitliyken arka planda sessizce tamamlanır.
-
-Tam Gizlilik ve Yerel Güvenlik
-Sunucu şifreleriniz yalnızca cihazınızdaki iOS Keychain içinde şifreli olarak saklanır. SFTP Host Key ve WebDAV SSL Sertifika Sabitleme (TOFU) ile bağlantınız güvence altına alınır. Reklam, takipçi veya üçüncü taraf sunucu içermez.
+Kesintisiz Arka Plan Otomasyonu ve Tam Gizlilik
+Wi-Fi, şarj, pil seviyesi veya gece saatlerine göre otomatik görevler kurun. Sunucu şifreleriniz iOS Keychain içinde saklanır; SFTP Host Key ve WebDAV SSL Sertifika Sabitleme (TOFU) ile bağlantınız korunur.
 ```
 
 ---
@@ -118,45 +129,49 @@ Sunucu şifreleriniz yalnızca cihazınızdaki iOS Keychain içinde şifreli ola
   `Fotos & Dateien sicher sync.`
 - Keywords (96 karakter):
   `webdav,ftp,synology,nextcloud,qnap,truenas,owncloud,server,sicherung,ordner,bilder,cloud,ssh,heic`
-- Promotional Text (166 karakter):
-  `Sichern Sie iPhone-Fotos & Dateien ohne Cloud-Abo direkt auf Ihr NAS per SFTP, WebDAV oder FTP. Einmaliger Kauf – lebenslanger Vollzugriff ohne Limits.`
-- What's New in This Version (Sürüm 6.5):
+- Promotional Text (168 karakter):
+  `Neues Cyber-Telemetry-Design & Smart Restore! Sichern und retten Sie iPhone-Fotos & Dateien direkt per SFTP, WebDAV oder FTP auf Ihrem NAS. Einmaliger Kauf ohne Abo.`
+- What's New in This Version (Sürüm 6.7):
 ```text
-- Version 6.5: Vollständige Rückkehr zum Einmalkauf (Lifetime). Keine Abos, keine In-App-Käufe und keine Transferlimits.
-- Nahtlose WebDAV-Hintergrundsicherung im Sperrzustand und Unterstützung für mehrere GB große 4K-Videos.
-- Ultraschnelles Überspringen (Fast-Skip) bereits gesicherter Fotos und Videos.
+- Neues Cyber-Telemetry Dark-Glass-Design: Live-Transferkurven, interaktive Performance-Diagramme, Bento-Statusring und 4-seitige Funktionsübersicht.
+- Smart Restore & Differenzanalyse: Vergleichen Sie Server-Backups mit Ihrem Gerät und stellen Sie fehlende Fotos oder Dateien nach Zeitraum wieder her.
+- Direkter Server-Dateibrowser: Durchsuchen Sie FTP-, SFTP- und WebDAV-Ordner und speichern Sie Medien direkt in Fotos oder Dateien.
+- Einmalkauf: Keine Abos, keine In-App-Käufe und keine Transferlimits.
 ```
 - Description (Açıklama):
 ```text
-Befreien Sie sich von monatlichen Cloud-Gebühren. Sichern Sie Ihre iPhone- und iPad-Fotos, Videos und lokale Ordner direkt auf Ihr eigenes NAS, Ihren Heimserver oder Ihre private Cloud.
+Befreien Sie sich von monatlichen Cloud-Gebühren. Sichern und retten Sie Ihre iPhone- und iPad-Fotos, Videos und lokale Ordner direkt auf Ihr eigenes NAS, Ihren Heimserver oder Ihre private Cloud.
 
-BackupFlow ist ein datenschutzorientiertes Backup-Tool für iOS. Es überträgt Ihre Daten direkt per SFTP (SSH), WebDAV (HTTP/HTTPS) und FTP auf Ihren Server – ohne Drittanbieter-Cloud.
+BackupFlow ist ein datenschutzorientiertes Backup- und Wiederherstellungs-Tool für iOS. Es überträgt Ihre Daten direkt per SFTP (SSH), WebDAV (HTTP/HTTPS) und FTP auf Ihren Server – ohne Drittanbieter-Cloud.
 
 EINMALIGER KAUF — LEBENSLANGE NUTZUNG
 Keine Abonnements, keine In-App-Käufe und keine Dateilimits. Einmal kaufen und alle Funktionen dauerhaft unbegrenzt nutzen.
 
 HAUPTFUNKTIONEN
 
+Cyber-Telemetry Kontrollzentrum
+Behalten Sie alle Backups mit Live-Sparklines, interaktiven Verlaufskurven und dem Protokoll-Statusring jederzeit im Blick.
+
+Smart Restore & Differenzanalyse
+Vergleichen Sie Ihr NAS-Archiv mit dem Gerät, erkennen Sie fehlende oder geänderte Dateien sofort und stellen Sie verlorene Fotos gezielt nach Datumsfilter wieder her.
+
+Direkter Remote-Dateibrowser
+Durchsuchen Sie Ordner auf Ihrem FTP-, SFTP- oder WebDAV-Server und laden Sie ausgewählte Medien direkt in die Fotos-App oder Dateien-App herunter.
+
 Breite NAS- & Server-Kompatibilität
-Kompatibel mit Synology NAS, Nextcloud, ownCloud, TrueNAS, QNAP und jedem Standard-SFTP-, WebDAV- oder FTP-Server inklusive interaktiver Remote-Ordnerauswahl.
+Kompatibel mit Synology NAS, Nextcloud, ownCloud, TrueNAS, QNAP und jedem Standard-SFTP-, WebDAV- oder FTP-Server inklusive interaktiver Ordnerauswahl.
 
 Originalqualität & Multi-GB 4K-Video-Support
 Übertragen Sie Fotos und große 4K-Videos (inklusive iCloud-Medien) ohne Qualitätsverlust oder Komprimierung.
 
 Inkrementelle Synchronisierung & Fast-Skip
-Es werden nur neue oder geänderte Dateien hochgeladen; vorhandene Medien werden in Sekunden übersprungen. Die optionale SHA-256-Prüfsummenkontrolle garantiert maximale Datenintegrität.
+Nur neue oder geänderte Dateien werden hochgeladen; vorhandene Medien werden in Sekunden übersprungen – inklusive optionaler SHA-256-Prüfsummenkontrolle.
 
-Flexible Lösch- & Archivierungsrichtlinien
-Wählen Sie zwischen „Nur hinzufügen“ (Standard), „Spiegeln“ (mit Schutz vor versehentlichem Löschen) oder dem „Archivmodus“ (.backupflow_archive).
-
-Sicherer Vorschaumodus (Dry-Run)
-Simulieren Sie jedes Backup vorab und prüfen Sie genau, welche Dateien übertragen oder übersprungen werden.
-
-Intelligente Hintergrund-Automatisierung
-Planen Sie Backups nach Zeitplan – optional nur im WLAN, während des Ladevorgangs oder in definierten Nachtstunden. WebDAV-Backups laufen nahtlos im Hintergrund weiter.
+Flexible Richtlinien, Dry-Run & Hintergrund-Automatik
+Wählen Sie „Nur hinzufügen“ (Standard), „Spiegeln“ (mit Galerieschutz) oder „Archiv“ (.backupflow_archive), simulieren Sie Läufe vorab und planen Sie automatische WLAN-Backups.
 
 Maximale Sicherheit & Privatsphäre
-Zugangsdaten werden sicher im iOS-Schlüsselbund gespeichert. SFTP-Host-Key- und WebDAV-Zertifikats-Pinning (TOFU) schützen vor Manipulationen. Keine Werbung, kein Tracking.
+Zugangsdaten bleiben sicher im iOS-Schlüsselbund. SFTP-Host-Key- und WebDAV-Zertifikats-Pinning (TOFU) schützen vor Manipulationen. Keine Werbung, kein Tracking.
 ```
 
 ---
@@ -170,44 +185,45 @@ Zugangsdaten werden sicher im iOS-Schlüsselbund gespeichert. SFTP-Host-Key- und
 - Keywords (96 karakter):
   `synology,nextcloud,qnap,truenas,owncloud,serveur,cloud,ssh,transfert,fichiers,dossier,heic,video`
 - Promotional Text (166 karakter):
-  `Sauvegardez vos photos et fichiers iPhone sur votre NAS via SFTP, WebDAV ou FTP sans abonnement. Achat unique pour un accès illimité à vie.`
-- What's New in This Version (Sürüm 6.5):
+  `Nouveau design Cyber-Telemetry & Smart Restore ! Sauvegardez et restaurez vos photos iPhone sur votre NAS via SFTP, WebDAV ou FTP sans abonnement. Achat unique à vie.`
+- What's New in This Version (Sürüm 6.7):
 ```text
-- Version 6.5 : Retour complet au modèle d'achat unique à vie. Aucun abonnement, aucun achat intégré et aucune limite de transfert.
-- Sauvegarde automatique WebDAV en arrière-plan améliorée et prise en charge des vidéos 4K de plusieurs Go.
-- Moteur Fast-Skip pour ignorer instantanément les médias déjà sauvegardés.
+- Nouveau design Cyber-Telemetry Dark Glass : courbes de transfert en direct, graphiques interactifs, anneau de santé Bento et guide de découverte en 4 étapes.
+- Smart Restore & Analyse d'écarts : comparez vos sauvegardes serveur avec votre appareil et restaurez les photos ou fichiers manquants par plage de dates.
+- Explorateur serveur direct : parcourez vos dossiers FTP, SFTP et WebDAV et téléchargez vos médias directement dans Photos ou Fichiers.
+- Achat unique à vie : aucun abonnement, aucun achat intégré et aucune limite de transfert.
 ```
 - Description (Açıklama):
 ```text
-Libérez-vous des abonnements cloud mensuels. Sauvegardez vos photos, vidéos et dossiers locaux directement depuis votre iPhone ou iPad vers votre propre NAS, serveur domestique ou cloud privé.
+Libérez-vous des abonnements cloud mensuels. Sauvegardez et restaurez vos photos, vidéos et dossiers locaux directement entre votre iPhone/iPad et votre propre NAS, serveur domestique ou cloud privé.
 
-BackupFlow est une application de sauvegarde automatique conçue pour iOS et respectueuse de votre vie privée. Elle prend en charge les protocoles SFTP (SSH), WebDAV (HTTP/HTTPS) et FTP sans serveur intermédiaire.
+BackupFlow est une application de sauvegarde et de récupération automatique conçue pour iOS et respectueuse de votre vie privée, compatible SFTP (SSH), WebDAV (HTTP/HTTPS) et FTP sans serveur intermédiaire.
 
 ACHAT UNIQUE — ACCÈS À VIE
 Aucun abonnement, aucun achat intégré et aucun quota de fichiers. Payez une seule fois et profitez de toutes les fonctionnalités sans restriction.
 
 FONCTIONNALITÉS CLÉS
 
+Cockpit Cyber-Telemetry
+Visualisez la santé de vos sauvegardes en temps réel grâce aux courbes de transfert en direct, graphiques d'historique et anneau de suivi par protocole.
+
+Smart Restore & Analyse d'écarts
+Comparez votre NAS avec votre appareil, identifiez instantanément les médias manquants ou en conflit et restaurez-les avec un filtre par dates.
+
+Explorateur de Serveur Distant
+Naviguez dans les dossiers de votre serveur FTP, SFTP ou WebDAV et téléchargez directement vos photos et vidéos dans l'app Photos ou Fichiers.
+
 Compatibilité Multi-Protocole & NAS
-Connectez-vous facilement à Synology NAS, Nextcloud, ownCloud, TrueNAS, QNAP et tout serveur SFTP, WebDAV ou FTP avec navigateur de dossiers distant.
+Connectez-vous facilement à Synology NAS, Nextcloud, ownCloud, TrueNAS, QNAP et tout serveur SFTP, WebDAV ou FTP avec sélecteur de dossiers.
 
 Qualité Originale & Vidéos 4K Multi-Go
-Transférez vos photos et vidéos 4K volumineuses (y compris les éléments iCloud) sans compression ni perte de qualité.
+Transférez vos photos et vidéos 4K volumineuses (y compris iCloud) sans compression ni perte de qualité.
 
 Synchronisation Incrémentielle & Fast-Skip
-Seuls les fichiers nouveaux ou modifiés sont envoyés. La vérification SHA-256 optionnelle garantit l'intégrité totale de vos fichiers.
+Seuls les fichiers nouveaux ou modifiés sont envoyés, avec vérification SHA-256 optionnelle et modes Ajout seul (par défaut), Miroir ou Archive (.backupflow_archive).
 
-Politiques d'Archivage et de Suppression Sécurisées
-Choisissez le mode Ajout seul (par défaut), Miroir (avec protection de la photothèque) ou Archive (.backupflow_archive) pour ne jamais perdre de données par erreur.
-
-Mode Aperçu Sécurisé (Dry-Run)
-Simulez vos sauvegardes avant le transfert pour visualiser exactement les fichiers qui seront ajoutés ou ignorés.
-
-Automatisation Intelligente en Arrière-Plan
-Programmez vos sauvegardes uniquement en Wi-Fi, pendant la charge ou durant certaines plages horaires. Les transferts WebDAV se poursuivent silencieusement en arrière-plan.
-
-Sécurité et Confidentialité Totales
-Vos identifiants sont chiffrés dans le Trousseau iOS (Keychain) avec vérification d'empreinte TOFU (SSH/SSL). Aucune publicité, aucun pistage.
+Automatisation en Arrière-Plan & Sécurité TOFU
+Programmez vos sauvegardes en Wi-Fi ou pendant la charge. Vos identifiants sont chiffrés dans le Trousseau iOS (Keychain) avec vérification d'empreinte TOFU (SSH/SSL).
 ```
 
 ---
@@ -220,45 +236,40 @@ Vos identifiants sont chiffrés dans le Trousseau iOS (Keychain) avec vérificat
   `Sincroniza Fotos, WebDAV, FTP`
 - Keywords (97 karakter):
   `synology,nextcloud,qnap,truenas,owncloud,servidor,nube,archivos,carpeta,respaldo,automatico,ssh`
-- Promotional Text (164 karakter):
-  `Haz copia de tus fotos y archivos en tu propio NAS o servidor por SFTP, WebDAV y FTP sin suscripciones. Pago único con acceso ilimitado de por vida.`
-- What's New in This Version (Sürüm 6.5):
+- Promotional Text (166 karakter):
+  `¡Nuevo diseño Cyber-Telemetry y Smart Restore! Haz copia y recupera tus fotos y archivos en tu NAS por SFTP, WebDAV y FTP sin suscripciones. Pago único de por vida.`
+- What's New in This Version (Sürüm 6.7):
 ```text
-- Versión 6.5: Regreso total al modelo de pago único de por vida. Sin suscripciones, sin compras integradas y sin límites de archivos.
-- Copia automática WebDAV en segundo plano mejorada y soporte para vídeos 4K de varios GB con pantalla bloqueada.
-- Motor Fast-Skip para omitir al instante fotos y vídeos ya respaldados.
+- Nuevo diseño Cyber-Telemetry Dark Glass: gráficas de transferencia en vivo, curvas de rendimiento interactivas, anillo de salud Bento y guía de 4 pasos.
+- Smart Restore y Análisis de Diferencias: compara tu servidor con el dispositivo para detectar y restaurar fotos o archivos faltantes por fechas.
+- Explorador Remoto Directo: navega por carpetas FTP, SFTP y WebDAV y descarga archivos directamente en Fotos o Archivos.
+- Pago único de por vida: sin suscripciones, sin compras integradas y sin límites de transferencia.
 ```
 - Description (Açıklama):
 ```text
-Olvídate de pagar suscripciones mensuales en la nube. Haz copias de seguridad de tus fotos, vídeos y carpetas locales directamente desde tu iPhone o iPad a tu propio NAS, servidor doméstico o nube privada.
+Olvídate de pagar suscripciones mensuales en la nube. Haz copias de seguridad y restaura tus fotos, vídeos y carpetas locales directamente entre tu iPhone o iPad y tu propio NAS, servidor doméstico o nube privada.
 
-BackupFlow es una herramienta de respaldo automático centrada en la privacidad para iOS. Conecta directamente mediante SFTP (SSH), WebDAV (HTTP/HTTPS) y FTP sin servidores intermediarios.
+BackupFlow es una herramienta de respaldo y recuperación automática centrada en la privacidad para iOS. Conecta directamente mediante SFTP (SSH), WebDAV (HTTP/HTTPS) y FTP sin servidores intermediarios.
 
 PAGO ÚNICO — ACCESO DE POR VIDA
 Sin suscripciones recurrentes, sin compras dentro de la aplicación y sin límites de transferencia. Compra la app una vez y úsala para siempre.
 
 CARACTERÍSTICAS PRINCIPALES
 
-Soporte Multiprotocolo y NAS
-Compatible con Synology NAS, Nextcloud, ownCloud, TrueNAS, QNAP y cualquier servidor SFTP, WebDAV o FTP estándar con selector interactivo de carpetas remotas.
+Centro de Control Cyber-Telemetry
+Supervisa tus copias en tiempo real con gráficas de flujo en vivo, historial interactivo y anillo de salud por protocolo.
 
-Calidad Original y Vídeos 4K de Varios GB
-Transfiere fotos y vídeos 4K de gran tamaño (incluidos archivos en iCloud) sin compresión ni pérdida de calidad.
+Smart Restore y Análisis de Diferencias
+Compara las copias de tu NAS con tu dispositivo, detecta al instante elementos faltantes y recupéralos filtrando por rango de fechas.
 
-Sincronización Incremental y Fast-Skip
-Solo se suben los archivos nuevos o modificados, omitiendo en segundos los ya existentes. Incluye verificación opcional SHA-256 para garantizar la integridad de tus datos.
+Explorador de Servidor Remoto
+Explora carpetas en tu servidor FTP, SFTP o WebDAV y descarga fotos, vídeos o documentos directamente a Fotos o Archivos.
 
-Modos de Archivo y Espejo Seguros
-Elige entre Solo Añadir (modo seguro predeterminado), Espejo (con protección de galería) o Modo Archivo (.backupflow_archive) para conservar versiones eliminadas.
+Soporte Multiprotocolo, 4K y Fast-Skip
+Compatible con Synology NAS, Nextcloud, ownCloud, TrueNAS y QNAP. Transfiere vídeos 4K de varios GB sin compresión, omite archivos ya copiados en segundos y verifica con SHA-256.
 
-Vista Previa Segura (Dry-Run)
-Simula la copia antes de transferir datos para ver exactamente qué archivos se subirán o se omitirán.
-
-Automatización en Segundo Plano
-Programa copias automáticas solo con Wi-Fi, mientras se carga el dispositivo o en horarios específicos. Las tareas WebDAV se ejecutan silenciosamente en segundo plano.
-
-Seguridad y Privacidad Local
-Las contraseñas se guardan en el Llavero de iOS (Keychain) con fijación de certificados SSH/SSL (TOFU). Tus datos viajan directamente de tu dispositivo a tu servidor.
+Seguridad Local, Modos Seguros y Automatización
+Incluye Solo Añadir (predeterminado), Espejo, Archivo (.backupflow_archive), vista previa Dry-Run, programación automática con Wi-Fi/carga y protección Keychain + TOFU (SSH/SSL).
 ```
 
 ---
@@ -271,45 +282,40 @@ Las contraseñas se guardan en el Llavero de iOS (Keychain) con fijación de cer
   `Sincronizar Fotos, WebDAV FTP`
 - Keywords (96 karakter):
   `synology,nextcloud,qnap,truenas,owncloud,servidor,nuvem,arquivos,pasta,fotos,videos,ssh,heic,nas`
-- Promotional Text (163 karakter):
-  `Faça backup de fotos e arquivos do iPhone direto no seu NAS via SFTP, WebDAV ou FTP sem mensalidades. Compra única com acesso ilimitado vitalício.`
-- What's New in This Version (Sürüm 6.5):
+- Promotional Text (166 karakter):
+  `Novo visual Cyber-Telemetry e Smart Restore! Faça backup e recupere fotos e arquivos do iPhone no seu NAS via SFTP, WebDAV ou FTP sem mensalidades. Compra única.`
+- What's New in This Version (Sürüm 6.7):
 ```text
-- Versão 6.5: Retorno completo ao modelo de compra única vitalícia. Sem assinaturas, sem compras no app e sem limites de transferência.
-- Backup automático WebDAV em segundo plano aprimorado e suporte para vídeos 4K de vários GB.
-- Verificação Fast-Skip ultrarrápida para fotos e vídeos já enviados.
+- Novo visual Cyber-Telemetry Dark Glass: gráficos de transferência ao vivo, curvas interativas, anel de integridade Bento e guia de novidades em 4 telas.
+- Smart Restore e Análise de Diferenças: compare seu servidor com o aparelho e restaure fotos ou arquivos ausentes com filtro por datas.
+- Navegador de Servidor Direto: explore pastas FTP, SFTP e WebDAV e baixe mídias diretamente para Fotos ou Arquivos.
+- Compra única vitalícia: sem assinaturas, sem compras internas e sem limites de transferência.
 ```
 - Description (Açıklama):
 ```text
-Livre-se das mensalidades de armazenamento em nuvem. Faça backup de suas fotos, vídeos e pastas locais diretamente do iPhone ou iPad para o seu próprio NAS, servidor doméstico ou nuvem privada.
+Livre-se das mensalidades de armazenamento em nuvem. Faça backup e restaure suas fotos, vídeos e pastas locais diretamente entre o iPhone ou iPad e o seu próprio NAS, servidor doméstico ou nuvem privada.
 
-O BackupFlow é um aplicativo de backup automático focado em privacidade, desenvolvido nativamente para iOS com suporte a SFTP (SSH), WebDAV (HTTP/HTTPS) e FTP.
+O BackupFlow é um aplicativo de backup e recuperação automática focado em privacidade, desenvolvido nativamente para iOS com suporte a SFTP (SSH), WebDAV (HTTP/HTTPS) e FTP.
 
 COMPRA ÚNICA — ACESSO VITALÍCIO
 Sem assinaturas, sem compras internas e sem cotas de arquivos. Pague uma única vez e tenha acesso completo e ilimitado para sempre.
 
 RECURSOS PRINCIPAIS
 
-Compatibilidade com NAS e Servidores
-Conecte-se facilmente ao Synology NAS, Nextcloud, ownCloud, TrueNAS, QNAP e qualquer servidor SFTP, WebDAV ou FTP com seletor de pastas remotas.
+Central Cyber-Telemetry
+Acompanhe seus backups em tempo real com sparklines ao vivo, gráficos de desempenho interativos e anel de saúde por protocolo.
 
-Qualidade Original e Vídeos 4K de Vários GB
-Envie fotos e vídeos 4K pesados (incluindo mídias do iCloud) sem compressão ou perda de qualidade.
+Smart Restore e Análise de Diferenças
+Compare as cópias no servidor com o seu dispositivo, identifique itens ausentes instantaneamente e restaure por intervalo de datas.
 
-Sincronização Incremental e Fast-Skip
-Apenas arquivos novos ou alterados são enviados. A verificação opcional por hash SHA-256 garante a integridade total dos dados.
+Navegador Remoto Integrado
+Navegue pelas pastas do seu servidor FTP, SFTP ou WebDAV e baixe mídias diretamente para a galeria Fotos ou app Arquivos.
 
-Políticas Flexíveis de Exclusão e Arquivo
-Escolha entre Apenas Adicionar (padrão seguro), Modo Espelho (com trava de segurança para fotos) ou Modo Arquivo (.backupflow_archive).
+Compatibilidade NAS, 4K e Fast-Skip
+Compatível com Synology, Nextcloud, ownCloud, TrueNAS e QNAP. Envie vídeos 4K pesados em qualidade original, pule arquivos existentes em segundos e valide com SHA-256.
 
-Modo de Simulação Seguro (Dry-Run)
-Visualize exatamente quais arquivos serão enviados ou ignorados antes de iniciar a transferência real.
-
-Automação Inteligente em Segundo Plano
-Agende backups automáticos apenas no Wi-Fi, durante o carregamento ou em horários definidos. Tarefas WebDAV continuam rodando silenciosamente em segundo plano.
-
-Segurança e Privacidade Total
-Senhas protegidas exclusivamente no Keychain do iOS com validação TOFU de chaves SSH e certificados SSL. Seus arquivos vão direto do aparelho para o seu servidor.
+Segurança Total e Automação em Segundo Plano
+Modos Apenas Adicionar (padrão), Espelho e Arquivo (.backupflow_archive), simulação Dry-Run, agendamento por Wi-Fi/carregamento e proteção via iOS Keychain e fixação TOFU.
 ```
 
 ---
@@ -322,45 +328,40 @@ Senhas protegidas exclusivamente no Keychain do iOS com validação TOFU de chav
   `Автосинхронизация фото и FTP`
 - Keywords (96 karakter):
   `webdav,synology,nextcloud,qnap,truenas,owncloud,сервер,облако,копия,файлы,папки,фото,видео,ssh`
-- Promotional Text (158 karakter):
-  `Резервное копирование фото и файлов на ваш NAS или сервер по SFTP, WebDAV и FTP без подписок. Разовая покупка — безлимитный доступ навсегда.`
-- What's New in This Version (Sürüm 6.5):
+- Promotional Text (162 karakter):
+  `Новый дизайн Cyber-Telemetry и Smart Restore! Резервное копирование и восстановление фото и файлов с вашего NAS по SFTP, WebDAV и FTP без подписок. Разовая покупка.`
+- What's New in This Version (Sürüm 6.7):
 ```text
-- Версия 6.5: Полный переход на модель разовой покупки навсегда. Никаких подписок, встроенных покупок и лимитов на передачу файлов.
-- Бесшовное фоновое автокопирование по WebDAV и поддержка многогигабайтных видео 4K при заблокированном экране.
-- Мгновенный пропуск (Fast-Skip) уже сохраненных на сервере фото и видео.
+- Новый интерфейс Cyber-Telemetry Dark Glass: живые графики передачи, интерактивные кривые, кольцо состояния Bento и обзор функций на 4 экранах.
+- Smart Restore и анализ различий: сравнивайте копии на сервере с устройством и восстанавливайте недостающие фото и файлы с фильтром по датам.
+- Прямой браузер сервера: просматривайте папки FTP, SFTP и WebDAV и сохраняйте медиафайлы прямо в «Фото» или «Файлы».
+- Разовая покупка навсегда: без подписок, встроенных покупок и лимитов.
 ```
 - Description (Açıklama):
 ```text
-Откажитесь от ежемесячных платежей за облачные хранилища. Создавайте резервные копии фото, видео и документов прямо на собственный NAS, домашний сервер или приватное облако.
+Откажитесь от ежемесячных платежей за облачные хранилища. Создавайте резервные копии и восстанавливайте фото, видео и документы прямо между iPhone и вашим NAS, домашним сервером или приватным облаком.
 
-BackupFlow — это надежный и конфиденциальный инструмент автоматического резервного копирования по протоколам SFTP (SSH), WebDAV (HTTP/HTTPS) и FTP.
+BackupFlow — это надежный и конфиденциальный инструмент автоматического резервного копирования и восстановления по протоколам SFTP (SSH), WebDAV (HTTP/HTTPS) и FTP.
 
 РАЗОВАЯ ОПЛАТА — ПОЛНЫЙ ДОСТУП НАВСЕГДА
 Никаких встроенных покупок, регулярных подписок и скрытых платежей. Оплатите один раз и пользуйтесь всеми функциями без ограничений.
 
 КЛЮЧЕВЫЕ ВОЗМОЖНОСТИ
 
-Поддержка NAS и популярных серверов
-Удобное подключение к Synology NAS, Nextcloud, ownCloud, TrueNAS, QNAP и любым стандартным серверам SFTP, WebDAV и FTP с интерактивным выбором удаленной папки.
+Центр управления Cyber-Telemetry
+Контролируйте резервные копии в реальном времени с живыми графиками передачи, историей производительности и кольцом состояния протоколов.
 
-Сохранение исходного качества и 4K видео
-Передавайте фотографии и многогигабайтные видео 4K (включая медиафайлы из iCloud) без сжатия и потери качества.
+Smart Restore и анализ различий
+Сравнивайте архив на NAS с устройством, мгновенно находите недостающие фото и восстанавливайте их с фильтрацией по дате.
 
-Инкрементальная синхронизация и Fast-Skip
-Передаются только новые или измененные файлы, а уже загруженные медиафайлы пропускаются за секунды. Проверка хэшей SHA-256 гарантирует целостность данных.
+Прямой браузер удаленного сервера
+Открывайте папки FTP, SFTP или WebDAV и скачивайте выбранные фото, видео и файлы напрямую в «Фото» или «Файлы».
 
-Безопасные режимы синхронизации и архивации
-Режимы «Только добавление» (по умолчанию), «Зеркало» (с защитой медиатеки) и «Архив» (безопасное перемещение удаленных файлов в папку .backupflow_archive).
+Поддержка NAS, 4K видео и Fast-Skip
+Совместимость с Synology, Nextcloud, ownCloud, TrueNAS и QNAP. Передача многогигабайтных 4K видео в оригинале, мгновенный пропуск существующих файлов и проверка SHA-256.
 
-Безопасный предпросмотр (Dry-Run)
-Возможность смоделировать процесс резервного копирования перед фактической отправкой файлов.
-
-Умная фоновая автоматизация
-Настройка расписания с условиями запуска только при подключении к Wi-Fi, на зарядке или в ночные часы. Задачи WebDAV выполняются в фоновом режиме без лишних уведомлений.
-
-Конфиденциальность и безопасность
-Пароли хранятся исключительно в iOS Keychain, а ключи SSH и сертификаты SSL защищены проверкой отпечатков TOFU. Файлы передаются напрямую на ваш сервер без посредников.
+Безопасность и фоновая автоматизация
+Режимы «Только добавление» (по умолчанию), «Зеркало» и «Архив» (.backupflow_archive), предпросмотр Dry-Run, расписание по Wi-Fi/зарядке, iOS Keychain и проверка отпечатков TOFU.
 ```
 
 ---
@@ -373,45 +374,37 @@ BackupFlow — это надежный и конфиденциальный ин�
   `نسخ احتياطي للصور والملفات`
 - Keywords (92 karakter):
   `webdav,ftp,synology,nextcloud,qnap,truenas,نسخ,احتياطي,سيرفر,ملفات,صور,فيديو,تلقائي,شبكة,ssh`
-- Promotional Text (134 karakter):
-  `احفظ صورك وملفاتك على سيرفرك الخاص أو NAS عبر SFTP و WebDAV و FTP بدون اشتراكات سحابية. شراء لمرة واحدة واستخدام غير محدود مدى الحياة.`
-- What's New in This Version (Sürüm 6.5):
+- Promotional Text (144 karakter):
+  `واجهة Cyber-Telemetry الجديدة والاستعادة الذكية! انسخ واستعد صورك وملفاتك على خادمك أو NAS عبر SFTP و WebDAV و FTP بدون اشتراكات. شراء لمرة واحدة.`
+- What's New in This Version (Sürüm 6.7):
 ```text
-- الإصدار 6.5: العودة الكاملة لنموذج الشراء لمرة واحدة مدى الحياة. لا توجد مشتريات داخل التطبيق ولا اشتراكات ولا قيود على النقل.
-- نسخ احتياطي تلقائي سلس في الخلفية عبر WebDAV ودعم ملفات الفيديو الضخمة بدقة 4K.
-- تخطي فوري (Fast-Skip) للصور ومقاطع الفيديو المنسوخة مسبقاً.
+- واجهة Cyber-Telemetry Dark Glass الجديدة: مخططات نقل حية، منحنيات أداء تفاعلية، حلقة صحة Bento ودليل تعريفي من 4 شرائح.
+- الاستعادة الذكية وتحليل الفروقات (Smart Restore): قارن نسخ الخادم بجهازك واكتشف الصور والملفات المفقودة واستعدها حسب التاريخ.
+- متصفح الخادم المباشر: تصفح مجلدات FTP و SFTP و WebDAV ونزّل الوسائط مباشرة إلى الصور أو الملفات.
+- شراء لمرة واحدة مدى الحياة: بدون اشتراكات أو مشتريات داخل التطبيق أو قيود على النقل.
 ```
 - Description (Açıklama):
 ```text
-تخلص من تكاليف الاشتراكات الشهرية في التخزين السحابي. احفظ صورك ومقاطع الفيديو ومجلداتك مباشرة على جهاز NAS الخاص بك أو خادمك المنزلي.
+تخلص من تكاليف الاشتراكات الشهرية في التخزين السحابي. احفظ واستعد صورك ومقاطع الفيديو ومجلداتك مباشرة بين iPhone أو iPad وجهاز NAS الخاص بك أو خادمك المنزلي.
 
-تطبيق BackupFlow هو أداة احترافية وآمنة للنسخ الاحتياطي التلقائي عبر بروتوكولات SFTP (SSH) و WebDAV (HTTP/HTTPS) و FTP.
+تطبيق BackupFlow هو أداة احترافية وآمنة للنسخ الاحتياطي التلقائي والاستعادة عبر بروتوكولات SFTP (SSH) و WebDAV (HTTP/HTTPS) و FTP.
 
 شراء لمرة واحدة - وصول دائم
 بدون مشتريات داخل التطبيق وبدون اشتراكات دورية أو رسوم خفية. ادفع مرة واحدة واستمتع بجميع المزايا بشكل غير محدود مدى الحياة.
 
 أبرز المزايا
 
-دعم شامل لأجهزة NAS والخوادم
-اتصال مباشر وسهل مع أجهزة Synology NAS و Nextcloud و ownCloud و TrueNAS و QNAP وأي خادم SFTP أو WebDAV أو FTP مع متصفح مجلدات تفاعلي.
+مركز تحكم Cyber-Telemetry
+راقب صحة النسخ الاحتياطي لحظياً عبر مخططات النقل الحية وحلقة الأداء وشريط التحكم السريع.
 
-الحفاظ على الجودة الأصلية ودعم فيديوهات 4K الضخمة
-نقل الصور ومقاطع الفيديو الكبيرة (بما في ذلك وسائط iCloud) دون ضغط أو فقدان للجودة.
+الاستعادة الذكية وتحليل الفروقات
+قارن أرشيف خادمك بجهازك لاكتشاف الملفات المفقودة فوراً واستعادتها بمرشح التاريخ.
 
-مزامنة تراكمية ذكية وتخطي سريع (Fast-Skip)
-يتم رفع الملفات الجديدة أو المعدلة فقط مع تخطي الملفات الموجودة في ثوانٍ، بالإضافة إلى التحقق الاختياري عبر تشفير SHA-256.
+متصفح الخادم المباشر
+تصفح مجلدات FTP أو SFTP أو WebDAV وحمّل الصور والفيديوهات المختارة مباشرة إلى تطبيق الصور أو الملفات.
 
-سياسات أرشفة وحذف آمنة
-اختر بين وضع الإضافة فقط (الافتراضي الآمن)، أو وضع المرآة، أو وضع الأرشيف (.backupflow_archive) لحماية ملفاتك من الحذف غير المقصود.
-
-المعاينة المسبقة الآمنة (Dry-Run)
-محاكاة عملية النسخ قبل بدئها لمعرفة الملفات التي سيتم نقلها أو تخطيها بدقة.
-
-جدولة متطورة في الخلفية
-تشغيل النسخ الاحتياطي تلقائياً عند الاتصال بشبكة Wi-Fi أو أثناء الشحن أو في أوقات محددة، مع استمرار مهام WebDAV تلقائياً في الخلفية.
-
-أمان وخصوصية تامة
-تُحفظ كلمات المرور داخل نظام iOS Keychain مع تثبيت بصمة مفاتيح SSH وشهادات SSL (TOFU)، وتنتقل الملفات مباشرة إلى خادمك دون أي وسيط.
+دعم NAS وفيديوهات 4K و Fast-Skip
+متوافق مع Synology و Nextcloud و ownCloud و TrueNAS و QNAP مع الحفاظ على الجودة الأصلية والتحقق عبر SHA-256 وحماية Keychain و TOFU.
 ```
 
 ---
@@ -424,45 +417,37 @@ BackupFlow — это надежный и конфиденциальный ин�
   `फ़ोटो व फ़ाइल सिंक ऐप`
 - Keywords (95 karakter):
   `webdav,ftp,synology,nextcloud,qnap,truenas,बैकअप,सर्वर,फ़ोल्डर,फ़ोटो,वीडियो,ऑटो,होमलेब,ssh,heic`
-- Promotional Text (140 karakter):
-  `अपने आईफ़ोन के फ़ोटो और फ़ाइलें बिना क्लाउड सब्सक्रिप्शन SFTP, WebDAV व FTP से अपने NAS पर सुरक्षित बैकअप करें। एकमुश्त ख़रीद, असीमित उपयोग।`
-- What's New in This Version (Sürüm 6.5):
+- Promotional Text (146 karakter):
+  `नया Cyber-Telemetry डिज़ाइन और स्मार्ट रिस्टोर! SFTP, WebDAV व FTP से अपने NAS पर फ़ोटो और फ़ाइलें सुरक्षित बैकअप व रिकवर करें। एकमुश्त ख़रीद, आजीवन उपयोग।`
+- What's New in This Version (Sürüm 6.7):
 ```text
-- संस्करण 6.5: स्थायी आजीवन एकमुश्त ख़रीद मॉडल पर पूर्ण वापसी। कोई इन-ऐप ख़रीद नहीं, कोई सब्सक्रिप्शन नहीं और फ़ाइल सीमा नहीं।
-- लॉक स्क्रीन पर निर्बाध WebDAV बैकग्राउंड ऑटो-बैकअप और बड़े (Multi-GB) 4K वीडियो ट्रांसफर में सुधार।
-- पहले से बैकअप किए गए फ़ोटो और वीडियो के लिए तेज़ Fast-Skip इंजन।
+- नया Cyber-Telemetry Dark Glass इंटरफ़ेस: लाइव ट्रांसफ़र ग्राफ़, इंटरैक्टिव परफॉर्मेंस चार्ट, बेंटो हेल्थ रिंग और 4-स्लाइड गाइड।
+- स्मार्ट रिस्टोर और अंतर विश्लेषण: अपने सर्वर बैकअप की तुलना डिवाइस से करें और छूटे हुए फ़ोटो या फ़ाइलें तारीख़ के अनुसार तुरंत रिकवर करें।
+- डायरेक्ट सर्वर ब्राउज़र: FTP, SFTP और WebDAV फ़ोल्डर ब्राउज़ करें और मीडिया को सीधे Photos या Files ऐप में डाउनलोड करें।
+- एकमुश्त ख़रीद: कोई सब्सक्रिप्शन नहीं, कोई इन-ऐप ख़रीद नहीं और कोई ट्रांसफ़र सीमा नहीं।
 ```
 - Description (Açıklama):
 ```text
-मासिक क्लाउड स्टोरेज शुल्कों को अलविदा कहें। अपने आईफ़ोन के फ़ोटो, वीडियो और दस्तावेज़ सीधे अपने निजी NAS, होम सर्वर या पर्सनल क्लाउड पर सुरक्षित रखें।
+मासिक क्लाउड स्टोरेज शुल्कों को अलविदा कहें। अपने आईफ़ोन और आईपैड के फ़ोटो, वीडियो और फ़ोल्डर सीधे अपने निजी NAS या होम सर्वर पर बैकअप करें और ज़रूरत पड़ने पर स्मार्ट तरीके से रिकवर करें।
 
-BackupFlow एक गोपनीयता-केंद्रित और स्वचालित बैकअप टूल है जो SFTP (SSH), WebDAV (HTTP/HTTPS) और FTP प्रोटोकॉल का समर्थन करता है।
+BackupFlow SFTP (SSH), WebDAV (HTTP/HTTPS) और FTP प्रोटोकॉल के लिए बना गोपनीयता-केंद्रित स्वचालित बैकअप और रिकवरी ऐप है।
 
 एकमुश्त ख़रीद - आजीवन स्वामित्व
-कोई इन-ऐप ख़रीदारी नहीं, कोई आवर्ती सदस्यता नहीं और कोई छुपा हुआ शुल्क नहीं। एक बार ख़रीदें और हमेशा के लिए असीमित बैकअप सुविधा का आनंद लें।
+कोई इन-ऐप ख़रीदारी नहीं, कोई आवर्ती सदस्यता नहीं और कोई सीमा नहीं। एक बार ख़रीदें और हमेशा के लिए असीमित उपयोग करें।
 
 मुख्य विशेषताएँ
 
-मल्टी-प्रोटोकॉल NAS और सर्वर समर्थन
-Synology NAS, Nextcloud, ownCloud, TrueNAS, QNAP और किसी भी मानक SFTP, WebDAV या FTP सर्वर के साथ सीधा कनेक्शन और रिमोट फ़ोल्डर पिकर।
+Cyber-Telemetry कंट्रोल हब
+लाइव ट्रांसफ़र स्पार्कलाइन, इंटरैक्टिव हिस्ट्री चार्ट और प्रोटोकॉल हेल्थ रिंग के साथ सभी बैकअप को रियल-टाइम में मॉनिटर करें।
 
-मूल गुणवत्ता व बड़े 4K वीडियो का समर्थन
-फ़ोटो और कई GB के 4K वीडियो (iCloud मीडिया सहित) बिना किसी संपीड़न या गुणवत्ता कमी के अपलोड करें।
+स्मार्ट रिस्टोर और अंतर विश्लेषण
+अपने NAS आर्काइव की तुलना डिवाइस से करें, छूटे हुए फ़ोटो तुरंत पहचानें और तारीख़ फ़िल्टर के साथ एक टैप में रिकवर करें।
 
-स्मार्ट इंक्रीमेंटल सिंक और Fast-Skip
-केवल नई या संशोधित फ़ाइलें ही भेजी जाती हैं। वैकल्पिक SHA-256 जाँच से डेटा की पूर्ण सुरक्षा सुनिश्चित होती है।
+डायरेक्ट रिमोट सर्वर ब्राउज़र
+FTP, SFTP या WebDAV सर्वर फ़ोल्डर ब्राउज़ करें और चुनी हुई फ़ाइलें सीधे Photos या Files ऐप में सेव करें।
 
-सुरक्षित आर्काइव और सिंक नीतियाँ
-केवल जोड़ें (Append-Only), मिरर मोड या आर्काइव मोड (.backupflow_archive) के साथ अपनी फ़ाइलों को पूरी तरह सुरक्षित रखें।
-
-सुरक्षित प्रीव्यू मोड (Dry-Run)
-बैकअप शुरू करने से पहले देखें कि कौन सी फ़ाइलें अपलोड होंगी या छोड़ी जाएँगी।
-
-सुलभ बैकग्राउंड ऑटोमेशन
-केवल वाई-फ़ाई पर, चार्जिंग के दौरान या तय समय पर बैकग्राउंड में बैकअप शेड्यूल करें। WebDAV कार्य बैकग्राउंड में निर्बाध रूप से चलते हैं।
-
-स्थानीय सुरक्षा व पूर्ण गोपनीयता
-पासवर्ड केवल iOS Keychain में सुरक्षित रहते हैं और SSH/SSL TOFU पिनिंग से कनेक्शन सुरक्षित रहता है। आपका डेटा सीधे आपके सर्वर पर जाता है, किसी तीसरे पक्ष के पास नहीं।
+NAS संगतता, 4K वीडियो, Fast-Skip व TOFU सुरक्षा
+Synology, Nextcloud, TrueNAS व QNAP के साथ पूर्ण संगतता, मूल गुणवत्ता में बड़े 4K वीडियो अपलोड, SHA-256 जाँच और iOS Keychain + TOFU पिनिंग सुरक्षा।
 ```
 
 ---
@@ -475,45 +460,37 @@ Synology NAS, Nextcloud, ownCloud, TrueNAS, QNAP और किसी भी म�
   `写真とファイルの自動同期`
 - Keywords (78 karakter):
   `webdav,ftp,synology,nextcloud,qnap,truenas,owncloud,バックアップ,サーバー,写真,保存,ssh,heic`
-- Promotional Text (70 karakter):
-  `月額不要。iPhoneの写真やファイルをSFTP、WebDAV、FTP経由で自宅のNASやサーバーへ自動バックアップ。買い切り、無制限利用。`
-- What's New in This Version (Sürüm 6.5):
+- Promotional Text (82 karakter):
+  `新UI Cyber-Telemetry & スマート復元登場！月額不要、SFTP/WebDAV/FTPでNASへ自動バックアップ＆直接復元。買い切り無制限。`
+- What's New in This Version (Sürüm 6.7):
 ```text
-- バージョン 6.5: 完全な買い切り（ライフタイム）モデルへ回帰しました。アプリ内課金、定期購読、転送制限は一切ありません。
-- 画面ロック中のWebDAVバックグラウンド自動バックアップと数GBの大容量4K動画転送を強化。
-- バックアップ済みメディアを瞬時にスキップするFast-Skipエンジンを搭載。
+- 新デザイン Cyber-Telemetry Dark Glass：リアルタイム転送グラフ、インタラクティブな履歴スプライン、Bento健全性リング、4スライド機能ガイドを搭載。
+- スマート復元＆差分分析：サーバーと端末を比較し、不足している写真やファイルを日付範囲で絞り込んでワンタップ復元。
+- リモートサーバーブラウザ：FTP、SFTP、WebDAVフォルダを閲覧し、「写真」または「ファイル」へ直接保存。
+- 完全買い切り：サブスクリプション、アプリ内課金、転送制限は一切ありません。
 ```
 - Description (Açıklama):
 ```text
-毎月のクラウドストレージ課金から解放されましょう。iPhoneの写真、動画、ファイルを自宅のNAS、ホームサーバー、プライベートクラウドへ直接バックアップ。
+毎月のクラウドストレージ課金から解放されましょう。iPhoneの写真、動画、ファイルを自宅のNAS、ホームサーバー、プライベートクラウドへ直接バックアップし、いつでもスマートに復元できます。
 
-BackupFlowは、プライバシーを最優先に設計されたSFTP（SSH）、WebDAV（HTTP/HTTPS）、FTP対応の自動バックアップユーティリティです。
+BackupFlowは、プライバシー最優先で設計されたSFTP（SSH）、WebDAV（HTTP/HTTPS）、FTP対応の自動バックアップ＆復元アプリです。
 
 完全買い切り - 永久アクセス
-アプリ内課金やサブスクリプション、隠れた費用はありません。一度の購入で全機能を無制限にずっと利用できます。
+アプリ内課金やサブスクリプション、容量制限はありません。一度の購入で全機能を無制限にずっと利用できます。
 
 主な機能
 
-マルチプロトコル＆NAS対応
-Synology NAS、Nextcloud、ownCloud、TrueNAS、QNAP、および標準的なSFTP、WebDAV、FTPサーバーにリモートフォルダピッカーで簡単接続。
+Cyber-Telemetry コントロールハブ
+リアルタイムの転送スパークライン、履歴パフォーマンス曲線、プロトコル健全性リングでバックアップ状況をひと目で把握。
 
-オリジナル画質のまま大容量4K動画も保存
-写真や数GBの4K動画（iCloud上のメディアを含む）を圧縮や変換を一切行わずにそのまま転送。
+スマート復元＆差分分析
+NASのバックアップと端末を比較して不足ファイルを自動検出し、日付フィルターで必要な写真や動画だけを素早く復元。
 
-効率的な増分バックアップ＆Fast-Skip
-新規または更新されたファイルのみを高速転送し、転送済みファイルは数秒でスキップ。任意のSHA-256チェックサム検証で確実なデータ保護を実現。
+直接リモートブラウザ
+FTP、SFTP、WebDAVサーバーのフォルダを閲覧し、選択したメディアを直接「写真」ライブラリや「ファイル」アプリへ保存。
 
-安全なアーカイブ＆同期ポリシー
-追加のみ（デフォルト）、ミラーモード（写真ライブラリの誤削除防止機能付き）、アーカイブモード（.backupflow_archiveへの退避）を選択可能。
-
-安全な事前確認モード (Dry-Run)
-実際の転送を行う前に、対象となるファイル一覧をシミュレーション確認可能。
-
-柔軟な自動バックグラウンド実行
-Wi-Fi接続時、充電中、または指定した夜間時間帯のみ実行するスマートなスケジュール設定。WebDAVタスクはバックグラウンドで静かに自動実行されます。
-
-堅牢なセキュリティとプライバシー
-パスワードは端末内のiOS Keychainでのみ保護され、SSHホストキーおよびSSL証明書のTOFUピニングに対応。データは第三者サーバーを経由せず直接ご自身のサーバーへ転送されます。
+NAS対応・オリジナル4K動画・TOFUセキュリティ
+Synology、Nextcloud、ownCloud、TrueNAS、QNAP対応。大容量4K動画の無劣化転送、Fast-Skip、SHA-256検証、iOS KeychainとTOFUピニングで安全に保護します。
 ```
 
 ---
@@ -526,45 +503,37 @@ Wi-Fi接続時、充電中、または指定した夜間時間帯のみ実行す
   `사진 및 파일 자동 동기화`
 - Keywords (79 karakter):
   `webdav,ftp,synology,nextcloud,qnap,truenas,owncloud,백업,서버,폴더,사진,동기화,자동,ssh,heic`
-- Promotional Text (86 karakter):
-  `클라우드 구독 없이 SFTP, WebDAV, FTP를 통해 iPhone 사진과 파일을 NAS 및 개인 서버로 자동 백업하세요. 평생 일회성 구매, 무제한.`
-- What's New in This Version (Sürüm 6.5):
+- Promotional Text (92 karakter):
+  `새로운 Cyber-Telemetry UI 및 스마트 복원 출시! 구독 없이 SFTP, WebDAV, FTP로 NAS에 자동 백업하고 바로 복구하세요. 일회성 구매.`
+- What's New in This Version (Sürüm 6.7):
 ```text
-- 버전 6.5: 완전한 평생 일회성 구매 모델로 복귀했습니다. 인앱 결제, 정기 구독, 전송 용량 제한이 전혀 없습니다.
-- 화면 잠금 상태에서의 WebDAV 백그라운드 자동 백업 및 대용량(Multi-GB) 4K 동영상 전송 안정성 강화.
-- 이미 백업된 사진과 동영상을 즉시 건너뛰는 Fast-Skip 엔진 적용.
+- 새로운 Cyber-Telemetry Dark Glass UI: 실시간 전송 스파크라인, 인터랙티브 성능 그래프, Bento 상태 링 및 4단계 기능 가이드를 적용했습니다.
+- 스마트 복원 및 차이 분석: 서버 백업과 기기를 비교해 누락된 사진이나 파일을 즉시 찾고 날짜 범위 필터로 복원합니다.
+- 원격 서버 직접 탐색기: FTP, SFTP, WebDAV 폴더를 탐색하고 선택한 미디어를 사진 앱이나 파일 앱으로 바로 다운로드합니다.
+- 완전 일회성 구매: 구독, 인앱 결제, 전송 용량 제한이 전혀 없습니다.
 ```
 - Description (Açıklama):
 ```text
-매달 나가는 클라우드 저장소 구독료를 절약하세요. iPhone의 사진, 동영상, 문서를 개인 NAS, 홈 서버 또는 프라이빗 클라우드로 직접 백업할 수 있습니다.
+매달 나가는 클라우드 저장소 구독료를 절약하세요. iPhone의 사진, 동영상, 문서를 개인 NAS나 홈 서버로 직접 백업하고 필요할 때 스마트하게 복원할 수 있습니다.
 
-BackupFlow는 SFTP(SSH), WebDAV(HTTP/HTTPS), FTP 프로토콜을 지원하는 프라이버시 중심의 자동 백업 앱입니다.
+BackupFlow는 SFTP(SSH), WebDAV(HTTP/HTTPS), FTP를 지원하는 프라이버시 중심의 자동 백업 및 복구 앱입니다.
 
 일회성 결제 - 평생 무제한 사용
 인앱 결제나 정기 구독, 추가 비용이 없습니다. 한 번 구매로 모든 기능을 평생 전송 제한 없이 자유롭게 사용하세요.
 
 주요 기능
 
-다양한 NAS 및 서버 완벽 호환
-Synology NAS, Nextcloud, ownCloud, TrueNAS, QNAP 및 모든 표준 SFTP, WebDAV, FTP 서버에 원격 폴더 탐색기로 손쉽게 연결.
+Cyber-Telemetry 컨트롤 허브
+실시간 전송 그래프, 히스토리 스플라인 차트, 프로토콜 상태 링으로 모든 백업을 한눈에 관리하세요.
 
-원본 화질 및 대용량 4K 비디오 지원
-사진과 수 GB 크기의 4K 동영상(iCloud 보관 항목 포함)을 압축이나 손실 없이 원본 그대로 보존.
+스마트 복원 및 차이 분석
+NAS 백업과 기기를 비교하여 누락된 항목을 즉시 파악하고 날짜 범위 필터로 삭제된 사진이나 파일을 원탭으로 복구하세요.
 
-스마트 증분 백업 및 Fast-Skip
-새로 추가되거나 수정된 파일만 감지하여 업로드하며, 이미 백업된 미디어는 몇 초 만에 건너뜁니다. 선택적 SHA-256 검증으로 데이터 무결성을 보장합니다.
+원격 서버 직접 브라우저
+FTP, SFTP, WebDAV 서버 폴더를 직접 탐색하고 선택한 사진과 동영상을 사진 갤러리 또는 파일 앱에 바로 저장하세요.
 
-안전한 보관(Archive) 및 동기화 정책
-추가 전용(기본 안전 모드), 미러 모드(사진 보관함 보호 기능 포함), 아카이브 모드(.backupflow_archive 폴더로 안전 이동)를 지원합니다.
-
-안전한 시뮬레이션 모드 (Dry-Run)
-실제 전송 전에 어떤 파일이 업로드되거나 제외되는지 미리 상세하게 확인할 수 있습니다.
-
-스마트 백그라운드 자동화
-Wi-Fi 연결 시, 충전 중, 혹은 지정한 시간대에만 백그라운드에서 백업이 진행되도록 스케줄 설정. WebDAV 작업은 백그라운드에서 자동으로 완료됩니다.
-
-완벽한 보안 및 개인정보 보호
-모든 계정 정보는 기기 내 iOS Keychain에 안전하게 보관되며 SSH 호스트 키 및 SSL 인증서 TOFU 고정(Pinning)을 지원합니다. 제3자 서버를 거치지 않고 오직 내 서버로만 전송됩니다.
+NAS 호환성, 원본 4K 비디오 & TOFU 보안
+Synology, Nextcloud, ownCloud, TrueNAS, QNAP 완벽 지원, 무손실 대용량 4K 전송, Fast-Skip, SHA-256 무결성 검증 및 iOS Keychain + TOFU 핀닝 보안을 제공합니다.
 ```
 
 ---
@@ -577,45 +546,37 @@ Wi-Fi 연결 시, 충전 중, 혹은 지정한 시간대에만 백그라운드�
   `照片与文件自动备份工具`
 - Keywords (79 karakter):
   `webdav,ftp,synology,nextcloud,qnap,truenas,owncloud,备份,群晖,服务器,相册,照片,同步,ssh,heic`
-- Promotional Text (67 karakter):
-  `无需按月订阅云盘，通过SFTP、WebDAV及FTP将iPhone照片与文件安全备份至您的NAS或私有服务器。一次性买断，终身无限制。`
-- What's New in This Version (Sürüm 6.5):
+- Promotional Text (78 karakter):
+  `全新 Cyber-Telemetry 界面与智能恢复上线！通过 SFTP、WebDAV 和 FTP 将 iPhone 照片与文件直连备份并恢复至私有 NAS。一次买断。`
+- What's New in This Version (Sürüm 6.7):
 ```text
-- 版本 6.5：完全回归一次性买断（终身使用）模式。无应用内购买，无订阅，无文件传输额度限制。
-- 增强锁屏状态下 WebDAV 后台自动备份与多 GB 大体积 4K 视频传输稳定性。
-- 新增 Fast-Skip 快速跳过引擎，秒级跳过已备份的照片与视频。
+- 全新 Cyber-Telemetry 暗黑玻璃界面：实时传输曲线、交互式性能图表、Bento 健康环及 4 页功能导览。
+- 智能恢复与差异对比 (Smart Restore)：将服务器备份与设备智能比对，支持按日期范围筛选并一键找回缺失照片或文件。
+- 远程服务器直连浏览器：直接浏览 FTP、SFTP 与 WebDAV 目录，将媒体文件下载至系统相册或“文件”应用。
+- 纯粹一次买断：无订阅、无应用内购买、无传输额度限制。
 ```
 - Description (Açıklama):
 ```text
-摆脱每月繁琐的云存储订阅费用。将您的iPhone照片、视频和本地文件夹直接备份至您专属的NAS、家庭服务器或私有云中。
+摆脱每月繁琐的云存储订阅费用。将您的 iPhone 照片、视频和本地文件夹直接备份至您专属的 NAS、家庭服务器或私有云，并在需要时智能恢复。
 
-BackupFlow 是一款专注于隐私保护的专业级自动备份应用，原生支持 SFTP (SSH)、WebDAV (HTTP/HTTPS) 以及 FTP 协议。
+BackupFlow 是一款专注于隐私保护的专业级自动备份与恢复应用，原生支持 SFTP (SSH)、WebDAV (HTTP/HTTPS) 与 FTP 协议。
 
 一次付费 - 终身买断
-绝无应用内充值、周期订阅或隐藏收费。一次购买即可终身畅享全部高级功能，传输容量不设上限。
+绝无应用内充值、周期订阅或隐藏收费。一次购买即可终身畅享全部功能，传输容量不设上限。
 
 核心特色
 
-多协议与主流 NAS 全面兼容
-支持群晖 Synology NAS、Nextcloud、ownCloud、TrueNAS、威联通 QNAP 及各类标准 SFTP、WebDAV 和 FTP 服务器，内置远程文件夹可视化选择器。
+Cyber-Telemetry 控制中心
+通过实时传输波形图、交互式历史曲线与协议健康环，在一屏之内掌握所有备份任务状态。
 
-保留原画质量与多 GB 4K 视频支持
-无损传输照片及数 GB 大小的 4K 视频（支持自动下载并备份 iCloud 图库资源），拒绝二次压缩与画质受损。
+智能恢复与差异对比
+自动比对服务器归档与本地设备，快速识别缺失或冲突文件，并支持按日期范围一键恢复到相册或“文件”。
 
-智能增量同步与 Fast-Skip 秒级跳过
-仅上传新增或修改过的文件，数秒内快速跳过已备份媒体。可选 SHA-256 校验确保每一份数据完整一致。
+远程服务器直连浏览器
+自由浏览 FTP、SFTP 或 WebDAV 目录，将选中的照片、视频或文档直接下载保存。
 
-灵活的归档与同步策略
-提供仅追加（默认安全模式）、镜像模式（具备相册防误删保护）以及归档模式（将删除项安全移入 .backupflow_archive 目录）。
-
-安全模拟预览 (Dry-Run)
-在执行实际传输前清晰了解将要上传、更新或跳过的文件详情。
-
-智能后台自动化
-支持设置仅在连接Wi-Fi、接入充电电源或指定夜间时段自动执行后台同步，WebDAV 任务可在锁屏后台静默完成。
-
-本地优先的隐私安全
-账号密码严格加密存储于系统 iOS Keychain 中，并支持 SSH 主机密钥与 SSL 证书 TOFU 绑定校验。文件直连您的个人服务器，不经过任何第三方中转。
+全协议 NAS 兼容、无损 4K 与 TOFU 安全
+支持群晖 Synology、Nextcloud、ownCloud、TrueNAS 与 QNAP；无损传输多 GB 4K 视频，支持 Fast-Skip 秒级跳过、SHA-256 校验与 iOS Keychain + TOFU 指纹固定保护。
 ```
 
 ---
@@ -625,22 +586,22 @@ BackupFlow 是一款专注于隐私保护的专业级自动备份应用，原生
 ### Reddit / r/selfhosted & r/homelab & r/synology (İngilizce)
 
 **Title:**
-BackupFlow 6.5: Native iOS backup app for Synology, SFTP, and WebDAV (One-time purchase, no subscriptions, zero analytics)
+BackupFlow 6.7: Native iOS NAS Backup & Smart Restore with New Cyber-Telemetry UI (SFTP, WebDAV, FTP — One-Time Purchase, Zero Subscriptions)
 
 **Post Body:**
 Hey r/selfhosted!
 
-I built BackupFlow because I wanted a clean, privacy-respecting iOS application to back up my photos and files straight to my own NAS and servers without being trapped in monthly cloud fees or proprietary ecosystems.
+BackupFlow **v6.7** is out! I rebuilt the interface with a new **Cyber-Telemetry Dark Glass** cockpit (zero decorative/dummy elements—every sparkline, spline chart, and ring gauge reflects real backup telemetry) and added **Smart Restore & Direct Remote Browsing** for SFTP, WebDAV, and FTP.
 
-Version 6.5 is now live, and we have fully committed to a single, upfront lifetime purchase model ($2.99). There are NO in-app purchases, NO subscriptions, NO ads, and NO telemetry servers.
+As always, BackupFlow is a pure **One-Time Purchase ($2.99 Lifetime)**—NO in-app purchases, NO subscriptions, NO ads, and NO telemetry servers.
 
-Key Highlights:
-- Protocols: SFTP (SSHv2), WebDAV (HTTP/HTTPS), and FTP with live remote folder browsing.
-- Original Quality & Multi-GB 4K Videos: Transfers photos and multi-GB 4K videos (including iCloud assets) without compression.
-- Smart Incremental Sync & Fast-Skip: Skips already backed-up media in seconds and supports optional SHA-256 integrity verification.
-- Safe Deletion Policies & Dry-Run Mode: Append-Only default, Photo-safe Mirror mode, Archive mode (`.backupflow_archive`), and Dry-Run simulation before writing a single byte.
-- Seamless Background Scheduling: Back up on Wi-Fi only, while charging, or during designated quiet hours, with native background URLSession transfers for WebDAV.
-- Local-First Security: All passwords are stored in the iOS Keychain with TOFU SSH Host Key & SSL Certificate Pinning. Data travels directly from your device to your server.
+What's New & Key Highlights in v6.7:
+- **Cyber-Telemetry Dark Glass UI & 4-Slide Guide:** Real-time transfer sparklines, interactive 6-run spline charts, Bento health ring gauge, and protocol-aware themes (WebDAV, SFTP, FTP).
+- **Smart Restore & Diff Analysis:** Compare your NAS/server backup against your iPhone library to classify *Intact*, *Missing*, *Ambiguous*, and *Conflicting* files, filter by date range, and recover missing photos/files in one tap.
+- **Direct Remote Server Browser:** Browse FTP, SFTP, and WebDAV folders directly and download selected media straight into your Photos Library or Files app.
+- **Original Quality & Multi-GB 4K Videos:** Transfers photos and multi-GB 4K videos (including iCloud assets) without compression, plus Fast-Skip and optional SHA-256 integrity verification.
+- **Safe Deletion Policies & Background Sync:** Append-Only default, Photo-safe Mirror mode, Archive mode (`.backupflow_archive`), Dry-Run preview, and background URLSession transfers for WebDAV.
+- **Local-First Security:** Passwords live in the iOS Keychain with TOFU SSH Host Key & SSL Certificate Pinning. Data travels directly from your device to your server.
 
 App Store: https://apps.apple.com/app/id6753620051
 

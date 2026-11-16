@@ -531,3 +531,28 @@
 "smart_restore.error.folder_access" = "원본 폴더 권한이 만료되었거나 폴더에 접근할 수 없습니다.";
 "smart_restore.error.folder_readonly" = "원본 폴더가 읽기 전용입니다. 쓰기 가능한 폴더를 다시 선택하세요.";
 "smart_restore.error.disk_space" = "여유 공간이 부족합니다. 필요: %@, 사용 가능: %@.";
+
+// MARK: - Onboarding v6.7
+"settings.whats_new" = "새로운 기능 및 가이드";
+"onboarding.skip" = "건너뛰기";
+"onboarding.next" = "다음";
+"onboarding.get_started" = "시작하기";
+"onboarding.slide1.badge" = "새로운 인터페이스 • v6.7";
+"onboarding.slide1.title" = "Cyber-Telemetry 컨트롤 허브";
+"onboarding.slide1.subtitle" = "새로워진 다크 글래스 디자인, 실시간 전송 그래프, 프로토콜 상태 링으로 모든 백업을 한눈에 관리하세요.";
+"onboarding.slide2.badge" = "신규 기능 • 스마트 복원";
+"onboarding.slide2.title" = "스마트 복원 및 차이 분석";
+"onboarding.slide2.subtitle" = "서버 백업과 기기를 비교하여 누락된 사진이나 파일을 즉시 찾아내고 날짜 범위별로 손쉽게 복원하세요.";
+"onboarding.slide2.highlight" = "날짜 범위 필터 및 SHA-256 무결성 검증";
+"onboarding.slide3.badge" = "원격 서버 브라우저";
+"onboarding.slide3.title" = "서버에서 기기로 직접 복구";
+"onboarding.slide3.subtitle" = "FTP, SFTP 또는 WebDAV 서버 폴더를 탐색하고 선택한 미디어를 사진 갤러리나 파일 앱으로 바로 다운로드하세요.";
+"onboarding.slide4.badge" = "완벽한 개인정보 보호 및 보안";
+"onboarding.slide4.title" = "100% 나만의 서버, 무제한 전송";
+"onboarding.slide4.subtitle" = "타사 클라우드를 거치지 않고 내 NAS나 서버로 직접 전송됩니다. 1회 구매로 구독이나 용량 제한 없이 평생 이용하세요.";
+"onboarding.slide4.item1.title" = "키체인 및 TOFU 고정";
+"onboarding.slide4.item1.subtitle" = "SHA-256 지문 검증 및 하드웨어 암호화 자격 증명 보관";
+"onboarding.slide4.item2.title" = "끊김 없는 백그라운드 동기화";
+"onboarding.slide4.item2.subtitle" = "WebDAV 백그라운드 세션 및 자동 예약 스케줄러";
+"onboarding.slide4.item3.title" = "데이터 손실 방지 보호";
+"onboarding.slide4.item3.subtitle" = "기본 '추가 전용' 모드로 서버 아카이브를 안전하게 보호";

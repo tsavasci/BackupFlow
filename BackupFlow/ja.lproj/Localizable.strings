@@ -529,3 +529,28 @@
 "smart_restore.error.folder_access" = "元のフォルダの権限が切れているか、アクセスできません。";
 "smart_restore.error.folder_readonly" = "元のフォルダが読み取り専用です。書き込み可能なフォルダを選択してください。";
 "smart_restore.error.disk_space" = "空き容量が不足しています。必要: %@、利用可能: %@。";
+
+// MARK: - Onboarding v6.7
+"settings.whats_new" = "新機能とガイド";
+"onboarding.skip" = "スキップ";
+"onboarding.next" = "次へ";
+"onboarding.get_started" = "はじめる";
+"onboarding.slide1.badge" = "新インターフェース • v6.7";
+"onboarding.slide1.title" = "Cyber-Telemetry コントロールハブ";
+"onboarding.slide1.subtitle" = "新しいダークガラスUI、リアルタイム転送グラフ、プロトコル健全性リングでバックアップ状況をひと目で把握できます。";
+"onboarding.slide2.badge" = "新機能 • スマート復元";
+"onboarding.slide2.title" = "スマート復元＆差分分析";
+"onboarding.slide2.subtitle" = "サーバー上のバックアップと端末を比較し、不足している写真やファイルを自動検出。日付範囲を指定して復元できます。";
+"onboarding.slide2.highlight" = "日付範囲フィルター＆SHA-256整合性チェック";
+"onboarding.slide3.badge" = "リモートサーバーブラウザ";
+"onboarding.slide3.title" = "サーバーから端末へ直接復元";
+"onboarding.slide3.subtitle" = "FTP、SFTP、WebDAVサーバーのフォルダを閲覧し、選択したメディアを「写真」または「ファイル」へ直接保存します。";
+"onboarding.slide4.badge" = "完全なプライバシーと安全性";
+"onboarding.slide4.title" = "100%自分のサーバー、容量制限なし";
+"onboarding.slide4.subtitle" = "第三者クラウドを経由せずご自身のNASやサーバーへ直接転送。買い切りライセンスで全機能を無制限に利用できます。";
+"onboarding.slide4.item1.title" = "キーチェーン＆TOFUピン留め";
+"onboarding.slide4.item1.subtitle" = "SHA-256フィンガープリント検証と安全な認証情報保管";
+"onboarding.slide4.item2.title" = "シームレスなバックグラウンド同期";
+"onboarding.slide4.item2.subtitle" = "WebDAVバックグラウンド通信と自動スケジュール実行";
+"onboarding.slide4.item3.title" = "データ消失防止保護";
+"onboarding.slide4.item3.subtitle" = "標準の「追記のみ」モードでNAS上のアーカイブを安全に保護";

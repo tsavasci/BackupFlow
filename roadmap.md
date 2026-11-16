@@ -22,6 +22,7 @@
   2. **Mirror:** Deletes remote orphan files that no longer exist on the device (with strict safety guards so an empty/revoked photo library permission never wipes remote photos).
   3. **Archive:** Instead of deleting remote orphans, moves them to `.backupflow_archive/<yyyyMMdd-HHmmss-uuid>/<relativePath>`.
 - **Dry-Run Preview:** Before running a manual backup, users can preview exact counts of *New*, *Updated*, *Skipped*, and *Deleted/Archived* files and total bytes without mutating the remote server.
+- **Remote Browser & Smart Restore (`RestoreService` + `SmartRestoreEngine`):** Browse remote FTP, SFTP, and WebDAV directories directly, compare remote backups against the device gallery/folder to classify *Intact*, *Missing*, *Ambiguous*, and *Conflict* items, filter by date range, and restore directly to Photos or Files.
 - **Incremental Checkpoints & Fast-Skip:** Tracks uploaded files in a checkpoint store and performs fast remote filename/size checks (`existingFileMap[fileName].size > 0`) before reading/exporting media so interrupted or repeat backups skip existing assets in seconds.
 - **Upload Integrity Verification:** Optional SHA-256 / remote size verification after upload (`verifyUploads`) and remote `.backupflow_manifest.json` generation.
 - **Smart Scheduling & Preconditions:** Manual, Daily, Weekly, Monthly, or Interval (every N hours) scheduling with guards for **Wi-Fi Only**, **Charging/External Power**, **Minimum Battery Level (%)**, and **Allowed Time Window** (e.g., 23:00–06:00).
@@ -347,10 +348,12 @@ Follow these phases sequentially. After each phase, ensure the project compiles 
 
 ### Phase 5: Jetpack Compose UI, Localization & Polish
 - [ ] **5.1. Design System (`DesignSystem.kt`):**
-  - Primary Brand Color: `#2E4CFA` (`rgb(0.18, 0.30, 0.98)`), Success: `#57D666`, Warning: `#F2C40F`, Error: `#E84D3D`.
-  - Translucent / elevated card surfaces (`CornerRadius = 16.dp`, subtle shadow), status pills, and smooth progress animations respecting system Reduced Motion settings.
+  - Cyber-Telemetry Dark Glass Palette: Canvas (`#0E141C -> #141C28`), Card Surface (`#192331 / #1F2B3C`), Primary Luminous Cyan (`#2CE5FF`), Electric Ocean Blue (`#1E7BFF`), Mint Telemetry (`#38F2C6`), Warning (`#FFAD33`), Error (`#FF5C5C`).
+  - Protocol-aware dynamic theming (WebDAV Cyan/Blue, FTP Amber/Orange, SFTP Mint/Teal), spline charts, circular ring gauges, signal bars, and Reduced Motion support.
 - [ ] **5.2. Screens Implementation:**
-  - Build `DashboardScreen` (Hero card, Saved Servers list, Recent Backups list, Wi-Fi override confirmation dialog).
+  - Build `OnboardingScreen` (4-slide Cyber-Telemetry & Smart Restore walkthrough shown on first launch / version upgrade and accessible from Settings).
+  - Build `DashboardScreen` (Hero telemetry card with real-data sparkline, System Performance spline chart + Bento ring gauge, Saved Servers list, Recent Backups list, 4-tab bottom Action Dock, Wi-Fi override confirmation dialog).
+  - Build `RestoreBrowserScreen` & `SmartRestoreSheet` (Remote directory browser, diff classification, date-range filter, and direct restore to Gallery or SAF folder).
   - Build `BackupTaskFormScreen` (Source picker, FTP/SFTP/WebDAV tabs, Test Connection with TOFU fingerprint dialog, `RemoteFolderPickerSheet`, Schedule & Policy sections).
   - Build `BackupPreviewBottomSheet` (Dry-run loading state, New/Updated/Skipped/Deleted counters, total bytes, and "Start Backup" CTA).
   - Build `TaskDetailScreen` and `HistoryScreen` (filterable history list + detail sheet).

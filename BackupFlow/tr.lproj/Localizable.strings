@@ -508,3 +508,28 @@
 "smart_restore.error.folder_access" = "Kaynak klasör izni geçersiz veya klasöre erişilemiyor.";
 "smart_restore.error.folder_readonly" = "Kaynak klasör salt okunur durumda. Lütfen yazılabilir bir klasör seçin.";
 "smart_restore.error.disk_space" = "Yetersiz boş depolama alanı. Gereken: %@, Kullanılabilir: %@.";
+
+// MARK: - Onboarding v6.7
+"settings.whats_new" = "Yenilikler ve Tanıtım Rehberi";
+"onboarding.skip" = "Atla";
+"onboarding.next" = "İleri";
+"onboarding.get_started" = "Keşfetmeye Başla";
+"onboarding.slide1.badge" = "YENİ ARAYÜZ • v6.7";
+"onboarding.slide1.title" = "Cyber-Telemetry Kontrol Merkezi";
+"onboarding.slide1.subtitle" = "Yenilenen koyu cam tasarım, canlı aktarım grafikleri ve protokol bazlı sağlık halkasıyla tüm yedeklemelerinizi tek ekrandan gerçek zamanlı yönetin.";
+"onboarding.slide2.badge" = "YENİ ÖZELLİK • AKILLI KURTARMA";
+"onboarding.slide2.title" = "Akıllı Geri Yükleme & Fark Analizi";
+"onboarding.slide2.subtitle" = "Sunucudaki yedeklerinizi cihazınızla karşılaştırın. Silinmiş fotoğraf veya dosyaları tek dokunuşla tespit edip tarih aralığına göre geri yükleyin.";
+"onboarding.slide2.highlight" = "Tarih aralığı filtresi ve SHA-256 doğrulama";
+"onboarding.slide3.badge" = "UZAK SUNUCU GEZGİNİ";
+"onboarding.slide3.title" = "Sunucudan Cihaza Doğrudan Kurtarma";
+"onboarding.slide3.subtitle" = "FTP, SFTP veya WebDAV sunucunuzdaki klasörlere göz atın; seçtiğiniz medyaları doğrudan Fotoğraflar galerisine veya Dosyalar uygulamasına indirin.";
+"onboarding.slide4.badge" = "TAM GİZLİLİK & GÜVENLİK";
+"onboarding.slide4.title" = "%100 Kendi Sunucunuz, Sıfır Kota";
+"onboarding.slide4.subtitle" = "Verileriniz üçüncü taraf bulutlara uğramadan doğrudan kendi NAS veya sunucunuza aktarılır. Tek seferlik lisansla tüm özellikler sınırsızdır.";
+"onboarding.slide4.item1.title" = "Keychain & TOFU Koruması";
+"onboarding.slide4.item1.subtitle" = "SHA-256 parmak izi sabitleme ve donanım şifreli kimlik kasası";
+"onboarding.slide4.item2.title" = "Kesintisiz Arka Plan Aktarımı";
+"onboarding.slide4.item2.subtitle" = "WebDAV arka plan oturumu ve otomatik zamanlayıcı desteği";
+"onboarding.slide4.item3.title" = "Veri Kaybı Koruması";
+"onboarding.slide4.item3.subtitle" = "Varsayılan Yalnızca Ekle modu ile sunucu arşiviniz her zaman güvende";

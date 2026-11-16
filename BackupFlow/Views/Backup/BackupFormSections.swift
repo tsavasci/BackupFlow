@@ -11,64 +11,86 @@ struct BackupSetupHeader: View {
     let theme: BackupSetupTheme
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 8) {
+                        Text(form.selectedTarget.displayName.uppercased())
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .tracking(0.9)
+                            .foregroundStyle(DesignSystem.Colors.slateMuted)
+                        Text("[\(form.selectedTarget.rawValue)]")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(theme.primary)
+                    }
                     Text(title)
-                        .font(.title.weight(.bold))
-                        .foregroundStyle(.white)
-                    Text(form.selectedTarget.displayName)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white.opacity(0.82))
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [theme.primary, .white],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .shadow(color: theme.primary.opacity(0.4), radius: 8)
                 }
 
                 Spacer()
 
-                Image(systemName: form.selectedTarget.iconName)
-                    .font(.title2.weight(.bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 50, height: 50)
-                    .background(.white.opacity(0.16))
-                    .clipShape(Circle())
-                    .accessibilityHidden(true)
+                ZStack {
+                    Circle()
+                        .fill(theme.primary.opacity(0.18))
+                        .frame(width: 48, height: 48)
+                    Circle()
+                        .stroke(
+                            LinearGradient(
+                                colors: [theme.primary, theme.secondary],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1.5
+                        )
+                        .frame(width: 48, height: 48)
+                        .shadow(color: theme.primary.opacity(0.55), radius: 6)
+
+                    Image(systemName: form.selectedTarget.iconName)
+                        .font(.title3.weight(.bold))
+                        .foregroundStyle(theme.primary)
+                        .accessibilityHidden(true)
+                }
+                .accessibilityHidden(true)
             }
 
             HStack(spacing: 10) {
                 Image(systemName: form.isPhotoLibrarySelected ? form.selectedMediaType.systemImageName : "folder.fill")
                     .font(.callout.weight(.semibold))
+                    .foregroundStyle(theme.primary)
                     .accessibilityHidden(true)
                 Text(form.isPhotoLibrarySelected ? form.selectedMediaType.displayName : (form.selectedURL?.lastPathComponent ?? "backup.source_section".localized))
                     .font(.callout.weight(.semibold))
+                    .foregroundStyle(.white)
                     .lineLimit(1)
                     .minimumScaleFactor(0.78)
+                Spacer()
+                TelemetrySignalBars(color: theme.primary, isActive: true)
             }
-            .foregroundStyle(.white)
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
-            .background(.white.opacity(0.14))
-            .clipShape(Capsule())
-        }
-        .padding(22)
-        .background(
-            RoundedRectangle(cornerRadius: 30)
-                .fill(
-                    LinearGradient(
-                        colors: [theme.primary, theme.secondary],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+            .background(
+                Capsule()
+                    .fill(DesignSystem.Colors.cardSurfaceElevated)
+                    .overlay(
+                        Capsule()
+                            .stroke(theme.primary.opacity(0.38), lineWidth: 0.9)
                     )
-                )
-        )
-        .overlay(alignment: .bottomTrailing) {
-            Text(form.selectedTarget.rawValue)
-                .font(.system(size: 66, weight: .black, design: .rounded))
-                .foregroundStyle(.white.opacity(0.12))
-                .padding(.trailing, 18)
-                .offset(y: 14)
-                .allowsHitTesting(false)
-                .accessibilityHidden(true)
+            )
         }
-        .clipShape(RoundedRectangle(cornerRadius: 30))
+        .padding(20)
+        .telemetryCard(
+            theme: DashboardTheme(primary: theme.primary, secondary: theme.secondary),
+            cornerRadius: 24,
+            glowOpacity: 0.22
+        )
     }
 }
 
@@ -453,18 +475,18 @@ struct BackupSetupTheme {
         switch target {
         case .ftp:
             return BackupSetupTheme(
-                primary: Color(red: 0.95, green: 0.42, blue: 0.10),
-                secondary: Color(red: 1.00, green: 0.66, blue: 0.20)
+                primary: Color(red: 1.00, green: 0.68, blue: 0.22),
+                secondary: Color(red: 0.98, green: 0.44, blue: 0.14)
             )
         case .sftp:
             return BackupSetupTheme(
-                primary: Color(red: 0.05, green: 0.58, blue: 0.34),
-                secondary: Color(red: 0.18, green: 0.74, blue: 0.45)
+                primary: Color(red: 0.20, green: 0.95, blue: 0.76),
+                secondary: Color(red: 0.10, green: 0.72, blue: 0.88)
             )
         case .webdav:
             return BackupSetupTheme(
-                primary: Color(red: 0.18, green: 0.30, blue: 0.98),
-                secondary: Color(red: 0.52, green: 0.31, blue: 0.98)
+                primary: Color(red: 0.17, green: 0.90, blue: 1.00),
+                secondary: Color(red: 0.12, green: 0.48, blue: 1.00)
             )
         }
     }
@@ -483,12 +505,14 @@ private struct BackupSetupCard<Content: View>: View {
                     .font(.subheadline.weight(.bold))
                     .foregroundStyle(theme.primary)
                     .frame(width: 34, height: 34)
-                    .background(theme.primary.opacity(0.12))
+                    .background(theme.primary.opacity(0.14))
                     .clipShape(Circle())
+                    .overlay(Circle().stroke(theme.primary.opacity(0.4), lineWidth: 0.8))
                     .accessibilityHidden(true)
 
                 Text(title)
                     .font(.headline.weight(.semibold))
+                    .foregroundStyle(.white)
 
                 Spacer()
             }
@@ -496,18 +520,10 @@ private struct BackupSetupCard<Content: View>: View {
             content
         }
         .padding(16)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 22))
-        .overlay(
-            RoundedRectangle(cornerRadius: 22)
-                .stroke(
-                    LinearGradient(
-                        colors: [theme.primary.opacity(0.22), theme.secondary.opacity(0.16)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1
-                )
+        .telemetryCard(
+            theme: DashboardTheme(primary: theme.primary, secondary: theme.secondary),
+            cornerRadius: 22,
+            glowOpacity: 0.15
         )
     }
 }
@@ -525,20 +541,21 @@ private struct BackupChoiceRow: View {
                 .font(.headline)
                 .foregroundStyle(isSelected ? .white : theme.primary)
                 .frame(width: 42, height: 42)
-                .background(isSelected ? theme.primary : theme.primary.opacity(0.1))
+                .background(isSelected ? theme.primary.opacity(0.32) : theme.primary.opacity(0.12))
                 .clipShape(Circle())
+                .overlay(Circle().stroke(theme.primary.opacity(isSelected ? 0.8 : 0.3), lineWidth: 1))
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(.white)
                     .lineLimit(1)
 
                 if let subtitle, !subtitle.isEmpty {
                     Text(subtitle)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(DesignSystem.Colors.slateMuted)
                         .lineLimit(1)
                         .minimumScaleFactor(0.78)
                 }
@@ -548,14 +565,24 @@ private struct BackupChoiceRow: View {
 
             Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                 .font(.title3)
-                .foregroundStyle(isSelected ? theme.primary : .secondary.opacity(0.5))
+                .foregroundStyle(isSelected ? theme.primary : DesignSystem.Colors.slateMuted.opacity(0.5))
+                .shadow(color: isSelected ? theme.primary.opacity(0.6) : .clear, radius: 5)
                 .accessibilityHidden(true)
         }
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
         .padding(12)
-        .background(isSelected ? theme.primary.opacity(0.08) : Color(.secondarySystemBackground).opacity(0.62))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(isSelected ? theme.primary.opacity(0.14) : DesignSystem.Colors.cardSurfaceElevated.opacity(0.75))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(
+                            isSelected ? theme.primary.opacity(0.65) : DesignSystem.Colors.rimBorderMuted.opacity(0.5),
+                            lineWidth: 1
+                        )
+                )
+        )
     }
 }
 

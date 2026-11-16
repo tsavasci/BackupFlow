@@ -165,6 +165,7 @@ struct LocalServerDiscoverySheet: View {
                         discovery.startDiscovery()
                     } label: {
                         Image(systemName: "arrow.clockwise")
+                            .accessibilityHidden(true)
                     }
                 }
             }

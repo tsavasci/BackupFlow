@@ -2,7 +2,7 @@ import Foundation
 import os.log
 
 /// Manages file access permissions for File Provider Storage and security scoped bookmarks
-class FileAccessManager {
+nonisolated final class FileAccessManager: @unchecked Sendable {
     static let shared = FileAccessManager()
     private let logger = Logger(subsystem: "com.backupflow.app", category: "FileAccessManager")
     private let userDefaults = UserDefaults.standard

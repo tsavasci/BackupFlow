@@ -531,3 +531,28 @@
 "smart_restore.error.folder_access" = "Permission du dossier source expirée ou dossier inaccessible.";
 "smart_restore.error.folder_readonly" = "Le dossier source est en lecture seule. Veuillez choisir un dossier accessible en écriture.";
 "smart_restore.error.disk_space" = "Espace disque insuffisant. Requis : %@, Disponible : %@.";
+
+// MARK: - Onboarding v6.7
+"settings.whats_new" = "Nouveautés et guide des fonctions";
+"onboarding.skip" = "Passer";
+"onboarding.next" = "Suivant";
+"onboarding.get_started" = "Commencer";
+"onboarding.slide1.badge" = "NOUVELLE INTERFACE • v6.7";
+"onboarding.slide1.title" = "Cockpit Cyber-Telemetry";
+"onboarding.slide1.subtitle" = "Suivez et gérez vos sauvegardes en temps réel grâce au nouveau design Dark Glass, aux courbes de transfert en direct et à l’anneau de santé.";
+"onboarding.slide2.badge" = "NOUVEAU • RESTAURATION INTELLIGENTE";
+"onboarding.slide2.title" = "Smart Restore & Analyse d’écarts";
+"onboarding.slide2.subtitle" = "Comparez vos sauvegardes distantes avec votre appareil. Détectez instantanément les photos ou fichiers manquants et restaurez-les par période.";
+"onboarding.slide2.highlight" = "Filtre par dates et vérification SHA-256";
+"onboarding.slide3.badge" = "EXPLORATEUR DE SERVEUR";
+"onboarding.slide3.title" = "Récupération directe vers l’appareil";
+"onboarding.slide3.subtitle" = "Parcourez les dossiers de votre serveur FTP, SFTP ou WebDAV et téléchargez vos médias directement dans Photos ou Fichiers.";
+"onboarding.slide4.badge" = "CONFIDENTIALITÉ TOTALE";
+"onboarding.slide4.title" = "100 % Votre Serveur, Zéro Quota";
+"onboarding.slide4.subtitle" = "Vos données vont directement sur votre NAS ou serveur sans cloud tiers. Achat unique à vie sans abonnement ni limite.";
+"onboarding.slide4.item1.title" = "Trousseau & Épinglage TOFU";
+"onboarding.slide4.item1.subtitle" = "Empreinte SHA-256 et stockage sécurisé dans le Trousseau iOS";
+"onboarding.slide4.item2.title" = "Synchronisation en arrière-plan";
+"onboarding.slide4.item2.subtitle" = "Sessions WebDAV en arrière-plan et planification automatique";
+"onboarding.slide4.item3.title" = "Protection anti-perte";
+"onboarding.slide4.item3.subtitle" = "Le mode Ajout uniquement par défaut protège votre archive NAS";

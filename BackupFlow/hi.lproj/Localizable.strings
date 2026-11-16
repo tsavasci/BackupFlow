@@ -529,3 +529,28 @@
 "smart_restore.error.folder_access" = "स्रोत फ़ोल्डर की अनुमति समाप्त हो गई है या फ़ोल्डर तक पहुँच नहीं है।";
 "smart_restore.error.folder_readonly" = "स्रोत फ़ोल्डर केवल पढ़ने के लिए है। कृपया लिखने योग्य फ़ोल्डर चुनें।";
 "smart_restore.error.disk_space" = "पर्याप्त खाली स्थान नहीं है। आवश्यक: %@, उपलब्ध: %@।";
+
+// MARK: - Onboarding v6.7
+"settings.whats_new" = "नया क्या है और फ़ीचर गाइड";
+"onboarding.skip" = "छोड़ें";
+"onboarding.next" = "आगे";
+"onboarding.get_started" = "शुरू करें";
+"onboarding.slide1.badge" = "नया इंटरफ़ेस • v6.7";
+"onboarding.slide1.title" = "Cyber-Telemetry कंट्रोल हब";
+"onboarding.slide1.subtitle" = "नए डार्क ग्लास कॉकपिट, लाइव ट्रांसफ़र ग्राफ़ और प्रोटोकॉल हेल्थ रिंग के साथ अपने सभी बैकअप को रियल-टाइम में प्रबंधित करें।";
+"onboarding.slide2.badge" = "नया फ़ीचर • स्मार्ट रिस्टोर";
+"onboarding.slide2.title" = "स्मार्ट रिस्टोर और अंतर विश्लेषण";
+"onboarding.slide2.subtitle" = "अपने सर्वर बैकअप की तुलना डिवाइस से करें। छूटे हुए फ़ोटो या फ़ाइलों को तुरंत पहचानें और तारीख़ के अनुसार रिस्टोर करें।";
+"onboarding.slide2.highlight" = "तारीख़ फ़िल्टर और SHA-256 अखंडता जाँच";
+"onboarding.slide3.badge" = "रिमोट सर्वर ब्राउज़र";
+"onboarding.slide3.title" = "सर्वर से सीधे डिवाइस पर रिकवरी";
+"onboarding.slide3.subtitle" = "अपने FTP, SFTP या WebDAV सर्वर फ़ोल्डर ब्राउज़ करें और चुने गए मीडिया को सीधे Photos या Files ऐप में डाउनलोड करें।";
+"onboarding.slide4.badge" = "पूर्ण गोपनीयता और सुरक्षा";
+"onboarding.slide4.title" = "100% आपका सर्वर, शून्य कोटा";
+"onboarding.slide4.subtitle" = "आपका डेटा किसी थर्ड-पार्टी क्लाउड के बिना सीधे आपके NAS या सर्वर पर जाता है। एक बार ख़रीदें, आजीवन असीमित उपयोग करें।";
+"onboarding.slide4.item1.title" = "Keychain और TOFU सुरक्षा";
+"onboarding.slide4.item1.subtitle" = "SHA-256 फ़िंगरप्रिंट सत्यापन और सुरक्षित क्रेडेंशियल स्टोर";
+"onboarding.slide4.item2.title" = "निर्बाध बैकग्राउंड सिंक";
+"onboarding.slide4.item2.subtitle" = "बैकग्राउंड WebDAV सेशन और ऑटोमैटिक शेड्यूलर";
+"onboarding.slide4.item3.title" = "डेटा हानि से सुरक्षा";
+"onboarding.slide4.item3.subtitle" = "डिफ़ॉल्ट Append-Only मोड आपके NAS आर्काइव को हमेशा सुरक्षित रखता है";

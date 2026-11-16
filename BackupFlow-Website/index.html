@@ -79,7 +79,7 @@
 
         <!-- Windows -->
         <meta name="msapplication-TileColor" content="#3B82F6" />
-        <link rel="stylesheet" href="styles.css" />
+        <link rel="stylesheet" href="styles.css?v=69" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link
@@ -197,11 +197,11 @@
                 <div class="hero-visual">
                     <!-- Localized App Store banner; {lang} is replaced by script.js -->
                     <img
-                        src="assets/banners/hero-en.jpg"
-                        srcset="assets/banners/hero-en-1200.jpg 1200w, assets/banners/hero-en.jpg 2400w"
+                        src="assets/banners/hero-en.jpg?v=67"
+                        srcset="assets/banners/hero-en-1200.jpg?v=67 1200w, assets/banners/hero-en.jpg?v=67 2400w"
                         sizes="(max-width: 1240px) 100vw, 1200px"
-                        data-lang-src="assets/banners/hero-{lang}.jpg"
-                        data-lang-srcset="assets/banners/hero-{lang}-1200.jpg 1200w, assets/banners/hero-{lang}.jpg 2400w"
+                        data-lang-src="assets/banners/hero-{lang}.jpg?v=67"
+                        data-lang-srcset="assets/banners/hero-{lang}-1200.jpg?v=67 1200w, assets/banners/hero-{lang}.jpg?v=67 2400w"
                         width="2400"
                         height="1029"
                         alt="BackupFlow app screens: dashboard, FTP, SFTP and WebDAV backups, backup history"
@@ -222,12 +222,20 @@
                     </p>
                 </div>
                 <div class="features-grid">
+                    <!-- 1. Smart Scheduling: AI Sparkles / Diamond Icon -->
                     <div class="feature-card">
-                        <div class="feature-icon">
-                            <svg viewBox="0 0 24 24" fill="currentColor">
-                                <path
-                                    d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V19C3 20.1 3.9 21 5 21H11V19H5V3H13V9H21Z"
-                                />
+                        <div class="feature-icon feature-icon-ai">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <defs>
+                                    <linearGradient id="aiSparkleGrad" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stop-color="#2CE5FF"/>
+                                        <stop offset="55%" stop-color="#38F2C6"/>
+                                        <stop offset="100%" stop-color="#1E7BFF"/>
+                                    </linearGradient>
+                                </defs>
+                                <path d="M11 2L13.1 7.9L19 10L13.1 12.1L11 18L8.9 12.1L3 10L8.9 7.9L11 2Z" fill="url(#aiSparkleGrad)" stroke="#E0F7FF" stroke-width="0.6" stroke-linejoin="round"/>
+                                <path d="M18.5 14.5L19.4 17.1L22 18L19.4 18.9L18.5 21.5L17.6 18.9L15 18L17.6 17.1L18.5 14.5Z" fill="#2CE5FF"/>
+                                <path d="M18.5 2.5L19.1 4.1L20.7 4.7L19.1 5.3L18.5 6.9L17.9 5.3L16.3 4.7L17.9 4.1L18.5 2.5Z" fill="#38F2C6"/>
                             </svg>
                         </div>
                         <h3 class="feature-title" data-i18n="features.items.0.title">Smart Scheduling</h3>
@@ -237,13 +245,36 @@
                         </p>
                     </div>
 
+                    <!-- 2. FTP, SFTP & WebDAV: 3 Distinct Colored Server Icons with Protocol Names -->
                     <div class="feature-card">
-                        <div class="feature-icon">
-                            <svg viewBox="0 0 24 24" fill="currentColor">
-                                <path
-                                    d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z"
-                                />
-                            </svg>
+                        <div class="feature-icon-wide proto-servers-strip" aria-hidden="true">
+                            <div class="proto-server-badge proto-ftp">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                    <rect x="3" y="3" width="18" height="7" rx="2"/>
+                                    <rect x="3" y="14" width="18" height="7" rx="2"/>
+                                    <circle cx="7" cy="6.5" r="1" fill="currentColor"/>
+                                    <circle cx="7" cy="17.5" r="1" fill="currentColor"/>
+                                </svg>
+                                <span>FTP</span>
+                            </div>
+                            <div class="proto-server-badge proto-sftp">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                    <rect x="3" y="3" width="18" height="7" rx="2"/>
+                                    <rect x="3" y="14" width="18" height="7" rx="2"/>
+                                    <circle cx="7" cy="6.5" r="1" fill="currentColor"/>
+                                    <circle cx="7" cy="17.5" r="1" fill="currentColor"/>
+                                </svg>
+                                <span>SFTP</span>
+                            </div>
+                            <div class="proto-server-badge proto-webdav">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                    <rect x="3" y="3" width="18" height="7" rx="2"/>
+                                    <rect x="3" y="14" width="18" height="7" rx="2"/>
+                                    <circle cx="7" cy="6.5" r="1" fill="currentColor"/>
+                                    <circle cx="7" cy="17.5" r="1" fill="currentColor"/>
+                                </svg>
+                                <span>WebDAV</span>
+                            </div>
                         </div>
                         <h3 class="feature-title" data-i18n="features.items.1.title">FTP, SFTP &amp; WebDAV Support</h3>
                         <p class="feature-description" data-i18n="features.items.1.desc">
@@ -253,12 +284,13 @@
                         </p>
                     </div>
 
+                    <!-- 3. Battery Intelligence: Green Full Translucent Battery -->
                     <div class="feature-card">
-                        <div class="feature-icon">
-                            <svg viewBox="0 0 24 24" fill="currentColor">
-                                <path
-                                    d="M9 12L11 14L15 10M21 12C21 16.97 16.97 21 12 21C7.03 21 3 16.97 3 12C3 7.03 7.03 3 12 3C16.97 3 21 7.03 21 12Z"
-                                />
+                        <div class="feature-icon feature-icon-battery">
+                            <svg viewBox="0 0 28 24" fill="none">
+                                <rect x="2" y="5" width="21" height="14" rx="3.5" fill="rgba(51, 235, 173, 0.18)" stroke="#38F2C6" stroke-width="1.7"/>
+                                <rect x="4.5" y="7.5" width="16" height="9" rx="2" fill="rgba(51, 235, 173, 0.78)"/>
+                                <path d="M24.5 9.2v5.6" stroke="#38F2C6" stroke-width="2.2" stroke-linecap="round"/>
                             </svg>
                         </div>
                         <h3 class="feature-title" data-i18n="features.items.2.title">Battery Intelligence</h3>
@@ -269,13 +301,11 @@
                         </p>
                     </div>
 
+                    <!-- 4. Multi-Language: 12 Country Mini Flags -->
                     <div class="feature-card">
-                        <div class="feature-icon">
-                            <svg viewBox="0 0 24 24" fill="currentColor">
-                                <path
-                                    d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2M21 9V7L15 1H5C3.89 1 3 1.89 3 3V19C3 20.1 3.9 21 5 21H11V19H5V3H13V9H21Z"
-                                />
-                            </svg>
+                        <div class="feature-icon-wide flag-grid-12" aria-hidden="true">
+                            <span>🇹🇷</span><span>🇬🇧</span><span>🇩🇪</span><span>🇫🇷</span><span>🇪🇸</span><span>🇵🇹</span>
+                            <span>🇷🇺</span><span>🇸🇦</span><span>🇮🇳</span><span>🇯🇵</span><span>🇰🇷</span><span>🇨🇳</span>
                         </div>
                         <h3 class="feature-title" data-i18n="features.items.3.title">Multi-Language</h3>
                         <p class="feature-description" data-i18n="features.items.3.desc">
@@ -284,13 +314,18 @@
                         </p>
                     </div>
 
+                    <!-- 5. Real-time Dashboard: Localized Cropped Backup Health Card -->
                     <div class="feature-card">
-                        <div class="feature-icon">
-                            <svg viewBox="0 0 24 24" fill="currentColor">
-                                <path
-                                    d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM9 17H7V10H9V17ZM13 17H11V7H13V17ZM17 17H15V13H17V17Z"
-                                />
-                            </svg>
+                        <div class="health-mini-preview">
+                            <img
+                                src="assets/health/en.jpg?v=68"
+                                data-lang-src="assets/health/{lang}.jpg?v=68"
+                                width="552"
+                                height="428"
+                                alt="Backup Health Card"
+                                loading="lazy"
+                                decoding="async"
+                            />
                         </div>
                         <h3 class="feature-title" data-i18n="features.items.4.title">Real-time Dashboard</h3>
                         <p class="feature-description" data-i18n="features.items.4.desc">
@@ -299,18 +334,70 @@
                         </p>
                     </div>
 
+                    <!-- 6. Background Execution: User-friendly copy + italic footnote -->
                     <div class="feature-card">
                         <div class="feature-icon">
-                            <svg viewBox="0 0 24 24" fill="currentColor">
-                                <path
-                                    d="M12 1L9 9L1 9L7.5 14L5 22L12 17L19 22L16.5 14L23 9L15 9L12 1Z"
-                                />
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                                <path d="M3 3v5h5" />
+                                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                                <path d="M16 16h5v5" />
                             </svg>
                         </div>
                         <h3 class="feature-title" data-i18n="features.items.5.title">Background Execution</h3>
                         <p class="feature-description" data-i18n="features.items.5.desc">
-                            Professional-grade background processing with
-                            BGTaskScheduler integration and network management.
+                            Automatic background* backup within iOS permissions.
+                        </p>
+                        <p class="feature-footnote" data-i18n="features.items.5.note">
+                            * Within iOS permissions, WebDAV tasks can back up automatically in the background. Timely execution for FTP and SFTP targets is not guaranteed, but a notification is sent at the scheduled time.
+                        </p>
+                    </div>
+
+                    <!-- 7. Smart Restore & Diff Analysis: 4-Symbol Comparison Icon -->
+                    <div class="feature-card">
+                        <div class="feature-icon-wide diff-compare-icon" aria-hidden="true">
+                            <div class="diff-row">
+                                <span class="diff-doc">📄</span>
+                                <span class="diff-op">=</span>
+                                <span class="diff-doc">📄</span>
+                                <span class="diff-badge diff-ok">✓</span>
+                            </div>
+                            <div class="diff-row">
+                                <span class="diff-doc diff-missing">▢</span>
+                                <span class="diff-op">≠</span>
+                                <span class="diff-doc">📄</span>
+                                <span class="diff-badge diff-bad">✕</span>
+                            </div>
+                        </div>
+                        <h3 class="feature-title" data-i18n="features.items.6.title">Smart Restore &amp; Diff Analysis</h3>
+                        <p class="feature-description" data-i18n="features.items.6.desc">
+                            Compare your remote NAS archive with your device library, detect missing photos or files instantly, and restore them by date range.
+                        </p>
+                    </div>
+
+                    <!-- 8. Direct Server-to-Device Recovery: Server <-> iPhone -->
+                    <div class="feature-card">
+                        <div class="feature-icon-wide transfer-pair-icon" aria-hidden="true">
+                            <svg class="pair-device" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <rect x="3" y="3" width="18" height="7" rx="2"/>
+                                <rect x="3" y="14" width="18" height="7" rx="2"/>
+                                <circle cx="7" cy="6.5" r="1" fill="currentColor"/>
+                                <circle cx="7" cy="17.5" r="1" fill="currentColor"/>
+                            </svg>
+                            <svg class="pair-arrows" viewBox="0 0 24 24" fill="none" stroke="#38F2C6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17 8l4 4-4 4"/>
+                                <path d="M3 12h18"/>
+                                <path d="M7 16l-4-4 4-4"/>
+                            </svg>
+                            <svg class="pair-device" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <rect x="6" y="2" width="12" height="20" rx="2.5"/>
+                                <path d="M10.5 5h3" stroke-linecap="round"/>
+                                <circle cx="12" cy="18.5" r="0.8" fill="currentColor"/>
+                            </svg>
+                        </div>
+                        <h3 class="feature-title" data-i18n="features.items.7.title">Direct Server-to-Device Recovery</h3>
+                        <p class="feature-description" data-i18n="features.items.7.desc">
+                            Browse folders on your FTP, SFTP, or WebDAV server and download selected photos, videos, or documents straight into Photos or Files.
                         </p>
                     </div>
                 </div>
@@ -330,8 +417,8 @@
                     <figure class="screenshot-card">
                         <div class="device-frame">
                             <img
-                                src="assets/screens/en/1.jpg"
-                                data-lang-src="assets/screens/{lang}/1.jpg"
+                                src="assets/screens/en/1.jpg?v=67"
+                                data-lang-src="assets/screens/{lang}/1.jpg?v=67"
                                 width="600"
                                 height="1298"
                                 alt="BackupFlow dashboard with backup health and saved servers"
@@ -348,8 +435,8 @@
                     <figure class="screenshot-card">
                         <div class="device-frame">
                             <img
-                                src="assets/screens/en/6.jpg"
-                                data-lang-src="assets/screens/{lang}/6.jpg"
+                                src="assets/screens/en/6.jpg?v=67"
+                                data-lang-src="assets/screens/{lang}/6.jpg?v=67"
                                 width="600"
                                 height="1298"
                                 alt="Creating a new FTP backup task"
@@ -366,8 +453,8 @@
                     <figure class="screenshot-card">
                         <div class="device-frame">
                             <img
-                                src="assets/screens/en/9.jpg"
-                                data-lang-src="assets/screens/{lang}/9.jpg"
+                                src="assets/screens/en/9.jpg?v=67"
+                                data-lang-src="assets/screens/{lang}/9.jpg?v=67"
                                 width="600"
                                 height="1298"
                                 alt="Scheduling and backup behavior options"
@@ -384,8 +471,8 @@
                     <figure class="screenshot-card">
                         <div class="device-frame">
                             <img
-                                src="assets/screens/en/3.jpg"
-                                data-lang-src="assets/screens/{lang}/3.jpg"
+                                src="assets/screens/en/3.jpg?v=67"
+                                data-lang-src="assets/screens/{lang}/3.jpg?v=67"
                                 width="600"
                                 height="1298"
                                 alt="Backup history with transfer statistics"
@@ -402,8 +489,8 @@
                     <figure class="screenshot-card">
                         <div class="device-frame">
                             <img
-                                src="assets/screens/en/5.jpg"
-                                data-lang-src="assets/screens/{lang}/5.jpg"
+                                src="assets/screens/en/5.jpg?v=67"
+                                data-lang-src="assets/screens/{lang}/5.jpg?v=67"
                                 width="600"
                                 height="1298"
                                 alt="Task details with server and schedule information"
@@ -413,15 +500,15 @@
                             />
                         </div>
                         <figcaption>
-                            <h4 data-i18n="screenshots.items.3.title">Task Details</h4>
-                            <p data-i18n="screenshots.items.3.desc">View detailed information and progress for each task</p>
+                            <h4 data-i18n="screenshots.items.3.title">Smart Restore &amp; Diff Analysis</h4>
+                            <p data-i18n="screenshots.items.3.desc">Compare your server with your device and recover missing media by date range</p>
                         </figcaption>
                     </figure>
                     <figure class="screenshot-card">
                         <div class="device-frame">
                             <img
-                                src="assets/screens/en/10.jpg"
-                                data-lang-src="assets/screens/{lang}/10.jpg"
+                                src="assets/screens/en/10.jpg?v=67"
+                                data-lang-src="assets/screens/{lang}/10.jpg?v=67"
                                 width="600"
                                 height="1298"
                                 alt="Settings screen"
@@ -451,8 +538,8 @@
                 <div class="use-cases-grid">
                     <article class="use-case-card">
                         <img
-                            src="assets/usecases/1-en.jpg"
-                            data-lang-src="assets/usecases/1-{lang}.jpg"
+                            src="assets/usecases/1-en.jpg?v=67"
+                            data-lang-src="assets/usecases/1-{lang}.jpg?v=67"
                             width="1200"
                             height="675"
                             alt=""
@@ -469,8 +556,8 @@
                     </article>
                     <article class="use-case-card">
                         <img
-                            src="assets/usecases/2-en.jpg"
-                            data-lang-src="assets/usecases/2-{lang}.jpg"
+                            src="assets/usecases/2-en.jpg?v=67"
+                            data-lang-src="assets/usecases/2-{lang}.jpg?v=67"
                             width="1200"
                             height="675"
                             alt=""
@@ -487,8 +574,8 @@
                     </article>
                     <article class="use-case-card">
                         <img
-                            src="assets/usecases/3-en.jpg"
-                            data-lang-src="assets/usecases/3-{lang}.jpg"
+                            src="assets/usecases/3-en.jpg?v=67"
+                            data-lang-src="assets/usecases/3-{lang}.jpg?v=67"
                             width="1200"
                             height="675"
                             alt=""
@@ -505,8 +592,8 @@
                     </article>
                     <article class="use-case-card">
                         <img
-                            src="assets/usecases/4-en.jpg"
-                            data-lang-src="assets/usecases/4-{lang}.jpg"
+                            src="assets/usecases/4-en.jpg?v=67"
+                            data-lang-src="assets/usecases/4-{lang}.jpg?v=67"
                             width="1200"
                             height="675"
                             alt=""
@@ -658,42 +745,13 @@
                             <div class="floating-icon icon-3">🔒</div>
                             <div class="floating-icon icon-4">⚡</div>
                             <div class="central-logo">
-                                <svg viewBox="0 0 80 80" class="logo-large">
-                                    <defs>
-                                        <linearGradient
-                                            id="downloadGradient"
-                                            x1="0%"
-                                            y1="0%"
-                                            x2="100%"
-                                            y2="100%"
-                                        >
-                                            <stop
-                                                offset="0%"
-                                                style="stop-color: #00d4ff"
-                                            />
-                                            <stop
-                                                offset="50%"
-                                                style="stop-color: #3b82f6"
-                                            />
-                                            <stop
-                                                offset="100%"
-                                                style="stop-color: #8b5cf6"
-                                            />
-                                        </linearGradient>
-                                    </defs>
-                                    <circle
-                                        cx="40"
-                                        cy="40"
-                                        r="35"
-                                        fill="rgba(255,255,255,0.1)"
-                                        stroke="url(#downloadGradient)"
-                                        stroke-width="2"
-                                    />
-                                    <path
-                                        d="M40 15 L55 30 Q57 32 55 34 L45 44 Q43 46 41 44 L35 38 Q33 36 35 34 L40 29 Q38 27 36 29 L25 40 Q23 42 25 44 L35 54 Q37 56 39 54 L55 38 Q57 36 55 34 L40 19 Q38 17 40 15 Z"
-                                        fill="url(#downloadGradient)"
-                                    />
-                                </svg>
+                                <img
+                                    src="assets/app-icon-400.png?v=69"
+                                    alt="BackupFlow App Icon"
+                                    class="logo-large-appicon"
+                                    width="200"
+                                    height="200"
+                                />
                             </div>
                         </div>
                     </div>
@@ -794,7 +852,7 @@
             </div>
         </footer>
 
-        <script src="translations.js"></script>
-        <script src="script.js"></script>
+        <script src="translations.js?v=68"></script>
+        <script src="script.js?v=68"></script>
     </body>
 </html>

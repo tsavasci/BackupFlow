@@ -525,3 +525,28 @@
 "smart_restore.error.folder_access" = "Source folder permission expired or folder could not be accessed.";
 "smart_restore.error.folder_readonly" = "Source folder is read-only. Please reauthorize a writable folder.";
 "smart_restore.error.disk_space" = "Insufficient free space. Required: %@, Available: %@.";
+
+// MARK: - Onboarding v6.7
+"settings.whats_new" = "What's New & Feature Guide";
+"onboarding.skip" = "Skip";
+"onboarding.next" = "Next";
+"onboarding.get_started" = "Get Started";
+"onboarding.slide1.badge" = "NEW INTERFACE • v6.7";
+"onboarding.slide1.title" = "Cyber-Telemetry Control Hub";
+"onboarding.slide1.subtitle" = "Monitor and manage all your backups in real time with the new dark glass cockpit, live transfer splines, and protocol health ring.";
+"onboarding.slide2.badge" = "NEW FEATURE • SMART RESTORE";
+"onboarding.slide2.title" = "Smart Restore & Diff Analysis";
+"onboarding.slide2.subtitle" = "Compare your remote server backups with your device. Instantly detect missing photos or files and restore them with date-range filtering.";
+"onboarding.slide2.highlight" = "Date-range filter & SHA-256 integrity check";
+"onboarding.slide3.badge" = "REMOTE SERVER BROWSER";
+"onboarding.slide3.title" = "Direct Server-to-Device Recovery";
+"onboarding.slide3.subtitle" = "Browse folders on your FTP, SFTP, or WebDAV server and download selected media directly into your Photos library or Files app.";
+"onboarding.slide4.badge" = "TOTAL PRIVACY & SECURITY";
+"onboarding.slide4.title" = "100% Your Server, Zero Quotas";
+"onboarding.slide4.subtitle" = "Your data goes straight to your own NAS or server without third-party clouds. Every feature is unlocked for life with a one-time purchase.";
+"onboarding.slide4.item1.title" = "Keychain & TOFU Pinning";
+"onboarding.slide4.item1.subtitle" = "SHA-256 fingerprint verification & hardware-backed credential store";
+"onboarding.slide4.item2.title" = "Seamless Background Sync";
+"onboarding.slide4.item2.subtitle" = "Background WebDAV sessions and automated schedule engine";
+"onboarding.slide4.item3.title" = "Zero Data-Loss Protection";
+"onboarding.slide4.item3.subtitle" = "Default Append-Only mode keeps your NAS archive safe at all times";

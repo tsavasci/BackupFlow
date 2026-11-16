@@ -370,8 +370,9 @@ final class SFTPService: NSObject, @unchecked Sendable {
                 .filter { $0.filename != "." && $0.filename != ".." }
                 .map { item in
                     var values: [URLResourceKey: Any] = [:]
+                    let entryPath = BackupArchive.safeRemotePath(basePath: path, relativePath: item.filename)
                     values[.nameKey] = item.filename
-                    values[.pathKey] = item.filename
+                    values[.pathKey] = entryPath
                     values[.fileSizeKey] = Int64(item.attributes.size ?? 0)
                     let permissions = item.attributes.permissions ?? 0
                     let isDirectory = (permissions & 0o170000) == 0o040000
@@ -440,6 +441,21 @@ final class SFTPService: NSObject, @unchecked Sendable {
             await self?.disconnectInternal()
         }
     }
+
+    func disconnectAsync() async {
+        await disconnectInternal()
+    }
+
+    func resolveEffectiveRemotePath(destinationPath: String, sourcePath: String) async throws -> String {
+        let isPhotosSource = sourcePath == "PHOTOS_LIBRARY"
+        let sourceFolderName = URL(fileURLWithPath: sourcePath).lastPathComponent
+        let relativeRemoteBase = normalizedRemoteBase(
+            destinationPath: destinationPath,
+            fallback: isPhotosSource ? "photos" : sourceFolderName,
+            allowRelative: true
+        )
+        return try await resolveRemoteBase(relativeRemoteBase)
+    }
     
     func performBackup(
         host: String,
@@ -477,13 +493,10 @@ final class SFTPService: NSObject, @unchecked Sendable {
         
         let isPhotosSource = sourcePath == "PHOTOS_LIBRARY"
         let sourceURL = URL(fileURLWithPath: sourcePath)
-        let sourceFolderName = sourceURL.lastPathComponent
-        let relativeRemoteBase = normalizedRemoteBase(
+        let effectiveRemotePath = try await resolveEffectiveRemotePath(
             destinationPath: destinationPath,
-            fallback: isPhotosSource ? "photos" : sourceFolderName,
-            allowRelative: true
+            sourcePath: sourcePath
         )
-        let effectiveRemotePath = try await resolveRemoteBase(relativeRemoteBase)
         let checkpointID = makeResumeCheckpointID(
             host: normalizedHost,
             port: port,
@@ -578,6 +591,7 @@ final class SFTPService: NSObject, @unchecked Sendable {
     }
 
     func downloadFile(remotePath: String, to localURL: URL) async throws {
+        try await ensureConnected()
         guard let sftp = currentSFTPClient() else {
             throw makeSFTPError(.connection)
         }
@@ -589,10 +603,16 @@ final class SFTPService: NSObject, @unchecked Sendable {
             var offset: UInt64 = 0
             while true {
                 try Task.checkCancellation()
-                let buffer = try await remoteFile.read(from: offset, length: 256 * 1024)
-                guard buffer.readableBytes > 0 else { break }
-                try handle.write(contentsOf: Data(buffer.readableBytesView))
-                offset += UInt64(buffer.readableBytes)
+                do {
+                    let buffer = try await remoteFile.read(from: offset, length: 64 * 1024)
+                    guard buffer.readableBytes > 0 else { break }
+                    try handle.write(contentsOf: Data(buffer.readableBytesView))
+                    offset += UInt64(buffer.readableBytes)
+                } catch let status as SFTPMessage.Status where status.errorCode == .eof {
+                    break
+                } catch SFTPError.errorStatus(let status) where status.errorCode == .eof {
+                    break
+                }
             }
         }
     }

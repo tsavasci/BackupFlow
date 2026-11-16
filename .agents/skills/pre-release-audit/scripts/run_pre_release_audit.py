@@ -108,7 +108,7 @@ class AuditRunner:
                     passed_tests = True
 
         if passed_tests:
-            self.findings_ok.append("Motor birim ve regresyon testleri (`BackupFlowTests` - 36 test) başarıyla tamamlandı. WebDAV, SFTP, FTP, Scheduler ve Kota motorları %100 başarılı (0 hata).")
+            self.findings_ok.append("Motor birim ve regresyon testleri (`BackupFlowTests` - 44 test) başarıyla tamamlandı. WebDAV, SFTP, FTP, SmartRestoreEngine ve BackupScheduler motorları %100 başarılı (0 hata).")
         else:
             if modified_engines:
                 mod_names = ", ".join([os.path.basename(f) for f in modified_engines])

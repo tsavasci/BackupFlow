@@ -25,18 +25,46 @@ struct ModernCard<Content: View>: View {
         content
             .padding(padding)
             .background(
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(backgroundColor ?? Color(.systemBackground).opacity(colorScheme == .dark ? 0.68 : 0.55))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .stroke(
-                                Color.white.opacity(colorScheme == .dark ? 0.10 : 0.34),
-                                lineWidth: 1
+                ZStack {
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    backgroundColor ?? DesignSystem.Colors.cardSurfaceElevated.opacity(0.95),
+                                    backgroundColor ?? DesignSystem.Colors.cardSurface.opacity(0.98)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
                             )
-                    )
+                        )
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .fill(
+                            RadialGradient(
+                                colors: [
+                                    DesignSystem.Colors.primary.opacity(0.11),
+                                    Color.clear
+                                ],
+                                center: .topLeading,
+                                startRadius: 4,
+                                endRadius: 190
+                            )
+                        )
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    DesignSystem.Colors.primary.opacity(0.65),
+                                    DesignSystem.Colors.rimBorderMuted.opacity(0.65),
+                                    DesignSystem.Colors.electricBlue.opacity(0.45)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
+                }
             )
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-            .withSmallShadow()
+            .shadow(color: Color.black.opacity(0.35), radius: 12, x: 0, y: 6)
     }
 }
 

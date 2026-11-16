@@ -528,3 +528,28 @@
 "smart_restore.error.folder_access" = "انتهت صلاحية إذن مجلد المصدر أو تعذر الوصول إليه.";
 "smart_restore.error.folder_readonly" = "مجلد المصدر للقراءة فقط. يرجى تفويض مجلد قابل للكتابة.";
 "smart_restore.error.disk_space" = "مساحة التخزين غير كافية. المطلوب: %@، المتاح: %@.";
+
+// MARK: - Onboarding v6.7
+"settings.whats_new" = "الجديد ودليل الميزات";
+"onboarding.skip" = "تخطي";
+"onboarding.next" = "التالي";
+"onboarding.get_started" = "ابدأ الآن";
+"onboarding.slide1.badge" = "واجهة جديدة • v6.7";
+"onboarding.slide1.title" = "مركز تحكم Cyber-Telemetry";
+"onboarding.slide1.subtitle" = "راقب جميع نسخك الاحتياطية لحظياً عبر تصميم الزجاج الداكن الجديد ومخططات النقل الحية وحلقة صحة البروتوكولات.";
+"onboarding.slide2.badge" = "ميزة جديدة • الاستعادة الذكية";
+"onboarding.slide2.title" = "الاستعادة الذكية وتحليل الفروقات";
+"onboarding.slide2.subtitle" = "قارن نسخ الخادم الاحتياطية مع جهازك لاكتشاف الصور أو الملفات المفقودة فوراً واستعادتها حسب النطاق الزمني.";
+"onboarding.slide2.highlight" = "تصفية حسب التاريخ وتحقق SHA-256";
+"onboarding.slide3.badge" = "متصفح الخادم البعيد";
+"onboarding.slide3.title" = "استرداد مباشر من الخادم إلى الجهاز";
+"onboarding.slide3.subtitle" = "تصفح مجلدات خادم FTP أو SFTP أو WebDAV وقم بتنزيل الوسائط المحددة مباشرة إلى معرض الصور أو تطبيق الملفات.";
+"onboarding.slide4.badge" = "خصوصية وأمان كاملان";
+"onboarding.slide4.title" = "خادمك 100% بدون حصص أو اشتراك";
+"onboarding.slide4.subtitle" = "تنتقل بياناتك مباشرة إلى خادمك أو جهاز NAS الخاص بك دون سحابات خارجية، مع ترخيص مدى الحياة بدفعة واحدة.";
+"onboarding.slide4.item1.title" = "حماية Keychain وتثبيت TOFU";
+"onboarding.slide4.item1.subtitle" = "التحقق من بصمة SHA-256 وتخزين بيانات الاعتماد المشفرة";
+"onboarding.slide4.item2.title" = "مزامنة خلفية متواصلة";
+"onboarding.slide4.item2.subtitle" = "جلسات WebDAV في الخلفية وجدولة تلقائية ذكية";
+"onboarding.slide4.item3.title" = "حماية من فقدان البيانات";
+"onboarding.slide4.item3.subtitle" = "وضع الإضافة فقط الافتراضي يحمي أرشيف الخادم دائماً";
