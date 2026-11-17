@@ -8,7 +8,7 @@
 - **App Store ID:** `6753620051`
 - **Bundle Identifier:** `tamersavasci.BackupFlow`
 - **Platform:** iOS / iPadOS (Swift 6, SwiftUI, SwiftData, iOS 17+)
-- **Mevcut Sürüm:** v6.7 (Build 1)
+- **Mevcut Sürüm:** v6.7 (Build 2)
 - **Desteklenen Diller (12 Dil):** Türkçe (`tr`), İngilizce (`en`), Almanca (`de`), Fransızca (`fr`), İspanyolca (`es`), Portekizce (`pt`), Rusça (`ru`), Arapça (`ar`), Çince (`zh`), Japonca (`ja`), Korece (`ko`), Hintçe (`hi`).
 - **İş Modeli:** **Tek Seferlik Peşin Satın Alma (One-Time Purchase • Paid Upfront Lifetime — $2.99).** Uygulama içi satın alma (IAP), abonelik, reklam veya dosya aktarım kotası kesinlikle yoktur. Satın alan kullanıcı tüm özelliklere sınırsız ve ömür boyu sahip olur.
 
@@ -97,24 +97,24 @@
   - **WebDAV Tam Otomatik Arka Plan Yedekleme:** WebDAV görevleri kullanıcıya *"Yedeklemeye Hazır"* bildirimi atmadan doğrudan arka planda sessizce başlar, uygulama arka plana alınsa veya ekran kilitlense dahi `backgroundURLSession` ile kesintisiz tamamlanır.
   - **FTP / SFTP Etkileşimli Hatırlatıcılar:** `BackupNotifier` ile FTP/SFTP görevleri için interaktif bildirimler (*Şimdi Başlat*, *1 Saat Ertele*, *Detayları Aç*) ve tüm protokoller için tamamlanma/hata bildirimleri.
 
-### 4.5. Gösterge Paneli (Dashboard) ve Kullanıcı Deneyimi
-- **Cyber-Telemetry Dark Glass Kokpit (`MainTabView`):**
-  - **Üst Başlık (`DashboardHeader`):** Karşılama mesajı, canlı aktif görev durumu kapsülü, *"Yedekleme Merkezi"* başlığı ve Ayarlar kısayolu.
-  - **Hero Kartı (`DashboardHeroCard`):** Aktif görevin durumu, son senkronizasyon tarihi, bir sonraki göreve canlı geri sayım sayacı, son çalışmalara dayalı çift dalgalı `TelemetrySparklineView` ve tek dokunuşla başlatma/durdurma.
-  - **Canlı İlerleme Kartı (`DashboardProgressCard`):** Aktarım anında genel yüzde, aktarım hızı (`MB/s`), aktif dosya adı ve $\ge 50\text{ MB}$ dosyalar için ikincil mini dosya ilerleme çubuğu.
-  - **Sağlık & Performans Bento Kartları (`DashboardHealthCard`):** Son 6 çalışmayı gösteren etkileşimli `TelemetrySplineChartView`, dairesel başarı halkası (`TelemetryRingGauge`), ardışık hata ve ortalama süre satırları.
-  - **Sunucu ve Görev Listesi (`DashboardServersSection`):** Kayıtlı görevleri listeleme, hızlı başlatma, düzenleme, silme ve duraklatma.
-  - **4'lü Alt Kokpit Dock (`DashboardActionDock`):** *Senkronize Et*, *Sunucular*, *Geçmiş* ve *Geri Yükle* kısayolları.
-  - **Geçmiş Listesi ve Detayı (`HistoryView`):** Tüm geçmiş aktarımların süre, aktarılan bayt, yüklenen/atlanan dosya detayları ve hata analizleri.
+### 4.5. Gösterge Paneli ve Kullanıcı Deneyimi (`TabView` + `Router`)
+- **3 Sekmeli Sade Koyu Arayüz (`MainTabView` & `BackupFlowHome`):**
+  - **Görevler (`BackupHomeView`):**
+    - **Tek Satırlık Durum Özeti:** Durum noktası + başlık (`Her şey güncel`, `Yedekleniyor`, `Son çalıştırmada hata`), altında `son · sonraki · hata` özeti.
+    - **14 Günlük Aktarım Grafiği:** Swift `Charts` (`BarMark`) ile son 14 günde aktarılan MB miktarı (tarih ve MB eksenli).
+    - **Düz Görev Satırları (`TaskRow`):** Durum noktası, görev adı, son çalışma zamanı, renkli protokol etiketi (`SFTP` koyu yeşil, `WebDAV` mavimsi mor, `FTP` turuncu) + host adresi, özet satırı (dosya sayısı · boyut · süre) veya duraklatılmış görevlerde `Duraklatıldı` etiketi. Çalışan görevlerde gerçek ilerleme çubuğu, `%` tamamlanma, aktif dosya adı, hız ve kalan süre gösterilir.
+    - **Swipe & Basılı Tutma Aksiyonları:** Soldan swipe ile `Çalıştır`/`Durdur`, sağdan swipe ile `Düzenle` ve `Sil`; basılı tutma (`.contextMenu`) ile `Şimdi Başlat` ve `Zamanlamayı Duraklat` / `Zamanlamayı Devam Ettir`.
+  - **Geçmiş (`HistoryView` & `HistoryDetailView`):** Protokol filtresi (`Tümü`, `FTP`, `SFTP`, `WebDAV`), güne göre gruplanmış çalıştırma kayıtları ve JSON/CSV/Diagnostik dışa aktarma.
+  - **Ayarlar (`SettingsView`) & Yeni Yedekleme (`BackupView`):** Native SwiftUI `Form` düzeninde, tek `Router` üzerinden açılan sheet'ler.
 - **4 Slaytlık Tanıtım ve Yenilikler Rehberi (`OnboardingView`):**
-  - Yeni kurulum yapan ve eski sürümden v6.7'ye güncelleyen tüm kullanıcılara ilk açılışta otomatik gösterilen (ve Ayarlar → Hakkında bölümünden istenildiğinde tekrar açılabilen) 4 slaytlık etkileşimli rehber.
+  - İlk açılışta gösterilen ve Ayarlar → Hakkında bölümünden tekrar açılabilen 4 slaytlık rehber.
 
 ### 4.6. Uzak Sunucu Gezgini ve Akıllı Geri Yükleme (Restore & Smart Diff Engine)
+- **Geri Yükle Sekmesi & Akıllı Geri Yükleme (`RestoreView` & `SmartRestoreView`):**
+  - Geri Yükle sekmesinden seçilen görev için otomatik tarama ve fark analizi başlatılır (`idle` → `scanning` → `ready` → `restoring` → `done`/`failed`).
+  - Hedefte, kaynakta mevcut, eksik ve geri yüklenecek boyut özetleri ile tür kırılımı (`Fotoğraf`, `Video`, `Diğer`) ve eksik dosyaların tam listesi (`MissingFilesList`) sunulur; yalnızca kaynakta olmayan dosyalar geri yüklenir (`RestoredPhotoLedgerStore` ile çift geri yükleme önlenir).
 - **Uzak Sunucu Gezgini (`RestoreBrowserView` & `RestoreService`):**
-  - Kullanıcılar FTP, SFTP veya WebDAV sunucularındaki klasörlere canlı olarak göz atabilir, arama yapabilir, birden fazla fotoğraf/video/dosya seçerek doğrudan **Fotoğraflar Galerisi**'ne veya **Dosyalar (Files)** uygulamasına indirebilir.
-- **Akıllı Geri Yükleme ve Fark Analizi (`SmartRestoreSheetView` & `SmartRestoreEngine`):**
-  - Sunucudaki yedekleri cihazdaki mevcut fotoğraf kütüphanesi veya yerel klasörle karşılaştırır; **Sağlam (`intact`)**, **Eksik (`missing`)**, **Belirsiz (`ambiguous`)** ve **Çakışan (`conflicts`)** dosyaları sınıflandırır.
-  - Tarih aralığı filtresi (`DatePicker`), SHA-256 / dosya boyutu doğrulaması ve `RestoredPhotoLedgerStore` / `RestoreIgnoreRecord` desteğiyle silinmiş medyaları güvenle kurtarır.
+  - Görev detayı üzerinden FTP, SFTP veya WebDAV sunucularındaki klasörlere canlı olarak göz atıp seçili medya/dosyaları Fotoğraflar veya Dosyalar uygulamasına indirme.
 
 ---
 

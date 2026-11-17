@@ -52,50 +52,70 @@ final class AppStoreScreenshots: XCTestCase {
         XCTAssertTrue(app.buttons["dashboard.settings"].waitForExistence(timeout: 10))
         sleep(2) // demo data is inserted just after launch
 
-        // 1–2: dashboard, top and scrolled
-        try shot()
-        app.swipeUp()
+        // 1: Home (Tasks tab — 14-day chart + task rows)
         try shot()
 
-        // 3–4: history list and one run's details
-        tap(app.buttons["dashboard.history"], in: app)
-        try shot()
-        app.buttons["history.item"].firstMatch.tap()
-        try shot()
-        app.navigationBars.buttons.element(boundBy: 0).tap()
-        app.buttons["sheet.close"].firstMatch.tap()
-
-        // 5: a saved task's details
+        // 2: Task Detail
         tap(app.buttons["dashboard.server_details"].firstMatch, in: app)
         try shot()
         app.buttons["sheet.close"].firstMatch.tap()
 
-        // 6–9: new backup form for FTP, SFTP and WebDAV, then a daily schedule
+        // 3–5: New Backup form for FTP, SFTP, and WebDAV
         tap(app.buttons["dashboard.add"], in: app)
         try shot()
-        // Protocol names are the same in every language, so select by label; segment
-        // order is mirrored in right-to-left languages.
         let targetPicker = app.segmentedControls.firstMatch
         XCTAssertTrue(targetPicker.waitForExistence(timeout: 3))
-        let isRightToLeft = targetPicker.buttons.element(boundBy: 0).label == "WebDAV"
         targetPicker.buttons["SFTP"].tap()
         try shot()
         targetPicker.buttons["WebDAV"].tap()
         try shot()
-        app.swipeUp()
-        app.swipeUp()
-        // Frequency segments: Manual, Daily, Weekly, Monthly, Interval (mirrored in RTL).
-        let frequencyPicker = app.segmentedControls.element(boundBy: 1)
-        if frequencyPicker.waitForExistence(timeout: 3) {
-            let count = frequencyPicker.buttons.count
-            frequencyPicker.buttons.element(boundBy: isRightToLeft ? count - 2 : 1).tap()
-        }
-        try shot()
         app.buttons["sheet.close"].firstMatch.tap()
 
-        // 10: settings
+        // 6–7: History tab and History Detail
+        selectTab(index: 1, language: language, in: app)
+        try shot()
+        let firstHistory = app.buttons["history.item"].firstMatch
+        if firstHistory.waitForExistence(timeout: 3) {
+            firstHistory.tap()
+            try shot()
+            app.navigationBars.buttons.element(boundBy: 0).tap()
+        }
+
+        // 8: Restore tab
+        selectTab(index: 2, language: language, in: app)
+        try shot()
+
+        // 9: Settings (from Tasks tab)
+        selectTab(index: 0, language: language, in: app)
         tap(app.buttons["dashboard.settings"], in: app)
         try shot()
+    }
+
+    @MainActor
+    private func selectTab(index: Int, language: String, in app: XCUIApplication) {
+        let tabBarButton = app.tabBars.buttons.element(boundBy: index)
+        if tabBarButton.waitForExistence(timeout: 1.5) {
+            tabBarButton.tap()
+            return
+        }
+        let titlesByLanguage: [String: [String]] = [
+            "tr": ["Görevler", "Geçmiş", "Geri Yükle"],
+            "en": ["Tasks", "History", "Restore"],
+            "de": ["Aufgaben", "Verlauf", "Wiederherstellen"],
+            "fr": ["Tâches", "Historique", "Restaurer"],
+            "es": ["Tareas", "Historial", "Restaurar"],
+            "pt": ["Tarefas", "Histórico", "Restaurar"],
+            "ru": ["Задачи", "История", "Восстановить"],
+            "ar": ["المهام", "السجل", "استعادة"],
+            "hi": ["कार्य", "इतिहास", "पुनर्स्थापित करें"],
+            "ja": ["タスク", "履歴", "復元"],
+            "ko": ["작업", "기록", "복원"],
+            "zh": ["任务", "历史", "恢复"],
+        ]
+        let label = titlesByLanguage[language]?[index] ?? ""
+        let button = app.buttons[label].firstMatch
+        XCTAssertTrue(button.waitForExistence(timeout: 5), "Missing tab button '\(label)'")
+        button.tap()
     }
 
     /// Scrolls the dashboard until `element` can be tapped, then taps it.

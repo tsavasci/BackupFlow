@@ -13,9 +13,9 @@ Uygulama, **Tek Seferlik Satın Alma (Paid Upfront Lifetime)** modeliyle çalı�
 ```mermaid
 flowchart TD
     subgraph UI["Sunum Katmanı (SwiftUI Views)"]
-        MTV["MainTabView & DashboardSections"]
-        BV["BackupView & BackupFormModel"]
-        RBV["RestoreBrowserView & SmartRestoreSheetView"]
+        MTV["MainTabView (TabView) & BackupHomeView"]
+        BV["BackupView (Native Form) & BackupFormModel"]
+        RBV["RestoreView, SmartRestoreView & RestoreBrowserView"]
         TDV["TaskDetailView & BackupPreviewSheet"]
         HV["HistoryView & SettingsView"]
         OBV["OnboardingView (v6.7)"]
@@ -73,11 +73,11 @@ BackupFlow/
 │   ├── BackupTarget.swift              # Protokol hedef türleri (FTP, SFTP, WebDAV) ve ikon/görünüm eşlemeleri
 │   └── BackupExecutionModels.swift     # Dry-run önizleme (BackupPreviewResult) ve çalışma zamanı modelleri
 ├── Views/
-│   ├── MainTabView.swift               # Ana Cyber-Telemetry Dashboard ekranı ve genel durum koordinasyonu
+│   ├── MainTabView.swift               # 3 sekmeli TabView (Görevler, Geçmiş, Geri Yükle), Router ve SwiftData @Query bağlama
 │   ├── Onboarding/                     # OnboardingView.swift (v6.7 4 slaytlık tanıtım ve yenilikler rehberi)
-│   ├── Dashboard/                      # DashboardSections.swift & DashboardComponents.swift
+│   ├── Dashboard/                      # BackupFlowHome.swift (BF enum, BackupHomeView, TaskRow)
 │   ├── Backup/                         # BackupView, BackupFormModel, BackupFormSections, RemoteFolderPicker, DocumentPicker
-│   ├── Tasks/                          # TaskDetailView, BackupPreviewSheet, RestoreBrowserView, SmartRestoreSheetView
+│   ├── Tasks/                          # TaskDetailView, BackupPreviewSheet, RestoreView, SmartRestoreView, RestoreBrowserView
 │   ├── History/                        # HistoryView
 │   ├── Settings/                       # SettingsView, BatterySettingsView
 │   └── Views.swift                     # Ortak görünüm yardımcıları ve stil uzantıları

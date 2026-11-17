@@ -59,90 +59,6 @@ enum FrequencyType: String, CaseIterable, Identifiable {
     }
 }
 
-struct TimePicker: View {
-    @Binding var time: ScheduleTime
-
-    private var dateBinding: Binding<Date> {
-        Binding(
-            get: {
-                Calendar.current.date(from: DateComponents(hour: time.hour, minute: time.minute)) ?? Date()
-            },
-            set: { newDate in
-                let components = Calendar.current.dateComponents([.hour, .minute], from: newDate)
-                time.hour = components.hour ?? 0
-                time.minute = components.minute ?? 0
-            }
-        )
-    }
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "clock")
-                .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
-
-            Text("backup.select_time".localized)
-                .font(.subheadline.weight(.medium))
-                .accessibilityHidden(true)
-
-            Spacer()
-
-            DatePicker(
-                "backup.select_time".localized,
-                selection: dateBinding,
-                displayedComponents: .hourAndMinute
-            )
-            .labelsHidden()
-            .datePickerStyle(.compact)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-    }
-}
-
-struct DayPicker: View {
-    @Binding var selectedDay: Int // 1: Sunday, 2: Monday, ..., 7: Saturday
-
-    private var days: [(Int, String)] {
-        [
-            (1, "day.names.sunday".localized),
-            (2, "day.names.monday".localized),
-            (3, "day.names.tuesday".localized),
-            (4, "day.names.wednesday".localized),
-            (5, "day.names.thursday".localized),
-            (6, "day.names.friday".localized),
-            (7, "day.names.saturday".localized)
-        ]
-    }
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "calendar")
-                .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
-
-            Text("backup.select_day".localized)
-                .font(.subheadline.weight(.medium))
-                .accessibilityHidden(true)
-
-            Spacer()
-
-            Picker("backup.day".localized, selection: $selectedDay) {
-                ForEach(days, id: \.0) { day, name in
-                    Text(name).tag(day)
-                }
-            }
-            .pickerStyle(.menu)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-    }
-}
-
 struct BackupView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -165,6 +81,8 @@ struct BackupView: View {
     @State private var sftpHostKeyAlertMessage = ""
     @State private var showingRemoteFolderPicker = false
     @State private var showingLocalServerDiscovery = false
+    @State private var showingKeyImporter = false
+    @State private var keyImportError: String?
 
     private var screenTitle: String {
         editingTask == nil ? "backup.new_backup".localized : "common.edit".localized
@@ -182,83 +100,32 @@ struct BackupView: View {
     }
 
     var body: some View {
-        let targetTheme = BackupSetupTheme.theme(for: form.selectedTarget)
-
-        return ZStack {
-            LinearGradient(
-                colors: [
-                    Color(.systemBackground),
-                    targetTheme.primary.opacity(0.05),
-                    Color(.systemBackground)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
-
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 16) {
-                    BackupSetupHeader(title: screenTitle, form: form, theme: targetTheme)
-
-                    BackupSourceSection(
-                        form: form,
-                        theme: targetTheme,
-                        onChoosePhotos: requestPhotoLibraryAccess,
-                        onChooseFolder: { showingDocumentPicker = true }
-                    )
-
-                    BackupTargetSection(
-                        form: form,
-                        theme: targetTheme,
-                        hasValidConnectionSettings: form.hasValidConnectionSettings,
-                        isTestingConnection: isTestingConnection,
-                        isTestButtonDisabled: isTestingConnection || !form.hasValidConnectionSettings || isTestTapThrottled,
-                        connectionStatus: connectionStatus,
-                        onTestConnection: {
-                            Task {
-                                let now = Date()
-                                if let last = lastTestTapAt, now.timeIntervalSince(last) < 2 { return }
-                                lastTestTapAt = now
-                                await testConnection()
-                            }
-                        },
-                        onBrowseRemoteFolder: { showingRemoteFolderPicker = true },
-                        onScanNetwork: { showingLocalServerDiscovery = true }
-                    )
-
-                    BackupScheduleSection(form: form, theme: targetTheme)
-
-                    BackupBehaviorSection(form: form, theme: targetTheme)
-
-                    if form.isLocalServer {
-                        BackupNetworkSection(form: form, theme: targetTheme)
-                    }
-
-                    BackupSaveButton(theme: targetTheme, isEnabled: form.canSave) {
-                        Task {
-                            await saveTask()
-                        }
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 14)
-                .padding(.bottom, 36)
-            }
+        Form {
+            sourceSection
+            targetSection
+            scheduleSection
+            behaviorSection
         }
+        .scrollContentBackground(.hidden)
+        .background(BF.bg)
         .navigationTitle(screenTitle)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
-                Button("task.details.close".localized) { dismiss() }
+                Button("alert.cancel".localized) { dismiss() }
                     .accessibilityIdentifier("sheet.close")
             }
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button("backup.clear".localized) {
-                    resetForm()
-                    showingSaveAlert = false
+            ToolbarItem(placement: .confirmationAction) {
+                Button("form.save".localized) {
+                    Task { await saveTask() }
                 }
+                .disabled(!form.canSave)
+                .fontWeight(.semibold)
+                .accessibilityIdentifier("backup.save")
             }
         }
+        .tint(BF.accent)
+        .preferredColorScheme(.dark)
         .sheet(isPresented: $showingDocumentPicker) {
             DocumentPicker(
                 url: $form.selectedURL,
@@ -273,6 +140,13 @@ struct BackupView: View {
             )
             .ignoresSafeArea()
         }
+        .fileImporter(
+            isPresented: $showingKeyImporter,
+            allowedContentTypes: [.data, .plainText, .item],
+            allowsMultipleSelection: false
+        ) { result in
+            handleKeyImport(result)
+        }
         .alert("backup.info_title".localized, isPresented: $showingSaveAlert) {
             Button("backup.ok".localized, role: .cancel) {
                 if closeAfterSaveAlert {
@@ -283,14 +157,15 @@ struct BackupView: View {
         } message: {
             Text(saveAlertMessage)
         }
+        .alert("backup.photo_permission_required".localized, isPresented: $showingPhotoLibraryDeniedAlert) {
+            Button("backup.ok".localized, role: .cancel) {}
+        }
         .alert(
             "backup.start_prompt_title".localized,
             isPresented: $showingStartPrompt,
             presenting: backupTaskToStart
         ) { taskToStart in
             Button("backup.notification.action.start".localized) {
-                // The message below already warned about the missing Wi-Fi, so tapping
-                // Start is the confirmation.
                 BackupScheduler.shared.startUserInitiatedBackup(
                     task: taskToStart,
                     ignoreWiFiRequirement: BackupScheduler.shared.needsWiFiConfirmation(for: taskToStart)
@@ -349,7 +224,426 @@ struct BackupView: View {
         }
     }
 
+    // MARK: - Kaynak
+
+    private var sourceSection: some View {
+        Section {
+            TextField("form.name_optional".localized, text: $form.customName)
+
+            Picker("backup.source_section".localized, selection: $form.isPhotoLibrarySelected) {
+                Text("backup.photos_option".localized).tag(true)
+                Text("backup.folder_select".localized).tag(false)
+            }
+            .onChange(of: form.isPhotoLibrarySelected) { _, isPhotos in
+                if isPhotos {
+                    requestPhotoLibraryAccess()
+                }
+            }
+
+            if form.isPhotoLibrarySelected {
+                Picker("form.scope".localized, selection: $form.selectedMediaType) {
+                    ForEach(MediaType.allCases) { type in
+                        Text(type.displayName).tag(type)
+                    }
+                }
+
+                Toggle("backup.photo_backup_include_icloud".localized, isOn: $form.includeICloudAssets)
+
+                Picker("backup.photo_folder_structure".localized, selection: $form.photoFolderStructure) {
+                    ForEach(PhotoFolderStructure.allCases) { structure in
+                        Text(structure.displayName).tag(structure)
+                    }
+                }
+
+                Toggle("backup.preserve_original_format".localized, isOn: $form.preserveOriginalPhotoFormat)
+            } else {
+                Button {
+                    showingDocumentPicker = true
+                } label: {
+                    LabeledContent("backup.folder_select".localized) {
+                        Text(form.selectedURL?.lastPathComponent ?? "form.choose".localized)
+                            .foregroundStyle(form.selectedURL == nil ? BF.accent : .secondary)
+                    }
+                }
+            }
+        } header: {
+            sectionLabel("backup.source_section".localized.uppercased())
+        }
+        .listRowBackground(BF.surface)
+    }
+
+    // MARK: - Hedef
+
+    private var targetSection: some View {
+        Section {
+            Picker("backup.target_type".localized, selection: $form.selectedTarget) {
+                ForEach(BackupTarget.allCases) { target in
+                    Text(target.displayName).tag(target)
+                }
+            }
+            .pickerStyle(.segmented)
+            .listRowBackground(Color.clear)
+            .onChange(of: form.selectedTarget) { _, _ in
+                connectionStatus = .idle
+            }
+
+            Button {
+                showingLocalServerDiscovery = true
+            } label: {
+                Label("backup.scan_network".localized, systemImage: "dot.radiowaves.left.and.right")
+            }
+
+            switch form.selectedTarget {
+            case .ftp:
+                ftpFields
+            case .sftp:
+                sftpFields
+            case .webdav:
+                webdavFields
+            }
+
+            Button {
+                Task {
+                    let now = Date()
+                    if let last = lastTestTapAt, now.timeIntervalSince(last) < 2 { return }
+                    lastTestTapAt = now
+                    await testConnection()
+                }
+            } label: {
+                HStack {
+                    Text("backup.test_connection".localized)
+                    Spacer()
+                    testResult
+                }
+            }
+            .disabled(isTestingConnection || !form.hasValidConnectionSettings || isTestTapThrottled)
+
+            Button("backup.remote_folder.browse".localized) {
+                showingRemoteFolderPicker = true
+            }
+            .disabled(!form.hasValidConnectionSettings)
+        } header: {
+            sectionLabel("backup.target_type".localized.uppercased())
+        }
+        .listRowBackground(BF.surface)
+    }
+
+    @ViewBuilder
+    private var ftpFields: some View {
+        LabeledContent("form.server".localized) {
+            TextField("192.168.1.20", text: $form.ftpHost)
+                .multilineTextAlignment(.trailing)
+                .font(BF.mono)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .keyboardType(.URL)
+        }
+
+        LabeledContent("form.port".localized) {
+            TextField("21", text: $form.ftpPort)
+                .multilineTextAlignment(.trailing)
+                .font(BF.mono)
+                .keyboardType(.numberPad)
+        }
+
+        Toggle("backup.anonymous_login".localized, isOn: $form.isAnonymous)
+
+        if !form.isAnonymous {
+            LabeledContent("backup.username".localized) {
+                TextField("backup.username".localized, text: $form.ftpUsername)
+                    .multilineTextAlignment(.trailing)
+                    .font(BF.mono)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+            }
+            LabeledContent("backup.password".localized) {
+                SecureField("backup.password".localized, text: $form.ftpPassword)
+                    .multilineTextAlignment(.trailing)
+            }
+        }
+
+        LabeledContent("form.remote_path".localized) {
+            TextField("/", text: $form.destinationPath)
+                .multilineTextAlignment(.trailing)
+                .font(BF.mono)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+        }
+    }
+
+    @ViewBuilder
+    private var sftpFields: some View {
+        LabeledContent("form.server".localized) {
+            TextField("192.168.1.20", text: $form.sftpHost)
+                .multilineTextAlignment(.trailing)
+                .font(BF.mono)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .keyboardType(.URL)
+        }
+
+        LabeledContent("form.port".localized) {
+            TextField("22", text: $form.sftpPort)
+                .multilineTextAlignment(.trailing)
+                .font(BF.mono)
+                .keyboardType(.numberPad)
+        }
+
+        Picker("backup.sftp_auth_method".localized, selection: $form.sftpAuthMethod) {
+            ForEach(SFTPAuthMethod.allCases) { method in
+                Text(method.displayName).tag(method)
+            }
+        }
+
+        LabeledContent("backup.username".localized) {
+            TextField("backup.username".localized, text: $form.sftpUsername)
+                .multilineTextAlignment(.trailing)
+                .font(BF.mono)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+        }
+
+        if form.sftpAuthMethod == .password {
+            LabeledContent("backup.password".localized) {
+                SecureField("backup.password".localized, text: $form.sftpPassword)
+                    .multilineTextAlignment(.trailing)
+            }
+        } else {
+            Button {
+                showingKeyImporter = true
+            } label: {
+                LabeledContent("backup.sftp_import_key".localized) {
+                    Text(form.sftpKeyName.isEmpty ? "form.choose".localized : form.sftpKeyName)
+                        .foregroundStyle(form.sftpKeyName.isEmpty ? BF.accent : BF.ok)
+                        .font(BF.monoSmall)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+            }
+
+            LabeledContent("backup.sftp_key_passphrase".localized) {
+                SecureField("backup.password".localized, text: $form.sftpKeyPassphrase)
+                    .multilineTextAlignment(.trailing)
+            }
+
+            if let keyImportError {
+                Text(keyImportError)
+                    .font(BF.monoSmall)
+                    .foregroundStyle(BF.fail)
+            }
+        }
+
+        LabeledContent("form.remote_path".localized) {
+            TextField("/", text: $form.sftpPath)
+                .multilineTextAlignment(.trailing)
+                .font(BF.mono)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+        }
+    }
+
+    @ViewBuilder
+    private var webdavFields: some View {
+        LabeledContent("form.server".localized) {
+            TextField("https://cloud.example.com/remote.php/dav/files/", text: $form.webdavURL)
+                .multilineTextAlignment(.trailing)
+                .font(BF.mono)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .keyboardType(.URL)
+        }
+
+        LabeledContent("form.port".localized) {
+            TextField("443", text: $form.webdavPort)
+                .multilineTextAlignment(.trailing)
+                .font(BF.mono)
+                .keyboardType(.numberPad)
+        }
+
+        LabeledContent("backup.username".localized) {
+            TextField("backup.username".localized, text: $form.webdavUsername)
+                .multilineTextAlignment(.trailing)
+                .font(BF.mono)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+        }
+
+        LabeledContent("backup.password".localized) {
+            SecureField("backup.password".localized, text: $form.webdavPassword)
+                .multilineTextAlignment(.trailing)
+        }
+
+        LabeledContent("form.remote_path".localized) {
+            TextField("/", text: $form.webdavPath)
+                .multilineTextAlignment(.trailing)
+                .font(BF.mono)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+        }
+    }
+
+    @ViewBuilder
+    private var testResult: some View {
+        switch connectionStatus {
+        case .idle:
+            EmptyView()
+        case .testing:
+            ProgressView().controlSize(.small)
+        case .success(let message):
+            Text(message)
+                .font(BF.monoSmall)
+                .foregroundStyle(BF.ok)
+                .lineLimit(1)
+        case .failure(let message):
+            Text(message)
+                .font(BF.monoSmall)
+                .foregroundStyle(BF.fail)
+                .lineLimit(1)
+        }
+    }
+
+    // MARK: - Zamanlama
+
+    private var scheduleSection: some View {
+        Section {
+            Picker("backup.frequency".localized, selection: $form.frequencyType) {
+                ForEach(FrequencyType.allCases) { type in
+                    Text(type.displayName).tag(type)
+                }
+            }
+
+            switch form.frequencyType {
+            case .manual:
+                EmptyView()
+            case .intervalHours:
+                Stepper(
+                    "backup.every_hours".localized(with: form.intervalHours),
+                    value: $form.intervalHours,
+                    in: 1...48
+                )
+            case .daily:
+                DatePicker("backup.hour".localized, selection: scheduleTimeBinding($form.selectedTime), displayedComponents: .hourAndMinute)
+            case .weekly:
+                Picker("backup.day".localized, selection: $form.selectedDay) {
+                    ForEach(weekdays, id: \.0) { day, name in
+                        Text(name).tag(day)
+                    }
+                }
+                DatePicker("backup.hour".localized, selection: scheduleTimeBinding($form.selectedTime), displayedComponents: .hourAndMinute)
+            case .monthly:
+                Stepper("backup.month_day".localized(with: form.selectedMonthDay), value: $form.selectedMonthDay, in: 1...31)
+                DatePicker("backup.hour".localized, selection: scheduleTimeBinding($form.selectedTime), displayedComponents: .hourAndMinute)
+            }
+        } header: {
+            sectionLabel("backup.scheduling".localized.uppercased())
+        }
+        .listRowBackground(BF.surface)
+    }
+
+    // MARK: - Davranış
+
+    private var behaviorSection: some View {
+        Section {
+            Picker("backup.deletion_policy".localized, selection: $form.deletionPolicy) {
+                ForEach(BackupDeletionPolicy.allCases) { policy in
+                    Text(policy.displayName).tag(policy)
+                }
+            }
+
+            Toggle("form.checksum_verify".localized, isOn: Binding(
+                get: { form.checksumMode == .verifyUploads },
+                set: { form.checksumMode = $0 ? .verifyUploads : .off }
+            ))
+
+            Toggle("backup.require_wifi".localized, isOn: $form.requiresWiFi)
+            Toggle("backup.require_external_power".localized, isOn: $form.requiresExternalPower)
+
+            if form.isLocalServer {
+                Toggle("backup.allow_cellular".localized, isOn: $form.allowCellularForLocalServer)
+            }
+
+            Toggle("backup.use_allowed_time_window".localized, isOn: $form.useAllowedWindow)
+
+            if form.useAllowedWindow {
+                DatePicker("form.window_start".localized, selection: scheduleTimeBinding($form.allowedStartTime), displayedComponents: .hourAndMinute)
+                DatePicker("form.window_end".localized, selection: scheduleTimeBinding($form.allowedEndTime), displayedComponents: .hourAndMinute)
+            }
+        } header: {
+            sectionLabel("backup.behavior".localized.uppercased())
+        } footer: {
+            Text(deletionPolicyFooter)
+        }
+        .listRowBackground(BF.surface)
+    }
+
+    private var deletionPolicyFooter: String {
+        switch form.deletionPolicy {
+        case .appendOnly:
+            return "form.append_only_footer".localized
+        case .mirror:
+            return "backup.mirror_policy_warning".localized
+        case .archive:
+            return "backup.archive_policy_warning".localized
+        }
+    }
+
+    private var weekdays: [(Int, String)] {
+        [
+            (1, "day.names.sunday".localized),
+            (2, "day.names.monday".localized),
+            (3, "day.names.tuesday".localized),
+            (4, "day.names.wednesday".localized),
+            (5, "day.names.thursday".localized),
+            (6, "day.names.friday".localized),
+            (7, "day.names.saturday".localized)
+        ]
+    }
+
+    private func scheduleTimeBinding(_ time: Binding<ScheduleTime>) -> Binding<Date> {
+        Binding(
+            get: {
+                Calendar.current.date(from: DateComponents(hour: time.wrappedValue.hour, minute: time.wrappedValue.minute)) ?? Date()
+            },
+            set: { newDate in
+                let components = Calendar.current.dateComponents([.hour, .minute], from: newDate)
+                time.wrappedValue.hour = components.hour ?? 0
+                time.wrappedValue.minute = components.minute ?? 0
+            }
+        )
+    }
+
+    private func sectionLabel(_ title: String) -> some View {
+        Text(title)
+            .font(BF.monoSmall)
+            .textCase(nil)
+    }
+
     // MARK: - Actions
+
+    private func handleKeyImport(_ result: Result<[URL], Error>) {
+        keyImportError = nil
+        switch result {
+        case .success(let urls):
+            guard let url = urls.first else { return }
+            let accessed = url.startAccessingSecurityScopedResource()
+            defer {
+                if accessed { url.stopAccessingSecurityScopedResource() }
+            }
+            do {
+                let data = try Data(contentsOf: url)
+                guard let content = String(data: data, encoding: .utf8), !content.isEmpty else {
+                    keyImportError = "backup.sftp_key_import_failed".localized
+                    return
+                }
+                form.sftpPrivateKey = content
+                form.sftpKeyName = url.lastPathComponent
+            } catch {
+                keyImportError = "backup.sftp_key_import_failed".localized
+            }
+        case .failure:
+            keyImportError = "backup.sftp_key_import_failed".localized
+        }
+    }
 
     private func testConnection() async {
         if isTestingConnection { return }
@@ -388,7 +682,6 @@ struct BackupView: View {
     }
 
     private func saveTask() async {
-        // Every check runs before the task is built, since building it stores the password.
         if let message = form.sourceValidationError() {
             showSaveAlert(message)
             return
@@ -418,7 +711,6 @@ struct BackupView: View {
             debugLog("✅ BackupFlow: Görev başarıyla kaydedildi - \(task.displayName)")
             saveAlertMessage = "tasks.save_success".localized
 
-            // Schedule the backup if frequency is set
             if taskToSave.frequency != .manual {
                 do {
                     try await BackupScheduler.shared.scheduleBackup(task: taskToSave)
@@ -427,19 +719,15 @@ struct BackupView: View {
                     saveAlertMessage += " " + "tasks.schedule_error_detail".localized(with: error.localizedDescription)
                 }
             } else {
-                // Manual task: still schedule processing to allow future background checks
                 BackupScheduler.shared.scheduleProcessingTask()
             }
 
             form.clearConnectionFieldsAfterSave()
 
             if editingTask == nil {
-                // A new task never starts on its own: the first run can upload, and under
-                // the mirror policy delete, many remote files, so ask first.
                 backupTaskToStart = taskToSave
                 showingStartPrompt = true
             } else {
-                // The edit is saved; confirming the alert returns to the task.
                 showSaveAlert(saveAlertMessage, closeAfterDismiss: true)
             }
         } catch {
@@ -447,7 +735,6 @@ struct BackupView: View {
         }
     }
 
-    /// Whether another task already backs up the same source to the same server folder.
     private func hasDuplicateTask() -> Bool {
         do {
             let allTasks = try modelContext.fetch(FetchDescriptor<BackupTask>())
@@ -461,7 +748,6 @@ struct BackupView: View {
         }
     }
 
-    /// Shows the info alert; repeats within a second (double taps) only update the message.
     private func showSaveAlert(_ message: String, closeAfterDismiss: Bool = false) {
         saveAlertMessage = message
         let now = Date()
@@ -471,11 +757,5 @@ struct BackupView: View {
             closeAfterSaveAlert = true
         }
         showingSaveAlert = true
-    }
-
-    private func resetForm() {
-        form.reset()
-        connectionStatus = .idle
-        saveAlertMessage = ""
     }
 }

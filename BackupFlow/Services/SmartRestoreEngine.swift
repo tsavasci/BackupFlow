@@ -1195,7 +1195,7 @@ final class SmartRestoreCoordinator {
         plan = currentPlan
     }
 
-    private nonisolated static func performBackgroundScanAndDiff(
+    nonisolated static func performBackgroundScanAndDiff(
         snapshot: SmartRestoreTaskSnapshot,
         includeArchive: Bool,
         onProgress: @Sendable @escaping (Int, String) -> Void

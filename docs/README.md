@@ -64,7 +64,7 @@ The website reflects BackupFlow's brand identity with:
 ## 📂 File Structure
 
 ```text
-docs/
+BackupFlow-Website/
 ├── index.html                # Main landing page HTML
 ├── privacy-policy.html       # Privacy Policy page
 ├── styles.css                # Complete CSS styles

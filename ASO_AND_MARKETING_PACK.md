@@ -3,7 +3,7 @@
 - **Uygulama Adı:** BackupFlow
 - **App Store ID:** 6753620051
 - **Bundle ID:** `tamersavasci.BackupFlow`
-- **Sürüm:** 6.7 (Build 1)
+- **Sürüm:** 6.7 (Build 2)
 - **Fiyatlandırma Modeli:** Tek Seferlik Satın Alım (Paid Upfront Lifetime - $2.99). Uygulama İçi Satın Alma (IAP) YOK, Abonelik YOK, Transfer Kotası YOK.
 
 ---
@@ -14,13 +14,13 @@
   `BackupFlow: NAS & SFTP Backup`
 - Subtitle (29 karakter):
   `Auto Sync Photos, WebDAV, FTP`
-- Keywords (97 karakter):
-  `synology,nextcloud,qnap,truenas,owncloud,server,cloud,ssh,transfer,folder,photo,video,homelab,heic`
+- Keywords (99 karakter):
+  `synology,nextcloud,truenas,sftp,owncloud,backup,server,ftp,folder,heic,raw,camera,upload,webdav,nas`
 - Promotional Text (168 karakter):
-  `New Cyber-Telemetry UI & Smart Restore! Back up and recover iPhone photos & files directly with your NAS over SFTP, WebDAV, or FTP. One-time purchase — lifetime access.`
+  `Clean new native UI & Smart Restore! Back up and recover iPhone photos & files directly with your NAS over SFTP, WebDAV, or FTP. One-time purchase — lifetime access.`
 - What's New in This Version (Sürüm 6.7):
 ```text
-- New Cyber-Telemetry Dark Glass UI: Real-time transfer sparklines, interactive spline performance charts, Bento health ring gauge, and a 4-slide feature guide.
+- Clean Native Dark UI: 3-tab navigation (Tasks, History, Restore), 14-day MB transfer bar chart with Swift Charts, live progress with %, speed & ETA, and swipe/long-press actions.
 - Smart Restore & Diff Analysis: Compare your remote server backups with your device to instantly detect and restore missing photos or files with date-range filtering.
 - Direct Remote Server Browser: Browse FTP, SFTP, and WebDAV directories and download selected media straight into your Photos library or Files app.
 - Pure One-Time Purchase: Zero subscriptions, zero in-app purchases, and zero transfer quotas.
@@ -36,8 +36,8 @@ No subscriptions, no in-app purchases, no hidden tiers, and no file transfer quo
 
 KEY FEATURES
 
-Cyber-Telemetry Control Hub
-Monitor your backup health at a glance with real-time transfer sparklines, interactive spline history charts, a protocol health ring gauge, and an actionable 4-tab cockpit dock.
+Clean Native Backup Hub
+Monitor your backup status at a glance with a single-line summary, a 14-day MB transfer bar chart, protocol-colored task rows with live % progress, and a 3-tab layout (Tasks, History, Restore).
 
 Smart Restore & Diff Analysis
 Compare your NAS or remote server directly against your device library. Instantly spot missing, intact, or conflicting items, filter by date range, and recover deleted photos or files in one tap.
@@ -72,13 +72,13 @@ Server credentials are encrypted inside the iOS Keychain. SFTP Host Key Pinning 
   `BackupFlow: NAS & SFTP Yedekle`
 - Subtitle (29 karakter):
   `Fotoğraf, WebDAV & FTP Senk.`
-- Keywords (96 karakter):
-  `synology,nextcloud,qnap,truenas,owncloud,sunucu,bulut,yedekleme,dosya,klasör,aktarım,ssh,galeri`
+- Keywords (99 karakter):
+  `synology,nextcloud,truenas,sftp,owncloud,backup,server,ftp,folder,heic,raw,camera,upload,webdav,nas`
 - Promotional Text (166 karakter):
-  `Yeni Cyber-Telemetry arayüzü ve Akıllı Geri Yükleme! Fotoğraf ve dosyalarınızı SFTP, WebDAV ve FTP ile kendi NAS sunucunuza yedekleyin ve kurtarın. Tek seferlik ödeme.`
+  `Sade yeni native arayüz ve Akıllı Geri Yükleme! Fotoğraf ve dosyalarınızı SFTP, WebDAV ve FTP ile NAS sunucunuza yedekleyin ve kurtarın. Tek seferlik ödeme.`
 - What's New in This Version (Sürüm 6.7):
 ```text
-- Yeni Cyber-Telemetry Dark Glass Arayüzü: Canlı aktarım grafikleri, etkileşimli performans eğrileri, Bento sağlık halkası ve 4 slaytlık tanıtım rehberi.
+- Sade ve Native Koyu Arayüz: 3 sekmeli yapı (Görevler, Geçmiş, Geri Yükle), Swift Charts ile 14 günlük MB çubuk grafiği, % ilerleme/hız/kalan süre ve swipe + basılı tutma aksiyonları.
 - Akıllı Geri Yükleme & Fark Analizi: Sunucudaki yedeklerinizi cihazınızla karşılaştırın; eksik fotoğraf ve dosyaları tarih aralığına göre tespit edip tek dokunuşla kurtarın.
 - Doğrudan Uzak Sunucu Gezgini: FTP, SFTP ve WebDAV klasörlerine göz atarak seçtiğiniz medyaları doğrudan Fotoğraflar galerisine veya Dosyalar uygulamasına indirin.
 - Tek Seferlik Satın Alma: Abonelik yok, uygulama içi satın alma yok ve transfer kotası yok.
@@ -94,8 +94,8 @@ Abonelik yok, uygulama içi satın alma yok, gizli ücret yok ve dosya transfer 
 
 ÖNE ÇIKAN ÖZELLİKLER
 
-Cyber-Telemetry Kontrol Merkezi
-Canlı aktarım grafikleri, son yedeklemeleri gösteren etkileşimli performans eğrileri, protokol bazlı sağlık halkası ve 4'lü kokpit dock'u ile tüm yedeklemelerinizi tek ekrandan gerçek zamanlı yönetin.
+Sade ve Native Kontrol Merkezi
+Tek satırlık durum özeti, eksenli 14 günlük MB aktarım grafiği, protokol renkli görev satırları, canlı % ilerleme ve 3 sekmeli düzen (Görevler, Geçmiş, Geri Yükle) ile tüm yedeklemelerinizi zahmetsizce yönetin.
 
 Akıllı Geri Yükleme & Fark Analizi (Smart Restore)
 Sunucudaki yedeklerinizi cihazınızla karşılaştırın. Sağlam, eksik veya çakışan dosyaları anında görün; tarih aralığı filtresiyle silinmiş fotoğraf ve videoları tek dokunuşla geri yükleyin.
@@ -127,13 +127,13 @@ Wi-Fi, şarj, pil seviyesi veya gece saatlerine göre otomatik görevler kurun. 
   `BackupFlow: NAS & SFTP Backup`
 - Subtitle (28 karakter):
   `Fotos & Dateien sicher sync.`
-- Keywords (96 karakter):
-  `webdav,ftp,synology,nextcloud,qnap,truenas,owncloud,server,sicherung,ordner,bilder,cloud,ssh,heic`
+- Keywords (99 karakter):
+  `synology,nextcloud,truenas,sftp,owncloud,backup,server,ftp,folder,heic,raw,camera,upload,webdav,nas`
 - Promotional Text (168 karakter):
-  `Neues Cyber-Telemetry-Design & Smart Restore! Sichern und retten Sie iPhone-Fotos & Dateien direkt per SFTP, WebDAV oder FTP auf Ihrem NAS. Einmaliger Kauf ohne Abo.`
+  `Klares natives Design & Smart Restore! Sichern und retten Sie iPhone-Fotos & Dateien direkt per SFTP, WebDAV oder FTP auf Ihrem NAS. Einmaliger Kauf ohne Abo.`
 - What's New in This Version (Sürüm 6.7):
 ```text
-- Neues Cyber-Telemetry Dark-Glass-Design: Live-Transferkurven, interaktive Performance-Diagramme, Bento-Statusring und 4-seitige Funktionsübersicht.
+- Klares natives Dark-UI: 3-Tab-Navigation (Aufgaben, Verlauf, Wiederherstellen), 14-Tage-MB-Balkendiagramm mit Swift Charts, Live-Fortschritt mit % und Wisch-/Kontextmenü-Aktionen.
 - Smart Restore & Differenzanalyse: Vergleichen Sie Server-Backups mit Ihrem Gerät und stellen Sie fehlende Fotos oder Dateien nach Zeitraum wieder her.
 - Direkter Server-Dateibrowser: Durchsuchen Sie FTP-, SFTP- und WebDAV-Ordner und speichern Sie Medien direkt in Fotos oder Dateien.
 - Einmalkauf: Keine Abos, keine In-App-Käufe und keine Transferlimits.
@@ -149,8 +149,8 @@ Keine Abonnements, keine In-App-Käufe und keine Dateilimits. Einmal kaufen und 
 
 HAUPTFUNKTIONEN
 
-Cyber-Telemetry Kontrollzentrum
-Behalten Sie alle Backups mit Live-Sparklines, interaktiven Verlaufskurven und dem Protokoll-Statusring jederzeit im Blick.
+Klares natives Kontrollzentrum
+Behalten Sie Ihren Backup-Status auf einen Blick im Auge: einzeilige Zusammenfassung, 14-Tage-MB-Diagramm, Protokollfarben, Live-Fortschritt in % und 3-Tab-Struktur.
 
 Smart Restore & Differenzanalyse
 Vergleichen Sie Ihr NAS-Archiv mit dem Gerät, erkennen Sie fehlende oder geänderte Dateien sofort und stellen Sie verlorene Fotos gezielt nach Datumsfilter wieder her.
@@ -182,13 +182,13 @@ Zugangsdaten bleiben sicher im iOS-Schlüsselbund. SFTP-Host-Key- und WebDAV-Zer
   `BackupFlow: Sauvegarde NAS FTP`
 - Subtitle (29 karakter):
   `Sync Photos, SFTP et WebDAV`
-- Keywords (96 karakter):
-  `synology,nextcloud,qnap,truenas,owncloud,serveur,cloud,ssh,transfert,fichiers,dossier,heic,video`
+- Keywords (99 karakter):
+  `synology,nextcloud,truenas,sftp,owncloud,backup,server,ftp,folder,heic,raw,camera,upload,webdav,nas`
 - Promotional Text (166 karakter):
-  `Nouveau design Cyber-Telemetry & Smart Restore ! Sauvegardez et restaurez vos photos iPhone sur votre NAS via SFTP, WebDAV ou FTP sans abonnement. Achat unique à vie.`
+  `Interface native épurée & Smart Restore ! Sauvegardez et restaurez vos photos iPhone sur votre NAS via SFTP, WebDAV ou FTP sans abonnement. Achat unique à vie.`
 - What's New in This Version (Sürüm 6.7):
 ```text
-- Nouveau design Cyber-Telemetry Dark Glass : courbes de transfert en direct, graphiques interactifs, anneau de santé Bento et guide de découverte en 4 étapes.
+- Interface sombre native épurée : navigation en 3 onglets (Tâches, Historique, Restaurer), graphique en barres sur 14 jours (Mo), progression en % en direct et actions par balayage.
 - Smart Restore & Analyse d'écarts : comparez vos sauvegardes serveur avec votre appareil et restaurez les photos ou fichiers manquants par plage de dates.
 - Explorateur serveur direct : parcourez vos dossiers FTP, SFTP et WebDAV et téléchargez vos médias directement dans Photos ou Fichiers.
 - Achat unique à vie : aucun abonnement, aucun achat intégré et aucune limite de transfert.
@@ -204,7 +204,7 @@ Aucun abonnement, aucun achat intégré et aucun quota de fichiers. Payez une se
 
 FONCTIONNALITÉS CLÉS
 
-Cockpit Cyber-Telemetry
+Centre de contrôle natif épuré
 Visualisez la santé de vos sauvegardes en temps réel grâce aux courbes de transfert en direct, graphiques d'historique et anneau de suivi par protocole.
 
 Smart Restore & Analyse d'écarts
@@ -234,13 +234,13 @@ Programmez vos sauvegardes en Wi-Fi ou pendant la charge. Vos identifiants sont 
   `BackupFlow: Copia NAS y SFTP`
 - Subtitle (29 karakter):
   `Sincroniza Fotos, WebDAV, FTP`
-- Keywords (97 karakter):
-  `synology,nextcloud,qnap,truenas,owncloud,servidor,nube,archivos,carpeta,respaldo,automatico,ssh`
+- Keywords (99 karakter):
+  `synology,nextcloud,truenas,sftp,owncloud,backup,server,ftp,folder,heic,raw,camera,upload,webdav,nas`
 - Promotional Text (166 karakter):
-  `¡Nuevo diseño Cyber-Telemetry y Smart Restore! Haz copia y recupera tus fotos y archivos en tu NAS por SFTP, WebDAV y FTP sin suscripciones. Pago único de por vida.`
+  `¡Nuevo diseño nativo y Smart Restore! Haz copia y recupera tus fotos y archivos en tu NAS por SFTP, WebDAV y FTP sin suscripciones. Pago único de por vida.`
 - What's New in This Version (Sürüm 6.7):
 ```text
-- Nuevo diseño Cyber-Telemetry Dark Glass: gráficas de transferencia en vivo, curvas de rendimiento interactivas, anillo de salud Bento y guía de 4 pasos.
+- Diseño oscuro nativo y limpio: navegación en 3 pestañas (Tareas, Historial, Restaurar), gráfico de barras de 14 días (MB), progreso en % en vivo y acciones al deslizar o mantener pulsado.
 - Smart Restore y Análisis de Diferencias: compara tu servidor con el dispositivo para detectar y restaurar fotos o archivos faltantes por fechas.
 - Explorador Remoto Directo: navega por carpetas FTP, SFTP y WebDAV y descarga archivos directamente en Fotos o Archivos.
 - Pago único de por vida: sin suscripciones, sin compras integradas y sin límites de transferencia.
@@ -256,7 +256,7 @@ Sin suscripciones recurrentes, sin compras dentro de la aplicación y sin límit
 
 CARACTERÍSTICAS PRINCIPALES
 
-Centro de Control Cyber-Telemetry
+Centro de Control Nativo
 Supervisa tus copias en tiempo real con gráficas de flujo en vivo, historial interactivo y anillo de salud por protocolo.
 
 Smart Restore y Análisis de Diferencias
@@ -280,13 +280,13 @@ Incluye Solo Añadir (predeterminado), Espejo, Archivo (.backupflow_archive), vi
   `BackupFlow: Backup NAS e SFTP`
 - Subtitle (29 karakter):
   `Sincronizar Fotos, WebDAV FTP`
-- Keywords (96 karakter):
-  `synology,nextcloud,qnap,truenas,owncloud,servidor,nuvem,arquivos,pasta,fotos,videos,ssh,heic,nas`
+- Keywords (99 karakter):
+  `synology,nextcloud,truenas,sftp,owncloud,backup,server,ftp,folder,heic,raw,camera,upload,webdav,nas`
 - Promotional Text (166 karakter):
-  `Novo visual Cyber-Telemetry e Smart Restore! Faça backup e recupere fotos e arquivos do iPhone no seu NAS via SFTP, WebDAV ou FTP sem mensalidades. Compra única.`
+  `Novo visual nativo e Smart Restore! Faça backup e recupere fotos e arquivos do iPhone no seu NAS via SFTP, WebDAV ou FTP sem mensalidades. Compra única.`
 - What's New in This Version (Sürüm 6.7):
 ```text
-- Novo visual Cyber-Telemetry Dark Glass: gráficos de transferência ao vivo, curvas interativas, anel de integridade Bento e guia de novidades em 4 telas.
+- Interface escura nativa e limpa: navegação em 3 abas (Tarefas, Histórico, Restaurar), gráfico de barras de 14 dias (MB), progresso em % ao vivo e ações por gesto.
 - Smart Restore e Análise de Diferenças: compare seu servidor com o aparelho e restaure fotos ou arquivos ausentes com filtro por datas.
 - Navegador de Servidor Direto: explore pastas FTP, SFTP e WebDAV e baixe mídias diretamente para Fotos ou Arquivos.
 - Compra única vitalícia: sem assinaturas, sem compras internas e sem limites de transferência.
@@ -302,8 +302,8 @@ Sem assinaturas, sem compras internas e sem cotas de arquivos. Pague uma única 
 
 RECURSOS PRINCIPAIS
 
-Central Cyber-Telemetry
-Acompanhe seus backups em tempo real com sparklines ao vivo, gráficos de desempenho interativos e anel de saúde por protocolo.
+Central Nativa e Limpa
+Acompanhe seus backups com resumo em uma linha, gráfico de barras de 14 dias (MB), tarefas com cores por protocolo e progresso em % em tempo real.
 
 Smart Restore e Análise de Diferenças
 Compare as cópias no servidor com o seu dispositivo, identifique itens ausentes instantaneamente e restaure por intervalo de datas.
@@ -326,13 +326,13 @@ Modos Apenas Adicionar (padrão), Espelho e Arquivo (.backupflow_archive), simul
   `BackupFlow: Бэкап NAS и SFTP`
 - Subtitle (28 karakter):
   `Автосинхронизация фото и FTP`
-- Keywords (96 karakter):
-  `webdav,synology,nextcloud,qnap,truenas,owncloud,сервер,облако,копия,файлы,папки,фото,видео,ssh`
+- Keywords (99 karakter):
+  `synology,nextcloud,truenas,sftp,owncloud,backup,server,ftp,folder,heic,raw,camera,upload,webdav,nas`
 - Promotional Text (162 karakter):
-  `Новый дизайн Cyber-Telemetry и Smart Restore! Резервное копирование и восстановление фото и файлов с вашего NAS по SFTP, WebDAV и FTP без подписок. Разовая покупка.`
+  `Чистый нативный дизайн и Smart Restore! Резервное копирование и восстановление фото и файлов с вашего NAS по SFTP, WebDAV и FTP без подписок. Разовая покупка.`
 - What's New in This Version (Sürüm 6.7):
 ```text
-- Новый интерфейс Cyber-Telemetry Dark Glass: живые графики передачи, интерактивные кривые, кольцо состояния Bento и обзор функций на 4 экранах.
+- Чистый нативный тёмный интерфейс: 3 вкладки (Задачи, История, Восстановление), столбчатая диаграмма за 14 дней (МБ), прогресс в % и действия свайпом и долгим нажатием.
 - Smart Restore и анализ различий: сравнивайте копии на сервере с устройством и восстанавливайте недостающие фото и файлы с фильтром по датам.
 - Прямой браузер сервера: просматривайте папки FTP, SFTP и WebDAV и сохраняйте медиафайлы прямо в «Фото» или «Файлы».
 - Разовая покупка навсегда: без подписок, встроенных покупок и лимитов.
@@ -348,7 +348,7 @@ BackupFlow — это надежный и конфиденциальный ин�
 
 КЛЮЧЕВЫЕ ВОЗМОЖНОСТИ
 
-Центр управления Cyber-Telemetry
+Нативный центр управления
 Контролируйте резервные копии в реальном времени с живыми графиками передачи, историей производительности и кольцом состояния протоколов.
 
 Smart Restore и анализ различий
@@ -372,13 +372,13 @@ Smart Restore и анализ различий
   `BackupFlow: مزامنة NAS و SFTP`
 - Subtitle (26 karakter):
   `نسخ احتياطي للصور والملفات`
-- Keywords (92 karakter):
-  `webdav,ftp,synology,nextcloud,qnap,truenas,نسخ,احتياطي,سيرفر,ملفات,صور,فيديو,تلقائي,شبكة,ssh`
+- Keywords (99 karakter):
+  `synology,nextcloud,truenas,sftp,owncloud,backup,server,ftp,folder,heic,raw,camera,upload,webdav,nas`
 - Promotional Text (144 karakter):
-  `واجهة Cyber-Telemetry الجديدة والاستعادة الذكية! انسخ واستعد صورك وملفاتك على خادمك أو NAS عبر SFTP و WebDAV و FTP بدون اشتراكات. شراء لمرة واحدة.`
+  `واجهة أصلية مبسطة والاستعادة الذكية! انسخ واستعد صورك وملفاتك على خادمك أو NAS عبر SFTP و WebDAV و FTP بدون اشتراكات. شراء لمرة واحدة.`
 - What's New in This Version (Sürüm 6.7):
 ```text
-- واجهة Cyber-Telemetry Dark Glass الجديدة: مخططات نقل حية، منحنيات أداء تفاعلية، حلقة صحة Bento ودليل تعريفي من 4 شرائح.
+- واجهة داكنة أصلية ومبسطة: 3 تبويبات (المهام، السجل، الاستعادة)، رسم بياني لآخر 14 يومًا (ميجابايت)، نسبة التقدم المباشرة %، وإجراءات السحب والضغط المطول.
 - الاستعادة الذكية وتحليل الفروقات (Smart Restore): قارن نسخ الخادم بجهازك واكتشف الصور والملفات المفقودة واستعدها حسب التاريخ.
 - متصفح الخادم المباشر: تصفح مجلدات FTP و SFTP و WebDAV ونزّل الوسائط مباشرة إلى الصور أو الملفات.
 - شراء لمرة واحدة مدى الحياة: بدون اشتراكات أو مشتريات داخل التطبيق أو قيود على النقل.
@@ -394,7 +394,7 @@ Smart Restore и анализ различий
 
 أبرز المزايا
 
-مركز تحكم Cyber-Telemetry
+مركز التحكم الأصلي المبسط
 راقب صحة النسخ الاحتياطي لحظياً عبر مخططات النقل الحية وحلقة الأداء وشريط التحكم السريع.
 
 الاستعادة الذكية وتحليل الفروقات
@@ -415,13 +415,13 @@ Smart Restore и анализ различий
   `BackupFlow: NAS व SFTP बैकअप`
 - Subtitle (21 karakter):
   `फ़ोटो व फ़ाइल सिंक ऐप`
-- Keywords (95 karakter):
-  `webdav,ftp,synology,nextcloud,qnap,truenas,बैकअप,सर्वर,फ़ोल्डर,फ़ोटो,वीडियो,ऑटो,होमलेब,ssh,heic`
+- Keywords (99 karakter):
+  `synology,nextcloud,truenas,sftp,owncloud,backup,server,ftp,folder,heic,raw,camera,upload,webdav,nas`
 - Promotional Text (146 karakter):
-  `नया Cyber-Telemetry डिज़ाइन और स्मार्ट रिस्टोर! SFTP, WebDAV व FTP से अपने NAS पर फ़ोटो और फ़ाइलें सुरक्षित बैकअप व रिकवर करें। एकमुश्त ख़रीद, आजीवन उपयोग।`
+  `साफ़ नया नेटिव डिज़ाइन और स्मार्ट रिस्टोर! SFTP, WebDAV व FTP से अपने NAS पर फ़ोटो और फ़ाइलें बैकअप व रिकवर करें। एकमुश्त ख़रीद, आजीवन उपयोग।`
 - What's New in This Version (Sürüm 6.7):
 ```text
-- नया Cyber-Telemetry Dark Glass इंटरफ़ेस: लाइव ट्रांसफ़र ग्राफ़, इंटरैक्टिव परफॉर्मेंस चार्ट, बेंटो हेल्थ रिंग और 4-स्लाइड गाइड।
+- साफ़ नेटिव डार्क UI: 3-टैब नेविगेशन (कार्य, इतिहास, पुनर्स्थापित करें), Swift Charts के साथ 14-दिन का MB बार चार्ट, लाइव % प्रगति और स्वाइप/लॉन्ग-प्रेस क्रियाएँ।
 - स्मार्ट रिस्टोर और अंतर विश्लेषण: अपने सर्वर बैकअप की तुलना डिवाइस से करें और छूटे हुए फ़ोटो या फ़ाइलें तारीख़ के अनुसार तुरंत रिकवर करें।
 - डायरेक्ट सर्वर ब्राउज़र: FTP, SFTP और WebDAV फ़ोल्डर ब्राउज़ करें और मीडिया को सीधे Photos या Files ऐप में डाउनलोड करें।
 - एकमुश्त ख़रीद: कोई सब्सक्रिप्शन नहीं, कोई इन-ऐप ख़रीद नहीं और कोई ट्रांसफ़र सीमा नहीं।
@@ -437,7 +437,7 @@ BackupFlow SFTP (SSH), WebDAV (HTTP/HTTPS) और FTP प्रोटोकॉ�
 
 मुख्य विशेषताएँ
 
-Cyber-Telemetry कंट्रोल हब
+साफ़ नेटिव कंट्रोल हब
 लाइव ट्रांसफ़र स्पार्कलाइन, इंटरैक्टिव हिस्ट्री चार्ट और प्रोटोकॉल हेल्थ रिंग के साथ सभी बैकअप को रियल-टाइम में मॉनिटर करें।
 
 स्मार्ट रिस्टोर और अंतर विश्लेषण
@@ -458,13 +458,13 @@ Synology, Nextcloud, TrueNAS व QNAP के साथ पूर्ण संग
   `BackupFlow: NAS & SFTP バックアップ`
 - Subtitle (12 karakter):
   `写真とファイルの自動同期`
-- Keywords (78 karakter):
-  `webdav,ftp,synology,nextcloud,qnap,truenas,owncloud,バックアップ,サーバー,写真,保存,ssh,heic`
+- Keywords (99 karakter):
+  `synology,nextcloud,truenas,sftp,owncloud,backup,server,ftp,folder,heic,raw,camera,upload,webdav,nas`
 - Promotional Text (82 karakter):
-  `新UI Cyber-Telemetry & スマート復元登場！月額不要、SFTP/WebDAV/FTPでNASへ自動バックアップ＆直接復元。買い切り無制限。`
+  `シンプルな新ネイティブUI & スマート復元登場！月額不要、SFTP/WebDAV/FTPでNASへ自動バックアップ＆直接復元。買い切り無制限。`
 - What's New in This Version (Sürüm 6.7):
 ```text
-- 新デザイン Cyber-Telemetry Dark Glass：リアルタイム転送グラフ、インタラクティブな履歴スプライン、Bento健全性リング、4スライド機能ガイドを搭載。
+- シンプルなネイティブダークUI：3タブ構成（タスク、履歴、復元）、Swift Chartsによる14日間の転送量（MB）棒グラフ、ライブ進捗％、スワイプ＆長押し操作に対応。
 - スマート復元＆差分分析：サーバーと端末を比較し、不足している写真やファイルを日付範囲で絞り込んでワンタップ復元。
 - リモートサーバーブラウザ：FTP、SFTP、WebDAVフォルダを閲覧し、「写真」または「ファイル」へ直接保存。
 - 完全買い切り：サブスクリプション、アプリ内課金、転送制限は一切ありません。
@@ -480,7 +480,7 @@ BackupFlowは、プライバシー最優先で設計されたSFTP（SSH）、Web
 
 主な機能
 
-Cyber-Telemetry コントロールハブ
+シンプルなネイティブコントロールハブ
 リアルタイムの転送スパークライン、履歴パフォーマンス曲線、プロトコル健全性リングでバックアップ状況をひと目で把握。
 
 スマート復元＆差分分析
@@ -501,13 +501,13 @@ Synology、Nextcloud、ownCloud、TrueNAS、QNAP対応。大容量4K動画の無
   `BackupFlow: NAS & SFTP 백업`
 - Subtitle (14 karakter):
   `사진 및 파일 자동 동기화`
-- Keywords (79 karakter):
-  `webdav,ftp,synology,nextcloud,qnap,truenas,owncloud,백업,서버,폴더,사진,동기화,자동,ssh,heic`
+- Keywords (99 karakter):
+  `synology,nextcloud,truenas,sftp,owncloud,backup,server,ftp,folder,heic,raw,camera,upload,webdav,nas`
 - Promotional Text (92 karakter):
-  `새로운 Cyber-Telemetry UI 및 스마트 복원 출시! 구독 없이 SFTP, WebDAV, FTP로 NAS에 자동 백업하고 바로 복구하세요. 일회성 구매.`
+  `깔끔한 네이티브 UI 및 스마트 복원 출시! 구독 없이 SFTP, WebDAV, FTP로 NAS에 자동 백업하고 바로 복구하세요. 일회성 구매.`
 - What's New in This Version (Sürüm 6.7):
 ```text
-- 새로운 Cyber-Telemetry Dark Glass UI: 실시간 전송 스파크라인, 인터랙티브 성능 그래프, Bento 상태 링 및 4단계 기능 가이드를 적용했습니다.
+- 깔끔한 네이티브 다크 UI: 3개 탭(작업, 기록, 복원), Swift Charts 기반 14일 전송량(MB) 막대 그래프, 실시간 진행률(%) 및 스와이프/길게 누르기 작업을 지원합니다.
 - 스마트 복원 및 차이 분석: 서버 백업과 기기를 비교해 누락된 사진이나 파일을 즉시 찾고 날짜 범위 필터로 복원합니다.
 - 원격 서버 직접 탐색기: FTP, SFTP, WebDAV 폴더를 탐색하고 선택한 미디어를 사진 앱이나 파일 앱으로 바로 다운로드합니다.
 - 완전 일회성 구매: 구독, 인앱 결제, 전송 용량 제한이 전혀 없습니다.
@@ -523,7 +523,7 @@ BackupFlow는 SFTP(SSH), WebDAV(HTTP/HTTPS), FTP를 지원하는 프라이버시
 
 주요 기능
 
-Cyber-Telemetry 컨트롤 허브
+깔끔한 네이티브 컨트롤 허브
 실시간 전송 그래프, 히스토리 스플라인 차트, 프로토콜 상태 링으로 모든 백업을 한눈에 관리하세요.
 
 스마트 복원 및 차이 분석
@@ -544,13 +544,13 @@ Synology, Nextcloud, ownCloud, TrueNAS, QNAP 완벽 지원, 무손실 대용량 
   `BackupFlow: NAS与SFTP同步`
 - Subtitle (11 karakter):
   `照片与文件自动备份工具`
-- Keywords (79 karakter):
-  `webdav,ftp,synology,nextcloud,qnap,truenas,owncloud,备份,群晖,服务器,相册,照片,同步,ssh,heic`
+- Keywords (99 karakter):
+  `synology,nextcloud,truenas,sftp,owncloud,backup,server,ftp,folder,heic,raw,camera,upload,webdav,nas`
 - Promotional Text (78 karakter):
-  `全新 Cyber-Telemetry 界面与智能恢复上线！通过 SFTP、WebDAV 和 FTP 将 iPhone 照片与文件直连备份并恢复至私有 NAS。一次买断。`
+  `简洁原生界面与智能恢复上线！通过 SFTP、WebDAV 和 FTP 将 iPhone 照片与文件直连备份并恢复至私有 NAS。一次买断。`
 - What's New in This Version (Sürüm 6.7):
 ```text
-- 全新 Cyber-Telemetry 暗黑玻璃界面：实时传输曲线、交互式性能图表、Bento 健康环及 4 页功能导览。
+- 简洁原生深色界面：3 标签页导航（任务、历史、恢复）、Swift Charts 14 天传输量（MB）柱状图、实时百分比进度以及滑动与长按操作。
 - 智能恢复与差异对比 (Smart Restore)：将服务器备份与设备智能比对，支持按日期范围筛选并一键找回缺失照片或文件。
 - 远程服务器直连浏览器：直接浏览 FTP、SFTP 与 WebDAV 目录，将媒体文件下载至系统相册或“文件”应用。
 - 纯粹一次买断：无订阅、无应用内购买、无传输额度限制。
@@ -566,7 +566,7 @@ BackupFlow 是一款专注于隐私保护的专业级自动备份与恢复应用
 
 核心特色
 
-Cyber-Telemetry 控制中心
+简洁原生控制中心
 通过实时传输波形图、交互式历史曲线与协议健康环，在一屏之内掌握所有备份任务状态。
 
 智能恢复与差异对比
@@ -586,17 +586,17 @@ Cyber-Telemetry 控制中心
 ### Reddit / r/selfhosted & r/homelab & r/synology (İngilizce)
 
 **Title:**
-BackupFlow 6.7: Native iOS NAS Backup & Smart Restore with New Cyber-Telemetry UI (SFTP, WebDAV, FTP — One-Time Purchase, Zero Subscriptions)
+BackupFlow 6.7: Native iOS NAS Backup & Smart Restore with Clean SwiftUI Redesign (SFTP, WebDAV, FTP — One-Time Purchase, Zero Subscriptions)
 
 **Post Body:**
 Hey r/selfhosted!
 
-BackupFlow **v6.7** is out! I rebuilt the interface with a new **Cyber-Telemetry Dark Glass** cockpit (zero decorative/dummy elements—every sparkline, spline chart, and ring gauge reflects real backup telemetry) and added **Smart Restore & Direct Remote Browsing** for SFTP, WebDAV, and FTP.
+BackupFlow **v6.7** is out! I rebuilt the interface around a clean, native SwiftUI design (3-tab navigation: Tasks, History, Restore; a real 14-day MB bar chart in Swift Charts; protocol-colored task rows with live % progress, swipe actions, and long-press schedule controls) and added **Smart Restore & Direct Remote Browsing** for SFTP, WebDAV, and FTP.
 
 As always, BackupFlow is a pure **One-Time Purchase ($2.99 Lifetime)**—NO in-app purchases, NO subscriptions, NO ads, and NO telemetry servers.
 
 What's New & Key Highlights in v6.7:
-- **Cyber-Telemetry Dark Glass UI & 4-Slide Guide:** Real-time transfer sparklines, interactive 6-run spline charts, Bento health ring gauge, and protocol-aware themes (WebDAV, SFTP, FTP).
+- **Clean Native Dark UI & 3-Tab Layout:** Single-glance status header, 14-day MB bar chart (Swift Charts), flat task rows with protocol colors (`SFTP`, `WebDAV`, `FTP`), live progress %/speed/ETA, swipe actions, and long-press context menu (Run Now, Pause/Resume Schedule).
 - **Smart Restore & Diff Analysis:** Compare your NAS/server backup against your iPhone library to classify *Intact*, *Missing*, *Ambiguous*, and *Conflicting* files, filter by date range, and recover missing photos/files in one tap.
 - **Direct Remote Server Browser:** Browse FTP, SFTP, and WebDAV folders directly and download selected media straight into your Photos Library or Files app.
 - **Original Quality & Multi-GB 4K Videos:** Transfers photos and multi-GB 4K videos (including iCloud assets) without compression, plus Fast-Skip and optional SHA-256 integrity verification.

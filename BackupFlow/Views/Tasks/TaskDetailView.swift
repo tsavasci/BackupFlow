@@ -30,9 +30,9 @@ struct TaskDetailView: View {
     }()
     
     var body: some View {
-        List {
+        Form {
             // Genel Bilgiler
-            Section("task.details.general".localized) {
+            Section {
                 LabeledContent(
                     "task.details.source".localized,
                     value: task.sourcePath == "PHOTOS_LIBRARY"
@@ -56,24 +56,42 @@ struct TaskDetailView: View {
                     LabeledContent("task.details.power".localized, value: "backup.require_external_power".localized)
                 }
                 if let category = task.lastFailureCategory {
-                    LabeledContent("task.details.last_failure".localized, value: category.displayName)
+                    LabeledContent("task.details.last_failure".localized) {
+                        Text(category.displayName)
+                            .foregroundStyle(BF.fail)
+                    }
                 }
                 if let nextRun = task.nextRunTime {
-                    LabeledContent("task.details.next_backup".localized, value: Self.taskDateFormatter.string(from: nextRun))
+                    LabeledContent("task.details.next_backup".localized) {
+                        Text(Self.taskDateFormatter.string(from: nextRun))
+                            .font(BF.mono)
+                            .monospacedDigit()
+                    }
                 }
+            } header: {
+                sectionLabel("task.details.general".localized.uppercased())
             }
-            .liquidListRow()
-            
+            .listRowBackground(BF.surface)
+
             // Sunucu Bilgileri
-            Section("task.details.server_section".localized) {
-                LabeledContent("task.details.server".localized, value: task.ftpHost)
-                LabeledContent("task.details.port".localized, value: String(task.ftpPort))
-                LabeledContent("task.details.user".localized, value: task.isAnonymous ? "task.details.anonymous".localized : task.ftpUsername)
+            Section {
+                LabeledContent("task.details.server".localized) {
+                    Text(task.ftpHost).font(BF.mono)
+                }
+                LabeledContent("task.details.port".localized) {
+                    Text(String(task.ftpPort)).font(BF.mono).monospacedDigit()
+                }
+                LabeledContent("task.details.user".localized) {
+                    Text(task.isAnonymous ? "task.details.anonymous".localized : task.ftpUsername)
+                        .font(BF.mono)
+                }
+            } header: {
+                sectionLabel("task.details.server_section".localized.uppercased())
             }
-            .liquidListRow()
-            
+            .listRowBackground(BF.surface)
+
             // Son Yedeklemeler
-            Section("task.details.recent_backups".localized) {
+            Section {
                 if isLoading {
                     ProgressView()
                 } else if histories.isEmpty {
@@ -84,29 +102,38 @@ struct TaskDetailView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
                                 Text(Self.taskDateFormatter.string(from: history.timestamp))
-                                    .font(.subheadline)
+                                    .font(BF.mono)
+                                    .monospacedDigit()
                                 Spacer()
                                 Text(BackupHistory.localizedStatus(history.status))
-                                    .font(.caption)
-                                    .foregroundStyle(history.status == BackupStatus.completed.rawValue ? .green : .red)
+                                    .font(BF.monoSmall)
+                                    .foregroundStyle(history.status == BackupStatus.completed.rawValue ? BF.ok : BF.fail)
                             }
-                            
+
                             if history.status == BackupStatus.completed.rawValue {
                                 Text("\(history.totalFiles)\("task.details.files_size".localized)\(Self.fileSizeFormatter.string(fromByteCount: history.totalBytes))")
-                                    .font(.caption)
+                                    .font(BF.monoSmall)
+                                    .monospacedDigit()
                                     .foregroundStyle(.secondary)
-                                
+
                                 Text("task.details.duration_prefix".localized + formatDuration(history.duration))
-                                    .font(.caption)
+                                    .font(BF.monoSmall)
+                                    .monospacedDigit()
                                     .foregroundStyle(.secondary)
                             }
                         }
                         .padding(.vertical, 4)
                     }
                 }
+            } header: {
+                sectionLabel("task.details.recent_backups".localized.uppercased())
             }
-            .liquidListRow()
+            .listRowBackground(BF.surface)
         }
+        .scrollContentBackground(.hidden)
+        .background(BF.bg)
+        .tint(BF.accent)
+        .preferredColorScheme(.dark)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 HStack(spacing: 12) {
@@ -133,13 +160,17 @@ struct TaskDetailView: View {
         .sheet(isPresented: $showingRestore) {
             RestoreBrowserView(task: task)
         }
-        .scrollContentBackground(.hidden)
-        .liquidBackground()
         .onAppear {
             loadHistories()
         }
     }
     
+    private func sectionLabel(_ title: String) -> some View {
+        Text(title)
+            .font(BF.monoSmall)
+            .textCase(nil)
+    }
+
     private func loadHistories() {
         let taskId = task.id
         let descriptor = FetchDescriptor<BackupHistory>(

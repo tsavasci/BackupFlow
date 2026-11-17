@@ -1,26 +1,25 @@
 /* Reset and Base Styles */
 :root {
-    --brand-cyan: #2ce5ff;
-    --brand-blue: #1e7bff;
-    --brand-mint: #38f2c6;
-    --brand-violet: #1e7bff;
+    --brand-cyan: #6b9eff;
+    --brand-blue: #6b9eff;
+    --brand-mint: #4dc780;
+    --brand-violet: #6b9eff;
     --brand-gradient: linear-gradient(
         135deg,
-        var(--brand-cyan) 0%,
-        var(--brand-blue) 55%,
-        var(--brand-mint) 100%
+        #6b9eff 0%,
+        #8fb6ff 100%
     );
     --ink: #f1f5f9;
     --ink-soft: #cbd5e1;
-    --ink-muted: #8fa6c2;
-    --surface: rgba(25, 35, 49, 0.88);
-    --surface-strong: rgba(31, 43, 60, 0.96);
-    --border-soft: rgba(42, 60, 83, 0.85);
-    --shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.35);
-    --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.45);
-    --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.55);
-    --radius-lg: 24px;
-    --radius-md: 16px;
+    --ink-muted: #94a3b8;
+    --surface: #181b20;
+    --surface-strong: #1e2229;
+    --border-soft: rgba(255, 255, 255, 0.08);
+    --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.25);
+    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.45);
+    --radius-lg: 16px;
+    --radius-md: 10px;
 }
 
 * {
@@ -49,24 +48,7 @@ body {
         sans-serif;
     line-height: 1.6;
     color: var(--ink);
-    background:
-        radial-gradient(
-            circle at 12% 8%,
-            rgba(44, 229, 255, 0.14),
-            transparent 42%
-        ),
-        radial-gradient(
-            circle at 88% 18%,
-            rgba(30, 123, 255, 0.16),
-            transparent 45%
-        ),
-        radial-gradient(
-            circle at 50% 100%,
-            rgba(56, 242, 198, 0.09),
-            transparent 55%
-        ),
-        linear-gradient(160deg, #0e141c 0%, #141c28 55%, #0e141c 100%);
-    background-attachment: fixed;
+    background: #0e1013;
     min-height: 100vh;
 }
 

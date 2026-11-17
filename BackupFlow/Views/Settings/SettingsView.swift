@@ -1,7 +1,7 @@
 import Foundation
-import SwiftUI
-import SwiftData
 import StoreKit
+import SwiftData
+import SwiftUI
 import UIKit
 
 struct SettingsView: View {
@@ -9,162 +9,168 @@ struct SettingsView: View {
     @Environment(\.requestReview) private var requestReview
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var scheduler = BackupScheduler.shared
+
     @State private var showingResetAlert = false
     @State private var showingOnboarding = false
     @AppStorage("keepHistoryDays") private var keepHistoryDays = 30
     @AppStorage("selectedLanguageCode") private var selectedLanguageCode = "system"
     @AppStorage("RequireExternalPower") private var requireExternalPower = false
-    private let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
-    private let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "0"
 
     private struct LanguageOption: Identifiable {
         let code: String
-        let flag: String
         let name: String
         var id: String { code }
     }
 
     private var supportedLanguages: [LanguageOption] {
         [
-            .init(code: "system", flag: "🌐", name: "settings.language.system".localized),
-            .init(code: "ar", flag: "🇸🇦", name: "العربية"),
-            .init(code: "de", flag: "🇩🇪", name: "Deutsch"),
-            .init(code: "en", flag: "🇬🇧", name: "English"),
-            .init(code: "es", flag: "🇪🇸", name: "Español"),
-            .init(code: "fr", flag: "🇫🇷", name: "Français"),
-            .init(code: "hi", flag: "🇮🇳", name: "हिन्दी"),
-            .init(code: "ja", flag: "🇯🇵", name: "日本語"),
-            .init(code: "ko", flag: "🇰🇷", name: "한국어"),
-            .init(code: "pt", flag: "🇵🇹", name: "Português"),
-            .init(code: "ru", flag: "🇷🇺", name: "Русский"),
-            .init(code: "tr", flag: "🇹🇷", name: "Türkçe"),
-            .init(code: "zh", flag: "🇨🇳", name: "中文")
+            .init(code: "system", name: "settings.language.system".localized),
+            .init(code: "ar", name: "العربية"),
+            .init(code: "de", name: "Deutsch"),
+            .init(code: "en", name: "English"),
+            .init(code: "es", name: "Español"),
+            .init(code: "fr", name: "Français"),
+            .init(code: "hi", name: "हिन्दी"),
+            .init(code: "ja", name: "日本語"),
+            .init(code: "ko", name: "한국어"),
+            .init(code: "pt", name: "Português"),
+            .init(code: "ru", name: "Русский"),
+            .init(code: "tr", name: "Türkçe"),
+            .init(code: "zh", name: "中文")
         ]
     }
-    
-    var body: some View {
-        Form {
-            Section {
-                Picker("settings.history_retention".localized, selection: $keepHistoryDays) {
-                    Text("settings.7_days".localized).tag(7)
-                    Text("settings.30_days".localized).tag(30)
-                    Text("settings.90_days".localized).tag(90)
-                    Text("settings.unlimited".localized).tag(0)
-                }
-                Toggle("settings.require_external_power".localized, isOn: $requireExternalPower)
-            } header: {
-                Text("settings.general".localized)
-            } footer: {
-                Text("settings.require_external_power_note".localized)
-            }
-            .liquidListRow()
 
-            Section {
-                NavigationLink("battery.settings".localized) {
-                    BatterySettingsView()
-                }
-            }
-            .liquidListRow()
-            
-            Section(header: Text("settings.language".localized)) {
-                Picker("settings.language".localized, selection: $selectedLanguageCode) {
-                    ForEach(supportedLanguages) { language in
-                        Text("\(language.flag) \(language.name)")
-                        .tag(language.code)
-                    }
-                }
-            }
-            .liquidListRow()
-
-            
-            Section(header: Text("settings.about_section".localized)) {
-                HStack {
-                    Text("settings.version".localized)
-                    Spacer()
-                    Text("\(appVersion) (\(buildNumber))")
-                        .foregroundColor(.secondary)
-                }
-
-                Button {
-                    showingOnboarding = true
-                } label: {
-                    Label("settings.whats_new".localized, systemImage: "sparkles")
-                        .foregroundStyle(DesignSystem.Colors.primary)
-                }
-                .accessibilityIdentifier("settings.whats_new")
-                
-                Button(action: {
-                    openAppStoreReview()
-                }) {
-                    Text("settings.rate_app".localized)
-                }
-                
-                Button(action: {
-                    openSupportEmail()
-                }) {
-                    Text("settings.contact_support".localized)
-                }
-
-                ShareLink("settings.export_diagnostics".localized, item: BackupDiagnosticsExporter.buildReport())
-            }
-            .liquidListRow()
-            
-            Section {
-                Button(role: .destructive) {
-                    showingResetAlert = true
-                } label: {
-                    HStack {
-                        Spacer()
-                        Text("settings.reset_all_data".localized)
-                        Spacer()
-                    }
-                }
-                // A running backup still holds its task; deleting it underneath crashes SwiftData.
-                .disabled(scheduler.isProcessing)
-            } footer: {
-                if scheduler.isProcessing {
-                    Text("settings.reset_unavailable_while_backing_up".localized)
-                }
-            }
-            .liquidListRow()
-        }
-        .navigationTitle("settings.title".localized)
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("task.details.close".localized) { dismiss() }
-                    .accessibilityIdentifier("sheet.close")
-            }
-        }
-        .scrollContentBackground(.hidden)
-        .liquidBackground()
-        .onAppear {
-            let codes = Set(supportedLanguages.map { $0.code })
-            if !codes.contains(selectedLanguageCode) {
-                selectedLanguageCode = "system"
-            }
-        }
-        .onChange(of: keepHistoryDays) { _, _ in
-            applyHistoryRetention()
-        }
-        .alert("settings.reset_confirm_title".localized, isPresented: $showingResetAlert) {
-            Button("alert.cancel".localized, role: .cancel) { }
-            Button("settings.reset".localized, role: .destructive) {
-                resetAllData()
-            }
-        } message: {
-            Text("settings.reset_confirm_message".localized)
-        }
-        .fullScreenCover(isPresented: $showingOnboarding) {
-            OnboardingView {
-                showingOnboarding = false
-            }
-        }
+    private var versionString: String {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "–"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "–"
+        return "\(version) (\(build))"
     }
-    
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    Picker("settings.history_retention".localized, selection: $keepHistoryDays) {
+                        Text("settings.7_days".localized).tag(7)
+                        Text("settings.30_days".localized).tag(30)
+                        Text("settings.90_days".localized).tag(90)
+                        Text("settings.unlimited".localized).tag(0)
+                    }
+                    Toggle("settings.require_external_power".localized, isOn: $requireExternalPower)
+                    NavigationLink("battery.settings".localized) {
+                        BatterySettingsView()
+                    }
+                } header: {
+                    sectionLabel("settings.general".localized.uppercased())
+                } footer: {
+                    Text("settings.require_external_power_note".localized)
+                }
+                .listRowBackground(BF.surface)
+
+                Section {
+                    Picker("settings.language".localized, selection: $selectedLanguageCode) {
+                        ForEach(supportedLanguages) { language in
+                            Text(language.name).tag(language.code)
+                        }
+                    }
+                } header: {
+                    sectionLabel("settings.language".localized.uppercased())
+                }
+                .listRowBackground(BF.surface)
+
+                Section {
+                    LabeledContent("settings.version".localized) {
+                        Text(versionString)
+                            .font(BF.mono)
+                            .monospacedDigit()
+                    }
+                    Button("settings.whats_new".localized) {
+                        showingOnboarding = true
+                    }
+                    .accessibilityIdentifier("settings.whats_new")
+
+                    Button("settings.rate_app".localized) {
+                        openAppStoreReview()
+                    }
+
+                    Button("settings.contact_support".localized) {
+                        openSupportEmail()
+                    }
+
+                    ShareLink(item: BackupDiagnosticsExporter.buildReport()) {
+                        Text("settings.export_diagnostics".localized)
+                    }
+                } header: {
+                    sectionLabel("settings.about_section".localized.uppercased())
+                }
+                .listRowBackground(BF.surface)
+
+                Section {
+                    Button("settings.reset_all_data".localized, role: .destructive) {
+                        showingResetAlert = true
+                    }
+                    // A running backup still holds its task; deleting it underneath crashes SwiftData.
+                    .disabled(scheduler.isProcessing)
+                } footer: {
+                    Text(
+                        scheduler.isProcessing
+                            ? "settings.reset_unavailable_while_backing_up".localized
+                            : "settings.reset_footer_note".localized
+                    )
+                }
+                .listRowBackground(BF.surface)
+            }
+            .scrollContentBackground(.hidden)
+            .background(BF.bg)
+            .navigationTitle("settings.title".localized)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("settings.done".localized) { dismiss() }
+                        .fontWeight(.semibold)
+                        .accessibilityIdentifier("sheet.close")
+                }
+            }
+            .onAppear {
+                let codes = Set(supportedLanguages.map(\.code))
+                if !codes.contains(selectedLanguageCode) {
+                    selectedLanguageCode = "system"
+                }
+            }
+            .onChange(of: keepHistoryDays) { _, _ in
+                applyHistoryRetention()
+            }
+            .confirmationDialog(
+                "settings.reset_confirm_title".localized,
+                isPresented: $showingResetAlert,
+                titleVisibility: .visible
+            ) {
+                Button("settings.reset".localized, role: .destructive) {
+                    resetAllData()
+                }
+            } message: {
+                Text("settings.reset_confirm_message".localized)
+            }
+            .fullScreenCover(isPresented: $showingOnboarding) {
+                OnboardingView {
+                    showingOnboarding = false
+                }
+            }
+        }
+        .tint(BF.accent)
+        .preferredColorScheme(.dark)
+    }
+
+    private func sectionLabel(_ title: String) -> some View {
+        Text(title)
+            .font(BF.monoSmall)
+            .textCase(nil)
+    }
+
     private func openAppStoreReview() {
         requestReview()
     }
-    
+
     private func openSupportEmail() {
         let email = "tamersavasci@icloud.com"
         let subject = "BackupFlow Support Request"
@@ -172,20 +178,20 @@ struct SettingsView: View {
         let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
         let deviceModel = UIDevice.current.model
         let osVersion = UIDevice.current.systemVersion
-        
+
         let body = """
-        
-        
+
+
         ---
         App Version: \(appVersion) (\(buildNumber))
         Device: \(deviceModel)
         OS: \(osVersion)
         """
-        
+
         let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
         let encodedBody = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
         let mailtoURL = "mailto:\(email)?subject=\(encodedSubject)&body=\(encodedBody)"
-        
+
         guard let url = URL(string: mailtoURL) else {
             debugLog("❌ BackupFlow: Geçersiz email URL")
             return
@@ -195,19 +201,15 @@ struct SettingsView: View {
             UIApplication.shared.open(url)
             debugLog("📧 BackupFlow: Destek email'i açılıyor")
         } else {
-            // Mail app yoksa, sadece email adresini clipboard'a kopyala
             UIPasteboard.general.string = email
             debugLog("📋 BackupFlow: Email adresi kopyalandı: \(email)")
         }
     }
-    
-    
+
     private func resetAllData() {
         Task {
-            // Cancel all background tasks
             BackupScheduler.shared.cancelAllBackgroundTasks()
-            
-            // Clear all BackupTasks
+
             do {
                 let taskDescriptor = FetchDescriptor<BackupTask>()
                 let allTasks = try modelContext.fetch(taskDescriptor)
@@ -216,18 +218,16 @@ struct SettingsView: View {
                     task.removeStoredPassword()
                     modelContext.delete(task)
                 }
-                
-                // Clear all BackupHistory
+
                 let historyDescriptor = FetchDescriptor<BackupHistory>()
                 let allHistory = try modelContext.fetch(historyDescriptor)
                 for history in allHistory {
                     modelContext.delete(history)
                 }
-                
+
                 try modelContext.save()
                 debugLog("✅ BackupFlow: Tüm veriler başarıyla silindi")
-                
-                // Reset app storage values to defaults
+
                 keepHistoryDays = 30
             } catch {
                 debugLog("❌ BackupFlow: Veri silme hatası: \(error)")
@@ -241,7 +241,5 @@ struct SettingsView: View {
 }
 
 #Preview {
-    NavigationStack {
-        SettingsView()
-    }
+    SettingsView()
 }

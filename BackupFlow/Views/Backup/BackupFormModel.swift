@@ -12,6 +12,7 @@ final class BackupFormModel {
     static let legacyDefaultWebDAVPath = "/remote.php/dav/files/"
 
     // Kaynak
+    var customName = ""
     var selectedURL: URL?
     var isPhotoLibrarySelected = false
     var selectedMediaType: MediaType = .photosOnly
@@ -70,6 +71,7 @@ final class BackupFormModel {
     init(editingTask task: BackupTask? = nil) {
         guard let task else { return }
 
+        customName = task.displayName
         selectedURL = task.sourcePath == "PHOTOS_LIBRARY" ? nil : URL(fileURLWithPath: task.sourcePath ?? "")
         isPhotoLibrarySelected = task.sourcePath == "PHOTOS_LIBRARY"
         selectedMediaType = task.mediaType
@@ -138,6 +140,7 @@ final class BackupFormModel {
     /// Clears the form for a new entry. The chosen target and the cellular
     /// setting are kept, as the form's Clear button always has.
     func reset() {
+        customName = ""
         selectedURL = nil
         isPhotoLibrarySelected = false
         selectedMediaType = .photosOnly
@@ -519,7 +522,9 @@ extension BackupFormModel {
     }
 
     var taskDisplayName: String {
-        isPhotoLibrarySelected ? selectedMediaType.displayName : (selectedURL?.lastPathComponent ?? "backup.default_task_name".localized)
+        let trimmed = customName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty { return trimmed }
+        return isPhotoLibrarySelected ? selectedMediaType.displayName : (selectedURL?.lastPathComponent ?? "backup.default_task_name".localized)
     }
 
     var frequency: BackupFrequency {
