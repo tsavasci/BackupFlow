@@ -98,7 +98,7 @@ struct TaskDetailView: View {
                     Text("task.details.no_backups".localized)
                         .foregroundStyle(.secondary)
                 } else {
-                    ForEach(histories) { history in
+                    ForEach(histories.filter { $0.isLiveInContext }) { history in
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
                                 Text(Self.taskDateFormatter.string(from: history.timestamp))
@@ -172,16 +172,18 @@ struct TaskDetailView: View {
     }
 
     private func loadHistories() {
-        let taskId = task.id
+        guard task.isLiveInContext else {
+            histories = []
+            isLoading = false
+            return
+        }
         let descriptor = FetchDescriptor<BackupHistory>(
-            predicate: #Predicate<BackupHistory> { history in
-                history.task?.id == taskId
-            },
             sortBy: [SortDescriptor(\BackupHistory.timestamp, order: .reverse)]
         )
         
         do {
-            histories = try modelContext.fetch(descriptor)
+            let all = try modelContext.fetch(descriptor)
+            histories = all.filter { $0.belongs(to: task) }
         } catch {
             debugLog("Histories yükleme hatası: \(error)")
         }

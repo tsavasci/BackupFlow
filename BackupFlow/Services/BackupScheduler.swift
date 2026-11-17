@@ -103,7 +103,8 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
                         case .manual: return "Manuel"
                         case .daily(let time): return "Günlük (\(time.timeString))"
                         case .weekly(let day, let time):
-                            let dayName = ["Pzr", "Pzt", "Sal", "Çrş", "Prş", "Cum", "Cts"][day - 1]
+                            let dayNames = ["Pzr", "Pzt", "Sal", "Çrş", "Prş", "Cum", "Cts"]
+                            let dayName = (1...dayNames.count).contains(day) ? dayNames[day - 1] : ""
                             return "Haftalık (\(dayName) \(time.timeString))"
                         case .monthly(let day, let time):
                             return "Aylık (\(day). gün \(time.timeString))"
@@ -235,6 +236,32 @@ final class BackupScheduler: NSObject, ObservableObject, UNUserNotificationCente
         // Ayrıca bekleyen zamanlanmış bildirimleri iptal et (çift bildirimi önlemek için)
         notifier.removeReminder(forTaskID: task.id)
         lastScheduledTargetTime[task.id] = nil
+    }
+
+    public func prepareTaskForDeletion(_ task: BackupTask) {
+        guard task.isLiveInContext else { return }
+        let taskID = task.id
+        cancelTimer(for: taskID)
+        if runningTaskIDs.contains(taskID) {
+            switch task.backupType {
+            case .ftp:
+                FTPService.shared.cancelCurrentTask()
+            case .sftp:
+                SFTPService.shared.cancelCurrentTask()
+            case .webdav:
+                WebDAVService.shared.cancelCurrentTask()
+            }
+        }
+        notifier.removeReminder(forTaskID: taskID)
+        notifier.removeDeliveredRunPrompts(forTaskID: taskID)
+        lastScheduledTargetTime[taskID] = nil
+        retryCount[taskID] = nil
+        lastRunAtByTask[taskID] = nil
+        userStartedTaskIDs[taskID] = nil
+        wifiOverrideTaskIDs[taskID] = nil
+        if pendingStartTaskID == taskID { pendingStartTaskID = nil }
+        if requestedDetailTaskID == taskID { requestedDetailTaskID = nil }
+        if wifiConfirmationTaskID == taskID { wifiConfirmationTaskID = nil }
     }
     
     public func resumeTask(_ task: BackupTask) {

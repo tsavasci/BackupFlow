@@ -12,7 +12,7 @@ struct HistoryView: View {
     @State private var selectedProtocol: BackupType?
 
     private var history: [BackupHistory] {
-        queriedHistory.filter { $0.modelContext != nil }
+        queriedHistory.filter { $0.isLiveInContext }
     }
 
     private var filteredHistory: [BackupHistory] {

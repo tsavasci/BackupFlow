@@ -55,7 +55,7 @@ enum BackupHistoryRecorder {
         }
 
         // Prefer the task's own ModelContext to avoid cross-context attachment
-        if let context = task.modelContext {
+        if let context = task.modelContext, !task.isDeleted {
             let historyRecord = makeRecord(describing: task)
             context.insert(historyRecord)
             historyRecord.task = task
@@ -70,11 +70,16 @@ enum BackupHistoryRecorder {
             return
         }
 
-        // Fallback: no task.modelContext (edge case). Use a new context and refetch task in that context.
+        // Fallback: no task.modelContext (edge case). Use a new context and refetch task by persistentModelID
+        // so we never fault `task.id` if `task` was deleted.
+        let targetID = task.persistentModelID
         let context = ModelContext(container)
         do {
-            let fetch = FetchDescriptor<BackupTask>()
-            guard let taskInContext = try context.fetch(fetch).first(where: { $0.id == task.id }) else {
+            var fetch = FetchDescriptor<BackupTask>(
+                predicate: #Predicate { $0.persistentModelID == targetID }
+            )
+            fetch.fetchLimit = 1
+            guard let taskInContext = try context.fetch(fetch).first else {
                 debugLog("❌ BackupFlow: Geçmiş kaydı için görev bulunamadı (refetch failed)")
                 return
             }

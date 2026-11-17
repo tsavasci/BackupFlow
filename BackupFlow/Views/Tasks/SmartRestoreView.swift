@@ -364,11 +364,12 @@ struct SmartRestoreView: View {
     }
 
     private func scanningSection(_ progress: Double) -> some View {
-        Section {
+        let safeProgress = progress.isFinite ? min(max(progress, 0), 1) : 0
+        return Section {
             VStack(alignment: .leading, spacing: 8) {
-                ProgressView(value: progress)
+                ProgressView(value: safeProgress)
                     .tint(BF.accent)
-                Text("sr.scanning_progress".localized(with: Int(progress * 100)))
+                Text("sr.scanning_progress".localized(with: Int((safeProgress * 100).rounded())))
                     .font(BF.monoSmall)
                     .monospacedDigit()
                     .foregroundStyle(.secondary)

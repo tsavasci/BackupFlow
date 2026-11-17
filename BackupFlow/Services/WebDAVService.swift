@@ -196,8 +196,8 @@ final class WebDAVService: NSObject, FileProviderDelegate {
     }
     
     func fileproviderProgress(_ fileProvider: FileProviderOperations, operation: FileOperationType, progress: Float) {
-        let percent = Int(progress * 100)
-        let clamped = max(0.0, min(1.0, Double(progress)))
+        let clamped = progress.isFinite ? max(0.0, min(1.0, Double(progress))) : 0.0
+        let percent = Int((clamped * 100).rounded())
         let estimatedBytes = currentFileTotalBytes > 0 ? Int64(Double(currentFileTotalBytes) * clamped) : 0
         updateCurrentUploadProgress(
             progress: clamped,

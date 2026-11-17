@@ -10,8 +10,8 @@ struct MainTabView: View {
     // "Reset all data" deletes models while this view is still on screen under the
     // Settings sheet. Until the queries refetch they can still hand back those deleted,
     // detached models, and reading any attribute of one crashes SwiftData.
-    private var tasks: [BackupTask] { queriedTasks.filter { $0.modelContext != nil } }
-    private var history: [BackupHistory] { queriedHistory.filter { $0.modelContext != nil } }
+    private var tasks: [BackupTask] { queriedTasks.filter { $0.isLiveInContext } }
+    private var history: [BackupHistory] { queriedHistory.filter { $0.isLiveInContext } }
 
     @AppStorage("onboardingLastSeenVersion") private var onboardingLastSeenVersion = ""
     @State private var router = Router()
@@ -177,39 +177,47 @@ struct MainTabView: View {
             SettingsView()
         }
         .sheet(item: $selectedTask) { task in
-            NavigationStack {
-                TaskDetailView(task: task)
-                    .navigationTitle("task.details.title".localized)
-                    .navigationBarTitleDisplayMode(.inline)
+            if task.isLiveInContext {
+                NavigationStack {
+                    TaskDetailView(task: task)
+                        .navigationTitle("task.details.title".localized)
+                        .navigationBarTitleDisplayMode(.inline)
+                }
             }
         }
         .sheet(item: $restoreTask) { task in
-            SmartRestoreView(task: task)
+            if task.isLiveInContext {
+                SmartRestoreView(task: task)
+            }
         }
         .sheet(item: $selectedHistory) { item in
-            NavigationStack {
-                HistoryDetailView(item: item)
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("task.details.close".localized) { selectedHistory = nil }
-                                .accessibilityIdentifier("sheet.close")
+            if item.isLiveInContext {
+                NavigationStack {
+                    HistoryDetailView(item: item)
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("task.details.close".localized) { selectedHistory = nil }
+                                    .accessibilityIdentifier("sheet.close")
+                            }
                         }
-                    }
+                }
             }
         }
         .sheet(item: $previewTask) { task in
-            BackupPreviewSheet(
-                taskName: task.displayName,
-                result: previewResult,
-                isLoading: isPreviewLoading,
-                errorMessage: previewError,
-                onConfirm: {
-                    startPreviewedTask(task)
-                },
-                onCancel: {
-                    clearPreview()
-                }
-            )
+            if task.isLiveInContext {
+                BackupPreviewSheet(
+                    taskName: task.displayName,
+                    result: previewResult,
+                    isLoading: isPreviewLoading,
+                    errorMessage: previewError,
+                    onConfirm: {
+                        startPreviewedTask(task)
+                    },
+                    onCancel: {
+                        clearPreview()
+                    }
+                )
+            }
         }
         .alert("tasks.delete_confirmation".localized, isPresented: $showDeleteAlert) {
             Button("alert.cancel".localized, role: .cancel) {}
@@ -312,7 +320,7 @@ struct MainTabView: View {
     }
 
     private func summaryLabel(for task: BackupTask) -> String {
-        guard let latest = history.first(where: { $0.task?.id == task.id }) else {
+        guard let latest = history.first(where: { $0.belongs(to: task) }) else {
             return "—"
         }
         let filesText = "\(latest.filesProcessed.formatted()) \("home.files_unit".localized)"
@@ -355,11 +363,30 @@ struct MainTabView: View {
     // MARK: - Actions
 
     private func deleteTask(_ task: BackupTask) {
-        BackupNotifier.shared.removeReminder(forTaskID: task.id)
+        guard task.isLiveInContext else {
+            taskToDelete = nil
+            return
+        }
+        let targetPersistentID = task.persistentModelID
+        taskToDelete = nil
+        if selectedTask?.persistentModelID == targetPersistentID { selectedTask = nil }
+        if restoreTask?.persistentModelID == targetPersistentID { restoreTask = nil }
+        if previewTask?.persistentModelID == targetPersistentID { clearPreview() }
+        if wifiConfirmationTask?.persistentModelID == targetPersistentID { wifiConfirmationTask = nil }
+
+        BackupScheduler.shared.prepareTaskForDeletion(task)
         task.removeStoredPassword()
+
+        // Nullify the one-way relationship on any BackupHistory referencing this task
+        // while `task` is still alive in the store, so SQLite sets ZTASK = NULL instead
+        // of leaving a dangling foreign key.
+        for item in queriedHistory where item.isLiveInContext && item.task?.persistentModelID == targetPersistentID {
+            item.task = nil
+        }
+
         modelContext.delete(task)
         try? modelContext.save()
-        taskToDelete = nil
+        BackupScheduler.shared.scheduleProcessingTask()
     }
 
     private func startTaskNow(_ task: BackupTask, ignoreWiFiRequirement: Bool = false) {

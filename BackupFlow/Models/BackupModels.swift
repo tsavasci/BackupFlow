@@ -470,8 +470,14 @@ final class BackupTask: Identifiable, Hashable {
         saveServerPassword(serverPassword)
     }
 
+    var isLiveInContext: Bool {
+        modelContext != nil && !isDeleted
+    }
+
     func removeStoredPassword() {
         BackupCredentialStore.shared.deletePassword(for: id)
+        BackupCredentialStore.shared.deletePrivateKey(for: id)
+        BackupCredentialStore.shared.deletePassphrase(for: id)
         serverPassword = ""
     }
 
@@ -551,11 +557,19 @@ final class BackupTask: Identifiable, Hashable {
     // MARK: - Hashable Conformance
     
     static func == (lhs: BackupTask, rhs: BackupTask) -> Bool {
-        lhs.id == rhs.id
+        if lhs === rhs { return true }
+        if lhs.isLiveInContext && rhs.isLiveInContext {
+            return lhs.id == rhs.id
+        }
+        return lhs.persistentModelID == rhs.persistentModelID
     }
     
     func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
+        if isLiveInContext {
+            hasher.combine(id)
+        } else {
+            hasher.combine(persistentModelID)
+        }
     }
 }
 
@@ -614,6 +628,18 @@ final class BackupHistory: Identifiable {
             return BackupFailureCategory(rawValue: rawValue)
         }
         set { failureCategoryRaw = newValue?.rawValue }
+    }
+
+    var isLiveInContext: Bool {
+        modelContext != nil && !isDeleted
+    }
+
+    /// Safely checks if this history record belongs to `targetTask` without faulting `self.task` from SQLite.
+    /// If `self.task` is a dangling reference to a deleted `BackupTask`, accessing `self.task?.id` would
+    /// crash SwiftData (`BackingData.swift:1145`), whereas `persistentModelID` never faults the store.
+    func belongs(to targetTask: BackupTask) -> Bool {
+        guard isLiveInContext, targetTask.isLiveInContext, let task else { return false }
+        return task.persistentModelID == targetTask.persistentModelID
     }
 
     var inferredBackupType: BackupType? {

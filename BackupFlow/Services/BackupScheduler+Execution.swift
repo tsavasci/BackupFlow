@@ -197,6 +197,13 @@ extension BackupScheduler {
     }
 
     private func handleBackupSuccess(task: BackupTask, syncResult: FTPService.SyncResult, runStart: Date) async {
+        guard task.isLiveInContext else {
+            BackupLiveActivityManager.shared.end(
+                statusText: "backup.status.completed".localized,
+                success: true
+            )
+            return
+        }
         task.backupStatus = .completed
         task.progress = 1.0
         task.lastBackupDate = Date()
@@ -236,6 +243,13 @@ extension BackupScheduler {
     /// Handles a run stopped by the user or by background time expiring.
     /// System expiration reschedules soon; a user cancellation moves on to the next scheduled run.
     private func handleBackupCancellation(task: BackupTask, runStart: Date) async {
+        guard task.isLiveInContext else {
+            BackupLiveActivityManager.shared.end(
+                statusText: "backup.status.cancelled".localized,
+                success: false
+            )
+            return
+        }
         let message = BackupServiceError.cancelled.localizedDescription
         let expiredBySystem = backgroundExpirationTaskIDs.remove(task.id) != nil
             || (task.backupType == .ftp && FTPService.shared.consumeBackgroundExpiration())
@@ -285,6 +299,13 @@ extension BackupScheduler {
         options: BackupExecutionOptions,
         runStart: Date
     ) async {
+        guard task.isLiveInContext else {
+            BackupLiveActivityManager.shared.end(
+                statusText: "backup.status.failed".localized,
+                success: false
+            )
+            return
+        }
         let currentType = await getCurrentNetworkType()
 
         // Wi-Fi dropped during a run that requires it: wait for Wi-Fi again rather
@@ -557,6 +578,7 @@ extension BackupScheduler {
         nonisolated(unsafe) let mainActorTask = task
         return { progress in
             Task { @MainActor in
+                guard mainActorTask.isLiveInContext else { return }
                 // NaN kontrolü ile güvenli progress update
                 mainActorTask.progress = progress.isNaN || progress.isInfinite ? 0.0 : max(0.0, min(1.0, progress))
                 let currentFile = source.currentFile

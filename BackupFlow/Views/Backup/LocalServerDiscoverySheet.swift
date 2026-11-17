@@ -27,7 +27,7 @@ struct LocalServerDiscoverySheet: View {
     private var savedProfiles: [SavedServerProfile] {
         var seen = Set<String>()
         var profiles: [SavedServerProfile] = []
-        for task in queriedTasks where task.modelContext != nil {
+        for task in queriedTasks where task.isLiveInContext {
             let target: BackupTarget = switch task.backupType {
             case .ftp: .ftp
             case .sftp: .sftp

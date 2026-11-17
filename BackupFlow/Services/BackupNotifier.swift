@@ -44,6 +44,7 @@ final class BackupNotifier {
 
     /// Zamanı gelen görev için bildirim gönderir (action button ile)
     func sendScheduledBackupNotification(for task: BackupTask) {
+        guard task.isLiveInContext else { return }
         // WebDAV arka plan URLSession ile sessizce çalıştığından "Yedeklemeye Hazır" bildirimi gönderilmez
         guard task.backupType == .ftp || task.backupType == .sftp else { return }
 
@@ -74,6 +75,7 @@ final class BackupNotifier {
     /// delivered if the run hasn't completed yet (and is cleared automatically by
     /// `removeDeliveredRunPrompts` if the background run finishes first).
     func refreshReminder(for task: BackupTask) {
+        guard task.isLiveInContext else { return }
         let identifier = Self.reminderIdentifier(for: task.id)
         center.removePendingNotificationRequests(withIdentifiers: [identifier])
 

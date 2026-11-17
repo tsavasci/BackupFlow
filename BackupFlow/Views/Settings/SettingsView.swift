@@ -211,21 +211,32 @@ struct SettingsView: View {
             BackupScheduler.shared.cancelAllBackgroundTasks()
 
             do {
-                let taskDescriptor = FetchDescriptor<BackupTask>()
-                let allTasks = try modelContext.fetch(taskDescriptor)
-                for task in allTasks {
-                    BackupNotifier.shared.removeReminder(forTaskID: task.id)
-                    task.removeStoredPassword()
-                    modelContext.delete(task)
-                }
-
                 let historyDescriptor = FetchDescriptor<BackupHistory>()
                 let allHistory = try modelContext.fetch(historyDescriptor)
                 for history in allHistory {
                     modelContext.delete(history)
                 }
 
+                let taskDescriptor = FetchDescriptor<BackupTask>()
+                let allTasks = try modelContext.fetch(taskDescriptor)
+                for task in allTasks {
+                    BackupScheduler.shared.prepareTaskForDeletion(task)
+                    task.removeStoredPassword()
+                    modelContext.delete(task)
+                }
+
+                let restoredRecords = try modelContext.fetch(FetchDescriptor<RestoredPhotoRecord>())
+                for record in restoredRecords {
+                    modelContext.delete(record)
+                }
+
+                let ignoreRecords = try modelContext.fetch(FetchDescriptor<RestoreIgnoreRecord>())
+                for record in ignoreRecords {
+                    modelContext.delete(record)
+                }
+
                 try modelContext.save()
+                RestoredPhotoLedgerStore.shared.clearAllForTesting()
                 debugLog("✅ BackupFlow: Tüm veriler başarıyla silindi")
 
                 keepHistoryDays = 30
