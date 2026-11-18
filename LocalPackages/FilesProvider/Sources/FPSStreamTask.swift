@@ -27,6 +27,37 @@ var lasttaskIdAssociated: Int {
     }
 }
 
+private final class FPSStreamRunLoop: @unchecked Sendable {
+    static let shared = FPSStreamRunLoop()
+    private let condition = NSCondition()
+    private(set) var runLoop: RunLoop!
+
+    private init() {
+        let thread = Thread { [weak self] in
+            let rl = RunLoop.current
+            rl.add(Port(), forMode: .default)
+            self?.condition.lock()
+            self?.runLoop = rl
+            self?.condition.broadcast()
+            self?.condition.unlock()
+            while true {
+                autoreleasepool {
+                    _ = rl.run(mode: .default, before: .distantFuture)
+                }
+            }
+        }
+        thread.name = "com.filesprovider.stream.runloop"
+        thread.qualityOfService = .userInitiated
+        thread.start()
+
+        condition.lock()
+        while runLoop == nil {
+            condition.wait()
+        }
+        condition.unlock()
+    }
+}
+
 // codebeat:disable[TOTAL_LOC,TOO_MANY_IVARS]
 /// This class is a replica of NSURLSessionStreamTask with same api for iOS 7/8
 /// while it can actually fallback to NSURLSessionStreamTask in iOS 9.
@@ -36,7 +67,7 @@ public class FileProviderStreamTask: URLSessionTask, StreamDelegate {
     
     fileprivate let dataToBeSentLock = NSLock()
     fileprivate var dataToBeSent: Data = Data()
-    fileprivate let dataReceivedLock = NSLock()
+    fileprivate let dataReceivedLock = NSCondition()
     fileprivate var dataReceived: Data = Data()
     
     fileprivate var _error: Error? = nil
@@ -440,12 +471,14 @@ public class FileProviderStreamTask: URLSessionTask, StreamDelegate {
         inputStream.delegate = self
         outputStream.delegate = self
         
+        let streamRunLoop = FPSStreamRunLoop.shared.runLoop!
         #if swift(>=4.2)
-        inputStream.schedule(in: RunLoop.main, forMode: .common)
+        inputStream.schedule(in: streamRunLoop, forMode: .default)
+        outputStream.schedule(in: streamRunLoop, forMode: .default)
         #else
-        inputStream.schedule(in: RunLoop.main, forMode: .commonModes)
+        inputStream.schedule(in: streamRunLoop, forMode: .defaultRunLoopMode)
+        outputStream.schedule(in: streamRunLoop, forMode: .defaultRunLoopMode)
         #endif
-        //outputStream.schedule(in: RunLoop.main, forMode: .init("kCFRunLoopDefaultMode"))
         
         inputStream.open()
         outputStream.open()
@@ -478,24 +511,34 @@ public class FileProviderStreamTask: URLSessionTask, StreamDelegate {
         }
         
         guard let inputStream = inputStream else {
+            completionHandler(nil, true, URLError(.cancelled))
             return
         }
         
-        let expireDate = Date(timeIntervalSinceNow: timeout)
+        let effectiveTimeout = timeout > 0 ? timeout : 60.0
+        let expireDate = Date(timeIntervalSinceNow: effectiveTimeout)
         dispatch_queue.async {
             var timedOut: Bool = false
             self.dataReceivedLock.lock()
             while (self.dataReceived.count == 0 || self.dataReceived.count < minBytes) && !timedOut && !self.endEncountered {
-                self.dataReceivedLock.unlock()
-                Thread.sleep(forTimeInterval: 0.1)
-                if let error = inputStream.streamError {
-                    completionHandler(nil, inputStream.streamStatus == .atEnd, error)
+                if let error = inputStream.streamError ?? self._error {
+                    self.dataReceivedLock.unlock()
+                    completionHandler(nil, inputStream.streamStatus == .atEnd || self.endEncountered, error)
                     return
                 }
+                let status = inputStream.streamStatus
+                if status == .atEnd || status == .closed || status == .error {
+                    self.endEncountered = true
+                    break
+                }
+                let remaining = expireDate.timeIntervalSinceNow
+                if remaining <= 0 {
+                    timedOut = true
+                    break
+                }
+                _ = self.dataReceivedLock.wait(until: Date(timeIntervalSinceNow: min(0.015, remaining)))
                 timedOut = expireDate < Date()
-                self.dataReceivedLock.lock()
             }
-            self.endEncountered = false
             var dR: Data?
             if self.dataReceived.count > maxBytes {
                 let range: Range = 0..<maxBytes
@@ -507,9 +550,11 @@ public class FileProviderStreamTask: URLSessionTask, StreamDelegate {
                     self.dataReceived.removeAll(keepingCapacity: false)
                 }
             }
-            let isEOF = inputStream.streamStatus == .atEnd && self.dataReceived.count == 0
+            let streamReachedEnd = self.endEncountered || inputStream.streamStatus == .atEnd || inputStream.streamStatus == .closed
+            let isEOF = streamReachedEnd && self.dataReceived.count == 0
+            let readError = inputStream.streamError ?? self._error
             self.dataReceivedLock.unlock()
-            completionHandler(dR, isEOF, dR == nil ? (timedOut ? URLError(.timedOut) : inputStream.streamError) : nil)
+            completionHandler(dR, isEOF, dR == nil ? (timedOut ? URLError(.timedOut) : readError) : nil)
         }
     }
     
@@ -800,22 +845,37 @@ extension FileProviderStreamTask {
     open func stream(_ aStream: Stream, handle eventCode: Stream.Event) {
         if eventCode.contains(.errorOccurred) {
             self._error = aStream.streamError
+            dataReceivedLock.lock()
+            dataReceivedLock.broadcast()
+            dataReceivedLock.unlock()
             streamDelegate?.urlSession?(_underlyingSession, task: self, didCompleteWithError: error)
         }
         
         if aStream == inputStream && eventCode.contains(.endEncountered) {
+            dataReceivedLock.lock()
             self.endEncountered = true
+            dataReceivedLock.broadcast()
+            dataReceivedLock.unlock()
         }
         
         if aStream == inputStream && eventCode.contains(.hasBytesAvailable) {
-            while (inputStream!.hasBytesAvailable) {
-                var buffer = [UInt8](repeating: 0, count: 2048)
-                let len = inputStream!.read(&buffer, maxLength: buffer.count)
+            var buffer = [UInt8](repeating: 0, count: 65_536)
+            while let stream = inputStream, stream.hasBytesAvailable {
+                let len = stream.read(&buffer, maxLength: buffer.count)
                 if len > 0 {
                     dataReceivedLock.lock()
                     dataReceived.append(&buffer, count: len)
+                    dataReceivedLock.broadcast()
                     dataReceivedLock.unlock()
                     self._countOfBytesRecieved += Int64(len)
+                } else {
+                    if len == 0 {
+                        dataReceivedLock.lock()
+                        self.endEncountered = true
+                        dataReceivedLock.broadcast()
+                        dataReceivedLock.unlock()
+                    }
+                    break
                 }
             }
         }
@@ -834,16 +894,43 @@ extension FileProviderStreamTask {
         }
         while self.dataToBeSent.count > 0 && (timeout == 0 || expireDate > Date()) {
             if let _ = outputStream.streamError {
+                self._error = outputStream.streamError
                 return byteSent == 0 ? -1 : byteSent
             }
             
-            let bytesWritten: Int = (try? outputStream.write(data: self.dataToBeSent)) ?? -1
+            let status = outputStream.streamStatus
+            if status == .opening {
+                self.dataToBeSentLock.unlock()
+                Thread.sleep(forTimeInterval: 0.002)
+                self.dataToBeSentLock.lock()
+                continue
+            }
+            if status == .closed || status == .atEnd || status == .error {
+                self._error = outputStream.streamError ?? URLError(.networkConnectionLost)
+                return byteSent == 0 ? -1 : byteSent
+            }
+            if !outputStream.hasSpaceAvailable {
+                self.dataToBeSentLock.unlock()
+                Thread.sleep(forTimeInterval: 0.002)
+                self.dataToBeSentLock.lock()
+                continue
+            }
+            
+            let chunkCount = min(self.dataToBeSent.count, 65_536)
+            let bytesWritten: Int = self.dataToBeSent.withUnsafeBytes { rawBuffer in
+                guard let base = rawBuffer.baseAddress?.assumingMemoryBound(to: UInt8.self) else { return -1 }
+                return outputStream.write(base, maxLength: chunkCount)
+            }
             
             if bytesWritten > 0 {
                 self.dataToBeSent.removeFirst(bytesWritten)
                 byteSent += bytesWritten
                 self._countOfBytesSent += Int64(bytesWritten)
-            } else if bytesWritten < 0 {
+            } else if bytesWritten == 0 {
+                self.dataToBeSentLock.unlock()
+                Thread.sleep(forTimeInterval: 0.002)
+                self.dataToBeSentLock.lock()
+            } else {
                 self._error = outputStream.streamError
                 return bytesWritten
             }
@@ -853,10 +940,8 @@ extension FileProviderStreamTask {
         }
         
         if close {
-            DispatchQueue.main.sync {
-                outputStream.close()
-                shouldCloseWrite = true
-            }
+            outputStream.close()
+            shouldCloseWrite = true
             self.streamDelegate?.urlSession?(self._underlyingSession, writeClosedFor: self)
         }
         return byteSent
@@ -865,24 +950,30 @@ extension FileProviderStreamTask {
     fileprivate func finish() {
         peerID = nil
         
+        let streamRunLoop = FPSStreamRunLoop.shared.runLoop!
         inputStream?.delegate = nil
         outputStream?.delegate = nil
         
         inputStream?.close()
         #if swift(>=4.2)
-        inputStream?.remove(from: RunLoop.main, forMode: .common)
+        inputStream?.remove(from: streamRunLoop, forMode: .default)
         #else
-        inputStream?.remove(from: RunLoop.main, forMode: .commonModes)
+        inputStream?.remove(from: streamRunLoop, forMode: .defaultRunLoopMode)
         #endif
         inputStream = nil
         
         outputStream?.close()
         #if swift(>=4.2)
-        outputStream?.remove(from: RunLoop.main, forMode: .common)
+        outputStream?.remove(from: streamRunLoop, forMode: .default)
         #else
-        outputStream?.remove(from: RunLoop.main, forMode: .commonModes)
+        outputStream?.remove(from: streamRunLoop, forMode: .defaultRunLoopMode)
         #endif
         outputStream = nil
+        
+        dataReceivedLock.lock()
+        endEncountered = true
+        dataReceivedLock.broadcast()
+        dataReceivedLock.unlock()
     }
     
 }

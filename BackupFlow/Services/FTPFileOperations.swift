@@ -8,6 +8,8 @@ struct FTPFileOperations {
     let isVerboseLoggingEnabled: Bool
     let isCancelled: () -> Bool
     let mapError: (Error) -> FTPError
+    var isDirectoryEnsured: ((String) -> Bool)? = nil
+    var markDirectoryEnsured: ((String) -> Void)? = nil
 
     func createDirectory(at path: String) async throws {
         if isCancelled() {
@@ -15,8 +17,7 @@ struct FTPFileOperations {
             throw FTPError.fileOperationFailed
         }
 
-        if let exists = try? await directoryExists(path), exists == true {
-            logger.info("Dizin zaten mevcut: \(path)")
+        if isDirectoryEnsured?(path) == true {
             return
         }
 
@@ -26,46 +27,36 @@ struct FTPFileOperations {
         var currentPath = ""
 
         for component in components {
+            if isCancelled() {
+                throw FTPError.fileOperationFailed
+            }
             currentPath += "/" + component
 
-            if let exists = try? await directoryExists(currentPath), exists == true {
-                logger.debug("Ara dizin zaten mevcut: \(currentPath)")
+            if isDirectoryEnsured?(currentPath) == true {
                 continue
             }
 
             logger.debug("Ara dizin oluşturuluyor: \(currentPath)")
 
-            do {
-                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                    let parentPath = (currentPath as NSString).deletingLastPathComponent
-                    let folderName = (currentPath as NSString).lastPathComponent
-                    let parent = parentPath.isEmpty ? "/" : parentPath
-                    provider.create(folder: folderName, at: parent) { (error: Error?) in
-                        if let error = error {
-                            logger.warning("Dizin oluşturulurken hata: \(error.localizedDescription). Yine de devam ediliyor...")
-                            continuation.resume()
-                        } else {
-                            logger.debug("Dizin başarıyla oluşturuldu: \(currentPath)")
-                            continuation.resume()
-                        }
+            await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+                let parentPath = (currentPath as NSString).deletingLastPathComponent
+                let folderName = (currentPath as NSString).lastPathComponent
+                let parent = parentPath.isEmpty ? "/" : parentPath
+                provider.create(folder: folderName, at: parent) { (error: Error?) in
+                    if let error = error {
+                        // FTP servers return 550 / -3000 (cannotCreateFile) when the directory already exists.
+                        logger.debug("Dizin zaten mevcut veya MKD yanıtı: \(currentPath) (\(error.localizedDescription))")
+                    } else {
+                        logger.debug("Dizin başarıyla oluşturuldu: \(currentPath)")
                     }
+                    markDirectoryEnsured?(currentPath)
+                    continuation.resume()
                 }
-            } catch {
-                logger.error("Dizin oluşturulurken beklenmeyen hata: \(error.localizedDescription)")
             }
         }
 
-        switch try? await directoryExists(path) {
-        case .some(true):
-            logger.info("Dizin başarıyla oluşturuldu: \(path)")
-        case .some(false):
-            logger.error("Dizin oluşturulamadı: \(path)")
-            throw FTPError.fileOperationFailed
-        default:
-            // Many FTP servers can't report attributes for a directory (nil = unknown).
-            // That isn't a failure: a real problem surfaces when uploading into it.
-            logger.debug("Dizin durumu doğrulanamadı, devam ediliyor: \(path)")
-        }
+        markDirectoryEnsured?(path)
+        logger.info("Dizin hazır: \(path)")
     }
 
     func directoryExists(_ path: String) async throws -> Bool? {

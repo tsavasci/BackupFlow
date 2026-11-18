@@ -9,11 +9,61 @@
 import Foundation
 
 internal extension FTPFileProvider {
+    public static func isCompleteFTPControlReply(_ text: String) -> Bool {
+        guard text.utf8.last == 10 else { return false }
+        let lines = text.components(separatedBy: .newlines).compactMap { line -> String? in
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? nil : trimmed
+        }
+        guard let last = lines.last else { return false }
+
+        func parseStatusLine(_ line: String) -> (code: String, isContinuation: Bool)? {
+            guard line.count >= 3 else { return nil }
+            let prefix3 = String(line.prefix(3))
+            guard prefix3.unicodeScalars.allSatisfy({ CharacterSet.decimalDigits.contains($0) }) else {
+                return nil
+            }
+            if line.count == 3 {
+                return (prefix3, false)
+            }
+            let fourth = line[line.index(line.startIndex, offsetBy: 3)]
+            if fourth == "-" {
+                return (prefix3, true)
+            }
+            if fourth == " " {
+                return (prefix3, false)
+            }
+            return nil
+        }
+
+        var openMultilineCode: String? = nil
+        for line in lines {
+            if let status = parseStatusLine(line) {
+                if openMultilineCode == nil {
+                    if status.isContinuation {
+                        openMultilineCode = status.code
+                    }
+                } else if !status.isContinuation && status.code == openMultilineCode {
+                    openMultilineCode = nil
+                }
+            }
+        }
+        guard openMultilineCode == nil,
+              let lastStatus = parseStatusLine(last),
+              !lastStatus.isContinuation else {
+            return false
+        }
+        return true
+    }
+
     func execute(command: String, on task: FileProviderStreamTask, minLength: Int = 4,
                  afterSend: ((_ error: Error?) -> Void)? = nil,
                  completionHandler: @escaping (_ response: String?, _ error: Error?) -> Void) {
         let timeout = session.configuration.timeoutIntervalForRequest
         let terminalcommand = command + "\r\n"
+        if task.state == .suspended {
+            task.resume()
+        }
         task.write(terminalcommand.data(using: .utf8)!, timeout: timeout) { (error) in
             if let error = error {
                 completionHandler(nil, error)
@@ -24,35 +74,56 @@ internal extension FTPFileProvider {
                 task.resume()
             }
             
-            self.readData(on: task, minLength: minLength, maxLength: 4096, timeout: timeout, afterSend: afterSend, completionHandler: completionHandler)
+            self.readData(on: task, minLength: minLength, maxLength: 65536, timeout: timeout, afterSend: afterSend, completionHandler: completionHandler)
         }
     }
     
     func readData(on task: FileProviderStreamTask,
-                  minLength: Int = 4, maxLength: Int = 4096, timeout: TimeInterval,
+                  minLength: Int = 4, maxLength: Int = 65536, timeout: TimeInterval,
+                  accumulated: String = "",
                   afterSend: ((_ error: Error?) -> Void)? = nil,
                   completionHandler: @escaping (_ response: String?, _ error: Error?) -> Void) {
-        task.readData(ofMinLength: minLength, maxLength: maxLength, timeout: timeout) { (data, eof, error) in
+        task.readData(ofMinLength: accumulated.isEmpty ? minLength : 1, maxLength: maxLength, timeout: timeout) { (data, eof, error) in
             if let error = error {
                 completionHandler(nil, error)
                 return
             }
             
-            if let data = data, let response = String(data: data, encoding: .utf8) {
-                let lines = response.components(separatedBy: "\n").compactMap { $0.isEmpty ? nil : $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                if let last = lines.last, last.hasPrefix("1") {
-                    // 1XX: Need to wait for some other response
-                    let timeout = self.session.configuration.timeoutIntervalForResource
-                    self.readData(on: task, minLength: minLength, maxLength: maxLength, timeout: timeout, afterSend: afterSend, completionHandler: completionHandler)
-                    
-                    // Call afterSend
-                    afterSend?(error)
+            guard let data = data, let chunk = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .isoLatin1) else {
+                if !accumulated.isEmpty {
+                    completionHandler(accumulated.trimmingCharacters(in: .whitespacesAndNewlines), nil)
+                } else {
+                    completionHandler(nil, URLError(.cannotParseResponse, url: self.url(of: "")))
+                }
+                return
+            }
+
+            let response = accumulated + chunk
+            if !eof && !Self.isCompleteFTPControlReply(response) {
+                self.readData(on: task, minLength: 1, maxLength: maxLength, timeout: timeout, accumulated: response, afterSend: afterSend, completionHandler: completionHandler)
+                return
+            }
+
+            let lines = response.components(separatedBy: "\n").compactMap { $0.isEmpty ? nil : $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            let startsWith1xx = lines.first?.hasPrefix("1") ?? false
+            let endsWith1xx = lines.last?.hasPrefix("1") ?? false
+
+            if startsWith1xx {
+                // Run afterSend (e.g. data stream write/read) BEFORE waiting for 226 so the
+                // resource timeout starts after the data transfer and TCP buffers never deadlock.
+                afterSend?(nil)
+                if endsWith1xx {
+                    let resourceTimeout = self.session.configuration.timeoutIntervalForResource
+                    self.readData(on: task, minLength: minLength, maxLength: maxLength, timeout: resourceTimeout, accumulated: "", afterSend: nil, completionHandler: completionHandler)
                     return
                 }
-                completionHandler(response.trimmingCharacters(in: .whitespacesAndNewlines), nil)
-            } else {
-                completionHandler(nil, URLError(.cannotParseResponse, url: self.url(of: "")))
+            } else if endsWith1xx {
+                afterSend?(nil)
+                let resourceTimeout = self.session.configuration.timeoutIntervalForResource
+                self.readData(on: task, minLength: minLength, maxLength: maxLength, timeout: resourceTimeout, accumulated: "", afterSend: nil, completionHandler: completionHandler)
+                return
             }
+            completionHandler(response.trimmingCharacters(in: .whitespacesAndNewlines), nil)
         }
     }
     
@@ -136,20 +207,22 @@ internal extension FTPFileProvider {
             task.resume()
         }
         
-        task.readData(ofMinLength: 4, maxLength: 2048, timeout: timeout) { (data, eof, error) in
+        self.readData(on: task, minLength: 4, maxLength: 65536, timeout: timeout) { (response, error) in
             do {
                 if let error = error {
                     throw error
                 }
                 
-                guard let data = data, let response = String(data: data, encoding: .utf8) else {
+                guard let response = response else {
                     throw URLError(.cannotParseResponse, url: self.url(of: ""))
                 }
                 
-                guard response.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("22") else {
+                let lines = response.components(separatedBy: "\n").compactMap { $0.isEmpty ? nil : $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                guard let lastLine = lines.last, lastLine.hasPrefix("22") else {
                     throw FileProviderFTPError(message: response)
                 }
             } catch {
+                task.cancel()
                 completionHandler(error)
                 return
             }
@@ -201,7 +274,17 @@ internal extension FTPFileProvider {
                     throw error
                 }
                 
-                guard let response = response, let destString = response.trimmingCharacters(in: .whitespacesAndNewlines).components(separatedBy: " ").last else {
+                guard let response = response else {
+                    throw URLError(.badServerResponse, url: self.url(of: ""))
+                }
+                let trimmedResponse = response.trimmingCharacters(in: .whitespacesAndNewlines)
+                let destString: String
+                if let openParen = trimmedResponse.lastIndex(of: "("),
+                   let closeParen = trimmedResponse[openParen...].firstIndex(of: ")") {
+                    destString = String(trimmedResponse[trimmedResponse.index(after: openParen)..<closeParen])
+                } else if let lastToken = trimmedResponse.components(separatedBy: " ").last {
+                    destString = lastToken
+                } else {
                     throw URLError(.badServerResponse, url: self.url(of: ""))
                 }
                 
@@ -215,8 +298,8 @@ internal extension FTPFileProvider {
                 let portHi = Int(destArray[4]) << 8
                 let portLo = Int(destArray[5])
                 let port = portHi + portLo
-                // IPv6 workaround
-                if host == "127.555.555.555" {
+                // IPv6 / loopback / unroutable NAT workaround
+                if host == "127.555.555.555" || host == "0.0.0.0" || host.hasPrefix("127.") {
                     host = self.baseURL!.host!
                 }
                 
@@ -352,79 +435,94 @@ internal extension FTPFileProvider {
                 return
             }
             
-            let success_lock = NSLock()
-            var success = false
+            let timeout = self.session.configuration.timeoutIntervalForRequest
+            var finalData = Data()
+            var dataReadError: Error?
+            var didDrainData = false
+
+            let drainDataStream: () -> Void = {
+                guard !didDrainData else { return }
+                didDrainData = true
+                defer {
+                    dataTask.closeRead(immediate: true)
+                    dataTask.closeWrite()
+                    dataTask.cancel()
+                }
+                var eof = false
+                let error_lock = NSLock()
+                var readErr: Error?
+                while !eof {
+                    let group = DispatchGroup()
+                    group.enter()
+                    dataTask.readData(ofMinLength: 1, maxLength: Int.max, timeout: timeout) { (data, seof, serror) in
+                        if let data = data {
+                            finalData.append(data)
+                        }
+                        eof = seof
+                        error_lock.lock()
+                        readErr = serror
+                        error_lock.unlock()
+                        group.leave()
+                    }
+                    let waitResult = group.wait(timeout: .now() + timeout)
+                    error_lock.lock()
+                    if let err = readErr {
+                        error_lock.unlock()
+                        if (err as? URLError)?.code != .cancelled {
+                            dataReadError = err
+                        }
+                        return
+                    }
+                    error_lock.unlock()
+                    if waitResult == .timedOut {
+                        dataReadError = URLError(.timedOut, url: self.url(of: path))
+                        return
+                    }
+                }
+            }
+
             let command = useMLST ? "MLSD \(path)" : "LIST \(path)"
-            self.execute(command: command, on: task) { (response, error) in
+            self.execute(command: command, on: task, afterSend: { _ in
+                drainDataStream()
+            }) { (response, error) in
                 do {
                     if let error = error {
+                        dataTask.cancel()
                         throw error
                     }
                     
                     guard let response = response else {
+                        dataTask.cancel()
                         throw URLError(.cannotParseResponse, url: self.url(of: path))
                     }
                     
-                    if response.hasPrefix("500") && useMLST {
+                    let trimmed = response.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let lines = trimmed.components(separatedBy: "\n").compactMap { $0.isEmpty ? nil : $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    let lastLine = lines.last ?? trimmed
+
+                    if (lastLine.hasPrefix("500") || lastLine.hasPrefix("502")) && useMLST {
                         dataTask.cancel()
                         self.supportsRFC3659 = false
                         throw URLError(.unsupportedURL, url: self.url(of: path))
                     }
-                    
-                    let timeout = self.session.configuration.timeoutIntervalForRequest
-                    var finalData = Data()
-                    var eof = false
-                    let error_lock = NSLock()
-                    var error: Error?
-                    
-                    while !eof {
-                        let group = DispatchGroup()
-                        group.enter()
-                        dataTask.readData(ofMinLength: 1, maxLength: Int.max, timeout: timeout) { (data, seof, serror) in
-                            if let data = data {
-                                finalData.append(data)
-                            }
-                            eof = seof
-                            error_lock.lock()
-                            error = serror
-                            error_lock.unlock()
-                            group.leave()
-                        }
-                        let waitResult = group.wait(timeout: .now() + timeout)
-                        
-                        error_lock.lock()
-                        if let error = error {
-                            error_lock.unlock()
-                            if (error as? URLError)?.code != .cancelled {
-                                throw error
-                            }
-                            return
-                        }
-                        error_lock.unlock()
-                        
-                        if waitResult == .timedOut {
-                            throw URLError(.timedOut, url: self.url(of: path))
-                        }
+
+                    if lastLine.hasPrefix("4") || lastLine.hasPrefix("5") {
+                        dataTask.cancel()
+                        throw FileProviderFTPError(message: response, path: path)
+                    }
+
+                    drainDataStream()
+                    if let dataReadError = dataReadError {
+                        throw dataReadError
                     }
                     
-                    guard let dataResponse = String(data: finalData, encoding: .utf8) else {
+                    guard let dataResponse = String(data: finalData, encoding: .utf8) ?? String(data: finalData, encoding: .isoLatin1) else {
                         throw URLError(.badServerResponse, url: self.url(of: path))
                     }
                     
                     let contents: [String] = dataResponse.components(separatedBy: "\n")
                         .compactMap({ $0.trimmingCharacters(in: .whitespacesAndNewlines) })
-                    success_lock.try()
-                    success = true
-                    success_lock.unlock()
                     completionHandler(contents, nil)
-                    
-                    success_lock.try()
-                    if !success && !(response.hasPrefix("25") || response.hasPrefix("15")) {
-                        success_lock.unlock()
-                        throw FileProviderFTPError(message: response, path: path)
-                    } else {
-                        success_lock.unlock()
-                    }
                 } catch {
                     self.dispatch_queue.async {
                         completionHandler([], error)
@@ -493,106 +591,140 @@ internal extension FTPFileProvider {
                      onProgress: @escaping (_ data: Data, _ totalReceived: Int64, _ expectedBytes: Int64) -> Void,
                      completionHandler: SimpleCompletionHandler) {
         
-        self.attributesOfItem(path: filePath) { (file, error) in
-            let totalSize = file?.size ?? -1
-            // Retreive data from server
-            self.ftpDataConnect(task) { (dataTask, error) in
-                if let error = error {
-                    completionHandler?(error)
-                    return
-                }
-                
-                guard let dataTask = dataTask else {
-                    completionHandler?(URLError(.badServerResponse, url: self.url(of: filePath)))
-                    return
-                }
-                
-                // Send retreive command
-                self.execute(command: "TYPE I" + "\r\n" + "REST \(position)" + "\r\n" + "RETR \(filePath)", on: task) { (response, error) in
-                    // starting passive task
-                    onTask?(dataTask)
-                    
-                    defer {
-                        dataTask.closeRead()
-                        dataTask.closeWrite()
+        self.execute(command: "TYPE I", on: task) { (typeResponse, typeError) in
+            if let typeError = typeError {
+                completionHandler?(typeError)
+                return
+            }
+            if let typeResponse = typeResponse, !typeResponse.hasPrefix("2") {
+                completionHandler?(FileProviderFTPError(message: typeResponse, path: filePath))
+                return
+            }
+
+            let startDataRetrieve: () -> Void = {
+                self.ftpDataConnect(task) { (dataTask, error) in
+                    if let error = error {
+                        completionHandler?(error)
+                        return
                     }
                     
-                    if stream.streamStatus == .notOpen || stream.streamStatus == .closed {
-                        stream.open()
+                    guard let dataTask = dataTask else {
+                        completionHandler?(URLError(.badServerResponse, url: self.url(of: filePath)))
+                        return
                     }
-                    
+
+                    let totalSize: Int64 = -1
                     let timeout = self.session.configuration.timeoutIntervalForRequest
-                    var totalReceived: Int64 = 0
-                    var eof = false
-                    let error_lock = NSLock()
-                    var error: Error?
-                    while !eof {
-                        let group = DispatchGroup()
-                        group.enter()
-                        dataTask.readData(ofMinLength: 1, maxLength: Int.max, timeout: timeout) { (data, segeof, segerror) in
-                            defer {
-                                group.leave()
-                            }
-                            if let segerror = segerror {
-                                error_lock.lock()
-                                error = segerror
-                                error_lock.unlock()
-                                return
-                            }
-                            if let data = data {
-                                var data = data
-                                if length > 0, Int64(data.count) + totalReceived > Int64(length) {
-                                    data.count = Int(Int64(length) - totalReceived)
+                    var didDrainData = false
+                    var drainError: Error?
+
+                    let drainDownloadStream: () -> Void = {
+                        guard !didDrainData else { return }
+                        didDrainData = true
+                        onTask?(dataTask)
+                        defer {
+                            dataTask.closeRead(immediate: true)
+                            dataTask.closeWrite()
+                            dataTask.cancel()
+                        }
+                        if stream.streamStatus == .notOpen || stream.streamStatus == .closed {
+                            stream.open()
+                        }
+                        var totalReceived: Int64 = 0
+                        var eof = false
+                        let error_lock = NSLock()
+                        var readErr: Error?
+                        while !eof {
+                            let group = DispatchGroup()
+                            group.enter()
+                            dataTask.readData(ofMinLength: 1, maxLength: Int.max, timeout: timeout) { (data, segeof, segerror) in
+                                defer {
+                                    group.leave()
                                 }
-                                totalReceived += Int64(data.count)
-                                let result = (try? stream.write(data: data)) ?? -1
-                                if result < 0 {
+                                if let segerror = segerror {
                                     error_lock.lock()
-                                    error = stream.streamError ?? URLError(.cannotWriteToFile, url: self.url(of: filePath))
+                                    readErr = segerror
                                     error_lock.unlock()
-                                    eof = true
                                     return
                                 }
-                                onProgress(data, totalReceived, totalSize)
+                                if let data = data {
+                                    var data = data
+                                    if length > 0, Int64(data.count) + totalReceived > Int64(length) {
+                                        data.count = Int(Int64(length) - totalReceived)
+                                    }
+                                    totalReceived += Int64(data.count)
+                                    let result = (try? stream.write(data: data)) ?? -1
+                                    if result < 0 {
+                                        error_lock.lock()
+                                        readErr = stream.streamError ?? URLError(.cannotWriteToFile, url: self.url(of: filePath))
+                                        error_lock.unlock()
+                                        eof = true
+                                        return
+                                    }
+                                    onProgress(data, totalReceived, totalSize)
+                                }
+                                eof = segeof || (length > 0 && totalReceived >= Int64(length))
                             }
-                            eof = segeof || (length > 0 && totalReceived >= Int64(length))
-                        }
-                        let waitResult = group.wait(timeout: .now() + timeout)
-                        
-                        error_lock.try()
-                        if let error = error {
+                            let waitResult = group.wait(timeout: .now() + timeout)
+                            error_lock.lock()
+                            if let err = readErr {
+                                error_lock.unlock()
+                                drainError = err
+                                return
+                            }
                             error_lock.unlock()
-                            completionHandler?(error)
-                            return
-                        }
-                        error_lock.unlock()
-                        
-                        if waitResult == .timedOut {
-                            completionHandler?(URLError(.timedOut, url: self.url(of: filePath)))
-                            return
+                            if waitResult == .timedOut {
+                                drainError = URLError(.timedOut, url: self.url(of: filePath))
+                                return
+                            }
                         }
                     }
-                    
-                    completionHandler?(nil)
-                    
-                    do {
-                        if let error = error {
-                            throw error
-                        }
-                        
-                        guard let response = response else {
-                            throw URLError(.cannotParseResponse, url: self.url(of: filePath))
-                        }
-                        
-                        if !(response.hasPrefix("1") || response.hasPrefix("2")) {
-                            throw FileProviderFTPError(message: response)
-                        }
-                    } catch {
-                        self.dispatch_queue.async {
-                            completionHandler?(error)
+
+                    self.execute(command: "RETR \(filePath)", on: task, afterSend: { _ in
+                        drainDownloadStream()
+                    }) { (response, error) in
+                        do {
+                            if let error = error {
+                                dataTask.cancel()
+                                throw error
+                            }
+                            guard let response = response else {
+                                dataTask.cancel()
+                                throw URLError(.cannotParseResponse, url: self.url(of: filePath))
+                            }
+                            let lines = response.components(separatedBy: "\n").compactMap { $0.isEmpty ? nil : $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                            if let last = lines.last, !(last.hasPrefix("1") || last.hasPrefix("2")) {
+                                dataTask.cancel()
+                                throw FileProviderFTPError(message: response, path: filePath)
+                            }
+                            drainDownloadStream()
+                            if let drainError = drainError {
+                                throw drainError
+                            }
+                            completionHandler?(nil)
+                        } catch {
+                            self.dispatch_queue.async {
+                                completionHandler?(error)
+                            }
                         }
                     }
                 }
+            }
+
+            if position > 0 {
+                self.execute(command: "REST \(position)", on: task) { (restResponse, restError) in
+                    if let restError = restError {
+                        completionHandler?(restError)
+                        return
+                    }
+                    if let restResponse = restResponse, !restResponse.hasPrefix("35") {
+                        completionHandler?(FileProviderFTPError(message: restResponse, path: filePath))
+                        return
+                    }
+                    startDataRetrieve()
+                }
+            } else {
+                startDataRetrieve()
             }
         }
     }
@@ -742,16 +874,21 @@ internal extension FTPFileProvider {
                     var sent: Int64 = 0
                     
                     stream.open()
+                    defer {
+                        stream.close()
+                    }
                     
                     repeat {
                         guard !completed else {
+                            dataTask.cancel()
                             return
                         }
                         
                         lock.lock()
                         
-                        guard var subdata = try? stream.readData(ofLength: chunkSize) else {
+                        guard let subdata = try? stream.readData(ofLength: chunkSize) else {
                             lock.unlock()
+                            dataTask.cancel()
                             completionOnce {
                                 completionHandler(stream.streamError ?? URLError(.requestBodyStreamExhausted, url: self.url(of: filePath)))
                             }
@@ -771,7 +908,6 @@ internal extension FTPFileProvider {
                                 let totalsent = sent
                                 let sentbytes = Int64(subdata.count)
                                 onProgress?(sentbytes, totalsent, size)
-                                print("ftp", filePath, dataTask.countOfBytesSent, dataTask.countOfBytesExpectedToSend, totalsent)
                             }
                             lock.unlock()
                             group.leave()
@@ -782,6 +918,7 @@ internal extension FTPFileProvider {
                         
                         if let error = error {
                             lock.unlock()
+                            dataTask.cancel()
                             completionOnce {
                                 completionHandler(error)
                             }
@@ -790,6 +927,7 @@ internal extension FTPFileProvider {
                         
                         if waitResult == .timedOut {
                             lock.unlock()
+                            dataTask.cancel()
                             completionOnce {
                                 completionHandler(URLError(.timedOut, url: self.url(of: filePath)))
                             }
@@ -805,9 +943,10 @@ internal extension FTPFileProvider {
                     if self.securedDataConnection {
                         dataTask.stopSecureConnection()
                     }
-                    // TOFIX: Close read/write stream for receive a FTP response from the server
+                    // Close data stream so the FTP server receives EOF and emits 226
                     dataTask.closeRead(immediate: true)
                     dataTask.closeWrite()
+                    dataTask.cancel()
                 }) { (response, error) in
                     do {
                         if let error = error {
@@ -1012,8 +1151,9 @@ internal extension FTPFileProvider {
     
     func ftpQuit(_ task: FileProviderStreamTask) {
         self.execute(command: "QUIT", on: task) { (_, _) in
-            //task.closeRead()
-            //task.closeWrite()
+            task.closeRead(immediate: true)
+            task.closeWrite()
+            task.cancel()
         }
     }
     

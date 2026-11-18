@@ -74,6 +74,21 @@ final class FTPService: NSObject, @unchecked Sendable {
     private var _currentTask: Progress?
     private var _currentTransferID: UUID?
     private var _backgroundExpirationRequested = false
+    private var _isBackupRunActive = false
+    private var _ensuredDirectories = Set<String>()
+
+    private var isBackupRunActive: Bool {
+        get { lock.withLock { _isBackupRunActive } }
+        set { lock.withLock { _isBackupRunActive = newValue } }
+    }
+
+    private func isDirectoryEnsured(_ path: String) -> Bool {
+        lock.withLock { _ensuredDirectories.contains(path) }
+    }
+
+    private func markDirectoryEnsured(_ path: String) {
+        _ = lock.withLock { _ensuredDirectories.insert(path) }
+    }
 
     private var ftpProvider: FTPFileProvider? {
         get { lock.withLock { _ftpProvider } }
@@ -231,9 +246,9 @@ final class FTPService: NSObject, @unchecked Sendable {
             return
         }
 
-        // Only hold a UIKit background task while a transfer is actually running;
+        // Only hold a UIKit background task while a transfer or backup run is active;
         // syncBackup starts its own protection for transfers begun in the background.
-        if currentTask != nil {
+        if currentTask != nil || isBackupRunActive {
             backgroundTaskCoordinator.begin()
         }
 
@@ -366,6 +381,7 @@ final class FTPService: NSObject, @unchecked Sendable {
         if _ftpProvider != nil {
             _ftpProvider = nil
         }
+        _ensuredDirectories.removeAll()
         
         // Clear background session state
         Task { @MainActor in
@@ -666,6 +682,7 @@ final class FTPService: NSObject, @unchecked Sendable {
             ftp: ftp,
             localURL: localURL,
             remotePath: temporaryPath,
+            finalDestinationPath: finalPath,
             progressHandler: progressHandler
         )
 
@@ -673,20 +690,13 @@ final class FTPService: NSObject, @unchecked Sendable {
             try? await deleteFile(at: temporaryPath)
             throw BackupServiceError.cancelled
         }
-
-        do {
-            try await moveFile(from: temporaryPath, to: finalPath)
-        } catch {
-            // The uploaded temp file is intentionally retained for this run's
-            // cleanup pass if the server rejects the final rename.
-            throw error
-        }
     }
 
     private func uploadRawFile(
         ftp: FTPFileProvider,
         localURL: URL,
         remotePath: String,
+        finalDestinationPath: String? = nil,
         progressHandler: ((Double) -> Void)? = nil
     ) async throws {
         let transferID = UUID()
@@ -710,7 +720,12 @@ final class FTPService: NSObject, @unchecked Sendable {
 
             // Resumed exactly once even if FilesProvider calls the completion again.
             let pending = OneShotContinuation(continuation)
-            let transferProgress = ftp.copyItem(localFile: localURL, to: remotePath) { [weak self] error in
+            let transferProgress = ftp.copyItem(
+                localFile: localURL,
+                to: remotePath,
+                overwrite: true,
+                atomicMoveTo: finalDestinationPath
+            ) { [weak self] error in
                 guard let continuation = pending.claim() else { return }
                 guard let self else {
                     continuation.resume(throwing: FTPError.connectionFailed)
@@ -786,12 +801,17 @@ final class FTPService: NSObject, @unchecked Sendable {
             throw FTPError.connectionFailed
         }
         let path = normalizedRemotePath(path)
+        if isDirectoryEnsured(path) {
+            return
+        }
         let ops = FTPFileOperations(
             provider: ftp,
             logger: logger,
             isVerboseLoggingEnabled: isVerboseLoggingEnabled,
             isCancelled: { [weak self] in self?.isCancelled ?? false },
-            mapError: { [weak self] error in self?.mapError(error) ?? .unknown(error) }
+            mapError: { [weak self] error in self?.mapError(error) ?? .unknown(error) },
+            isDirectoryEnsured: { [weak self] dir in self?.isDirectoryEnsured(dir) ?? false },
+            markDirectoryEnsured: { [weak self] dir in self?.markDirectoryEnsured(dir) }
         )
         try await ops.createDirectory(at: path)
     }
@@ -1088,11 +1108,15 @@ final class FTPService: NSObject, @unchecked Sendable {
             self?.cancelForBackgroundExpiration()
         }
         let shouldProtectBackgroundTransfer = startedInBackground && !options.isDryRun
+        if !options.isDryRun {
+            isBackupRunActive = true
+        }
         if shouldProtectBackgroundTransfer {
             backgroundTaskCoordinator.begin()
             logger.info("📱 FTP background task protection enabled for transfer")
         }
         defer {
+            isBackupRunActive = false
             // Also ends the task opened by updateBackgroundMode when a foreground run
             // moves to the background; otherwise it would expire after the run.
             backgroundTaskCoordinator.end()

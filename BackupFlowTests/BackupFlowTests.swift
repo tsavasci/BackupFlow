@@ -899,4 +899,326 @@ final class BackupFlowTests: XCTestCase {
         XCTAssertEqual(entries.count, 1)
         XCTAssertEqual(entries.first?.fullPath, "/Users/test/photos/20260101_120000_ABCDEF123456.jpg")
     }
+
+    func testFTPControlReplyFramingSingleAndMultiline() {
+        XCTAssertFalse(FTPFileProvider.isCompleteFTPControlReply("220 Ready"))
+        XCTAssertTrue(FTPFileProvider.isCompleteFTPControlReply("220 Ready\r\n"))
+
+        // Multi-line banner must not complete until matching "220 " terminator arrives
+        XCTAssertFalse(FTPFileProvider.isCompleteFTPControlReply("220-Welcome to NAS\r\n220-Line 2\r\n"))
+        XCTAssertTrue(FTPFileProvider.isCompleteFTPControlReply("220-Welcome to NAS\r\n220-Line 2\r\n220 Ready\r\n"))
+
+        // MLST 250- multi-line response with space-indented middle entry
+        let mlstIncomplete = "250-Listing /photos\r\n type=dir;modify=20261118120000; /photos\r\n"
+        XCTAssertFalse(FTPFileProvider.isCompleteFTPControlReply(mlstIncomplete))
+        let mlstComplete = mlstIncomplete + "250 End\r\n"
+        XCTAssertTrue(FTPFileProvider.isCompleteFTPControlReply(mlstComplete))
+    }
+
+    func testFTPLoopbackUploadAtomicRenameOverwriteAndDownload() async throws {
+        final class LoopbackFTPServer: @unchecked Sendable {
+            private let controlListenFD: Int32
+            let port: Int
+            private let lock = NSLock()
+            private var files: [String: Data] = ["/photos/existing.txt": Data("old".utf8)]
+            private(set) var controlConnectionsCount = 0
+            private(set) var quitReceivedCount = 0
+            private var isStopped = false
+
+            init() throws {
+                let fd = socket(AF_INET, SOCK_STREAM, 0)
+                var yes: Int32 = 1
+                setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yes, socklen_t(MemoryLayout<Int32>.size))
+
+                var addr = sockaddr_in()
+                addr.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
+                addr.sin_family = sa_family_t(AF_INET)
+                addr.sin_port = 0
+                addr.sin_addr.s_addr = inet_addr("127.0.0.1")
+
+                let bindRes = withUnsafePointer(to: &addr) {
+                    $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                        bind(fd, $0, socklen_t(MemoryLayout<sockaddr_in>.size))
+                    }
+                }
+                _ = listen(fd, 16)
+
+                var boundAddr = sockaddr_in()
+                var len = socklen_t(MemoryLayout<sockaddr_in>.size)
+                _ = withUnsafeMutablePointer(to: &boundAddr) {
+                    $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                        getsockname(fd, $0, &len)
+                    }
+                }
+                self.controlListenFD = fd
+                self.port = Int(UInt16(bigEndian: boundAddr.sin_port))
+                XCTAssertGreaterThanOrEqual(fd, 0)
+                XCTAssertEqual(bindRes, 0)
+                Thread.detachNewThread { [weak self] in
+                    self?.acceptLoop()
+                }
+            }
+
+            func stop() {
+                lock.withLock { isStopped = true }
+                close(controlListenFD)
+            }
+
+            func storedData(for path: String) -> Data? {
+                lock.withLock { files[path] }
+            }
+
+            private func acceptLoop() {
+                while true {
+                    var clientAddr = sockaddr_in()
+                    var len = socklen_t(MemoryLayout<sockaddr_in>.size)
+                    let clientFD = withUnsafeMutablePointer(to: &clientAddr) {
+                        $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                            accept(controlListenFD, $0, &len)
+                        }
+                    }
+                    if clientFD < 0 { break }
+                    lock.withLock { controlConnectionsCount += 1 }
+                    Thread.detachNewThread { [weak self] in
+                        self?.handleClient(fd: clientFD)
+                    }
+                }
+            }
+
+            private func sendLine(_ fd: Int32, _ text: String) {
+                let data = Data((text + "\r\n").utf8)
+                _ = data.withUnsafeBytes { ptr in
+                     Darwin.send(fd, ptr.baseAddress, data.count, 0)
+                }
+            }
+
+            private func openPassiveListener() -> (fd: Int32, port: Int) {
+                let fd = socket(AF_INET, SOCK_STREAM, 0)
+                var yes: Int32 = 1
+                setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yes, socklen_t(MemoryLayout<Int32>.size))
+                var addr = sockaddr_in()
+                addr.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
+                addr.sin_family = sa_family_t(AF_INET)
+                addr.sin_port = 0
+                addr.sin_addr.s_addr = inet_addr("127.0.0.1")
+                _ = withUnsafePointer(to: &addr) {
+                    $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                        bind(fd, $0, socklen_t(MemoryLayout<sockaddr_in>.size))
+                    }
+                }
+                _ = listen(fd, 4)
+                var bound = sockaddr_in()
+                var len = socklen_t(MemoryLayout<sockaddr_in>.size)
+                _ = withUnsafeMutablePointer(to: &bound) {
+                    $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                        getsockname(fd, $0, &len)
+                    }
+                }
+                return (fd, Int(UInt16(bigEndian: bound.sin_port)))
+            }
+
+            private func handleClient(fd: Int32) {
+                defer { close(fd) }
+                // Send multi-line 220 banner in two parts to test RFC 959 framing
+                sendLine(fd, "220-Welcome to BackupFlow Loopback FTP")
+                usleep(5_000)
+                sendLine(fd, "220 Ready")
+
+                var pasvListenFD: Int32 = -1
+                var pendingRenameFrom: String?
+                var buffer = Data()
+                var temp = [UInt8](repeating: 0, count: 4096)
+
+                defer {
+                    if pasvListenFD >= 0 { close(pasvListenFD) }
+                }
+
+                while true {
+                    let n = Darwin.recv(fd, &temp, temp.count, 0)
+                    if n <= 0 { break }
+                    buffer.append(temp, count: n)
+
+                    while let range = buffer.range(of: Data("\r\n".utf8)) {
+                        let lineData = buffer.subdata(in: 0..<range.lowerBound)
+                        buffer.removeSubrange(0..<range.upperBound)
+                        let line = String(data: lineData, encoding: .utf8) ?? ""
+                        let parts = line.split(separator: " ", maxSplits: 1, omittingEmptySubsequences: true)
+                        let cmd = parts.first?.uppercased() ?? ""
+                        let arg = parts.count > 1 ? String(parts[1]) : ""
+
+                        switch cmd {
+                        case "USER":
+                            sendLine(fd, "331 Password required")
+                        case "PASS":
+                            sendLine(fd, "230 Logged in")
+                        case "OPTS":
+                            sendLine(fd, "200 UTF8 set")
+                        case "TYPE":
+                            sendLine(fd, "200 Type set to I")
+                        case "MLST", "MLSD":
+                            sendLine(fd, "500 MLST not supported")
+                        case "PASV":
+                            if pasvListenFD >= 0 { close(pasvListenFD) }
+                            let opened = openPassiveListener()
+                            pasvListenFD = opened.fd
+                            let p1 = opened.port >> 8
+                            let p2 = opened.port & 0xFF
+                            sendLine(fd, "227 Entering Passive Mode (127,0,0,1,\(p1),\(p2)).")
+                        case "LIST":
+                            var cAddr = sockaddr_in()
+                            var cLen = socklen_t(MemoryLayout<sockaddr_in>.size)
+                            let dataFD = withUnsafeMutablePointer(to: &cAddr) {
+                                $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                                    accept(pasvListenFD, $0, &cLen)
+                                }
+                            }
+                            sendLine(fd, "150 Opening ASCII mode data connection")
+                            if dataFD >= 0 {
+                                let listing = "-rw-r--r-- 1 user staff 3 Nov 18 12:00 existing.txt\r\n"
+                                _ = listing.withCString { ptr in
+                                    Darwin.send(dataFD, ptr, strlen(ptr), 0)
+                                }
+                                close(dataFD)
+                            }
+                            close(pasvListenFD)
+                            pasvListenFD = -1
+                            sendLine(fd, "226 Directory send OK")
+                        case "STOR":
+                            var cAddr = sockaddr_in()
+                            var cLen = socklen_t(MemoryLayout<sockaddr_in>.size)
+                            let dataFD = withUnsafeMutablePointer(to: &cAddr) {
+                                $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                                    accept(pasvListenFD, $0, &cLen)
+                                }
+                            }
+                            sendLine(fd, "150 Ok to send data")
+                            var received = Data()
+                            if dataFD >= 0 {
+                                var chunk = [UInt8](repeating: 0, count: 16384)
+                                while true {
+                                    let r = Darwin.recv(dataFD, &chunk, chunk.count, 0)
+                                    if r <= 0 { break }
+                                    received.append(chunk, count: r)
+                                }
+                                close(dataFD)
+                            }
+                            close(pasvListenFD)
+                            pasvListenFD = -1
+                            lock.withLock { files[arg] = received }
+                            sendLine(fd, "226 Transfer complete")
+                        case "RETR":
+                            var cAddr = sockaddr_in()
+                            var cLen = socklen_t(MemoryLayout<sockaddr_in>.size)
+                            let dataFD = withUnsafeMutablePointer(to: &cAddr) {
+                                $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                                    accept(pasvListenFD, $0, &cLen)
+                                }
+                            }
+                            sendLine(fd, "150 Opening BINARY mode data connection")
+                            if dataFD >= 0 {
+                                if let payload = lock.withLock({ files[arg] }) {
+                                    _ = payload.withUnsafeBytes { ptr in
+                                        Darwin.send(dataFD, ptr.baseAddress, payload.count, 0)
+                                    }
+                                }
+                                close(dataFD)
+                            }
+                            close(pasvListenFD)
+                            pasvListenFD = -1
+                            sendLine(fd, "226 Transfer complete")
+                        case "RNFR":
+                            pendingRenameFrom = arg
+                            sendLine(fd, "350 Ready for RNTO")
+                        case "RNTO":
+                            guard let from = pendingRenameFrom else {
+                                sendLine(fd, "503 Bad sequence of commands")
+                                break
+                            }
+                            let targetExists = lock.withLock { files[arg] != nil }
+                            if targetExists {
+                                // Strict server behavior: reject RNTO when destination exists until DELE is sent
+                                sendLine(fd, "550 Destination file already exists")
+                            } else {
+                                lock.withLock {
+                                    files[arg] = files.removeValue(forKey: from)
+                                }
+                                pendingRenameFrom = nil
+                                sendLine(fd, "250 Rename successful")
+                            }
+                        case "DELE":
+                            _ = lock.withLock { files.removeValue(forKey: arg) }
+                            sendLine(fd, "250 Deleted")
+                        case "QUIT":
+                            lock.withLock { quitReceivedCount += 1 }
+                            sendLine(fd, "221 Goodbye")
+                            return
+                        default:
+                            sendLine(fd, "200 OK")
+                        }
+                    }
+                }
+            }
+        }
+
+        let server = try LoopbackFTPServer()
+        defer { server.stop() }
+
+        let baseURL = URL(string: "ftp://127.0.0.1:\(server.port)/")!
+        let credential = URLCredential(user: "test", password: "secret", persistence: .forSession)
+        let provider = try XCTUnwrap(FTPFileProvider(baseURL: baseURL, mode: .passive, credential: credential))
+
+        // 1. attributesOfItem on a server returning 500 for MLST must fall back to LIST and resume CheckedContinuation exactly once
+        let attrFile: FileObject? = try await withCheckedThrowingContinuation { continuation in
+            provider.attributesOfItem(path: "/photos/existing.txt") { file, error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume(returning: file)
+                }
+            }
+        }
+        XCTAssertEqual(attrFile?.name, "existing.txt")
+
+        // 2. Upload with atomicMoveTo over an existing file on a single control session
+        let payload = Data(repeating: 0x42, count: 96_000)
+        let localSource = FileManager.default.temporaryDirectory.appendingPathComponent("ftp-upload-\(UUID().uuidString).bin")
+        let localDest = FileManager.default.temporaryDirectory.appendingPathComponent("ftp-download-\(UUID().uuidString).bin")
+        try payload.write(to: localSource)
+        defer {
+            try? FileManager.default.removeItem(at: localSource)
+            try? FileManager.default.removeItem(at: localDest)
+        }
+
+        let connectionsBeforeUpload = server.controlConnectionsCount
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            _ = provider.copyItem(
+                localFile: localSource,
+                to: "/photos/existing.txt.backupflow-partial-1",
+                overwrite: true,
+                atomicMoveTo: "/photos/existing.txt"
+            ) { error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume(returning: ())
+                }
+            }
+        }
+        // Upload + atomic RNFR/DELE/RNTO must reuse the single control connection
+        XCTAssertEqual(server.controlConnectionsCount - connectionsBeforeUpload, 1)
+        XCTAssertEqual(server.storedData(for: "/photos/existing.txt"), payload)
+
+        // 3. Download file back and verify contents
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            _ = provider.copyItem(path: "/photos/existing.txt", toLocalURL: localDest) { error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume(returning: ())
+                }
+            }
+        }
+        let downloaded = try Data(contentsOf: localDest)
+        XCTAssertEqual(downloaded, payload)
+    }
 }
