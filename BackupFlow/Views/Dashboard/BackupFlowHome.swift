@@ -74,7 +74,7 @@ struct TaskItem: Identifiable {
 struct DayTotal: Identifiable {
     var id: Date { day }
     let day: Date
-    let mb: Double
+    let gb: Double
 }
 
 // MARK: - Home View
@@ -245,7 +245,7 @@ struct BackupHomeView: View {
         Chart(days) { d in
             BarMark(
                 x: .value("home.chart.day".localized, d.day, unit: .day),
-                y: .value("MB", d.mb)
+                y: .value("GB", d.gb)
             )
             .foregroundStyle(BF.accent)
             .cornerRadius(2)
@@ -395,7 +395,7 @@ struct TaskRow: View {
     let days = (0..<14).map { i in
         DayTotal(
             day: cal.date(byAdding: .day, value: -13 + i, to: .now)!,
-            mb: [0, 441, 612, 0, 0, 214, 0, 0, 380, 0, 0, 441, 612, 0][i]
+            gb: [0, 0.44, 0.61, 0, 0, 0.21, 0, 0, 0.38, 0, 0, 0.44, 0.61, 0][i]
         )
     }
     return BackupHomeView(

@@ -561,7 +561,7 @@
 "home.status.ready" = "準備完了";
 "home.status.no_tasks" = "タスクなし";
 "home.status.summary" = "前回 %@  ·  次回 %@  ·  エラー %d件";
-"home.chart.header" = "過去14日間 · 転送量 (MB)";
+"home.chart.header" = "過去14日間 · 転送量 (GB)";
 "home.chart.day" = "日";
 "home.tasks.header" = "タスク";
 "home.tasks.empty" = "バックアップタスクがありません";

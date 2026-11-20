@@ -561,7 +561,7 @@
 "home.status.ready" = "Готово";
 "home.status.no_tasks" = "Нет задач";
 "home.status.summary" = "посл. %@  ·  след. %@  ·  %d ош.";
-"home.chart.header" = "ЗА 14 ДНЕЙ · ПЕРЕДАНО МБ";
+"home.chart.header" = "ЗА 14 ДНЕЙ · ПЕРЕДАНО ГБ";
 "home.chart.day" = "День";
 "home.tasks.header" = "ЗАДАЧИ";
 "home.tasks.empty" = "Задач резервного копирования пока нет";

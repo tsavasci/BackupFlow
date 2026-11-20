@@ -560,7 +560,7 @@
 "home.status.ready" = "جاهز";
 "home.status.no_tasks" = "لا توجد مهام";
 "home.status.summary" = "الأخير %@  ·  التالي %@  ·  %d أخطاء";
-"home.chart.header" = "آخر 14 يومًا · ميجابايت منقولة";
+"home.chart.header" = "آخر 14 يومًا · جيجابايت منقولة";
 "home.chart.day" = "اليوم";
 "home.tasks.header" = "المهام";
 "home.tasks.empty" = "لا توجد مهام نسخ احتياطي بعد";

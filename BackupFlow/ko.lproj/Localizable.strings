@@ -563,7 +563,7 @@
 "home.status.ready" = "준비됨";
 "home.status.no_tasks" = "작업 없음";
 "home.status.summary" = "마지막 %@  ·  다음 %@  ·  오류 %d건";
-"home.chart.header" = "최근 14일 · 전송된 MB";
+"home.chart.header" = "최근 14일 · 전송된 GB";
 "home.chart.day" = "날짜";
 "home.tasks.header" = "작업";
 "home.tasks.empty" = "백업 작업이 없습니다";

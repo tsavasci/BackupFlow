@@ -560,7 +560,7 @@
 "home.status.ready" = "Bereit";
 "home.status.no_tasks" = "Keine Aufgaben";
 "home.status.summary" = "zuletzt %@  ·  nächste %@  ·  %d Fehler";
-"home.chart.header" = "LETZTE 14 TAGE · ÜBERTRAGENE MB";
+"home.chart.header" = "LETZTE 14 TAGE · ÜBERTRAGENE GB";
 "home.chart.day" = "Tag";
 "home.tasks.header" = "AUFGABEN";
 "home.tasks.empty" = "Noch keine Backup-Aufgaben";

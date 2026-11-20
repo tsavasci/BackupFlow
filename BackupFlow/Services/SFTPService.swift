@@ -142,7 +142,18 @@ final class SFTPService: NSObject, @unchecked Sendable {
     
     private var sshClient: SSHClient?
     private var sftpClient: SFTPClient?
+    private var _ensuredDirectories = Set<String>()
+    private var _isBackupRunActive = false
+    private let partialFileMarker = ".backupflow-partial-"
+    nonisolated private static let uploadChunkSize = 128 * 1024
+    nonisolated private static let maxInFlightWrites = 4
+    nonisolated private static let downloadChunkSize: UInt32 = 256 * 1024
     private var _currentFile: String = ""
+
+    private var isBackupRunActive: Bool {
+        get { stateLock.withLock { _isBackupRunActive } }
+        set { stateLock.withLock { _isBackupRunActive = newValue } }
+    }
     private var _progress: Double = 0
     private var _currentFileBytesTransferred: Int64 = 0
     private var _currentFileTotalBytes: Int64 = 0
@@ -310,41 +321,79 @@ final class SFTPService: NSObject, @unchecked Sendable {
         progressHandler?(1.0)
     }
     
+    private func normalizedDirectoryCacheKey(_ path: String) -> String {
+        var clean = path.trimmingCharacters(in: .whitespacesAndNewlines)
+        while clean.contains("//") {
+            clean = clean.replacingOccurrences(of: "//", with: "/")
+        }
+        if clean.count > 1 && clean.hasSuffix("/") {
+            clean.removeLast()
+        }
+        return clean
+    }
+
+    private func isDirectoryEnsured(_ path: String) -> Bool {
+        let key = normalizedDirectoryCacheKey(path)
+        return stateLock.withLock { _ensuredDirectories.contains(key) }
+    }
+
+    private func markDirectoryEnsured(_ path: String) {
+        var current = normalizedDirectoryCacheKey(path)
+        stateLock.withLock {
+            while !current.isEmpty, current != "/" {
+                let (inserted, _) = _ensuredDirectories.insert(current)
+                if !inserted { break }
+                let parent = (current as NSString).deletingLastPathComponent
+                if parent == current { break }
+                current = parent
+            }
+        }
+    }
+
     func createDirectory(at path: String) async throws {
         guard let sftp = currentSFTPClient() else {
             throw BackupServiceError.connectionFailed
         }
         
-        let normalizedPath = path.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalizedPath = normalizedDirectoryCacheKey(path)
         guard !normalizedPath.isEmpty, normalizedPath != "/" else {
             return
         }
+        if isDirectoryEnsured(normalizedPath) {
+            return
+        }
+
+        // Önce hedef dizinin zaten var olup olmadığını kontrol et (router/chroot SFTP sunucularında /tmp üst dizin hatalarını önler)
+        if (try? await sftp.getAttributes(at: normalizedPath)) != nil {
+            markDirectoryEnsured(normalizedPath)
+            logger.debug("SFTP directory already exists: \(normalizedPath)")
+            return
+        }
         
-        // İlk olarak parent directory'yi oluşturmayı dene (recursive)
+        // Hedef yoksa ve parent henüz doğrulanmadıysa parent directory'yi oluşturmayı dene
         let parentPath = (normalizedPath as NSString).deletingLastPathComponent
-        if !parentPath.isEmpty && parentPath != "/" && parentPath != normalizedPath {
+        if !parentPath.isEmpty && parentPath != "/" && parentPath != normalizedPath && !isDirectoryEnsured(parentPath) {
             do {
                 try await createDirectory(at: parentPath)
             } catch {
                 logger.warning("SFTP parent directory creation warning for \(parentPath): \(error.localizedDescription)")
-                // Parent oluşturulamasa da devam et, belki zaten var
             }
         }
         
         // Şimdi hedef directory'yi oluştur
+        logger.debug("SFTP directory not found, creating: \(normalizedPath)")
         do {
-            _ = try await sftp.getAttributes(at: normalizedPath)
-            logger.debug("SFTP directory already exists: \(normalizedPath)")
-            return
+            try await sftp.createDirectory(atPath: normalizedPath)
+            markDirectoryEnsured(normalizedPath)
+            logger.debug("SFTP directory created successfully: \(normalizedPath)")
         } catch {
-            logger.debug("SFTP directory not found, creating: \(normalizedPath)")
-            do {
-                try await sftp.createDirectory(atPath: normalizedPath)
-                logger.debug("SFTP directory created successfully: \(normalizedPath)")
-            } catch {
-                logger.error("SFTP directory creation failed for \(normalizedPath): \(error.localizedDescription)")
-                throw error
+            // Eşzamanlı başka bir worker oluşturmuş olabilir; tekrar kontrol et
+            if (try? await sftp.getAttributes(at: normalizedPath)) != nil {
+                markDirectoryEnsured(normalizedPath)
+                return
             }
+            logger.error("SFTP directory creation failed for \(normalizedPath): \(error.localizedDescription)")
+            throw error
         }
     }
 
@@ -405,14 +454,19 @@ final class SFTPService: NSObject, @unchecked Sendable {
 
         func listAll(at currentPath: String, relativeTo basePath: String) async throws {
             let files = try await listDirectory(at: currentPath, timeout: timeout)
+            markDirectoryEnsured(currentPath)
             for file in files {
                 let relativePath = basePath.isEmpty ? file.name : "\(basePath)/\(file.name)"
                 if BackupArchive.isReserved(relativePath: relativePath) {
                     continue
                 }
+                let childPath = currentPath == "/" ? "/\(file.name)" : "\(currentPath)/\(file.name)"
                 if file.isDirectory {
-                    let subdirPath = currentPath == "/" ? "/\(file.name)" : "\(currentPath)/\(file.name)"
-                    try await listAll(at: subdirPath, relativeTo: relativePath)
+                    markDirectoryEnsured(childPath)
+                    try await listAll(at: childPath, relativeTo: relativePath)
+                } else if file.name.contains(partialFileMarker) {
+                    try? await deleteFile(at: childPath)
+                    logger.info("Removed stale SFTP partial file: \(childPath)")
                 } else {
                     allFiles[relativePath] = file.size
                 }
@@ -457,6 +511,17 @@ final class SFTPService: NSObject, @unchecked Sendable {
         return try await resolveRemoteBase(relativeRemoteBase)
     }
     
+    @MainActor
+    func updateBackgroundMode(isBackground: Bool) {
+        guard isBackground else {
+            backgroundTaskCoordinator.end()
+            return
+        }
+        if isBackupRunActive || currentSFTPClient() != nil {
+            backgroundTaskCoordinator.begin()
+        }
+    }
+
     func performBackup(
         host: String,
         port: Int,
@@ -472,6 +537,13 @@ final class SFTPService: NSObject, @unchecked Sendable {
         progressHandler: (@Sendable (Double) -> Void)?
     ) async throws -> FTPService.SyncResult {
         resetCancellation()
+        if !options.isDryRun {
+            isBackupRunActive = true
+        }
+        defer {
+            isBackupRunActive = false
+            backgroundTaskCoordinator.end()
+        }
         let normalizedHost = try normalizedHost(host)
         storeConnection(
             host: normalizedHost,
@@ -604,7 +676,7 @@ final class SFTPService: NSObject, @unchecked Sendable {
             while true {
                 try Task.checkCancellation()
                 do {
-                    let buffer = try await remoteFile.read(from: offset, length: 64 * 1024)
+                    let buffer = try await remoteFile.read(from: offset, length: Self.downloadChunkSize)
                     guard buffer.readableBytes > 0 else { break }
                     try handle.write(contentsOf: Data(buffer.readableBytesView))
                     offset += UInt64(buffer.readableBytes)
@@ -808,6 +880,7 @@ final class SFTPService: NSObject, @unchecked Sendable {
             let currentSFTP = sftpClient
             sshClient = nil
             sftpClient = nil
+            _ensuredDirectories.removeAll()
             return (currentSSH, currentSFTP)
         }
 
@@ -914,6 +987,10 @@ final class SFTPService: NSObject, @unchecked Sendable {
         handler?(progress)
     }
 
+    private func temporaryRemotePath(for finalPath: String) -> String {
+        "\(finalPath)\(partialFileMarker)\(UUID().uuidString.prefix(8).lowercased())"
+    }
+
     private func uploadLocalFile(
         localURL: URL,
         remotePath: String,
@@ -928,36 +1005,91 @@ final class SFTPService: NSObject, @unchecked Sendable {
 
         let fileName = (remotePath as NSString).lastPathComponent
         let parentPath = (remotePath as NSString).deletingLastPathComponent
+        let temporaryPath = temporaryRemotePath(for: remotePath)
+        let chunkSize = Self.uploadChunkSize
+        let maxInFlight = Self.maxInFlightWrites
         
         logger.debug("SFTP uploading file: \(fileName) to \(parentPath)")
         
         do {
             try await sftp.withFile(
-                filePath: remotePath,
+                filePath: temporaryPath,
                 flags: [.write, .create, .truncate]
             ) { remoteFile in
-                var offset: UInt64 = 0
-                while !self.isCancelledState() {
+                var readOffset: UInt64 = 0
+                var completedBytes: UInt64 = 0
+                var reachedEOF = false
+
+                func readNextChunk() throws -> (offset: UInt64, buffer: ByteBuffer, count: Int)? {
+                    guard !reachedEOF else { return nil }
                     let chunk: Data? = try autoreleasepool {
-                        try handle.read(upToCount: 64 * 1024)
+                        try handle.read(upToCount: chunkSize)
                     }
                     guard let chunk, !chunk.isEmpty else {
-                        break
+                        reachedEOF = true
+                        return nil
                     }
+                    let chunkOffset = readOffset
+                    readOffset += UInt64(chunk.count)
                     var buffer = ByteBufferAllocator().buffer(capacity: chunk.count)
                     buffer.writeBytes(chunk)
-                    try await remoteFile.write(buffer, at: offset)
-                    offset += UInt64(chunk.count)
-                    let safeProgress = expectedSize > 0 ? min(max(Double(offset) / Double(expectedSize), 0.0), 1.0) : 0.0
-                    progressHandler?(safeProgress)
-                    await self.updateCurrentUploadProgress(bytesSent: Int64(offset), totalBytes: expectedSize)
+                    return (chunkOffset, buffer, chunk.count)
                 }
+
+                try await withThrowingTaskGroup(of: Int.self) { group in
+                    for _ in 0..<maxInFlight {
+                        if self.isCancelledState() {
+                            group.cancelAll()
+                            throw BackupServiceError.cancelled
+                        }
+                        guard let next = try readNextChunk() else { break }
+                        group.addTask {
+                            try await remoteFile.write(next.buffer, at: next.offset)
+                            return next.count
+                        }
+                    }
+
+                    while let writtenCount = try await group.next() {
+                        if self.isCancelledState() {
+                            group.cancelAll()
+                            throw BackupServiceError.cancelled
+                        }
+                        completedBytes += UInt64(writtenCount)
+                        let safeProgress = expectedSize > 0
+                            ? min(max(Double(completedBytes) / Double(expectedSize), 0.0), 1.0)
+                            : 0.0
+                        progressHandler?(safeProgress)
+                        await self.updateCurrentUploadProgress(bytesSent: Int64(completedBytes), totalBytes: expectedSize)
+
+                        if let next = try readNextChunk() {
+                            group.addTask {
+                                try await remoteFile.write(next.buffer, at: next.offset)
+                                return next.count
+                            }
+                        }
+                    }
+                }
+
                 if self.isCancelledState() {
                     throw BackupServiceError.cancelled
                 }
             }
+
+            if self.isCancelledState() {
+                try? await sftp.remove(at: temporaryPath)
+                throw BackupServiceError.cancelled
+            }
+
+            do {
+                try await sftp.rename(at: temporaryPath, to: remotePath)
+            } catch {
+                // SFTP v3 rename fails if destination already exists; remove target and retry atomically
+                try? await sftp.remove(at: remotePath)
+                try await sftp.rename(at: temporaryPath, to: remotePath)
+            }
             logger.debug("SFTP upload successful: \(fileName)")
         } catch {
+            try? await sftp.remove(at: temporaryPath)
             logger.error("SFTP upload failed for \(fileName): \(error.localizedDescription)")
             throw error
         }
@@ -1210,6 +1342,13 @@ final class SFTPService: NSObject, @unchecked Sendable {
     }
 
     private func beginTransferBackgroundTask() {
+        let shouldStartImmediately: Bool = {
+            if Thread.isMainThread {
+                return MainActor.assumeIsolated { UIApplication.shared.applicationState != .active }
+            }
+            return DispatchQueue.main.sync { UIApplication.shared.applicationState != .active }
+        }()
+        guard shouldStartImmediately else { return }
         logger.info("SFTP background task started for transfer")
         backgroundTaskCoordinator.begin()
     }
@@ -1290,22 +1429,25 @@ final class SFTPService: NSObject, @unchecked Sendable {
 private final class SFTPBackgroundTaskCoordinator {
     private let lock = NSLock()
     private var taskID: UIBackgroundTaskIdentifier = .invalid
-    private var renewTimer: DispatchSourceTimer?
     var onExpiration: (() -> Void)?
-    private let renewInterval: TimeInterval = 25
     
     func begin() {
         lock.lock()
-        endLocked()
-        startTaskLocked()
-        startRenewTimerLocked()
+        // Acquire the new task BEFORE ending the old one so BKSProcessAssertion refcount never drops to 0.
+        let oldID = taskID
+        let newID = UIApplication.shared.beginBackgroundTask(withName: "SFTPFileTransfer") { [weak self] in
+            self?.handleExpiration()
+        }
+        taskID = newID
+        if oldID != .invalid && oldID != newID {
+            UIApplication.shared.endBackgroundTask(oldID)
+        }
         lock.unlock()
     }
     
     func end() {
         lock.lock()
         endLocked()
-        stopRenewTimerLocked()
         lock.unlock()
     }
     
@@ -1314,48 +1456,11 @@ private final class SFTPBackgroundTaskCoordinator {
         end()
     }
 
-    private func startTaskLocked() {
-        let newID = UIApplication.shared.beginBackgroundTask(withName: "SFTPFileTransfer") { [weak self] in
-            self?.handleExpiration()
-        }
-        taskID = newID
-        if newID == .invalid {
-            stopRenewTimerLocked()
-        }
-    }
-
     private func endLocked() {
         if taskID != .invalid {
             UIApplication.shared.endBackgroundTask(taskID)
             taskID = .invalid
         }
-    }
-
-    private func startRenewTimerLocked() {
-        stopRenewTimerLocked()
-        let timer = DispatchSource.makeTimerSource(queue: DispatchQueue.global(qos: .utility))
-        timer.schedule(deadline: .now() + renewInterval, repeating: renewInterval)
-        timer.setEventHandler { [weak self] in
-            self?.renew()
-        }
-        timer.resume()
-        renewTimer = timer
-    }
-
-    private func stopRenewTimerLocked() {
-        renewTimer?.cancel()
-        renewTimer = nil
-    }
-
-    private func renew() {
-        lock.lock()
-        guard taskID != .invalid else {
-            lock.unlock()
-            return
-        }
-        endLocked()
-        startTaskLocked()
-        lock.unlock()
     }
 }
 

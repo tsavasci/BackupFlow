@@ -560,7 +560,7 @@
 "home.status.ready" = "Listo";
 "home.status.no_tasks" = "Sin tareas";
 "home.status.summary" = "último %@  ·  próximo %@  ·  %d errores";
-"home.chart.header" = "ÚLTIMOS 14 DÍAS · MB TRANSFERIDOS";
+"home.chart.header" = "ÚLTIMOS 14 DÍAS · GB TRANSFERIDOS";
 "home.chart.day" = "Día";
 "home.tasks.header" = "TAREAS";
 "home.tasks.empty" = "Aún no hay tareas de copia";

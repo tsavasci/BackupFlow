@@ -563,7 +563,7 @@
 "home.status.ready" = "Prêt";
 "home.status.no_tasks" = "Aucune tâche";
 "home.status.summary" = "dernier %@  ·  prochain %@  ·  %d erreurs";
-"home.chart.header" = "14 DERNIERS JOURS · MO TRANSFÉRÉS";
+"home.chart.header" = "14 DERNIERS JOURS · GO TRANSFÉRÉS";
 "home.chart.day" = "Jour";
 "home.tasks.header" = "TÂCHES";
 "home.tasks.empty" = "Aucune tâche de sauvegarde";

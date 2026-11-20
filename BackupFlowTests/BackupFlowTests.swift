@@ -1221,4 +1221,60 @@ final class BackupFlowTests: XCTestCase {
         let downloaded = try Data(contentsOf: localDest)
         XCTAssertEqual(downloaded, payload)
     }
+
+    func testSFTPSyncEngineSkipsCreateDirectoryForUnchangedFilesAndDeduplicatesSubfolders() async throws {
+        let tempRoot = FileManager.default.temporaryDirectory
+            .appendingPathComponent("sftp-sync-dir-\(UUID().uuidString)", isDirectory: true)
+        let subA = tempRoot.appendingPathComponent("2026/05", isDirectory: true)
+        let subB = tempRoot.appendingPathComponent("2026/06", isDirectory: true)
+        try FileManager.default.createDirectory(at: subA, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: subB, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempRoot) }
+
+        // 2026/05 has an already-uploaded unchanged file (should NOT trigger createDirectory)
+        let unchangedFile = subA.appendingPathComponent("already_synced.jpg")
+        try Data(repeating: 0x11, count: 128).write(to: unchangedFile)
+
+        // 2026/06 has two new files in the same subfolder (should trigger createDirectory for /Backup/2026/06 only ONCE)
+        let newFile1 = subB.appendingPathComponent("new1.jpg")
+        let newFile2 = subB.appendingPathComponent("new2.jpg")
+        try Data(repeating: 0x22, count: 256).write(to: newFile1)
+        try Data(repeating: 0x33, count: 512).write(to: newFile2)
+
+        let lock = NSLock()
+        var createdDirs: [String] = []
+        var uploadedPaths: [String] = []
+
+        let engine = SFTPSyncEngine(
+            prefetchRemoteFiles: { _ in
+                ["2026/05/already_synced.jpg": 128]
+            },
+            createDirectory: { dir in
+                lock.withLock { createdDirs.append(dir) }
+            },
+            deleteFile: { _ in },
+            archiveFile: { _, _ in },
+            uploadFile: { _, targetPath, _, _, _ in
+                lock.withLock { uploadedPaths.append(targetPath) }
+                return true
+            },
+            verifyUpload: { _, _ in },
+            beginTransferBackgroundTask: nil,
+            endTransferBackgroundTask: nil,
+            isCancelled: { false },
+            loadCheckpoint: { [] },
+            markCheckpoint: { _ in },
+            clearCheckpoint: {}
+        )
+
+        let result = try await engine.syncUploadDirectory(
+            localURL: tempRoot,
+            remotePath: "/Backup"
+        )
+
+        XCTAssertEqual(result.skippedFiles, 1)
+        XCTAssertEqual(result.newFiles, 2)
+        XCTAssertEqual(createdDirs, ["/Backup/2026/06"])
+        XCTAssertEqual(Set(uploadedPaths), Set(["/Backup/2026/06/new1.jpg", "/Backup/2026/06/new2.jpg"]))
+    }
 }

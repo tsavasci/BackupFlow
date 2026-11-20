@@ -559,7 +559,7 @@
 "home.status.ready" = "就绪";
 "home.status.no_tasks" = "无任务";
 "home.status.summary" = "上次 %@  ·  下次 %@  ·  %d 个错误";
-"home.chart.header" = "最近 14 天 · 已传输 MB";
+"home.chart.header" = "最近 14 天 · 已传输 GB";
 "home.chart.day" = "日期";
 "home.tasks.header" = "任务";
 "home.tasks.empty" = "暂无备份任务";

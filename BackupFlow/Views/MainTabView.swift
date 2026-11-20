@@ -78,12 +78,12 @@ struct MainTabView: View {
         var totalsByDay: [Date: Double] = [:]
         for item in history where item.timestamp >= windowStart {
             let day = cal.startOfDay(for: item.timestamp)
-            totalsByDay[day, default: 0] += Double(max(0, item.bytesTransferred)) / 1_000_000.0
+            totalsByDay[day, default: 0] += Double(max(0, item.bytesTransferred)) / 1_000_000_000.0
         }
 
         return (0..<14).compactMap { offset in
             guard let day = cal.date(byAdding: .day, value: -13 + offset, to: today) else { return nil }
-            return DayTotal(day: day, mb: totalsByDay[day] ?? 0)
+            return DayTotal(day: day, gb: totalsByDay[day] ?? 0)
         }
     }
 

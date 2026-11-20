@@ -561,7 +561,7 @@
 "home.status.ready" = "तैयार";
 "home.status.no_tasks" = "कोई कार्य नहीं";
 "home.status.summary" = "पिछला %@  ·  अगला %@  ·  %d त्रुटियाँ";
-"home.chart.header" = "पिछले 14 दिन · स्थानांतरित MB";
+"home.chart.header" = "पिछले 14 दिन · स्थानांतरित GB";
 "home.chart.day" = "दिन";
 "home.tasks.header" = "कार्य";
 "home.tasks.empty" = "अभी कोई बैकअप कार्य नहीं है";

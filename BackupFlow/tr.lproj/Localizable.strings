@@ -540,7 +540,7 @@
 "home.status.ready" = "Hazır";
 "home.status.no_tasks" = "Görev yok";
 "home.status.summary" = "son %@  ·  sonraki %@  ·  %d hata";
-"home.chart.header" = "SON 14 GÜN · AKTARILAN MB";
+"home.chart.header" = "SON 14 GÜN · AKTARILAN GB";
 "home.chart.day" = "Gün";
 "home.tasks.header" = "GÖREVLER";
 "home.tasks.empty" = "Henüz yedekleme görevi yok";

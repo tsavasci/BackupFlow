@@ -157,6 +157,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         Task { @MainActor in
             WebDAVService.shared.updateBackgroundMode(isBackground: true)
             FTPService.shared.updateBackgroundMode(isBackground: true)
+            SFTPService.shared.updateBackgroundMode(isBackground: true)
         }
         let startTime = Date()
         Task {
@@ -226,6 +227,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         Task { @MainActor in
             WebDAVService.shared.updateBackgroundMode(isBackground: true)
             FTPService.shared.updateBackgroundMode(isBackground: true)
+            SFTPService.shared.updateBackgroundMode(isBackground: true)
         }
         var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
         
@@ -378,6 +380,7 @@ struct BackupFlowApp: App {
             if newPhase == .background {
                 WebDAVService.shared.updateBackgroundMode(isBackground: true)
                 FTPService.shared.updateBackgroundMode(isBackground: true)
+                SFTPService.shared.updateBackgroundMode(isBackground: true)
                 if BackupScheduler.shared.isProcessing {
                     debugLog("⚠️ App moved to background. Active backup detected - keeping current process running.")
                     if ContinuedBackupRunner.isRunning {
@@ -395,6 +398,7 @@ struct BackupFlowApp: App {
                 debugLog("📱 BackupFlow: App foreground'a geldi")
                 WebDAVService.shared.updateBackgroundMode(isBackground: false)
                 FTPService.shared.updateBackgroundMode(isBackground: false)
+                SFTPService.shared.updateBackgroundMode(isBackground: false)
                 // A reminder's "Start" action opened the app; run that backup now.
                 BackupScheduler.shared.startPendingNotificationBackup()
                 

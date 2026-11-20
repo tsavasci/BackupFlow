@@ -557,7 +557,7 @@
 "home.status.ready" = "Ready";
 "home.status.no_tasks" = "No tasks";
 "home.status.summary" = "last %@  ·  next %@  ·  %d errors";
-"home.chart.header" = "LAST 14 DAYS · MB TRANSFERRED";
+"home.chart.header" = "LAST 14 DAYS · GB TRANSFERRED";
 "home.chart.day" = "Day";
 "home.tasks.header" = "TASKS";
 "home.tasks.empty" = "No backup tasks yet";

@@ -559,7 +559,7 @@
 "home.status.ready" = "Pronto";
 "home.status.no_tasks" = "Sem tarefas";
 "home.status.summary" = "último %@  ·  próximo %@  ·  %d erros";
-"home.chart.header" = "ÚLTIMOS 14 DIAS · MB TRANSFERIDOS";
+"home.chart.header" = "ÚLTIMOS 14 DIAS · GB TRANSFERIDOS";
 "home.chart.day" = "Dia";
 "home.tasks.header" = "TAREFAS";
 "home.tasks.empty" = "Nenhuma tarefa de backup ainda";

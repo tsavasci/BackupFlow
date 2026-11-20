@@ -51,6 +51,7 @@ struct SFTPSyncEngine {
         var transferred: Int64 = 0
         let archiveRunIdentifier = BackupArchive.makeRunIdentifier()
         var pendingUploads: [PendingUpload] = []
+        var ensuredSubdirectories = Set<String>()
 
         for (index, (relativePath, localFileURL)) in localFileMap.enumerated() {
             if isCancelled?() == true {
@@ -62,10 +63,6 @@ struct SFTPSyncEngine {
                 continue
             }
             let targetPath = BackupArchive.safeRemotePath(basePath: remotePath, relativePath: relativePath)
-            let parentPath = (targetPath as NSString).deletingLastPathComponent
-            if !options.isDryRun && !parentPath.isEmpty && parentPath != "/" {
-                try await createDirectory(parentPath)
-            }
 
             let resourceValues = try localFileURL.resourceValues(forKeys: [.fileSizeKey])
             let localSize = Int64(resourceValues.fileSize ?? 0)
@@ -86,6 +83,11 @@ struct SFTPSyncEngine {
                 }
                 progressHandler?(Double(index + 1) / Double(max(totalFiles, 1)) * 0.8)
             } else {
+                let parentPath = (targetPath as NSString).deletingLastPathComponent
+                if !options.isDryRun && !parentPath.isEmpty && parentPath != "/" && !ensuredSubdirectories.contains(parentPath) {
+                    try await createDirectory(parentPath)
+                    ensuredSubdirectories.insert(parentPath)
+                }
                 pendingUploads.append(PendingUpload(
                     relativePath: relativePath,
                     localFileURL: localFileURL,
